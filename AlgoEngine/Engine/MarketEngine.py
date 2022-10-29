@@ -1,70 +1,61 @@
+from __future__ import annotations
+
 import abc
 import datetime
+import functools
 import threading
 import uuid
 from collections import defaultdict
-from typing import Dict, List, Union, Optional, Tuple
 
-from PyQuantKit import TickData, TradeData, OrderBook, MarketData, Progress, TransactionSide, BarData
+from PyQuantKit import TickData, TradeData, OrderBook, MarketData, Progress, TransactionSide, BarData, TransactionData
 
 from . import LOGGER
 
-__all__ = ['MDS', 'MarketDataService', 'ProgressiveReplay', 'SimpleReplay', 'Replay']
+__all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'Profile', 'ProgressiveReplay', 'SimpleReplay', 'Replay']
 LOGGER = LOGGER.getChild('MarketEngine')
 
 
-class MarketDataService(object):
-    class OrderLog(object):
-        def __init__(self, ticker: str, price: float, volume: float, side: TransactionSide):
-            self.ticker = ticker
-            self.price = price
-            self.volume = volume
-            self.side = side
+class MarketDataMonitor(object, metaclass=abc.ABCMeta):
+    def __init__(self, name: str, monitor_id: str = None, mds: MarketDataService = None):
+        self.name = name
+        self.monitor_id = uuid.uuid4().hex if monitor_id is None else monitor_id
+        self.mds = MDS if mds is None else mds
 
-    def __init__(self, **kwargs):
-        self.synthetic_orderbook = kwargs.pop('synthetic_orderbook', False)
-        self.cache_history = kwargs.pop('cache_history', False)
-        self.session_start: Optional[datetime.time] = None
-        self.session_end: Optional[datetime.time] = None
-        self.session_break: Tuple[datetime.time, :datetime.time] = None
+    @abc.abstractmethod
+    def __call__(self, market_data: MarketData, **kwargs): ...
 
-        self._market_price = {}
-        self._market_history = defaultdict(dict)
-        self._market_time: Optional[datetime.datetime] = None
-        self._timestamp: Optional[float] = None
+    @abc.abstractmethod
+    @property
+    def value(self): ...
 
-        self._order_book: Dict[str, OrderBook] = {}
-        self._tick_data: Dict[str, TickData] = {}
-        self._trade_data: Dict[str, TradeData] = {}
-        self._minute_bar_data: Dict[str, BarData] = {}
-        self._last_bar_data: Dict[str, BarData] = {}
+    @abc.abstractmethod
+    @property
+    def is_ready(self) -> bool: ...
 
-        self._order_log: Dict[str, MarketDataService.OrderLog] = {}
-        self.lock = threading.Lock()
 
-    def __call__(self, **kwargs):
-        if 'market_data' in kwargs:
-            self.on_market_data(market_data=kwargs['market_data'])
+class SyntheticOrderBookMonitor(MarketDataMonitor):
+    def __init__(self, keep_order_log: bool = False, **kwargs):
+        self.keep_order_log = keep_order_log
 
-    def init_cn_override(self):
-        from FactorGraph.Data import StockLib
+        super().__init__(
+            name=kwargs.pop('name', 'Monitor.SyntheticOrderBook'),
+            monitor_id=kwargs.pop('monitor_id', None),
+            mds=kwargs.pop('mds', None),
+        )
 
-        self.trade_time_between = StockLib.QUERY.trade_time_between
-        self.in_trade_session = StockLib.QUERY.in_trade_session
-        self.session_start = datetime.time(9, 30)
-        self.session_end = datetime.time(15, 0)
-        self.session_break = [datetime.time(11, 30), datetime.time(13, 0)]
+        self._is_ready = True
+        self._value = {}
+        self.order_book = {}
+        self.order_log = {}
 
-    def _on_trade_data(self, trade_data: TradeData):
+    def __call__(self, market_data: MarketData, **kwargs):
+        if isinstance(market_data, TradeData):
+            self.on_trade_data(trade_data=market_data)
+
+    def on_trade_data(self, trade_data: TradeData):
         ticker = trade_data.ticker
 
-        if ticker not in self._trade_data:
-            LOGGER.info(f'MDS confirmed {ticker} TradeData subscribed!')
-
-        self._trade_data[ticker] = trade_data
-
-        if self.synthetic_orderbook and (order_book := self._order_book.get(ticker)):
-
+        if order_book := self.order_book.get(ticker):
             if order_book.market_time <= trade_data.market_time:
                 side: TransactionSide = trade_data.side
                 price = trade_data.price
@@ -73,52 +64,75 @@ class MarketDataService(object):
                 traded_volume = trade_data.volume
                 book.update_entry(price=price, volume=max(0, listed_volume - traded_volume))
 
-                for order_id in list(self._order_log):
-                    order_log = self._order_log.get(order_id)
+        if self.keep_order_log:
+            self._update_order_log(trade_data=trade_data)
 
-                    if order_log is None:
-                        continue
+    def on_transaction_data(self, transaction_data: TransactionData):
+        pass
 
-                    if side.sign > 0:
-                        if order_log.side.sign < 0:
-                            if price == order_log.price:
-                                order_log.volume -= traded_volume
-                            elif price > order_log.price:
-                                order_log.volume = 0.
-                        else:
-                            if price <= order_log.price:
-                                order_log.volume = 0.
-                    elif side.sign < 0:
-                        if order_log.side.sign > 0:
-                            if price == order_log.price:
-                                order_log.volume -= traded_volume
-                            elif price < order_log.price:
-                                order_log.volume = 0.
-                        else:
-                            if price >= order_log.price:
-                                order_log.volume = 0.
+    def _update_order_log(self, trade_data: TradeData):
+        side: TransactionSide = trade_data.side
+        price = trade_data.price
+        traded_volume = trade_data.volume
 
-                    if order_log.volume <= 0:
-                        self._order_log.pop(order_id)
+        for order_id in list(self.order_log):
+            order_log = self.order_log.get(order_id)
 
-    def _on_tick_data(self, tick_data: TickData):
-        ticker = tick_data.ticker
+            if order_log is None:
+                continue
 
-        if ticker not in self._tick_data:
-            LOGGER.info(f'MDS confirmed {ticker} TickData subscribed!')
+            if side.sign > 0:
+                if order_log.side.sign < 0:
+                    if price == order_log.price:
+                        order_log.volume -= traded_volume
+                    elif price > order_log.price:
+                        order_log.volume = 0.
+                else:
+                    if price <= order_log.price:
+                        order_log.volume = 0.
+            elif side.sign < 0:
+                if order_log.side.sign > 0:
+                    if price == order_log.price:
+                        order_log.volume -= traded_volume
+                    elif price < order_log.price:
+                        order_log.volume = 0.
+                else:
+                    if price >= order_log.price:
+                        order_log.volume = 0.
 
-        self._tick_data[ticker] = tick_data
-        self._order_book[ticker] = tick_data.order_book
+            if order_log.volume <= 0:
+                self.order_log.pop(order_id)
 
-    def _on_order_book(self, order_book):
-        ticker = order_book.ticker
+    @property
+    def is_ready(self) -> bool:
+        return self._is_ready
 
-        if ticker not in self._order_book:
-            LOGGER.info(f'MDS confirmed {ticker} OrderBook subscribed!')
+    @property
+    def value(self) -> dict[str, OrderBook]:
+        return self.order_book
 
-        self._order_book[ticker] = order_book
 
-    def _update_last_bar(self, market_data: MarketData, interval: float = 60.):
+class MinuteBarMonitor(MarketDataMonitor):
+    def __init__(self, interval: float = 60., **kwargs):
+        self.interval = interval
+
+        super().__init__(
+            name=kwargs.pop('name', 'Monitor.SyntheticOrderBook'),
+            monitor_id=kwargs.pop('monitor_id', None),
+            mds=kwargs.pop('mds', None),
+        )
+
+        self._minute_bar_data: dict[str, BarData] = {}
+        self._last_bar_data: dict[str, BarData] = {}
+
+        self._is_ready = True
+        self._value = {}
+
+    def __call__(self, market_data: MarketData, **kwargs):
+        self._update_last_bar(market_data=market_data, interval=self.interval)
+        # self._update_active_bar(market_data=market_data, interval=self.interval)
+
+    def _update_last_bar(self, market_data: MarketData, interval: float):
         ticker = market_data.ticker
         market_price = market_data.market_price
         market_time = market_data.market_time
@@ -130,7 +144,7 @@ class MarketDataService(object):
 
             bar_data = self._minute_bar_data[ticker] = BarData(
                 ticker=ticker,
-                bar_start_time=datetime.datetime.fromtimestamp(self._timestamp // interval * interval),
+                bar_start_time=datetime.datetime.fromtimestamp(self.mds.timestamp // interval * interval),
                 bar_span=datetime.timedelta(seconds=interval),
                 high_price=market_price,
                 low_price=market_price,
@@ -152,7 +166,7 @@ class MarketDataService(object):
         bar_data.high_price = max(bar_data.high_price, market_price)
         bar_data.low_price = min(bar_data.low_price, market_price)
 
-    def _update_active_bar(self, market_data: MarketData, interval: float = 60.):
+    def _update_active_bar(self, market_data: MarketData, interval: float):
         ticker = market_data.ticker
         market_price = market_data.market_price
         market_time = MarketData.market_time
@@ -160,7 +174,7 @@ class MarketDataService(object):
         if ticker not in self._minute_bar_data or market_time >= self._minute_bar_data[ticker].bar_end_time:
             bar_data = self._minute_bar_data[ticker] = BarData(
                 ticker=ticker,
-                bar_start_time=datetime.datetime.fromtimestamp(self._timestamp - interval),
+                bar_start_time=datetime.datetime.fromtimestamp(self.mds.timestamp - interval),
                 bar_span=datetime.timedelta(seconds=interval),
                 high_price=market_price,
                 low_price=market_price,
@@ -175,8 +189,8 @@ class MarketDataService(object):
         else:
             bar_data = self._minute_bar_data[ticker]
 
-        history: List[TradeData] = getattr(bar_data, 'history')
-        bar_data.bar_start_time = datetime.datetime.fromtimestamp(self._timestamp - interval)
+        history: list[TradeData] = getattr(bar_data, 'history')
+        bar_data.bar_start_time = datetime.datetime.fromtimestamp(self.mds.timestamp - interval)
 
         if isinstance(market_data, TradeData):
             history.append(market_data)
@@ -194,6 +208,293 @@ class MarketDataService(object):
         bar_data.open_price = history[0].market_price
         bar_data.high_price = max([_.market_price for _ in history])
         bar_data.low_price = min([_.market_price for _ in history])
+
+    @property
+    def is_ready(self) -> bool:
+        return self._is_ready
+
+    @property
+    def value(self) -> dict[str, BarData]:
+        return self._last_bar_data
+
+
+class Profile(object, metaclass=abc.ABCMeta):
+    def __init__(
+            self,
+            session_start: datetime.time | None = None,
+            session_end: datetime.time | None = None,
+            session_break: tuple[datetime.time, datetime.time] | None = None
+    ):
+        self.session_start: datetime.time | None = session_start
+        self.session_end: datetime.time | None = session_end
+        self.session_break: tuple[datetime.time, datetime.time] | None = session_break
+
+    @abc.abstractmethod
+    def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
+        ...
+
+    @abc.abstractmethod
+    def in_trade_session(self, market_time: datetime.datetime | float) -> bool:
+        ...
+
+
+class DefaultProfile(Profile):
+    def __init__(self):
+        super().__init__(
+            session_start=datetime.time(0),
+            session_end=None,
+            session_break=None
+        )
+
+    def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
+        if start_time is not None and isinstance(start_time, (float, int)):
+            start_time = datetime.datetime.fromtimestamp(start_time)
+
+        if end_time is not None and isinstance(end_time, (float, int)):
+            end_time = datetime.datetime.fromtimestamp(end_time)
+
+        if start_time is None or end_time is None:
+            return datetime.timedelta(seconds=0)
+
+        if start_time > end_time:
+            return datetime.timedelta(seconds=0)
+
+        return end_time - start_time
+
+    def in_trade_session(self, market_time: datetime.datetime | float) -> bool:
+        return True
+
+
+class CN_Profile(Profile):
+    def __init__(self):
+        super().__init__(
+            session_start=datetime.time(9, 30),
+            session_end=datetime.time(15, 0),
+            session_break=(datetime.time(11, 30), datetime.time(13, 0))
+        )
+
+        self._trade_calendar = {}
+
+    @functools.lru_cache
+    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
+        import pandas as pd
+
+        if market in self.trade_calendar:
+            trade_calendar = self._trade_calendar[market]
+        else:
+            import trading_calendars
+            trade_calendar = self._trade_calendar[market] = trading_calendars.get_calendar(market)
+
+        calendar = trade_calendar.sessions_in_range(
+            pd.Timestamp(start_date, tz=tz),
+            pd.Timestamp(end_date, tz=tz)
+        )
+
+        # noinspection PyTypeChecker
+        result = list(pd.to_datetime(calendar).date)
+
+        return result
+
+    @functools.lru_cache
+    def is_trade_day(self, market_date: datetime.date, market='XSHG', tz='UTC') -> bool:
+        import pandas as pd
+
+        if market in self.trade_calendar:
+            trade_calendar = self._trade_calendar[market]
+        else:
+            import trading_calendars
+            trade_calendar = self._trade_calendar[market] = trading_calendars.get_calendar(market)
+
+        return trade_calendar.is_session(pd.Timestamp(market_date, tz=tz))
+
+    def trade_days_between(self, start_date: datetime.date, end_date: datetime.date = datetime.date.today(), **kwargs) -> int:
+        """
+        Returns the number of trade days between the given date, which is the pre-open of the start_date to the pre-open of the end_date.
+        :param start_date: the given trade date
+        :param end_date: the given trade date
+        :return: integer number of days
+        """
+        assert start_date <= end_date, "The end date must not before the start date"
+
+        if start_date == end_date:
+            offset = 0
+        else:
+            market_date_list = self.trade_calendar(start_date=start_date, end_date=end_date, **kwargs)
+            if not market_date_list:
+                offset = 0
+            else:
+                last_trade_date = market_date_list[-1]
+                offset = len(market_date_list)
+
+                if last_trade_date == end_date:
+                    offset -= 1
+
+        return offset
+
+    @classmethod
+    def time_to_seconds(cls, t: datetime.time):
+        return (t.hour * 60 + t.minute) * 60 + t.second + t.microsecond / 1000
+
+    def trade_time_between(self, start_time: datetime.datetime | datetime.time | float | int, end_time: datetime.datetime | datetime.time | float | int, fmt='timedelta', **kwargs):
+        if start_time is None or end_time is None:
+            if fmt == 'timestamp':
+                return 0.
+            elif fmt == 'timedelta':
+                return datetime.timedelta(0)
+            else:
+                raise NotImplementedError(f'Invalid fmt {fmt}, should be "timestamp" or "timedelta"')
+
+        session_start = kwargs.pop('session_start', self.session_start)
+        session_break = kwargs.pop('session_break', self.session_break)
+        session_end = kwargs.pop('session_end', self.session_end)
+        session_length_0 = datetime.timedelta(seconds=self.time_to_seconds(session_break[0]) - self.time_to_seconds(session_start))
+        session_length_1 = datetime.timedelta(seconds=self.time_to_seconds(session_end) - self.time_to_seconds(session_break[1]))
+        session_length = session_length_0 + session_length_1
+        implied_date = datetime.date.today()
+
+        if isinstance(start_time, (float, int)):
+            start_time = datetime.datetime.fromtimestamp(start_time)
+            implied_date = start_time.date()
+
+        if isinstance(end_time, (float, int)):
+            end_time = datetime.datetime.fromtimestamp(end_time)
+            implied_date = end_time.date()
+
+        if isinstance(start_time, datetime.time):
+            start_time = datetime.datetime.combine(implied_date, start_time)
+
+        if isinstance(end_time, datetime.time):
+            end_time = datetime.datetime.combine(implied_date, end_time)
+
+        offset = datetime.timedelta()
+
+        market_time = start_time.time()
+
+        # calculate the timespan from start_time to session_end
+        if market_time <= session_start:
+            offset += session_length
+        elif session_start < market_time <= session_break[0]:
+            offset += datetime.datetime.combine(start_time.date(), session_break[0]) - start_time
+            offset += session_length_1
+        elif session_break[0] < market_time <= session_break[1]:
+            offset += session_length_1
+        elif session_break[1] < market_time <= session_end:
+            offset += datetime.datetime.combine(start_time.date(), session_end) - start_time
+        else:
+            offset += datetime.timedelta(0)
+
+        offset -= session_length
+
+        market_time = end_time.time()
+
+        # calculate the timespan from session_start to end_time
+        if market_time <= session_start:
+            offset += datetime.timedelta(0)
+        elif session_start < market_time <= session_break[0]:
+            offset += end_time - datetime.datetime.combine(end_time.date(), session_start)
+        elif session_break[0] < market_time <= session_break[1]:
+            offset += session_length_0
+        elif session_break[1] < market_time <= session_end:
+            offset += end_time - datetime.datetime.combine(end_time.date(), session_break[1])
+            offset += session_length_0
+        else:
+            offset += session_length
+
+        # calculate market_date difference
+        if start_time.date() != end_time.date():
+            offset += session_length * self.trade_days_between(start_date=start_time.date(), end_date=end_time.date(), **kwargs)
+
+        if fmt == 'timestamp':
+            return offset.total_seconds()
+        elif fmt == 'timedelta':
+            return offset
+        else:
+            raise NotImplementedError(f'Invalid fmt {fmt}, should be "timestamp" or "timedelta"')
+
+    def in_trade_session(self, market_time: datetime.datetime | float | int = None) -> bool:
+        if market_time is None:
+            market_time = datetime.datetime.now()
+
+        if isinstance(market_time, (float, int)):
+            market_time = datetime.datetime.fromtimestamp(market_time)
+
+        market_date = market_time.date()
+        market_time = market_time.time()
+
+        if not self.is_trade_day(market_date=market_date):
+            return False
+
+        if market_time < datetime.time(9, 30):
+            return False
+
+        if datetime.time(11, 30) < market_time < datetime.time(13, 00):
+            return False
+
+        if market_time > datetime.time(15, 00):
+            return False
+
+        return True
+
+
+class MarketDataService(object):
+    def __init__(self, profile: Profile = None, **kwargs):
+        self.profile = DefaultProfile() if profile is None else profile
+        self.synthetic_orderbook = kwargs.pop('synthetic_orderbook', False)
+        self.cache_history = kwargs.pop('cache_history', False)
+
+        self._market_price = {}
+        self._market_history = defaultdict(dict)
+        self._market_time: datetime.datetime | None = None
+        self._timestamp: float | None = None
+
+        self._order_book: dict[str, OrderBook] = {}
+        self._tick_data: dict[str, TickData] = {}
+        self._trade_data: dict[str, TradeData] = {}
+        self._monitor: dict[str, MarketDataMonitor] = {}
+
+        self.lock = threading.Lock()
+
+        if self.synthetic_orderbook:
+            # init synthetic orderbook monitor
+            _ = SyntheticOrderBookMonitor(mds=self)
+            self.add_monitor(monitor=_)
+            # override current orderbook
+            self._order_book = _.order_book
+
+    def __call__(self, **kwargs):
+        if 'market_data' in kwargs:
+            self.on_market_data(market_data=kwargs['market_data'])
+
+    def add_monitor(self, monitor: MarketDataMonitor):
+        self._monitor[monitor.monitor_id] = monitor
+
+    def init_cn_override(self):
+        self.profile = CN_Profile()
+
+    def _on_trade_data(self, trade_data: TradeData):
+        ticker = trade_data.ticker
+
+        if ticker not in self._trade_data:
+            LOGGER.info(f'MDS confirmed {ticker} TradeData subscribed!')
+
+        self._trade_data[ticker] = trade_data
+
+    def _on_tick_data(self, tick_data: TickData):
+        ticker = tick_data.ticker
+
+        if ticker not in self._tick_data:
+            LOGGER.info(f'MDS confirmed {ticker} TickData subscribed!')
+
+        self._tick_data[ticker] = tick_data
+        self._order_book[ticker] = tick_data.order_book
+
+    def _on_order_book(self, order_book):
+        ticker = order_book.ticker
+
+        if ticker not in self._order_book:
+            LOGGER.info(f'MDS confirmed {ticker} OrderBook subscribed!')
+
+        self._order_book[ticker] = order_book
 
     def on_market_data(self, market_data: MarketData):
         self.lock.acquire()
@@ -216,15 +517,20 @@ class MarketDataService(object):
         elif isinstance(market_data, OrderBook):
             self._on_order_book(order_book=market_data)
 
-        self._update_last_bar(market_data=market_data)
-        # self._update_active_bar(market_data=market_data)
+        for monitor_id in self._monitor:
+            monitor = self._monitor.get(monitor_id)
+
+            if monitor is None:
+                continue
+
+            monitor.__call__(market_data)
 
         self.lock.release()
 
     def get_order_book(self, ticker: str) -> OrderBook:
         return self._order_book.get(ticker, None)
 
-    def get_queued_volume(self, ticker: str, side: Union[TransactionSide, str, int], prior: float, posterior: float = None) -> float:
+    def get_queued_volume(self, ticker: str, side: TransactionSide | str | int, prior: float, posterior: float = None) -> float:
         """
         get queued volume prior / posterior to given price, NOT COUNTING GIVEN PRICE!
         :param ticker: the given ticker
@@ -250,62 +556,11 @@ class MarketDataService(object):
             queued_volume = book.loc(prior=prior, posterior=posterior)
         return queued_volume
 
-    def trade_time_between(self, start_time: Union[datetime.datetime, float], end_time: Union[datetime.datetime, float], **kwargs) -> datetime.timedelta:
-        if start_time is not None and isinstance(start_time, (float, int)):
-            start_time = datetime.datetime.fromtimestamp(start_time)
+    def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
+        return self.profile.trade_time_between(start_time=start_time, end_time=end_time, **kwargs)
 
-        if end_time is not None and isinstance(end_time, (float, int)):
-            end_time = datetime.datetime.fromtimestamp(end_time)
-
-        if start_time is None or end_time is None:
-            return datetime.timedelta(seconds=0)
-
-        if start_time > end_time:
-            return datetime.timedelta(seconds=0)
-
-        return end_time - start_time
-
-    def in_trade_session(self, market_time: Union[datetime.datetime, float]) -> bool:
-        return True
-
-    def new_order_at(self, ticker: str, price: float, side: Union[TransactionSide, str, int]) -> str:
-        order_id = uuid.uuid4().hex
-        trade_side = TransactionSide(side)
-        order_book = self._order_book.get(ticker)
-        order_log = self.OrderLog(ticker=ticker, price=price, side=trade_side, volume=0.)
-
-        if order_book is None:
-            LOGGER.error(f'No available order book for {ticker}. MDS must be connected to the feed before using it.')
-        else:
-            if trade_side.sign:
-                if trade_side.sign > 0:
-                    book = order_book.bid
-                else:
-                    book = order_book.ask
-
-                entry = book.get(price=price)
-                if entry is not None:
-                    order_log.volume = entry.volume
-            else:
-                LOGGER.error(f'Invalid trade side {side} for {ticker}')
-
-            self._order_log[order_id] = order_log
-
-        return order_id
-
-    def where_is_order(self, order_id: str) -> float:
-        """
-        get queued volume prior to given order_id, NOT COUNTING PRIOR! use .get_queued_volume() to get queued volume before given price
-        :param order_id: the given order id
-        :return: float
-        """
-        if order_id in self._order_log:
-            order_log = self._order_log[order_id]
-            queued_volume = order_log.volume
-        else:
-            queued_volume = 0.
-
-        return queued_volume
+    def in_trade_session(self, market_time: datetime.datetime | float) -> bool:
+        return self.profile.in_trade_session(market_time=market_time)
 
     def clear(self):
         self.lock.acquire()
@@ -315,27 +570,25 @@ class MarketDataService(object):
 
         self._market_history.clear()
         self._order_book.clear()
-        self._order_log.clear()
-        self._minute_bar_data.clear()
-        self._last_bar_data.clear()
+        self._monitor.clear()
         self.lock.release()
 
     @property
-    def market_price(self) -> Dict[str, float]:
+    def market_price(self) -> dict[str, float]:
         self.lock.acquire()
         result = self._market_price
         self.lock.release()
         return result
 
     @property
-    def market_history(self) -> Dict[str, Dict[datetime.datetime, float]]:
+    def market_history(self) -> dict[str, dict[datetime.datetime, float]]:
         self.lock.acquire()
         result = self._market_history
         self.lock.release()
         return result
 
     @property
-    def market_time(self) -> Optional[datetime.datetime]:
+    def market_time(self) -> datetime.datetime | None:
         if self._market_time is None:
             if self._timestamp is None:
                 return None
@@ -345,14 +598,14 @@ class MarketDataService(object):
             return self._market_time
 
     @property
-    def market_date(self) -> Optional[datetime.date]:
+    def market_date(self) -> datetime.date | None:
         if self.market_time is None:
             return None
 
         return self._market_time.date()
 
     @property
-    def timestamp(self) -> Optional[float]:
+    def timestamp(self) -> float | None:
         if self._timestamp is None:
             if self._market_time is None:
                 return None
@@ -360,6 +613,18 @@ class MarketDataService(object):
                 return self._market_time.timestamp()
         else:
             return self._timestamp
+
+    @property
+    def session_start(self) -> datetime.time | None:
+        return self.profile.session_start
+
+    @property
+    def session_end(self) -> datetime.time | None:
+        return self.profile.session_end
+
+    @property
+    def session_break(self) -> tuple[datetime.time, datetime.time] | None:
+        return self.profile.session_break
 
 
 class Replay(object, metaclass=abc.ABCMeta):
@@ -443,14 +708,14 @@ class ProgressiveReplay(Replay):
     progressively loading and replaying market data
 
     requires arguments
-    loader: a data loading function. Expect loader = Callable(market_date: datetime.date, ticker: str, dtype: Union[str, type]) -> Dict[any, MarketData]
+    loader: a data loading function. Expect loader = Callable(market_date: datetime.date, ticker: str, dtype: str| type) -> dict[any, MarketData]
     start_date & end_date: the given replay period
     or calendar: the given replay calendar.
 
     accepts kwargs:
-    ticker / tickers: the given symbols to replay, expect a Union[str, List[str]]
-    dtype / dtypes: the given dtype(s) of symbol to replay, expect a Union[Union[str, type], List[Union[str, type]]]. default = all, which is (TradeData, TickData, OrderBook)
-    subscription / subscribe: the given ticker-dtype pair to replay, expect a List[Dict[str, Union[str, type]]]
+    ticker / tickers: the given symbols to replay, expect a str| list[str]
+    dtype / dtypes: the given dtype(s) of symbol to replay, expect a str | type, list[str | type]. default = all, which is (TradeData, TickData, OrderBook)
+    subscription / subscribe: the given ticker-dtype pair to replay, expect a list[dict[str, str | type]]
     """
 
     def __init__(
@@ -461,7 +726,7 @@ class ProgressiveReplay(Replay):
         self.loader = loader
         self.start_date: datetime.date = kwargs.pop('start_date', None)
         self.end_date: datetime.date = kwargs.pop('end_date', None)
-        self.calendar: List[datetime.date] = kwargs.pop('calendar', None)
+        self.calendar: list[datetime.date] = kwargs.pop('calendar', None)
 
         self.eod = kwargs.pop('eod', None)
         self.bod = kwargs.pop('bod', None)
@@ -497,7 +762,7 @@ class ProgressiveReplay(Replay):
 
         self.reset()
 
-    def add_subscription(self, ticker: str, dtype: Union[type, str]):
+    def add_subscription(self, ticker: str, dtype: type | str):
         if isinstance(dtype, str):
             pass
         else:
