@@ -45,6 +45,7 @@ setuptools.setup(
     install_requires=[
         'numpy',
         'pandas',
+        'trading_calendars',
         'PyQuantKit',
         'PyEventEngine',
     ]
