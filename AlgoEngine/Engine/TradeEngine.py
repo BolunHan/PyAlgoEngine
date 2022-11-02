@@ -3689,7 +3689,9 @@ class SimMatch(object):
             if order is None:
                 pass
             elif order.is_working:
-                if order.limit_price is None:
+                if order.start_time > market_data.market_time:
+                    pass
+                elif order.limit_price is None:
                     if order.side.sign * market_data.side.sign > 0:
                         self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
                 elif order.side.sign > 0 and market_data.market_price < order.limit_price:
