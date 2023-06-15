@@ -5,7 +5,7 @@ import datetime
 from PyQuantKit import TradeInstruction
 
 from ._StrategyEngine import StrategyEngine
-from ..Engine import LOGGER, EVENT_ENGINE, TOPIC, MDS, Balance, DirectMarketAccess, RiskProfile, PositionTracker
+from ..Engine import LOGGER, EVENT_ENGINE, TOPIC, MDS, Balance, DirectMarketAccess, RiskProfile, PositionManagementService
 
 LOGGER = LOGGER.getChild('BackTest')
 
@@ -42,7 +42,7 @@ def test_start(start_date: datetime.date, end_date: datetime.date, data_loader: 
 BALANCE = Balance()
 RISK_PROFILE = RiskProfile(mds=MDS, balance=BALANCE)
 DMA = SimDMA(mds=MDS, risk_profile=RISK_PROFILE)
-POSITION_TRACKER = PositionTracker(dma=DMA)
+POSITION_TRACKER = PositionManagementService(dma=DMA)
 BALANCE.add(position_tracker=POSITION_TRACKER)
 STRATEGY_ENGINE = StrategyEngine(position_tracker=POSITION_TRACKER)
 

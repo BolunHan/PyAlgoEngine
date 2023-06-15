@@ -4,17 +4,16 @@ import abc
 import datetime
 import threading
 import time
-from collections import defaultdict
 
 from PyQuantKit import MarketData, TradeReport, TradeInstruction, TransactionSide
 
-from ..Engine import PositionTracker, TOPIC, EVENT_ENGINE, SimMatch, LOGGER, MDS
+from ..Engine import PositionManagementService, TOPIC, EVENT_ENGINE, SimMatch, LOGGER, MDS
 
 LOGGER = LOGGER.getChild('StrategyEngine')
 
 
 class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):
-    def __init__(self, position_tracker: PositionTracker):
+    def __init__(self, position_tracker: PositionManagementService):
         self.position_tracker = position_tracker
 
     def __call__(self, **kwargs):
@@ -32,7 +31,7 @@ class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):
 
 
 class StrategyEngine(StrategyEngineTemplate):
-    def __init__(self, position_tracker: PositionTracker, **kwargs):
+    def __init__(self, position_tracker: PositionManagementService, **kwargs):
         super().__init__(position_tracker=position_tracker)
 
         self.mds = kwargs.pop('mds', MDS)
@@ -47,7 +46,6 @@ class StrategyEngine(StrategyEngineTemplate):
         self._on_eod = []
         self._on_bod = []
         self.subscription = set()
-        self.trade_pos = {}
 
         self.attach_strategy(strategy=kwargs.pop('strategy', None))
         self.add_handler(**kwargs)
@@ -123,176 +121,144 @@ class StrategyEngine(StrategyEngineTemplate):
         event_engine.register_handler(topic=topic_set.on_order, handler=self.on_order)
         event_engine.register_handler(topic=topic_set.on_report, handler=self.on_report)
 
-    def cancel(self, ticker: str, side: TransactionSide = None, pos_id: str = None, trade_id: str = None, **kwargs):
+    def cancel(self, ticker: str, side: TransactionSide = None, algo_id: str = None, order_id: str = None, **kwargs):
         position_tracker = self.position_tracker
 
-        if trade_id is not None:
-            pos_id = position_tracker.reversed_handler_mapping.get(trade_id).pos_id
+        if algo_id is not None:
+            algo_id = position_tracker.reversed_order_mapping.get(order_id).algo_id
+            if algo_id:
+                LOGGER.info(f'No algo_id specified, found algo {algo_id} associated with order_id {order_id}! Canceling all trade action associated with algo')
+                LOGGER.warning('Strategy should not cancel single trade order, this will break the AlgoEngine Consistency!')
 
-        if not pos_id:
-            LOGGER.warning(f'No pos_id given! Cancel all trade_handler with ticker {ticker}')
+        if not algo_id:
+            LOGGER.warning(f'No algo_id given! Canceling all {ticker} {side.side_name} algos!')
 
-            for _pos_id in list(self.trade_pos):
-                trade_pos = self.trade_pos.get(_pos_id)
+            for _algo_id in list(self.algos):
+                algo = self.algos.get(_algo_id)
 
-                if trade_pos is None:
+                if algo is None:
                     continue
 
-                for _trade_id in list(trade_pos.trade_handler):
-                    trade_handler = trade_pos.trade_handler.get(_trade_id)
-
-                    if trade_handler is None:
-                        continue
-
-                    if side is not None and side.sign != trade_handler.side.sign:
-                        continue
-
-                    if trade_handler.ticker == ticker:
-                        trade_pos.cancel(trade_id=_trade_id, **kwargs)
+                if algo.ticker == ticker and algo.side.sign == side.sign:
+                    algo.cancel(**kwargs)
         else:
-            trade_pos = self.trade_pos.get(pos_id)
+            algo = self.algos.get(algo_id)
 
-            if trade_pos is None:
-                LOGGER.error(f'PositionTracker contains no TradePos with pos_id {pos_id}! Cancel signal ignored! Manual intervention required!')
+            if algo is None:
+                LOGGER.error(f'{self} have no algo with algo_id {algo_id}! Cancel signal ignored! Manual intervention required!')
                 return
 
-            if trade_id is None:
-                LOGGER.info(f'No trade_id given! Cancel all trade_handler with ticker {ticker}')
-
-                for _trade_id in list(trade_pos.trade_handler):
-                    trade_handler = trade_pos.trade_handler.get(_trade_id)
-
-                    if trade_handler is None:
-                        continue
-
-                    if side is not None and side.sign != trade_handler.side.sign:
-                        continue
-
-                    if trade_handler.ticker == ticker:
-                        trade_pos.cancel(trade_id=_trade_id, **kwargs)
-            else:
-                trade_pos.cancel(trade_id=trade_id, **kwargs)
+            if algo.ticker == ticker and algo.side.sign == side.sign:
+                algo.cancel(**kwargs)
 
     def stop(self):
-        LOGGER.info(f'{self} stopping and canceling working orders')
+        LOGGER.debug(f'All algo should be self-deactivated on cancel, to be sure {self} will deactivate all the algos!')
+        for algo_id in list(self.algos):
+            algo = self.algos.get(algo_id)
 
-        for pos_id in list(self.trade_pos):
-            trade_pos = self.trade_pos.get(pos_id)
-
-            if trade_pos is None:
+            if algo is None:
                 continue
 
-            for handler_id in list(trade_pos.trade_handler):
-                trade_handler = trade_pos.get(handler_id)
+            algo.is_active = False
 
-                if trade_handler is None:
-                    continue
-
-                for algo_id in list(trade_handler.algo):
-                    algo = trade_handler.algo.get(algo_id)
-
-                    if algo is None:
-                        continue
-
-                    algo.is_active = False
-
+        LOGGER.info(f'{self} canceling all the algos')
         for ticker in self.subscription:
             self.cancel(ticker=ticker)
 
-    def unwind_pos(self, ticker: str, side: TransactionSide, volume: float, limit: float = None, algo: str = None, pos_id: str = None, trade_id: str = None, allowed_remains=True, **kwargs) -> float:
+    def unwind_pos(self, ticker: str, volume: float, side: TransactionSide = None, limit_price: float = None, algo: str = None, safe=True, **kwargs) -> tuple[float, float]:
+        """
+        unwind method provide a safe way to unwind position of given ticker.
+
+        :param ticker: the given exposure
+        :param volume: the target unwinding volume, should be a positive number
+        :param side: the trade action side, e.g. if strategy wishes to sell (in order to unwind long position), then side = TransactionSide.Sell_to_Unwind
+        :param limit_price: Optional, a limit price
+        :param algo: Optional the algo to be used to execute unwinding action
+        :param safe: True -> unwind volume should not exceed the exposed volume; False -> can flip position. Default is safe=True
+        :param kwargs: other kwargs passing to `algo.launch`
+        :return: executed volume, remaining volume
+        """
         position_tracker = self.position_tracker
+        exposure = position_tracker.exposure_volume.get(ticker, 0.)
+        working_long = position_tracker.working_volume['Long'].get(ticker, 0.)
+        working_short = position_tracker.working_volume['Short'].get(ticker, 0.)
+        executed, remains = 0., volume
 
-        if trade_id is not None:
-            pos_id = position_tracker.reversed_handler_mapping.get(trade_id).pos_id
+        if not exposure:
+            LOGGER.warning(f'{self} found no {ticker} exposure! Unwind signal ignored! Check PositionManagementService!')
+            return executed, remains
 
-        if pos_id is None:
-            remains = to_unwind = abs(volume)
+        if side is not None and exposure * side.sign > 0:
+            LOGGER.warning(f'{self} found {ticker} exposure {exposure}, however strategy is trying to execute {side.side_name} unwind action! Unwind signal ignored! Check PositionManagementService!')
+            return executed, remains
 
-            for _pos_id in list(self.trade_pos):
-                trade_pos = self.trade_pos.get(_pos_id)
+        # then it must be
+        side = TransactionSide.Sell_to_Unwind if exposure > 0 else TransactionSide.Buy_to_Cover
 
-                if trade_pos is None:
-                    continue
+        if side.sign > 0:  # short position, buy action
+            working_open = working_short
+            working_unwind = working_long
+        else:  # long position, sell action
+            working_open = working_long
+            working_unwind = working_short
 
-                remains = trade_pos.unwind_auto(ticker=ticker, side=side, volume=to_unwind, algo=algo, limit_price=limit, **kwargs)
+        if working_open:
+            LOGGER.warning(f'{self} found {ticker} exposure {exposure}, still having {(-side).side_name} order {working_open}! Consider canceling these instruction before unwinding position!')
 
-                if not remains:
-                    break
+        if safe:
+            unwind_volume_limit = max(abs(exposure) - abs(working_unwind), 0)
 
-                to_unwind = remains
-        else:
-            trade_pos = self.trade_pos.get(pos_id)
+            if abs(volume) > unwind_volume_limit:
+                LOGGER.warning(f'{self} found {ticker} exposure {exposure}, long order {working_long}, short order {working_short}. The unwinding signal {side.sign} {volume} exceed safe unwinding limit {unwind_volume_limit}!')
 
-            if trade_pos is None:
-                LOGGER.error(f'PositionTracker contains no TradePos with pos_id {pos_id}! Unwind signal ignored! Manual intervention required!')
+                LOGGER.info(f'{self} adjust {ticker} {side.side_name} unwind volume to {volume}, accommodating safe unwind rules!')
+                volume = unwind_volume_limit
 
-            if trade_id is None:
-                to_unwind = abs(volume)
-
-                remains = trade_pos.unwind_auto(ticker=ticker, side=side, volume=to_unwind, algo=algo, limit_price=limit, **kwargs)
-
-                if remains:
-                    LOGGER.warning(f'{remains} of {ticker} not distributed!')
-            else:
-                trade_handler = trade_pos.trade_handler.get(trade_id)
-                additional_kwargs = {}
-                remains = 0.
-
-                if trade_handler is None:
-                    LOGGER.error(f'TradePos {trade_pos} contains no TradeHandler with trade_id {trade_id}! Unwind signal ignored! Manual intervention required!')
-                elif trade_handler.ticker != ticker:
-                    LOGGER.error(f'Invalid Ticker of the Unwind Instruction! Expect {trade_handler.ticker}, got {ticker}. Manual intervention required!')
-                elif side.sign == trade_handler.side.sign:
-                    LOGGER.error(f'Invalid TransactionSide of the Unwind Instruction! Expect {-trade_handler.side}, got {side.sign}. Error ignored and execute as unwind!')
-                else:
-                    additional_kwargs['target_volume'] = volume
-                    additional_kwargs['algo'] = algo
-                    additional_kwargs['limit_price'] = limit
-
-                    trade_pos.unwind(trade_id=trade_id, additional_kwargs=kwargs, **kwargs)
-
-        if not allowed_remains:
+        if volume:
             self.open_pos(
                 ticker=ticker,
                 side=side,
-                volume=abs(remains),
-                limit=limit,
+                volume=abs(volume),
+                limit_price=limit_price,
                 algo=algo,
+                **kwargs
             )
-            remains = 0.
-        else:
-            LOGGER.warning(f'{ticker} remaining unwind action {remains} not sent!')
+            executed += abs(volume)
+            remains -= abs(volume)
 
-        return remains
+        return executed, remains
 
-    def open_pos(self, ticker: str, side: TransactionSide, volume: float, limit: float = None, algo: str = None, pos_id: str = None, trade_id: str = None, **kwargs):
+    def open_pos(self, ticker: str, volume: float, side: TransactionSide = None, limit_price: float = None, algo: str = None, **kwargs):
         """
-        open position for given ticker, side volume with given algo
+        a method to open position
+        :param ticker: the given ticker
+        :param volume: the target open volume
+        :param side: trade side
+        :param limit_price: Optional limit
+        :param algo: Optional the specified algo
+        :param kwargs: other keyword used in algo
+        :return:
         """
-        position_tracker = self.position_tracker
-        additional_kwargs = defaultdict(dict)
-
-        trade_side = side
-        target_volume = volume
+        target_volume = abs(volume)
 
         if not target_volume:
+            LOGGER.warning(f'Target open amount is {volume}, check the signal!')
             return
 
-        if pos_id is None:
-            trade_pos = position_tracker.add_pos()
-        else:
-            trade_pos = position_tracker.add_pos(pos_id=pos_id)
+        if side is None:
+            trade_side = TransactionSide.Buy_to_Long if volume > 0 else TransactionSide.Sell_to_Short
+            LOGGER.warning(f'Trade side of open instruction not specified! Presumed to be {trade_side} by the sign of volume!')
 
-        _trade_id = trade_pos.add_target(ticker=ticker, side=trade_side, target_volume=target_volume, trade_id=trade_id)
-        additional_kwargs[_trade_id]['target_volume'] = target_volume
-        additional_kwargs[_trade_id]['algo'] = algo
-        additional_kwargs[_trade_id]['limit_price'] = limit
+        algo = self.position_tracker.open(
+            ticker=ticker,
+            target_volume=target_volume,
+            trade_side=side,
+            algo=algo,
+            limit_price=limit_price,
+            **kwargs
+        )
 
-        LOGGER.info(f"Signal opening [{', '.join([f'<{handler.ticker}, {handler.side.name}, {handler.target_volume}>' for handler in trade_pos.trade_handler.values()])}] position!")
-        self.trade_pos[trade_pos.pos_id] = trade_pos
-        trade_pos.open(additional_kwargs=additional_kwargs, **kwargs)
-
-        return trade_pos
+        return algo
 
     def eod(self, **kwargs):
 
@@ -343,46 +309,6 @@ class StrategyEngine(StrategyEngineTemplate):
 
         LOGGER.info(f'All done! time_cost: {time.time() - _start_ts:,.3}s')
 
-    def get_working_orders(self, side: str):  # "long" or "short"
-        current_working_trades = self.trade_pos  # returns a Dict[id_str: TradePos] TradePos object is implemented at .Engine.TradeEngine
-        exposure_volume = 0.0
-        working_volume = 0.0
-        pending_volume = 0.0
-
-        for pos_id in current_working_trades:
-            trade_pos = current_working_trades.get(pos_id)
-
-            if trade_pos is None:
-                continue
-
-            for key in trade_pos.exposure_volume:
-                if side == "long":
-                    if trade_pos.exposure_volume[key] > 0:
-                        exposure_volume += trade_pos.exposure_volume[key]
-                if side == "short":
-                    if trade_pos.exposure_volume[key] < 0:
-                        exposure_volume += trade_pos.exposure_volume[key]
-
-            for trade_handler in trade_pos.trade_handler.values():
-                for algo in trade_handler.algo.values():
-                    if not algo.is_active:
-                        continue
-
-                    algo_target = abs(algo.target_volume)
-                    algo_working = abs(algo.working_volume)
-                    algo_exposure = abs(algo.exposure_volume)
-                    algo_pending = max(0., algo_target - algo_working - algo_exposure)
-
-                    if side == 'long' and algo.side.sign > 0:
-                        working_volume += algo_working
-                        pending_volume += algo_pending
-                    elif side == 'short' and algo.side.sign < 0:
-                        working_volume += algo_working
-                        pending_volume += algo_pending
-
-        result = {"exposure_volume": exposure_volume, "working_volume": working_volume, 'pending_volume': pending_volume}
-        return result
-
     def reset(self):
         self.subscription.clear()
         self._on_market_data.clear()
@@ -390,6 +316,10 @@ class StrategyEngine(StrategyEngineTemplate):
         self._on_order.clear()
         self._on_eod.clear()
         self._on_bod.clear()
+
+    @property
+    def algos(self):
+        return self.position_tracker.algos
 
 
 __all__ = ['StrategyEngine', 'StrategyEngineTemplate']

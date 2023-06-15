@@ -93,6 +93,6 @@ _ = get_logger()
 from .EventEngine import EVENT_ENGINE, TOPIC
 from .AlgoEngine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .MarketEngine import MDS, MarketDataService, ProgressiveReplay, SimpleReplay, Replay
-from .TradeEngine import DirectMarketAccess, Balance, TradeHandler, TradePos, PositionTracker, Inventory, RiskProfile, SimMatch
+from .TradeEngine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile, SimMatch
 
-__all__ = ['set_logger', 'LOGGER', 'EVENT_ENGINE', 'TOPIC', 'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY', 'MDS', 'MarketDataService', 'ProgressiveReplay', 'SimpleReplay', 'Replay', 'DirectMarketAccess', 'Balance', 'TradeHandler', 'TradePos', 'PositionTracker', 'Inventory', 'RiskProfile', 'SimMatch']
+__all__ = ['set_logger', 'LOGGER', 'EVENT_ENGINE', 'TOPIC', 'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY', 'MDS', 'MarketDataService', 'ProgressiveReplay', 'SimpleReplay', 'Replay', 'DirectMarketAccess', 'Balance', 'PositionManagementService', 'Inventory', 'RiskProfile', 'SimMatch']
