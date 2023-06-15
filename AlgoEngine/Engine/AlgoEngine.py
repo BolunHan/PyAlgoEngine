@@ -34,11 +34,11 @@ class AlgoStatus(enum.Enum):
 class AlgoTemplate(object, metaclass=abc.ABCMeta):
     Status = AlgoStatus
 
-    def __init__(self, handler, ticker: str, target_volume: float, side: TransactionSide, **kwargs):
+    def __init__(self, dma, ticker: str, target_volume: float, side: TransactionSide, **kwargs):
         """ Template for trading algorithm
         an abstract class to create a trading algorithm
 
-        :param handler: a TradeHandler which supervise the algo
+        :param dma: direct market access
         :param ticker: the given symbol of the underlying to trade
         :param target_volume: the given volume to trade
         :param side: the given TransactionSide
@@ -46,7 +46,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         :keyword logger: the logger instance, default is LOGGER
         :keyword algo_id: the id of the algo, default is uuid4()
         """
-        self.handler = handler  # a TradeHandler object (required to access dma module)
+        self.dma = dma
         self.ticker = ticker
         self.side = side
         self.target_volume = target_volume
@@ -68,7 +68,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         self.finish_time = None
 
     def __repr__(self):
-        return f'<TradeAlgo>(ticker={self.ticker}, exp={self.side.sign * self.target_volume}, algo={self.__class__.__name__}, status={self.status.value}, id={id(self)})'
+        return f'<TradeAlgo>(ticker={self.ticker}, target={self.side.sign * self.target_volume}, done={self.side.sign * self.exposure_volume}, algo={self.__class__.__name__}, status={self.status.value}, id={id(self)})'
 
     def on_sync_progress(self, progress: float, **kwargs):
         self._target_progress = max(min(progress, 1), 0)
@@ -77,28 +77,28 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
     def on_market_data(self, market_data: MarketData, **kwargs):
         pass
 
-    def on_fill(self, report: TradeReport, **kwargs):
+    def on_filled(self, report: TradeReport, **kwargs):
         if report.order_id in self.working_order:
             self._filled(order=self.working_order[report.order_id], report=report, **kwargs)
             return 1
         else:
-            self.logger.warning(f'[Failed fill] {self} has no matching for working order {report.order_id}')
+            self.logger.warning(f'[Failed to fill] {self} has no matching for working order {report.order_id}')
             return 0
 
-    def on_cancel(self, order_id: str = None, **kwargs):
+    def on_canceled(self, order_id: str = None, **kwargs):
         if order_id in self.working_order:
             self._canceled(order=self.working_order[order_id], **kwargs)
             return 1
         else:
-            self.logger.warning(f'[Failed cancel] {self} has no matching for working order {order_id}')
+            self.logger.warning(f'[Failed to cancel] {self} has no matching for working order {order_id}')
             return 0
 
-    def on_reject(self, order: TradeInstruction, **kwargs):
+    def on_rejected(self, order: TradeInstruction, **kwargs):
         if order.order_id in self.working_order:
             self._rejected(order=order, **kwargs)
             return 1
         else:
-            self.logger.warning(f'[Failed reject] {self} has no matching for working order {order.order_id}')
+            self.logger.warning(f'[Failed to reject] {self} has no matching for working order {order.order_id}')
             return 0
 
     def recover(self):
@@ -109,12 +109,16 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
                 self._update_status(status=self.Status.done)
             else:
                 self._update_status(status=self.Status.closed)
+            LOGGER.info(f'{self} recovery successful! status {self.status}')
         else:
             LOGGER.warning(f'Caution! Recovering WORKING trade handler {self} may cause unexpected error!')
             self._update_status(status=self.Status.working)
-        LOGGER.info(f'{self} recovery successful! status {self.status}')
 
     def _update_working_order(self):
+        """
+        refresh working order, to remove the finished orders
+        :return: a dict of working orders
+        """
         for order_id in list(self.working_order):
             order = self.working_order.get(order_id)
 
@@ -129,10 +133,10 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
     def _update_status(self, status=None, sync_pos=True, **kwargs):
         """
         ._update_status provides a method to clear working orders and auto assign status
-        ._update_status DOES NOT call .on_fill, .on_reject nor .on_cancel
-        ._update_status should be called in .on_fill .on_reject and .on_cancel
+        ._update_status DOES NOT call .on_filled, .on_rejected nor .on_canceled, these method is triggered by position management service
+        ._update_status should be called in .on_filled .on_rejected and .on_canceled
 
-        as the result of concurrency, assigning status whill sync_pos may cause unexpected result, use with caution
+        as the result of concurrency, assigning status while sync_pos may cause unexpected result, use with caution
 
         :param status: the given status
         :param sync_pos: whether to auto-clear working orders
@@ -164,7 +168,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         return self.status
 
     def _launch(self, order, **kwargs):
-        self.handler.launch_order(order=order, **kwargs)
+        self.dma.launch_order(order=order, **kwargs)
         # order launched, order state can be pending, placed, or rejected (by internal on_order risk control)
         # DO NOT assume order state is_working, it may be rejected!
         # DO NOT assume order is in .working_order, it may be rejected!
@@ -173,7 +177,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         # self._update_status(sync_pos=False)
 
     def _cancel(self, order, **kwargs):
-        self.handler.cancel_order(order=order, **kwargs)
+        self.dma.cancel_order(order=order, **kwargs)
         # self._update_status(sync_pos=False)
 
     def _filled(self, order: TradeInstruction, report: TradeReport, **kwargs):
@@ -187,6 +191,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         if report.trade_id not in order.trades:
             order.fill(trade_report=report)
 
+        kwargs['sync_pos'] = True
         self._update_status(**kwargs)
 
     def _canceled(self, order: TradeInstruction, **kwargs):
@@ -259,10 +264,28 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def launch(self, **kwargs) -> list[TradeInstruction]:
+        """
+        launch is a method to initiate the algo and launching orders.
+        this method will set the algo is_active = true
+        this method will set a new algo state, usually idle -> working
+        launch method is designed to be called by strategy / position management service.
+
+        :param kwargs: other keywords needed to launch an algo
+        :return: a list of working orders. Noted, that not all working order is returned by this method, for example, TWAP algo will init a sequence of order and return later.
+        """
         ...
 
     @abc.abstractmethod
     def cancel(self, **kwargs):
+        """
+        cancel is a method to cancel / stop ALL working orders
+        this method will set the algo is_active = false
+        this method may set a new algo state, usually working -> stopping
+        launch method is designed to be called by strategy / position management service.
+
+        :param kwargs: other keywords needed to cancel an algo
+        :return: None
+        """
         ...
 
     @property
@@ -324,7 +347,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
             if working_order is None:
                 continue
 
-            working += working_order.working_volume
+            working += working_order.working_volume  # should be all positive
 
         return working
 
@@ -350,7 +373,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         notional = 0.
 
         for report in list(self.trades.values()):
-            notional += report.notional
+            notional += report.notional  # which should be a POSITIVE number in normal cases.
 
         return notional
 
@@ -468,6 +491,7 @@ class Passive(AlgoTemplate):
 
     def cancel(self, **kwargs):
         self.status = self.Status.stopping
+        self.is_active = False
 
         for order_id in list(self.working_order):
             order = self.working_order.get(order_id)
@@ -702,7 +726,7 @@ class AlgoEngine(object):
         LOGGER.info(f'BBA limits {ticker} market_price={market_price}, lmt_abs={limit_price}, lmt_adj={limit_adj}, lmt_lvl={limit_lvl}, mode={mode}, cal_lmt={calculated_limit}')
         return calculated_limit
 
-    def from_json(self, json_str, handler) -> AlgoTemplate:
+    def from_json(self, json_str, dma) -> AlgoTemplate:
         if isinstance(json_str, (str, bytes)):
             json_dict = json.loads(json_str)
         elif isinstance(json_str, dict):
@@ -711,11 +735,10 @@ class AlgoEngine(object):
             raise TypeError(f'Invalid type {type(json_str)}, expect [str, bytes, dict]')
 
         algo: AlgoTemplate = self.get_algo(json_dict['algo_type'])(
-            handler=handler,
             ticker=json_dict['ticker'],
             side=TransactionSide(json_dict['side']),
             target_volume=json_dict['target_volume'],
-            dma=handler.dma,
+            dma=dma,
             algo_id=json_dict['algo_id']
         )
         algo.from_json(json_dict)
