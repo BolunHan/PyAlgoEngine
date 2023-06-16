@@ -176,7 +176,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         # therefor calling _update_status is recommended but still optional.
         # self._update_status(sync_pos=False)
 
-    def _cancel(self, order, **kwargs):
+    def _cancel_order(self, order, **kwargs):
         self.dma.cancel_order(order=order, **kwargs)
         # self._update_status(sync_pos=False)
 
@@ -435,12 +435,18 @@ class Passive(AlgoTemplate):
 
     a limit price can be set by keyword arguments, see also in doc: AlgoEngine.calculate_limit
 
-    :keyword limit_price: the absolute limit price of the order
-    :keyword limit_adjust_factor: limit price = market_price * (1 + factor) for long order else limit price = market_price * (1 - factor) for short order
-    :keyword limit_adjust_level:  for long order, limit price = bid[lvl] if lvl > 0 else ask[lvl] for lvl < 0.
     """
 
     def __init__(self, **kwargs):
+        """
+        init a Passive trade algo
+
+        requires all params from AlgoTemplate and additional following 4
+        :keyword limit_price: the absolute limit price of the order
+        :keyword limit_adjust_factor: limit price = market_price * (1 + factor) for long order else limit price = market_price * (1 - factor) for short order
+        :keyword limit_adjust_level:  for long order, limit price = bid[lvl] if lvl > 0 else ask[lvl] for lvl < 0.
+        :keyword limit_mode: if multiple limit price standard is provided, use "strict" to select strictest limit price or "loose" to select loosest one. Default is None, which is "strict".
+        """
         self.limit_price = kwargs.pop('limit_price', None)
         self.limit_adjust_factor = kwargs.pop('limit_adjust_factor', None)
         self.limit_adjust_level = kwargs.pop('limit_adjust_level', None)
@@ -492,7 +498,9 @@ class Passive(AlgoTemplate):
     def cancel(self, **kwargs):
         self.status = self.Status.stopping
         self.is_active = False
+        self._cancel_all_order(**kwargs)
 
+    def _cancel_all_order(self, **kwargs):
         for order_id in list(self.working_order):
             order = self.working_order.get(order_id)
 
@@ -501,7 +509,7 @@ class Passive(AlgoTemplate):
 
             if order.order_state in [OrderState.Pending, OrderState.Placed, OrderState.PartFilled]:
                 LOGGER.info(f'{self} canceling {order}')
-                self._cancel(order=order, **kwargs)
+                self.dma.cancel_order(order=order, **kwargs)
 
     def _rejected(self, order: TradeInstruction, **kwargs):
         super()._rejected(order=order)
@@ -567,6 +575,104 @@ class Passive(AlgoTemplate):
         self.limit_mode = json_dict['limit_mode']
 
         return self
+
+
+class PassiveTimeout(Passive):
+    """ Passive handler with timeout function
+    PassiveTimeout is similar to Passive, with a timeout value (in seconds) and cancel working order after that
+
+    Default timeout is 0, which is no timeout (same as passive).
+    """
+
+    def __init__(self, **kwargs):
+        self.timeout = kwargs.pop('timeout', 0)
+
+        super().__init__(**kwargs)
+
+    def on_market_data(self, market_data: MarketData, **kwargs):
+        if self.is_active:
+            self.work()
+
+    def work(self):
+        ts = self.algo_engine.mds.trade_time_between(start_time=self.start_time, end_time=self.market_time).total_seconds()
+        if self.status == self.Status.working and self.timeout and ts > self.timeout:
+            self.cancel()
+            self.logger.debug(f'{self} canceling. status={self.status}, ts={ts:.3f}s')
+        else:
+            self.logger.debug(f'{self} working. status={self.status}, ts={ts:.3f}s, timeout={self.timeout:.3f}s')
+
+    def to_json(self, fmt='str') -> str | dict:
+        json_dict = super().to_json(fmt='dict')
+
+        additional_dict = dict(
+            timeout=self.timeout
+        )
+
+        json_dict.update(additional_dict)
+
+        if fmt == 'dict':
+            return json_dict
+        else:
+            return json.dumps(json_dict)
+
+    def from_json(self, json_str: str | dict):
+        if isinstance(json_str, (str, bytes)):
+            json_dict = json.loads(json_str)
+        elif isinstance(json_str, dict):
+            json_dict = json_str
+        else:
+            raise TypeError(f'Invalid type {type(json_str)}, expect [str, bytes, dict]')
+
+        super().from_json(json_dict)
+
+        self.timeout = json_dict['timeout']
+
+        return self
+
+
+class Aggressive(Passive):
+    """ Aggressive trading algorithm
+    Aggressive is similar as Passive.
+    Aggressive will re-launch a "fixing" order immediately
+    after working order got canceled or filled, if there is any un-filled volume.
+
+    USE WITH CAUTION
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _filled(self, order: TradeInstruction, report: TradeReport, **kwargs):
+        super()._filled(order=order, report=report, **kwargs)
+
+        if not self.is_active:
+            self._update_status(status=self.Status.done)
+        elif order.order_id not in self.working_order:
+            if self.status == self.Status.working:
+                self.launch()
+
+    def _canceled(self, order: TradeInstruction, **kwargs):
+        super()._canceled(order=order, **kwargs)
+
+        if not self.is_active:
+            self._update_status(status=self.Status.done)
+        elif order.order_id not in self.working_order:
+            if self.status == self.Status.working:
+                self.launch()
+
+
+class AggressiveTimeout(PassiveTimeout, Aggressive):
+    """ Similar to PassiveTimeout, AggressiveTimeout cancel working order after timeout and re-launch "fixing" order after canceled or filled.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _filled(self, order: TradeInstruction, report: TradeReport, **kwargs):
+        return Aggressive._filled(self=self, order=order, report=report, **kwargs)
+
+    def _canceled(self, order: TradeInstruction, **kwargs):
+        return Aggressive._canceled(self=self, order=order, **kwargs)
 
 
 class AlgoRegistry(object):
@@ -665,10 +771,10 @@ class AlgoEngine(object):
         """Calculate limit price
 
         :param algo: given algo
-        :param limit_price: absolute limit price
-        :param limit_adjust_factor: limit price = market_price * (1 + factor) for long order else limit price = market_price * (1 - factor) for short order
+        :param limit_price: absolute limit_price
+        :param limit_adjust_factor: limit_price = market_price * (1 + factor) for long order else limit price = market_price * (1 - factor) for short order
         :param limit_adjust_level:  for long order, limit price = bid[lvl] if lvl > 0 else ask[lvl] for lvl < 0.
-        :param mode: "strict" to select strictest limit price or "loose" to select loosest one
+        :param mode: "strict" to select strictest limit price or "loose" to select loosest one. Default is None, which is "strict".
         :return: the calculated limit price, if there is any
         """
         ticker = algo.ticker
@@ -748,10 +854,9 @@ class AlgoEngine(object):
 
 ALGO_REGISTRY = AlgoRegistry()
 
-# ALGO_REGISTRY.add_algo('aggressive', 'aggr', handler=Aggressive)
+ALGO_REGISTRY.add_algo('aggressive', 'aggr', handler=Aggressive)
 ALGO_REGISTRY.add_algo('passive', 'pass', handler=Passive)
-# ALGO_REGISTRY.add_algo('aggressive_timeout', 'aggr_timeout', handler=AggressiveTimeout)
-# ALGO_REGISTRY.add_algo('passive_timeout', 'pass_timeout', handler=PassiveTimeout)
-# ALGO_REGISTRY.add_algo('limit_range', 'lmt_rng', 'lmt_range', 'limit_rng', handler=LimitRange)
+ALGO_REGISTRY.add_algo('aggressive_timeout', 'aggr_timeout', handler=AggressiveTimeout)
+ALGO_REGISTRY.add_algo('passive_timeout', 'pass_timeout', handler=PassiveTimeout)
 
 ALGO_ENGINE = AlgoEngine()
