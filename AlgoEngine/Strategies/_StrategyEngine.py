@@ -35,9 +35,9 @@ class StrategyEngine(StrategyEngineTemplate):
         super().__init__(position_tracker=position_tracker)
 
         self.mds = kwargs.pop('mds', MDS)
+        self.event_engine = kwargs.pop('event_engine', EVENT_ENGINE)
         self.multi_threading = kwargs.pop('multi_threading', False)
         self.lock = threading.Lock()
-        self.event_engine = kwargs.pop('event_engine', EVENT_ENGINE)
         self.topic_set = kwargs.pop('topic_set', TOPIC)
 
         self._on_market_data = []
@@ -260,15 +260,15 @@ class StrategyEngine(StrategyEngineTemplate):
 
         return algo
 
-    def eod(self, **kwargs):
+    def eod(self, market_date: datetime.date, **kwargs):
 
         for handler in self._on_eod:
-            handler(**kwargs)
+            handler(market_date=market_date, **kwargs)
 
-    def bod(self, **kwargs):
+    def bod(self, market_date: datetime.date, **kwargs):
 
         for handler in self._on_bod:
-            handler(**kwargs)
+            handler(market_date=market_date, **kwargs)
 
     def back_test(self, start_date: datetime.date, end_date: datetime.date, data_loader: callable, **kwargs):
         from ..Engine import ProgressiveReplay
