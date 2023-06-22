@@ -16,7 +16,7 @@ from . import LOGGER
 from .MarketEngine import MDS
 
 LOGGER = LOGGER.getChild('AlgoEngine')
-__all__ = ['AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY']
+__all__ = ['AlgoTemplate', 'AlgoRegistry', 'AlgoEngine', 'ALGO_ENGINE', 'ALGO_REGISTRY']
 
 
 class AlgoStatus(enum.Enum):
@@ -721,16 +721,18 @@ class AlgoRegistry(object):
         reversed_registry = {algo.__name__: name for name, algo in self.registry.items()}
         return reversed_registry
 
-    def to_algo(self, name: str, **kwargs):
-        algo_engine = kwargs.get('algo_engine', ALGO_ENGINE)
+    def to_algo(self, name: str, algo_engine: AlgoEngine = None):
+        if algo_engine is None:
+            algo_engine = ALGO_ENGINE
+
         algo = self.registry.get(name.lower())
         return functools.partial(algo, algo_engine=algo_engine)
 
 
 class AlgoEngine(object):
-    def __init__(self, **kwargs):
-        self.mds = kwargs.get('mds', MDS)
-        self.registry = kwargs.get('registry', ALGO_REGISTRY)
+    def __init__(self, mds=None, registry=None):
+        self.mds = mds if mds is not None else MDS
+        self.registry = registry if registry is not None else ALGO_REGISTRY
 
     @classmethod
     def _compare_price(cls, side: TransactionSide, limit_price: float = None, original_limit: float = None, mode='strict') -> float:
@@ -859,4 +861,4 @@ ALGO_REGISTRY.add_algo('passive', 'pass', handler=Passive)
 ALGO_REGISTRY.add_algo('aggressive_timeout', 'aggr_timeout', handler=AggressiveTimeout)
 ALGO_REGISTRY.add_algo('passive_timeout', 'pass_timeout', handler=PassiveTimeout)
 
-ALGO_ENGINE = AlgoEngine()
+ALGO_ENGINE = AlgoEngine(mds=MDS, registry=ALGO_REGISTRY)
