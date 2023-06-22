@@ -184,11 +184,13 @@ class PositionManagementService(object):
     def __init__(
             self,
             dma: DirectMarketAccess,
+            algo_engine=None,
             default_algo: str = None,
             **kwargs
     ):
         self.dma = dma
-        self.algo_registry = ALGO_ENGINE.registry
+        self.algo_engine = algo_engine if algo_engine is not None else ALGO_ENGINE
+        self.algo_registry = self.algo_engine.registry
         self.default_algo = self.algo_registry.passive if default_algo is None else default_algo
         self.position_id = kwargs.pop('position_id', uuid.uuid4().hex)
         self.logger = kwargs.pop('logger', LOGGER)
@@ -360,6 +362,10 @@ class PositionManagementService(object):
     def algo_error(self, algo: AlgoTemplate):
         self.working_algos.pop(algo.algo_id, None)
         self.logger.warning(f'{algo} encounter error, manual intervention')
+
+    def clear(self):
+        self.algos.clear()
+        self.working_algos.clear()
 
     def pnl(self) -> dict[str, float]:
         pnl = {}
@@ -549,8 +555,8 @@ class Balance(object):
     Balance handles mapping of PositionTracker <-> Strategy
     """
 
-    def __init__(self, **kwargs):
-        self.inventory: Inventory = kwargs.pop('inventory', None)
+    def __init__(self, inventory: Inventory = None):
+        self.inventory = inventory if inventory is not None else Inventory()
 
         self.strategy = {}
         self.trade_logs: list[TradeReport] = []
@@ -1957,10 +1963,10 @@ class RiskProfile(object):
 
 
 class SimMatch(object):
-    def __init__(self, ticker, **kwargs):
+    def __init__(self, ticker, event_engine=None, **kwargs):
         self.ticker = ticker
+        self.event_engine = event_engine if event_engine is not None else EVENT_ENGINE
         self.topic_set = kwargs.pop('topic_set', TOPIC)
-        self.event_engine = kwargs.pop('event_engine', EVENT_ENGINE)
 
         self.fee = kwargs.pop('fee', 0.)
         self.working: dict[str, TradeInstruction] = {}
