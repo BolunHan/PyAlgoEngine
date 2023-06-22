@@ -39,12 +39,12 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs): ...
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def value(self): ...
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def is_ready(self) -> bool: ...
 
 
@@ -789,6 +789,15 @@ class ProgressiveReplay(Replay):
         topic = f'{ticker}.{dtype}'
         self.replay_subscription[topic] = (ticker, dtype)
 
+    def remove_subscription(self, ticker: str, dtype: type | str):
+        if isinstance(dtype, str):
+            pass
+        else:
+            dtype = dtype.__name__
+
+        topic = f'{ticker}.{dtype}'
+        self.replay_subscription.pop(topic, None)
+
     def reset(self):
         if self.calendar is None:
             md = self.start_date
@@ -835,10 +844,10 @@ class ProgressiveReplay(Replay):
             self.task_progress += 1
         else:
             if self.eod is not None and self.date_progress:
-                self.eod(market_date=self.replay_calendar[self.date_progress - 1])
+                self.eod(market_date=self.replay_calendar[self.date_progress - 1], replay=self)
 
             if self.bod is not None and self.date_progress < len(self.replay_calendar):
-                self.bod(market_date=self.replay_calendar[self.date_progress])
+                self.bod(market_date=self.replay_calendar[self.date_progress], replay=self)
 
             self.next_trade_day()
 
