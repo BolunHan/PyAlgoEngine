@@ -297,8 +297,8 @@ class CN_Profile(Profile):
         if market in self.trade_calendar:
             trade_calendar = self._trade_calendar[market]
         else:
-            import trading_calendars
-            trade_calendar = self._trade_calendar[market] = trading_calendars.get_calendar(market)
+            import exchange_calendars
+            trade_calendar = self._trade_calendar[market] = exchange_calendars.get_calendar(market)
 
         calendar = trade_calendar.sessions_in_range(
             pd.Timestamp(start_date, tz=tz),
@@ -317,8 +317,8 @@ class CN_Profile(Profile):
         if market in self.trade_calendar:
             trade_calendar = self._trade_calendar[market]
         else:
-            import trading_calendars
-            trade_calendar = self._trade_calendar[market] = trading_calendars.get_calendar(market)
+            import exchange_calendars
+            trade_calendar = self._trade_calendar[market] = exchange_calendars.get_calendar(market)
 
         return trade_calendar.is_session(pd.Timestamp(market_date, tz=tz))
 
