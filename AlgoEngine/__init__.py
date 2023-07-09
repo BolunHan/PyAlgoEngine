@@ -1,4 +1,4 @@
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 
 import traceback
 
@@ -13,4 +13,4 @@ try:
 
     Engine.LOGGER.info(f'AlgoEngine_Addons import successful, version {EngineAddon.__version__}')
 except ImportError:
-    Engine.LOGGER.warning(f'Install AlgoEngine_Addons to use Statistics module\n{traceback.format_exc()}')
+    Engine.LOGGER.debug(f'Install AlgoEngine_Addons to use Statistics module\n{traceback.format_exc()}')
