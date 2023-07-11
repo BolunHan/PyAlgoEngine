@@ -486,6 +486,19 @@ class MarketDataService(object):
     def add_monitor(self, monitor: MarketDataMonitor):
         self._monitor[monitor.monitor_id] = monitor
 
+    def pop_monitor(self, monitor: MarketDataMonitor = None, monitor_id: str = None, monitor_name: str = None):
+        if monitor_id is not None:
+            return self._monitor.pop(monitor_id)
+        elif monitor_name is not None:
+            for _ in list(self._monitor.values()):
+                if _.name == monitor_name:
+                    return self._monitor.pop(_.monitor_id)
+        elif monitor is not None:
+            return self._monitor.pop(monitor.monitor_id)
+        else:
+            LOGGER.error('must assign a monitor, or monitor_id, or monitor_name to pop.')
+            return None
+
     def init_cn_override(self):
         self.profile = CN_Profile()
 
