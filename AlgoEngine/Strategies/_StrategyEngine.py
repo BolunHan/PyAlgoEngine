@@ -73,6 +73,22 @@ class StrategyEngine(StrategyEngineTemplate):
         if 'on_bod' in kwargs:
             self._on_bod.append(kwargs['on_bod'])
 
+    def remove_handler(self, **kwargs):
+        if 'on_market_data' in kwargs:
+            self._on_market_data.remove(kwargs['on_market_data'])
+
+        if 'on_report' in kwargs:
+            self._on_report.remove(kwargs['on_report'])
+
+        if 'on_order' in kwargs:
+            self._on_order.remove(kwargs['on_order'])
+
+        if 'on_eod' in kwargs:
+            self._on_eod.remove(kwargs['on_eod'])
+
+        if 'on_bod' in kwargs:
+            self._on_bod.remove(kwargs['on_bod'])
+
     def add_handler_safe(self, **kwargs):
         if 'on_market_data' in kwargs:
             if handler := kwargs['on_market_data'] in self._on_market_data:
@@ -103,6 +119,37 @@ class StrategyEngine(StrategyEngineTemplate):
                 LOGGER.warning(f'on_bod handler {handler} already registered, skipped!')
             else:
                 self._on_bod.append(handler)
+
+    def remove_handler_safe(self, **kwargs):
+        if 'on_market_data' in kwargs:
+            if handler := kwargs['on_market_data'] in self._on_market_data:
+                LOGGER.warning(f'on_market_data handler {handler} already registered, skipped!')
+            else:
+                self._on_market_data.remove(handler)
+
+        if 'on_report' in kwargs:
+            if handler := kwargs['on_report'] in self._on_market_data:
+                LOGGER.warning(f'on_report handler {handler} already registered, skipped!')
+            else:
+                self._on_report.remove(handler)
+
+        if 'on_order' in kwargs:
+            if handler := kwargs['on_order'] in self._on_market_data:
+                LOGGER.warning(f'on_order handler {handler} already registered, skipped!')
+            else:
+                self._on_order.remove(handler)
+
+        if 'on_eod' in kwargs:
+            if handler := kwargs['on_eod'] in self._on_market_data:
+                LOGGER.warning(f'on_eod handler {handler} already registered, skipped!')
+            else:
+                self._on_eod.remove(handler)
+
+        if 'on_bod' in kwargs:
+            if handler := kwargs['on_bod'] in self._on_market_data:
+                LOGGER.warning(f'on_bod handler {handler} already registered, skipped!')
+            else:
+                self._on_bod.remove(handler)
 
     def attach_strategy(self, strategy: object):
         if callable(handler := getattr(strategy, 'on_market_data', None)):
