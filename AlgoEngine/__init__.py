@@ -1,4 +1,4 @@
-__version__ = "0.3.8.post1"
+__version__ = "0.3.9.post1"
 
 import traceback
 
