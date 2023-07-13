@@ -233,6 +233,31 @@ class PositionManagementService(object):
         self._update_status()
         return result
 
+    def add_exposure(self, ticker: str, volume: float, notional: float, side: TransactionSide, timestamp: float):
+        """
+        this is a method to add dummy algo and fills it.
+
+        the method provides an easy way to amend exposure
+        """
+
+        algo = self.algo_registry.to_algo(name=self.algo_registry.passive)(
+            handler=self,
+            ticker=ticker,
+            side=side,
+            target_volume=volume,
+            dma=None,
+        )
+        self.algos[algo.algo_id] = algo
+
+        order = TradeInstruction(ticker=ticker, order_id=f'Dummy.{uuid.uuid4().hex}', volume=volume, side=side)
+        report = TradeReport(ticker=ticker, volume=volume, notional=notional, side=side, timestamp=timestamp, order_id=order.order_id)
+        order.fill(report)
+        algo.status = algo.Status.done
+        algo.order[order.order_id] = order
+        self._update_status()
+
+        return report
+
     def on_canceled(self, order_id: str, **kwargs):
         algo = self.reversed_order_mapping.get(order_id)
 
