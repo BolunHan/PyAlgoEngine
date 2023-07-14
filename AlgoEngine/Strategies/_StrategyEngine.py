@@ -91,54 +91,54 @@ class StrategyEngine(StrategyEngineTemplate):
 
     def add_handler_safe(self, **kwargs):
         if 'on_market_data' in kwargs:
-            if handler := kwargs['on_market_data'] in self._on_market_data:
+            if (handler := kwargs['on_market_data']) in self._on_market_data:
                 LOGGER.warning(f'on_market_data handler {handler} already registered, skipped!')
             else:
                 self._on_market_data.append(handler)
 
         if 'on_report' in kwargs:
-            if handler := kwargs['on_report'] in self._on_report:
+            if (handler := kwargs['on_report']) in self._on_report:
                 LOGGER.warning(f'on_report handler {handler} already registered, skipped!')
             else:
                 self._on_report.append(handler)
 
         if 'on_order' in kwargs:
-            if handler := kwargs['on_order'] in self._on_order:
+            if (handler := kwargs['on_order']) in self._on_order:
                 LOGGER.warning(f'on_order handler {handler} already registered, skipped!')
             else:
                 self._on_order.append(handler)
 
         if 'on_eod' in kwargs:
-            if handler := kwargs['on_eod'] in self._on_eod:
+            if (handler := kwargs['on_eod']) in self._on_eod:
                 LOGGER.warning(f'on_eod handler {handler} already registered, skipped!')
             else:
                 self._on_eod.append(handler)
 
         if 'on_bod' in kwargs:
-            if handler := kwargs['on_bod'] in self._on_bod:
+            if (handler := kwargs['on_bod']) in self._on_bod:
                 LOGGER.warning(f'on_bod handler {handler} already registered, skipped!')
             else:
                 self._on_bod.append(handler)
 
     def remove_handler_safe(self, **kwargs):
         if 'on_market_data' in kwargs:
-            if handler := kwargs['on_market_data'] in self._on_market_data:
+            if (handler := kwargs['on_market_data']) in self._on_market_data:
                 self._on_market_data.remove(handler)
 
         if 'on_report' in kwargs:
-            if handler := kwargs['on_report'] in self._on_report:
+            if (handler := kwargs['on_report']) in self._on_report:
                 self._on_report.remove(handler)
 
         if 'on_order' in kwargs:
-            if handler := kwargs['on_order'] in self._on_order:
+            if (handler := kwargs['on_order']) in self._on_order:
                 self._on_order.remove(handler)
 
         if 'on_eod' in kwargs:
-            if handler := kwargs['on_eod'] in self._on_eod:
+            if (handler := kwargs['on_eod']) in self._on_eod:
                 self._on_eod.remove(handler)
 
         if 'on_bod' in kwargs:
-            if handler := kwargs['on_bod'] in self._on_bod:
+            if (handler := kwargs['on_bod']) in self._on_bod:
                 self._on_bod.remove(handler)
 
     def attach_strategy(self, strategy: object):
