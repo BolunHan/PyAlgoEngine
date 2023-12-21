@@ -39,6 +39,9 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs): ...
 
+    @abc.abstractmethod
+    def clear(self) -> None: ...
+
     @property
     @abc.abstractmethod
     def value(self): ...
