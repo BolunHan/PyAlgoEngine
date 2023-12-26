@@ -6,6 +6,7 @@ import functools
 import threading
 import uuid
 from collections import defaultdict
+from typing import Iterable
 
 from PyQuantKit import TickData, TradeData, OrderBook, MarketData, Progress, TransactionSide, BarData, TransactionData
 
@@ -44,7 +45,7 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def value(self): ...
+    def value(self) -> dict[str, float]: ...
 
     @property
     @abc.abstractmethod
@@ -561,7 +562,7 @@ class MarketDataService(object):
 
         self.lock.release()
 
-    def get_order_book(self, ticker: str) -> OrderBook:
+    def get_order_book(self, ticker: str) -> OrderBook | None:
         return self._order_book.get(ticker, None)
 
     def get_queued_volume(self, ticker: str, side: TransactionSide | str | int, prior: float, posterior: float = None) -> float:
@@ -758,9 +759,9 @@ class ProgressiveReplay(Replay):
             **kwargs
     ):
         self.loader = loader
-        self.start_date: datetime.date = kwargs.pop('start_date', None)
-        self.end_date: datetime.date = kwargs.pop('end_date', None)
-        self.calendar: list[datetime.date] = kwargs.pop('calendar', None)
+        self.start_date: datetime.date | None = kwargs.pop('start_date', None)
+        self.end_date: datetime.date | None = kwargs.pop('end_date', None)
+        self.calendar: list[datetime.date] | None = kwargs.pop('calendar', None)
 
         self.eod = kwargs.pop('eod', None)
         self.bod = kwargs.pop('bod', None)
@@ -773,13 +774,17 @@ class ProgressiveReplay(Replay):
         self.task_progress = 0
         self.progress = Progress(tasks=1, **kwargs)
 
-        tickers = kwargs.pop('ticker', kwargs.pop('tickers', []))
-        dtypes = kwargs.pop('dtype', kwargs.pop('dtypes', [TradeData, OrderBook, TickData]))
+        tickers: list[str] = kwargs.pop('ticker', kwargs.pop('tickers', []))
+        dtypes: list[str | type] = kwargs.pop('dtype', kwargs.pop('dtypes', [TradeData, OrderBook, TickData]))
 
-        if not isinstance(tickers, list):
+        if isinstance(tickers, Iterable):
+            tickers = list(tickers)
+        else:
             tickers = [tickers]
 
-        if not isinstance(dtypes, list):
+        if isinstance(dtypes, Iterable):
+            dtypes = list(dtypes)
+        else:
             dtypes = [dtypes]
 
         for ticker in tickers:
