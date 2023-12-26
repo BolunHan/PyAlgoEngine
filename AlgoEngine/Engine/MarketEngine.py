@@ -45,7 +45,7 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def value(self) -> dict[str, float]: ...
+    def value(self) -> dict[str, float] | float: ...
 
     @property
     @abc.abstractmethod
