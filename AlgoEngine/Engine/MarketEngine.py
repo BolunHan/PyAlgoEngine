@@ -36,6 +36,7 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
         self.name = name
         self.monitor_id = uuid.uuid4().hex if monitor_id is None else monitor_id
         self.mds = MDS if mds is None else mds
+        self.enable = True
 
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs): ...
@@ -556,6 +557,9 @@ class MarketDataService(object):
             monitor = self._monitor.get(monitor_id)
 
             if monitor is None:
+                continue
+
+            if not monitor.enable:
                 continue
 
             monitor.__call__(market_data)
