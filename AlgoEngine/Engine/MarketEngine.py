@@ -317,15 +317,13 @@ class CN_Profile(Profile):
 
     @functools.lru_cache
     def is_trade_day(self, market_date: datetime.date, market='XSHG', tz='UTC') -> bool:
-        import pandas as pd
-
         if market in self._trade_calendar:
             trade_calendar = self._trade_calendar[market]
         else:
             import exchange_calendars
             trade_calendar = self._trade_calendar[market] = exchange_calendars.get_calendar(market)
 
-        return trade_calendar.is_session(pd.Timestamp(market_date, tz=tz))
+        return trade_calendar.is_session(market_date)
 
     def trade_days_between(self, start_date: datetime.date, end_date: datetime.date = datetime.date.today(), **kwargs) -> int:
         """
