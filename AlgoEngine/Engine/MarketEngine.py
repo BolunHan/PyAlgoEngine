@@ -299,7 +299,7 @@ class CN_Profile(Profile):
     def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
         import pandas as pd
 
-        if market in self.trade_calendar:
+        if market in self._trade_calendar:
             trade_calendar = self._trade_calendar[market]
         else:
             import exchange_calendars
@@ -319,7 +319,7 @@ class CN_Profile(Profile):
     def is_trade_day(self, market_date: datetime.date, market='XSHG', tz='UTC') -> bool:
         import pandas as pd
 
-        if market in self.trade_calendar:
+        if market in self._trade_calendar:
             trade_calendar = self._trade_calendar[market]
         else:
             import exchange_calendars
