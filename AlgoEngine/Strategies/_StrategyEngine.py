@@ -189,6 +189,17 @@ class StrategyEngine(StrategyEngineTemplate):
         event_engine.register_handler(topic=topic_set.on_order, handler=self.on_order)
         event_engine.register_handler(topic=topic_set.on_report, handler=self.on_report)
 
+    def unregister(self, event_engine=None, topic_set=None):
+        if event_engine is None:
+            event_engine = self.event_engine
+
+        if topic_set is None:
+            topic_set = self.topic_set
+
+        event_engine.unregister_handler(topic=topic_set.realtime, handler=self.__call__)
+        event_engine.unregister_handler(topic=topic_set.on_order, handler=self.on_order)
+        event_engine.unregister_handler(topic=topic_set.on_report, handler=self.on_report)
+
     def cancel(self, ticker: str, side: TransactionSide = None, algo_id: str = None, order_id: str = None, **kwargs):
         position_tracker = self.position_tracker
 
