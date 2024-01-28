@@ -839,9 +839,6 @@ class ProgressiveReplay(Replay):
         self.progress.reset()
 
     def next_trade_day(self):
-        self.replay_task.clear()
-        self.task_progress = 0
-
         if self.date_progress < len(self.replay_calendar):
             market_date = self.replay_calendar[self.date_progress]
             self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self.date_progress + 1} / {len(self.replay_calendar)}):'
@@ -868,6 +865,9 @@ class ProgressiveReplay(Replay):
         else:
             if self.eod is not None and self.date_progress:
                 self.eod(market_date=self.replay_calendar[self.date_progress - 1], replay=self)
+
+            self.replay_task.clear()
+            self.task_progress = 0
 
             if self.bod is not None and self.date_progress < len(self.replay_calendar):
                 self.bod(market_date=self.replay_calendar[self.date_progress], replay=self)
