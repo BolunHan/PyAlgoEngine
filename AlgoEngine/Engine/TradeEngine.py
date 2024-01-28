@@ -2185,7 +2185,22 @@ class SimMatch(object):
                 # raise ValueError(f'Invalid working order state {order}')
 
     def _check_tick_data(self, market_data: TickData):
-        return self._check_order_book(market_data=market_data.order_book)
+        for order_id in list(self.working):
+            order = self.working.get(order_id)
+
+            if order is None:
+                pass
+            elif order.order_state in [OrderState.Placed, OrderState.PartFilled]:
+                if order.limit_price is None:
+                    self._match(order=order, match_volume=order.working_volume, match_price=market_data.market_price)
+                elif order.side.sign > 0 and market_data.market_price <= order.limit_price:
+                    self._match(order=order, match_volume=order.working_volume, match_price=market_data.market_price)
+                elif order.side.sign < 0 and market_data.market_price >= order.limit_price:
+                    self._match(order=order, match_volume=order.working_volume, match_price=market_data.market_price)
+                else:
+                    continue
+            else:
+                continue
 
     def _match(self, order: TradeInstruction, match_volume: float = None, match_price: float = None):
         if match_volume is None:
