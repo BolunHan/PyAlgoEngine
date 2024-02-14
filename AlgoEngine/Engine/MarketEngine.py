@@ -3,12 +3,17 @@ from __future__ import annotations
 import abc
 import datetime
 import functools
-import threading
+import json
+import os
+import pickle
+import traceback
 import uuid
 from collections import defaultdict
+from ctypes import c_char, c_wchar, c_bool
+from multiprocessing import Process, RawValue, RawArray, shared_memory, Semaphore
 from typing import Iterable
 
-from PyQuantKit import TickData, TradeData, OrderBook, MarketData, Progress, TransactionSide, BarData, TransactionData
+from PyQuantKit import TickData, TradeData, OrderBook, MarketData, Progress, TransactionSide, BarData, TransactionData, TransactionDataBuffer, TickDataBuffer, OrderBookBuffer, BarDataBuffer
 
 from . import LOGGER
 
@@ -32,41 +37,81 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
     The implemented monitor should be initialized and use `MDS.add_monitor(monitor)` to attach onto the engine
     """
 
-    def __init__(self, name: str, monitor_id: str = None, mds: MarketDataService = None):
-        self.name = name
-        self.monitor_id = uuid.uuid4().hex if monitor_id is None else monitor_id
-        self.mds = MDS if mds is None else mds
-        self.enabled = True
+    def __init__(self, name: str, monitor_id: str = None):
+        self.name: str = name
+        self.monitor_id: str = uuid.uuid4().hex if monitor_id is None else monitor_id
+        self.enabled: bool = True
 
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs): ...
 
+    def __reduce__(self):
+        return self.__class__.from_json, (self.to_json(),)
+
     @abc.abstractmethod
-    def clear(self) -> None: ...
+    def to_json(self, fmt='str') -> dict | str:
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> MarketDataMonitor:
+        ...
+
+    def to_shm(self, name: str = None) -> str:
+        """
+        Put the data of the monitor into python shared memory.
+        This function is designed to facilitate multiprocessing.
+        Some monitor is not advised to be handled concurrently,
+        In which case, raise a NotImplementedError.
+
+        The function is expected to put all data into a sharable list,
+        and return the name of the list, which can be set by the given name.
+        Default name = self.monitor_id
+
+        Note that this method HAVE NO LOCK, use with caution.
+        """
+        if name is None:
+            name = self.monitor_id
+
+        data = pickle.dumps(self.to_json(fmt='dict'))
+        size = len(data)
+
+        shm = shared_memory.SharedMemory(create=True, size=size, name=name)
+        shm.buf[:size] = data
+        shm.close()
+        return name
+
+    def from_shm(self, name: str = None) -> None:
+        """
+        retrieve the data and update the monitor from shared memory.
+        This function is designed to facilitate multiprocessing.
+        """
+        return
+
+    @abc.abstractmethod
+    def clear(self) -> None:
+        ...
 
     @property
     @abc.abstractmethod
-    def value(self) -> dict[str, float] | float: ...
+    def value(self) -> dict[str, float] | float:
+        ...
 
     @property
-    @abc.abstractmethod
-    def is_ready(self) -> bool: ...
+    def is_ready(self) -> bool:
+        return True
 
 
 class SyntheticOrderBookMonitor(MarketDataMonitor):
-    def __init__(self, keep_order_log: bool = False, **kwargs):
-        self.keep_order_log = keep_order_log
+
+    def __init__(self, **kwargs):
 
         super().__init__(
             name=kwargs.pop('name', 'Monitor.SyntheticOrderBook'),
-            monitor_id=kwargs.pop('monitor_id', None),
-            mds=kwargs.pop('mds', None),
+            monitor_id=kwargs.pop('monitor_id', None)
         )
 
-        self._is_ready = True
-        self._value = {}
-        self.order_book = {}
-        self.order_log = {}
+        self.order_book: dict[str, OrderBook] = {}
 
     def __call__(self, market_data: MarketData, **kwargs):
         if isinstance(market_data, TradeData):
@@ -77,55 +122,59 @@ class SyntheticOrderBookMonitor(MarketDataMonitor):
 
         if order_book := self.order_book.get(ticker):
             if order_book.market_time <= trade_data.market_time:
-                side: TransactionSide = trade_data.side
+                side = trade_data.side
                 price = trade_data.price
                 book = order_book.ask if side.sign > 0 else order_book.bid
                 listed_volume = book.at_price(price).volume if price in book else 0.
                 traded_volume = trade_data.volume
-                book.update_entry(price=price, volume=max(0, listed_volume - traded_volume))
-
-        if self.keep_order_log:
-            self._update_order_log(trade_data=trade_data)
+                book.update(price=price, volume=max(0, listed_volume - traded_volume))
 
     def on_transaction_data(self, transaction_data: TransactionData):
         pass
 
-    def _update_order_log(self, trade_data: TradeData):
-        side: TransactionSide = trade_data.side
-        price = trade_data.price
-        traded_volume = trade_data.volume
+    def to_json(self, fmt='str', **kwargs) -> str | dict:
+        data_dict = dict(
+            name=self.name,
+            monitor_id=self.monitor_id,
+            order_book={k: v.to_json(fmt='dict') for k, v in self.order_book.items()},
+        )
 
-        for order_id in list(self.order_log):
-            order_log = self.order_log.get(order_id)
+        if fmt == 'dict':
+            return data_dict
+        elif fmt == 'str':
+            return json.dumps(data_dict, **kwargs)
+        else:
+            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
 
-            if order_log is None:
-                continue
+    @classmethod
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> SyntheticOrderBookMonitor:
+        if isinstance(json_message, dict):
+            json_dict = json_message
+        else:
+            json_dict = json.loads(json_message)
 
-            if side.sign > 0:
-                if order_log.side.sign < 0:
-                    if price == order_log.price:
-                        order_log.volume -= traded_volume
-                    elif price > order_log.price:
-                        order_log.volume = 0.
-                else:
-                    if price <= order_log.price:
-                        order_log.volume = 0.
-            elif side.sign < 0:
-                if order_log.side.sign > 0:
-                    if price == order_log.price:
-                        order_log.volume -= traded_volume
-                    elif price < order_log.price:
-                        order_log.volume = 0.
-                else:
-                    if price >= order_log.price:
-                        order_log.volume = 0.
+        self = cls(
+            name=json_dict['name'],
+            monitor_id=json_dict['monitor_id'],
+            keep_order_log=json_dict['keep_order_log']
+        )
 
-            if order_log.volume <= 0:
-                self.order_log.pop(order_id)
+        self.order_book = {k: MarketData.from_json(v) for k, v in json_dict['order_book'].items()}
+        return self
 
-    @property
-    def is_ready(self) -> bool:
-        return self._is_ready
+    def from_shm(self, name: str = None) -> None:
+        if name is None:
+            name = self.monitor_id
+
+        shm = shared_memory.SharedMemory(name=name)
+        json_dict = pickle.loads(bytes(shm.buf))
+
+        self.clear()
+
+        self.order_book.update({k: MarketData.from_json(v) for k, v in json_dict['order_book'].items()})
+
+    def clear(self) -> None:
+        self.order_book.clear()
 
     @property
     def value(self) -> dict[str, OrderBook]:
@@ -133,20 +182,17 @@ class SyntheticOrderBookMonitor(MarketDataMonitor):
 
 
 class MinuteBarMonitor(MarketDataMonitor):
+
     def __init__(self, interval: float = 60., **kwargs):
         self.interval = interval
 
         super().__init__(
             name=kwargs.pop('name', 'Monitor.MinuteBarMonitor'),
-            monitor_id=kwargs.pop('monitor_id', None),
-            mds=kwargs.pop('mds', None),
+            monitor_id=kwargs.pop('monitor_id', None)
         )
 
         self._minute_bar_data: dict[str, BarData] = {}
         self._last_bar_data: dict[str, BarData] = {}
-
-        self._is_ready = True
-        self._value = {}
 
     def __call__(self, market_data: MarketData, **kwargs):
         self._update_last_bar(market_data=market_data, interval=self.interval)
@@ -156,6 +202,7 @@ class MinuteBarMonitor(MarketDataMonitor):
         ticker = market_data.ticker
         market_price = market_data.market_price
         market_time = market_data.market_time
+        timestamp = market_data.timestamp
 
         if ticker not in self._minute_bar_data or market_time >= self._minute_bar_data[ticker].bar_end_time:
             # update bar_data
@@ -164,7 +211,8 @@ class MinuteBarMonitor(MarketDataMonitor):
 
             bar_data = self._minute_bar_data[ticker] = BarData(
                 ticker=ticker,
-                bar_start_time=datetime.datetime.fromtimestamp(self.mds.timestamp // interval * interval),
+                timestamp=int(timestamp // interval + 1) * interval,
+                start_timestamp=int(timestamp // interval) * interval,
                 bar_span=datetime.timedelta(seconds=interval),
                 high_price=market_price,
                 low_price=market_price,
@@ -178,23 +226,25 @@ class MinuteBarMonitor(MarketDataMonitor):
             bar_data = self._minute_bar_data[ticker]
 
         if isinstance(market_data, TradeData):
-            bar_data.volume += market_data.volume
-            bar_data.notional += market_data.notional
-            bar_data.trade_count += 1
+            bar_data['volume'] += market_data.volume
+            bar_data['notional'] += market_data.notional
+            bar_data['trade_count'] += 1
 
-        bar_data.close_price = market_price
-        bar_data.high_price = max(bar_data.high_price, market_price)
-        bar_data.low_price = min(bar_data.low_price, market_price)
+        bar_data['close_price'] = market_price
+        bar_data['high_price'] = max(bar_data.high_price, market_price)
+        bar_data['low_price'] = min(bar_data.low_price, market_price)
 
     def _update_active_bar(self, market_data: MarketData, interval: float):
         ticker = market_data.ticker
         market_price = market_data.market_price
-        market_time = MarketData.market_time
+        market_time = market_data.market_time
+        timestamp = market_data.timestamp
 
         if ticker not in self._minute_bar_data or market_time >= self._minute_bar_data[ticker].bar_end_time:
             bar_data = self._minute_bar_data[ticker] = BarData(
                 ticker=ticker,
-                bar_start_time=datetime.datetime.fromtimestamp(self.mds.timestamp - interval),
+                start_timestamp=timestamp - interval,
+                timestamp=timestamp,
                 bar_span=datetime.timedelta(seconds=interval),
                 high_price=market_price,
                 low_price=market_price,
@@ -210,7 +260,7 @@ class MinuteBarMonitor(MarketDataMonitor):
             bar_data = self._minute_bar_data[ticker]
 
         history: list[TradeData] = getattr(bar_data, 'history')
-        bar_data.bar_start_time = datetime.datetime.fromtimestamp(self.mds.timestamp - interval)
+        bar_data['start_timestamp'] = timestamp - interval
 
         if isinstance(market_data, TradeData):
             history.append(market_data)
@@ -221,17 +271,62 @@ class MinuteBarMonitor(MarketDataMonitor):
             else:
                 history.pop(0)
 
-        bar_data.volume = sum([_.volume for _ in history])
-        bar_data.notional = sum([_.notional for _ in history])
-        bar_data.trade_count = len([_.notional for _ in history])
-        bar_data.close_price = market_price
-        bar_data.open_price = history[0].market_price
-        bar_data.high_price = max([_.market_price for _ in history])
-        bar_data.low_price = min([_.market_price for _ in history])
+        bar_data['volume'] = sum([_.volume for _ in history])
+        bar_data['notional'] = sum([_.notional for _ in history])
+        bar_data['trade_count'] = len([_.notional for _ in history])
+        bar_data['close_price'] = market_price
+        bar_data['open_price'] = history[0].market_price
+        bar_data['high_price'] = max([_.market_price for _ in history])
+        bar_data['low_price'] = min([_.market_price for _ in history])
 
-    @property
-    def is_ready(self) -> bool:
-        return self._is_ready
+    def to_json(self, fmt='str', **kwargs) -> str | dict:
+        data_dict = dict(
+            name=self.name,
+            monitor_id=self.monitor_id,
+            interval=self.interval,
+            minute_bar_data={k: v.to_json(fmt='dict') for k, v in self._minute_bar_data.items()},
+            last_bar_data={k: v.to_json(fmt='dict') for k, v in self._last_bar_data.items()},
+        )
+
+        if fmt == 'dict':
+            return data_dict
+        elif fmt == 'str':
+            return json.dumps(data_dict, **kwargs)
+        else:
+            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
+
+    @classmethod
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> MinuteBarMonitor:
+        if isinstance(json_message, dict):
+            json_dict = json_message
+        else:
+            json_dict = json.loads(json_message)
+
+        self = cls(
+            name=json_dict['name'],
+            monitor_id=json_dict['monitor_id'],
+            interval=json_dict['interval'],
+        )
+
+        self._minute_bar_data = {k: MarketData.from_json(v) for k, v in json_dict['minute_bar_data'].items()}
+        self._last_bar_data = {k: MarketData.from_json(v) for k, v in json_dict['last_bar_data'].items()}
+        return self
+
+    def from_shm(self, name: str = None) -> None:
+        if name is None:
+            name = self.monitor_id
+
+        shm = shared_memory.SharedMemory(name=name)
+        json_dict = pickle.loads(bytes(shm.buf))
+
+        self.clear()
+
+        self._minute_bar_data.update({k: MarketData.from_json(v) for k, v in json_dict['minute_bar_data'].items()})
+        self._last_bar_data.update({k: MarketData.from_json(v) for k, v in json_dict['last_bar_data'].items()})
+
+    def clear(self) -> None:
+        self._minute_bar_data.clear()
+        self._last_bar_data.clear()
 
     @property
     def value(self) -> dict[str, BarData]:
@@ -469,8 +564,7 @@ class MarketDataService(object):
         self._tick_data: dict[str, TickData] = {}
         self._trade_data: dict[str, TradeData] = {}
         self._monitor: dict[str, MarketDataMonitor] = {}
-
-        self.lock = threading.Lock()
+        self._monitor_manager = MonitorManager()
 
         if self.synthetic_orderbook:
             # init synthetic orderbook monitor
@@ -488,19 +582,25 @@ class MarketDataService(object):
 
     def add_monitor(self, monitor: MarketDataMonitor):
         self._monitor[monitor.monitor_id] = monitor
+        self._monitor_manager.add_monitor(monitor)
 
     def pop_monitor(self, monitor: MarketDataMonitor = None, monitor_id: str = None, monitor_name: str = None):
         if monitor_id is not None:
-            return self._monitor.pop(monitor_id)
+            pass
         elif monitor_name is not None:
             for _ in list(self._monitor.values()):
                 if _.name == monitor_name:
-                    return self._monitor.pop(_.monitor_id)
+                    monitor_id = _.monitor_id
+            if monitor is None:
+                LOGGER.error(f'monitor_name {monitor_name} not registered.')
         elif monitor is not None:
-            return self._monitor.pop(monitor.monitor_id)
+            monitor_id = monitor.monitor_id
         else:
             LOGGER.error('must assign a monitor, or monitor_id, or monitor_name to pop.')
             return None
+
+        self._monitor.pop(monitor_id)
+        self._monitor_manager.pop_monitor(monitor)
 
     def init_cn_override(self):
         self.profile = CN_Profile()
@@ -520,7 +620,7 @@ class MarketDataService(object):
             LOGGER.info(f'MDS confirmed {ticker} TickData subscribed!')
 
         self._tick_data[ticker] = tick_data
-        self._order_book[ticker] = tick_data.order_book
+        # self._order_book[ticker] = tick_data.order_book
 
     def _on_order_book(self, order_book):
         ticker = order_book.ticker
@@ -531,7 +631,6 @@ class MarketDataService(object):
         self._order_book[ticker] = order_book
 
     def on_market_data(self, market_data: MarketData):
-        self.lock.acquire()
         ticker = market_data.ticker
         market_time = market_data.market_time
         timestamp = market_data.timestamp
@@ -551,18 +650,7 @@ class MarketDataService(object):
         elif isinstance(market_data, OrderBook):
             self._on_order_book(order_book=market_data)
 
-        for monitor_id in self._monitor:
-            monitor = self._monitor.get(monitor_id)
-
-            if monitor is None:
-                continue
-
-            if not monitor.enabled:
-                continue
-
-            monitor.__call__(market_data)
-
-        self.lock.release()
+        self._monitor_manager.distribute(market_data=market_data)
 
     def get_order_book(self, ticker: str) -> OrderBook | None:
         return self._order_book.get(ticker, None)
@@ -590,7 +678,7 @@ class MarketDataService(object):
             else:
                 raise ValueError(f'Invalid side {side}')
 
-            queued_volume = book.loc(prior=prior, posterior=posterior)
+            queued_volume = book.loc_volume(p0=prior, p1=posterior)
         return queued_volume
 
     def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
@@ -600,7 +688,6 @@ class MarketDataService(object):
         return self.profile.in_trade_session(market_time=market_time)
 
     def clear(self):
-        self.lock.acquire()
         # self._market_price.clear()
         # self._market_time = None
         # self._timestamp = None
@@ -608,20 +695,16 @@ class MarketDataService(object):
         self._market_history.clear()
         self._order_book.clear()
         self._monitor.clear()
-        self.lock.release()
+        self._monitor_manager.clear()
 
     @property
     def market_price(self) -> dict[str, float]:
-        self.lock.acquire()
         result = self._market_price
-        self.lock.release()
         return result
 
     @property
     def market_history(self) -> dict[str, dict[datetime.datetime, float]]:
-        self.lock.acquire()
         result = self._market_history
-        self.lock.release()
         return result
 
     @property
@@ -662,6 +745,167 @@ class MarketDataService(object):
     @property
     def session_break(self) -> tuple[datetime.time, datetime.time] | None:
         return self.profile.session_break
+
+
+class MonitorManager(object):
+    """
+    manage market data monitor
+
+    state codes for the manager
+    0: idle
+    1: working
+    -1: terminating
+    """
+
+    def __init__(self, n_worker: int = None):
+        self.monitor: dict[str, MarketDataMonitor] = {}
+        self.n_worker = os.cpu_count() - 1 if n_worker is None else n_worker
+
+        self.workers = []
+        self.tasks = {
+            'md_dtype': RawArray(c_wchar, 16),
+            'tasks': [RawArray(c_char, 8 * 1024) for _ in range(self.n_worker)],
+            'OrderBook': OrderBookBuffer(),
+            'BarData': BarDataBuffer(),
+            'TickData': TickDataBuffer(),
+            'TransactionData': TransactionDataBuffer(),
+            'TradeData': TransactionDataBuffer()
+        }
+        self.enabled = RawValue(c_bool, True)
+        self.semaphore_start = Semaphore(value=0)
+        self.semaphore_done = Semaphore(value=0)
+
+        if self.n_worker <= 1:
+            LOGGER.info('Monitor manager is initialized in single process mode!')
+        else:
+            LOGGER.info(f'Monitor manager is initialized with {self.n_worker} processes mode!')
+            self.run()
+
+    def add_monitor(self, monitor: MarketDataMonitor):
+        self.monitor[monitor.monitor_id] = monitor
+
+        if self.workers:
+            try:
+                serialized = pickle.dumps(monitor)
+                size = len(serialized)
+                shm = shared_memory.SharedMemory(name=monitor.monitor_id, create=True, size=size)
+                shm.buf[:] = serialized
+            except Exception as _:
+                LOGGER.info(f'Monitor {monitor.name} serialization failed, multiprocessing not available.')
+
+    def pop_monitor(self, monitor_id: str = None):
+        self.monitor.pop(monitor_id)
+
+        if self.workers:
+            try:
+                shm = shared_memory.SharedMemory(name=monitor_id)
+                shm.close()
+                shm.unlink()
+            except FileNotFoundError as _:
+                LOGGER.debug(f'No monitor with id {monitor_id} in shared memory.')
+
+    def distribute(self, market_data: MarketData):
+        # multi processing mode
+        if self.workers:
+            self._task_concurrent(market_data=market_data)
+        # single processing mode
+        else:
+            self._task_single(market_data=market_data)
+
+    def _task_single(self, market_data: MarketData):
+        for monitor_id in self.monitor:
+            self._work(monitor_id=monitor_id, market_data=market_data)
+
+    def _task_concurrent(self, market_data: MarketData):
+        main_tasks = []
+        child_tasks = []
+
+        # step 1: send market data to the shared memory
+        self.tasks['md_dtype'].value = md_dtype = market_data.__class__.__name__
+        self.tasks[md_dtype].update(market_data=market_data)
+
+        # step 2: send monitor data core to shared memory
+        for monitor_id, monitor in self.monitor.items():
+            try:
+                monitor.to_shm()
+                child_tasks.append(monitor_id)
+            except Exception as _:
+                main_tasks.append(monitor_id)
+
+        # step 3: release semaphore to enable the workers
+        tasks = {worker_id: [] for worker_id in range(self.n_worker)}
+        for task_id, monitor_id in enumerate(child_tasks):
+            worker_id = task_id // self.n_worker
+            tasks[worker_id].append(monitor_id)
+
+        for worker_id, task_list in tasks.items():
+            self.tasks['tasks'][worker_id].value = pickle.dumps(task_list)
+
+        for _ in range(self.n_worker):
+            self.semaphore_start.release()
+
+        # step 4: execute tasks in main thread for those monitors not supporting multiprocessing features
+        for monitor_id in main_tasks:
+            self._work(monitor_id=monitor_id, market_data=market_data)
+
+        # step 5: acquire semaphore to wait till the tasks all done
+        for _ in range(self.n_worker):
+            self.semaphore_done.acquire()
+
+        # step 6: update the monitor from shared memory
+        for monitor_id in child_tasks:
+            monitor = self.monitor.get(monitor_id)
+            if monitor is not None and monitor.enabled:
+                monitor.from_shm()
+
+    def _work(self, monitor_id: str, market_data: MarketData):
+        monitor = self.monitor.get(monitor_id)
+        if monitor is not None and monitor.enabled:
+            monitor.__call__(market_data)
+
+    def worker(self, worker_id: int):
+        while True:
+            # management job 0: terminate the worker on signal
+            if not self.enabled.value:
+                break
+
+            self.semaphore_start.acquire()
+
+            # step 1.1: reconstruct market data
+            md_dtype = self.tasks['md_dtype'].value
+            task_list = pickle.loads(self.tasks['tasks'][worker_id].value)
+            market_data = self.tasks[md_dtype].to_market_data()
+
+            # step 2: do the tasks
+            for monitor_id in task_list:
+
+                if monitor_id not in self.monitor:
+                    try:
+                        LOGGER.debug(f'Worker {worker_id} can not find monitor with id {monitor_id}, looking up in shared memory...')
+                        shm = shared_memory.SharedMemory(name=monitor_id)
+                        monitor = pickle.loads(bytes(shm.buf))
+                        self.monitor[monitor_id] = monitor
+                    except Exception as _:
+                        LOGGER.error(f'Deserialize monitor {monitor_id} failed, traceback:\n{traceback.format_exc()}')
+                        continue
+
+                self.monitor[monitor_id].from_shm()
+                self._work(monitor_id=monitor_id, market_data=market_data)
+                self.monitor[monitor_id].to_shm()
+
+            self.semaphore_done.release()
+
+    def run(self):
+        for i in range(self.n_worker):
+            p = Process(target=self.worker, name=f'{self.__class__.__name__}.worker.{i}', kwargs={'worker_id': i})
+            p.start()
+            self.workers.append(p)
+
+    def stop(self):
+        self.enabled.value = False
+
+    def clear(self):
+        self.monitor.clear()
 
 
 class Replay(object, metaclass=abc.ABCMeta):
