@@ -2000,7 +2000,7 @@ class SimMatch(object):
         self.market_time = datetime.datetime.min
 
     def __call__(self, **kwargs):
-        order = kwargs.pop('order', None)
+        order: TradeInstruction = kwargs.pop('order', None)
         market_data = kwargs.pop('market_data', None)
 
         if order is not None:
@@ -2084,7 +2084,7 @@ class SimMatch(object):
                 if order.side.sign > 0:
                     # match order based on worst offer
                     if order.limit_price is None:
-                        self._match(order=order, match_price=market_data.VWAP)
+                        self._match(order=order, match_price=market_data.vwap)
                     elif market_data.high_price < order.limit_price:
                         self._match(order=order, match_price=market_data.high_price)
                     # match order based on limit price
@@ -2096,7 +2096,7 @@ class SimMatch(object):
                 elif order.side.sign < 0:
                     # match order based on worst offer
                     if order.limit_price is None:
-                        self._match(order=order, match_price=market_data.VWAP)
+                        self._match(order=order, match_price=market_data.vwap)
                     elif market_data.low_price > order.limit_price:
                         self._match(order=order, match_price=market_data.low_price)
                     # match order based on limit price
