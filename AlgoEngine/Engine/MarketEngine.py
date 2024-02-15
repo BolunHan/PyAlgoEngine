@@ -71,7 +71,7 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
         Note that this method HAVE NO LOCK, use with caution.
         """
         if name is None:
-            name = self.monitor_id
+            name = f'{self.monitor_id}.json'
 
         data = pickle.dumps(self.to_json(fmt='dict'))
         size = len(data)
@@ -164,7 +164,7 @@ class SyntheticOrderBookMonitor(MarketDataMonitor):
 
     def from_shm(self, name: str = None) -> None:
         if name is None:
-            name = self.monitor_id
+            name = f'{self.monitor_id}.json'
 
         shm = shared_memory.SharedMemory(name=name)
         json_dict = pickle.loads(bytes(shm.buf))
@@ -314,7 +314,7 @@ class MinuteBarMonitor(MarketDataMonitor):
 
     def from_shm(self, name: str = None) -> None:
         if name is None:
-            name = self.monitor_id
+            name = f'{self.monitor_id}.json'
 
         shm = shared_memory.SharedMemory(name=name)
         json_dict = pickle.loads(bytes(shm.buf))
@@ -788,8 +788,9 @@ class MonitorManager(object):
             try:
                 serialized = pickle.dumps(monitor)
                 size = len(serialized)
-                shm = shared_memory.SharedMemory(name=monitor.monitor_id, create=True, size=size)
+                shm = shared_memory.SharedMemory(name=f'{monitor.monitor_id}.pickle', create=True, size=size)
                 shm.buf[:] = serialized
+                shm.close()
             except Exception as _:
                 LOGGER.info(f'Monitor {monitor.name} serialization failed, multiprocessing not available.')
 
@@ -882,9 +883,10 @@ class MonitorManager(object):
                 if monitor_id not in self.monitor:
                     try:
                         LOGGER.debug(f'Worker {worker_id} can not find monitor with id {monitor_id}, looking up in shared memory...')
-                        shm = shared_memory.SharedMemory(name=monitor_id)
+                        shm = shared_memory.SharedMemory(name=f'{monitor_id}.pickle')
                         monitor = pickle.loads(bytes(shm.buf))
                         self.monitor[monitor_id] = monitor
+                        shm.close()
                     except Exception as _:
                         LOGGER.error(f'Deserialize monitor {monitor_id} failed, traceback:\n{traceback.format_exc()}')
                         continue
