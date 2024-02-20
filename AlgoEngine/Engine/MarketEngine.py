@@ -128,8 +128,8 @@ class MonitorManager(object):
     def add_monitor(self, monitor: MarketDataMonitor):
         self.monitor[monitor.monitor_id] = monitor
 
-    def pop_monitor(self, monitor_id: str):
-        self.monitor.pop(monitor_id)
+    def pop_monitor(self, monitor_id: str) -> MarketDataMonitor:
+        return self.monitor.pop(monitor_id)
 
     def _work(self, monitor_id: str, market_data: MarketData):
         monitor = self.monitor.get(monitor_id)
