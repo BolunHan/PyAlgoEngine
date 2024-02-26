@@ -87,7 +87,8 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
         shm.close()
         return name
 
-    def from_shm(self, name: str = None) -> None:
+    @classmethod
+    def from_shm(cls, monitor_id: str):
         """
         retrieve the data and update the monitor from shared memory.
         This function is designed to facilitate multiprocessing.
@@ -136,8 +137,23 @@ class MonitorManager(object):
         if monitor is not None and monitor.enabled:
             monitor.__call__(market_data)
 
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
     def clear(self):
         self.monitor.clear()
+
+    @property
+    def values(self) -> dict[str, float]:
+        values = {}
+
+        for monitor in self.monitor.values():
+            values.update(monitor.value)
+
+        return values
 
 
 class SyntheticOrderBookMonitor(MarketDataMonitor):
