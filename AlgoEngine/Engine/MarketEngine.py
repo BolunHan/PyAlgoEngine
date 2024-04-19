@@ -988,9 +988,9 @@ class ProgressiveReplay(Replay):
         if self.calendar is None:
             self.replay_calendar = [self.start_date + datetime.timedelta(days=i) for i in range((self.end_date - self.start_date).days + 1)]
         else:
-            self.replay_calendar = [market_date for market_date in self.calendar if self.start_date <= market_date <= self.end_date]
+            self.replay_calendar = self.calendar
 
-        self.date_progress = 0
+        self.date_progress = sum([1 for _ in self.replay_calendar if _ < self.start_date])
         self.progress.reset()
 
     def next_trade_day(self):
