@@ -990,8 +990,12 @@ class ProgressiveReplay(Replay):
         else:
             self.replay_calendar = self.calendar
 
+        self.task_progress = 0
         self.date_progress = sum([1 for _ in self.replay_calendar if _ < self.start_date])
         self.progress.reset()
+
+        if self.date_progress:
+            self.progress.done_tasks = self.date_progress / len(self.replay_calendar)
 
     def next_trade_day(self):
         if self.date_progress < len(self.replay_calendar):
@@ -1018,7 +1022,7 @@ class ProgressiveReplay(Replay):
             data = self.replay_task[self.task_progress]
             self.task_progress += 1
         else:
-            if self.eod is not None and self.date_progress:
+            if self.eod is not None and self.date_progress and self.replay_calendar[self.date_progress] > self.start_date:
                 self.eod(market_date=self.replay_calendar[self.date_progress - 1], replay=self)
 
             self.replay_task.clear()
