@@ -970,17 +970,9 @@ class ProgressiveReplay(Replay):
 
     def reset(self):
         if self.calendar is None:
-            md = self.start_date
-            self.replay_calendar.clear()
-
-            while md <= self.end_date:
-                self.replay_calendar.append(md)
-                md += datetime.timedelta(days=1)
-
-        elif callable(self.calendar):
-            self.replay_calendar = self.calendar(start_date=self.start_date, end_date=self.end_date)
+            self.replay_calendar = [self.start_date + datetime.timedelta(days=i) for i in range((self.end_date - self.start_date).days + 1)]
         else:
-            self.replay_calendar = self.calendar
+            self.replay_calendar = [market_date for market_date in self.calendar if self.start_date <= market_date <= self.end_date]
 
         self.date_progress = 0
         self.progress.reset()
