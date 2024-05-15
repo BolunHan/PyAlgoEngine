@@ -1022,7 +1022,7 @@ class ProgressiveReplay(Replay):
             data = self.replay_task[self.task_progress]
             self.task_progress += 1
         else:
-            if self.eod is not None and self.date_progress and self.replay_calendar[self.date_progress] > self.start_date:
+            if self.eod is not None and self.date_progress and (self.date_progress >= len(self.replay_calendar) or self.replay_calendar[self.date_progress] > self.start_date):
                 self.eod(market_date=self.replay_calendar[self.date_progress - 1], replay=self)
 
             self.replay_task.clear()
