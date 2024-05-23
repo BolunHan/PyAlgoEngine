@@ -1988,8 +1988,9 @@ class RiskProfile(object):
 
 
 class SimMatch(object):
-    def __init__(self, ticker, event_engine=None, **kwargs):
+    def __init__(self, ticker, instant_fill: bool = False, event_engine=None, **kwargs):
         self.ticker = ticker
+        self.instant_fill = instant_fill
         self.event_engine = event_engine if event_engine is not None else EVENT_ENGINE
         self.topic_set = kwargs.pop('topic_set', TOPIC)
 
@@ -2000,7 +2001,7 @@ class SimMatch(object):
         self.market_time = datetime.datetime.min
 
     def __call__(self, **kwargs):
-        order: TradeInstruction = kwargs.pop('order', None)
+        order: TradeInstruction | None = kwargs.pop('order', None)
         market_data = kwargs.pop('market_data', None)
 
         if order is not None:
@@ -2051,6 +2052,12 @@ class SimMatch(object):
         if 'market_time' not in kwargs:
             kwargs['market_time'] = self.market_time
         self.on_order(order=order, **kwargs)
+
+        if self.instant_fill:
+            if order.limit_price:
+                self._match(order=order, match_price=order.limit_price)
+            else:
+                LOGGER.warning(f'No limit price provided for {order}, instant_fill mode not available.')
 
     def cancel_order(self, order: TradeInstruction = None, order_id: str = None, **kwargs):
         if order is None and order_id is None:
