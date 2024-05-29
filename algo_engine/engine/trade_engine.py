@@ -156,12 +156,12 @@ class DirectMarketAccess(object, metaclass=abc.ABCMeta):
             if not self.enabled:
                 break
 
-    def run(self):
+    def start(self):
         if self.enabled:
             LOGGER.error(f'{self} already started!')
 
         self.enabled = True
-        self.worker.run()
+        self.worker.start()
 
     def shut_down(self):
         if not self.enabled:
