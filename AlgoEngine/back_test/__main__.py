@@ -1,15 +1,14 @@
-from __future__ import annotations
+__package__ = 'AlgoEngine.back_test'
 
 import datetime
+from typing import Callable
 
 import EventEngine
 
-from . import EventDMA
-from ._StrategyEngine import StrategyEngine
-from ..Engine import LOGGER, TOPIC, MarketDataService, Balance, RiskProfile, PositionManagementService
-from ..Engine.AlgoEngine import AlgoRegistry, AlgoEngine
-
-LOGGER = LOGGER.getChild('BackTest')
+from ..engine import TOPIC, MarketDataService, Balance, RiskProfile, PositionManagementService
+from ..engine.algo_engine import AlgoRegistry, AlgoEngine
+from ..strategie import EventDMA
+from ..strategie.strategy_engine import StrategyEngine
 
 
 def test_stop(code=0):
@@ -19,7 +18,7 @@ def test_stop(code=0):
     # `os._exit(code)`
 
 
-def test_start(start_date: datetime.date, end_date: datetime.date, data_loader: callable, **kwargs):
+def test_start(start_date: datetime.date, end_date: datetime.date, data_loader: Callable, **kwargs):
     EVENT_ENGINE.start()
     STRATEGY_ENGINE.back_test(
         start_date=start_date,
