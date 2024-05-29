@@ -2,11 +2,12 @@ from threading import Lock
 
 from PyQuantKit import TradeInstruction
 
-from .strategy_engine import StrategyEngine
 from .. import LOGGER
 from ..engine import EVENT_ENGINE, TOPIC, MDS, MarketDataService, Balance, Inventory, DirectMarketAccess, RiskProfile, PositionManagementService
 
 LOGGER = LOGGER.getChild('Strategies')
+
+from .strategy_engine import StrategyEngine
 
 
 class EventDMA(DirectMarketAccess):

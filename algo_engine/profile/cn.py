@@ -1,4 +1,5 @@
 import datetime
+import functools
 
 from . import Profile
 

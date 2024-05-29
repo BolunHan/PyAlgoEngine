@@ -34,7 +34,7 @@ class AlgoStatus(enum.Enum):
 class AlgoTemplate(object, metaclass=abc.ABCMeta):
     Status = AlgoStatus
 
-    def __init__(self, dma: DirectMarketAccess, ticker: str, target_volume: float, side: TransactionSide, **kwargs):
+    def __init__(self, dma: 'DirectMarketAccess', ticker: str, target_volume: float, side: TransactionSide, **kwargs):
         """ Template for trading algorithm
         an abstract class to create a trading algorithm
 
