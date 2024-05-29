@@ -5,24 +5,22 @@ import datetime
 import json
 import os
 import pathlib
-import queue
-import threading
 import time
 import uuid
-from collections import defaultdict
+from collections import defaultdict, deque
 from enum import Enum
+from threading import Thread, Semaphore
 
 import numpy as np
 import pandas as pd
-from PyQuantKit import TransactionSide, TradeInstruction, OrderType, MarketData, BarData, TradeData, TickData, OrderState, OrderBook, TradeReport
+from PyQuantKit import TransactionSide, TradeInstruction, MarketData, OrderState, TradeReport
 
 from . import LOGGER
-from .AlgoEngine import ALGO_ENGINE, AlgoTemplate
-from .EventEngine import TOPIC, EVENT_ENGINE
-from .MarketEngine import MarketDataService
+from .algo_engine import ALGO_ENGINE, AlgoTemplate
+from .market_engine import MarketDataService
 
-LOGGER = LOGGER.getChild('TradeEngine')
-__all__ = ['DirectMarketAccess', 'PositionManagementService', 'Balance', 'Inventory', 'RiskProfile', 'SimMatch']
+
+__all__ = ['DirectMarketAccess', 'PositionManagementService', 'Balance', 'Inventory', 'RiskProfile']
 
 
 class NameSpace(dict):
@@ -63,13 +61,16 @@ class DirectMarketAccess(object, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, mds: MarketDataService, risk_profile: RiskProfile, cool_down: float = None):
+        assert cool_down is None or cool_down > 0, 'Order buff cool down must greater than 0.'
+
         self.mds = mds
         self.risk_profile = risk_profile
         self.cool_down = cool_down
 
-        self.order_queue = queue.Queue()
-        self.worker = threading.Thread(target=self._run)
-        self._is_done = False
+        self.order_queue = deque()
+        self.worker = Thread(target=self._order_buffer)
+        self.lock = Semaphore(0)
+        self.enabled = False
 
     def __repr__(self):
         return f'<OrderHandler>(cd={self.cool_down}, id={id(self)})'
@@ -86,32 +87,33 @@ class DirectMarketAccess(object, metaclass=abc.ABCMeta):
     def _reject_order_handler(self, order: TradeInstruction, **kwargs):
         ...
 
-    def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
-        return self.mds.trade_time_between(start_time, end_time, **kwargs)
-
     def _launch_order_buffed(self, order: TradeInstruction, **kwargs):
-        self.order_queue.put(('launch', order, kwargs))
+        self.lock.release()
+        self.order_queue.append(('launch', order, kwargs))
 
     def _cancel_order_buffed(self, order: TradeInstruction, **kwargs):
-        self.order_queue.put(('cancel', order, kwargs))
+        self.lock.release()
+        self.order_queue.append(('cancel', order, kwargs))
 
     def _launch_order_no_wait(self, order: TradeInstruction, **kwargs):
         LOGGER.info(f'{self} sent a LAUNCH signal of {order}')
-        is_pass = self.risk_profile.check(order=order)
 
-        if not is_pass:
-            LOGGER.warning(f'{order} Rejected by risk control! Invalid action {order.ticker} {order.side.name} {order.volume}!')
-            order.set_order_state(order_state=OrderState.Rejected)
+        if not self.enabled:
+            LOGGER.warning(f'{order} Rejected by {self}! {self} not enabled!')
+            order.set_order_state(order_state=OrderState.Rejected, timestamp=self.mds.timestamp)
             self._reject_order_handler(order=order, **kwargs)
-            return
-
-        order.set_order_state(order_state=OrderState.Sent)
-        self._launch_order_handler(order=order, **kwargs)
+        elif not (is_pass := self.risk_profile.check(order=order)):
+            LOGGER.warning(f'{order} Rejected by risk control! Invalid action {order.ticker} {order.side.name} {order.volume}!')
+            order.set_order_state(order_state=OrderState.Rejected, timestamp=self.mds.timestamp)
+            self._reject_order_handler(order=order, **kwargs)
+        else:
+            order.set_order_state(order_state=OrderState.Sent, timestamp=self.mds.timestamp)
+            self._launch_order_handler(order=order, **kwargs)
 
     def _cancel_order_no_wait(self, order: TradeInstruction, **kwargs):
         LOGGER.info(f'{self} sent a CANCEL signal of {order}')
 
-        order.set_order_state(order_state=OrderState.Canceling)
+        order.set_order_state(order_state=OrderState.Canceling, timestamp=self.mds.timestamp)
         self._cancel_order_handler(order=order, **kwargs)
 
     def launch_order(self, order: TradeInstruction, **kwargs):
@@ -128,39 +130,50 @@ class DirectMarketAccess(object, metaclass=abc.ABCMeta):
         else:
             self._cancel_order_no_wait(order=order, **kwargs)
 
-    def _process_order(self):
-        try:
-            flag, order, kwargs = self.order_queue.get(block=False)
+    def _order_buffer(self):
+        while True:
+            ts = time.time()
+            self.lock.acquire(blocking=True)
 
-            if flag == 'launch':
+            try:
+                action, order, kwargs = self.order_queue.popleft()
+            except IndexError as e:
+                if not self.enabled:
+                    break
+                else:
+                    raise e
+
+            if action == 'launch':
                 self._launch_order_no_wait(order=order, **kwargs)
-            elif flag == 'cancel':
+            elif action == 'cancel':
                 self._cancel_order_no_wait(order=order, **kwargs)
             else:
-                LOGGER.info(f'Invalid order type {flag}')
-        except queue.Empty:
-            pass
+                LOGGER.info(f'Invalid order action {action}!')
 
-    def _run(self):
-        while True:
-            self._process_order()
+            if self.cool_down and (cool_down := (ts + self.cool_down - time.time())) > 0:
+                time.sleep(cool_down)
 
-            time.sleep(self.cool_down)
-
-            if self._is_done:
+            if not self.enabled:
                 break
-        LOGGER.info('DMA successfully shutdown!')
 
     def run(self):
+        if self.enabled:
+            LOGGER.error(f'{self} already started!')
+
+        self.enabled = True
         self.worker.run()
 
-    @property
-    def is_done(self):
-        return self._is_done
-
     def shut_down(self):
-        self._is_done = True
+        if not self.enabled:
+            LOGGER.error(f'{self} already stopped!')
+
+        self.enabled = False
+        self.lock.release()
         LOGGER.info(f'Order buff shutting down!')
+
+    @property
+    def timestamp(self):
+        return self.mds.timestamp
 
     @property
     def market_price(self):
@@ -186,6 +199,7 @@ class PositionManagementService(object):
             dma: DirectMarketAccess,
             algo_engine=None,
             default_algo: str = None,
+            no_cache: bool = False,
             **kwargs
     ):
         self.dma = dma
@@ -193,13 +207,68 @@ class PositionManagementService(object):
         self.algo_registry = self.algo_engine.registry
         self.default_algo = self.algo_registry.passive if default_algo is None else default_algo
         self.position_id = kwargs.pop('position_id', uuid.uuid4().hex)
-        self.logger = kwargs.pop('logger', LOGGER)
+        self.no_cache = no_cache
 
         self.algos: dict[str, AlgoTemplate] = {}
         self.working_algos: dict[str, AlgoTemplate] = {}
 
+        # cache
+        self._exposure: dict[str, float] | None = None
+        self._working: dict[str, dict[str, float]] | None = None
+
     def __call__(self, market_data: MarketData):
         self.on_market_data(market_data=market_data)
+
+    def on_market_data(self, market_data: MarketData):
+        for algo_id in list(self.working_algos):
+            algo = self.algos.get(algo_id)
+
+            if algo is None:
+                continue
+
+            algo.on_market_data(market_data=market_data)
+
+    def on_filled(self, report: TradeReport, **kwargs):
+        order_id = report.order_id
+        algo = self.reversed_order_mapping.get(order_id)
+
+        if algo is None:
+            return 0
+
+        result = algo.on_filled(report=report, **kwargs)
+        self._update_status()
+        self.clear_cache()
+        return result
+
+    def on_canceled(self, order_id: str, **kwargs):
+        algo = self.reversed_order_mapping.get(order_id)
+
+        if algo is None:
+            return 0
+
+        result = algo.on_canceled(order_id=order_id, **kwargs)
+        self._update_status()
+        self.clear_cache()
+        return result
+
+    def on_rejected(self, order: TradeInstruction, **kwargs):
+        order_id = order.order_id
+        algo = self.reversed_order_mapping.get(order_id)
+
+        if algo is None:
+            return 0
+
+        result = algo.on_rejected(order=order, **kwargs)
+        self._update_status()
+        self.clear_cache()
+        return result
+
+    def on_algo_done(self, algo: AlgoTemplate):
+        self.working_algos.pop(algo.algo_id, None)
+
+    def on_algo_error(self, algo: AlgoTemplate):
+        self.working_algos.pop(algo.algo_id, None)
+        LOGGER.warning(f'{algo} encounter error, manual intervention')
 
     def open(self, ticker: str, target_volume: float, trade_side: TransactionSide, algo: str = None, **kwargs):
         if algo is None:
@@ -215,78 +284,12 @@ class PositionManagementService(object):
                 **kwargs
             )
 
-            self.logger.debug(f'{algo} opening {ticker} {trade_side.side_name} {target_volume} position!')
+            LOGGER.debug(f'{algo} opening {ticker} {trade_side.side_name} {target_volume} position!')
             self.algos[algo.algo_id] = self.working_algos[algo.algo_id] = algo
 
             algo.launch(**kwargs)
             self._update_status()
             return algo
-
-    def on_filled(self, report: TradeReport, **kwargs):
-        order_id = report.order_id
-        algo = self.reversed_order_mapping.get(order_id)
-
-        if algo is None:
-            return 0
-
-        result = algo.on_filled(report=report, **kwargs)
-        self._update_status()
-        return result
-
-    def add_exposure(self, ticker: str, volume: float, notional: float, side: TransactionSide, timestamp: float):
-        """
-        this is a method to add dummy algo and fills it.
-
-        the method provides an easy way to amend exposure
-        """
-
-        algo = self.algo_registry.to_algo(name=self.algo_registry.passive)(
-            handler=self,
-            ticker=ticker,
-            side=side,
-            target_volume=volume,
-            dma=None,
-        )
-        self.algos[algo.algo_id] = algo
-
-        order = TradeInstruction(ticker=ticker, order_id=f'Dummy.{uuid.uuid4().hex}', volume=volume, side=side)
-        report = TradeReport(ticker=ticker, volume=volume, notional=notional, side=side, timestamp=timestamp, order_id=order.order_id)
-        order.fill(report)
-        algo.status = algo.Status.done
-        algo.order[order.order_id] = order
-        self._update_status()
-
-        return report
-
-    def on_canceled(self, order_id: str, **kwargs):
-        algo = self.reversed_order_mapping.get(order_id)
-
-        if algo is None:
-            return 0
-
-        result = algo.on_canceled(order_id=order_id, **kwargs)
-        self._update_status()
-        return result
-
-    def on_rejected(self, order: TradeInstruction, **kwargs):
-        order_id = order.order_id
-        algo = self.reversed_order_mapping.get(order_id)
-
-        if algo is None:
-            return 0
-
-        result = algo.on_rejected(order=order, **kwargs)
-        self._update_status()
-        return result
-
-    def unwind_all(self, **kwargs):
-        exposure = self.exposure_volume
-        additional_kwargs = kwargs.copy()
-
-        for ticker in exposure:
-            self.unwind_ticker(ticker, **additional_kwargs)
-
-        return 0.
 
     def unwind_ticker(self, ticker: str, **kwargs):
         LOGGER.info(f'fully cancel and unwind {ticker} position!')
@@ -306,21 +309,55 @@ class PositionManagementService(object):
         working_short = working.get('Short', 0)
 
         if not exposure:
-            self.logger.info(f'No exposure for {ticker}, no unwind actions!')
+            LOGGER.info(f'No exposure for {ticker}, no unwind actions!')
             # no exposure, good!
             return
         elif working_long and working_short:
             # with exposure, and working orders on both side, no action
-            self.logger.info(f'Multiple trade actions for {ticker}, skip unwind actions! Try again later!')
+            LOGGER.info(f'Multiple trade actions for {ticker}, skip unwind actions! Try again later!')
             return
         elif (exposure > 0 and working_short) or (exposure < 0 and working_long):
             # with exposure, and working unwinding orders, no action
-            self.logger.info(f'Unwinding actions exists for {ticker}, skip unwind actions! Try again later!')
+            LOGGER.info(f'Unwinding actions exists for {ticker}, skip unwind actions! Try again later!')
             return
 
         to_unwind = abs(exposure)
         side = TransactionSide.Sell_to_Unwind if exposure > 0 else TransactionSide.Buy_to_Cover
         self.open(ticker=ticker, target_volume=to_unwind, trade_side=side)
+
+    def add_exposure(self, ticker: str, volume: float, notional: float, side: TransactionSide, timestamp: float):
+        """
+        this is a method to add dummy algo and fills it.
+
+        the method provides an easy way to amend exposure
+        """
+
+        algo = self.algo_registry.to_algo(name=self.algo_registry.passive)(
+            handler=self,
+            ticker=ticker,
+            side=side,
+            target_volume=volume,
+            dma=None,
+        )
+        self.algos[algo.algo_id] = algo
+
+        order = TradeInstruction(ticker=ticker, order_id=f'Dummy.{uuid.uuid4().int}', volume=volume, side=side, timestamp=timestamp)
+        report = TradeReport(ticker=ticker, volume=volume, price=notional / volume if volume else np.nan, notional=notional, side=side, timestamp=timestamp, order_id=order.order_id)
+        order.fill(report)
+        algo.status = algo.Status.done
+        algo.order[order.order_id] = order
+        self._update_status()
+
+        return report
+
+    def unwind_all(self, **kwargs):
+        exposure = self.exposure_volume
+        additional_kwargs = kwargs.copy()
+
+        for ticker in exposure:
+            self.unwind_ticker(ticker, **additional_kwargs)
+
+        return 0.
 
     def cancel_all(self, **kwargs):
         # EMERGENCY ONLY
@@ -331,15 +368,6 @@ class PositionManagementService(object):
                 algo.cancel(**kwargs)
 
         return 0
-
-    def on_market_data(self, market_data: MarketData):
-        for algo_id in list(self.working_algos):
-            algo = self.algos.get(algo_id)
-
-            if algo is None:
-                continue
-
-            algo.on_market_data(market_data=market_data)
 
     def to_json(self, fmt='str') -> str | dict:
         json_dict = {}
@@ -367,9 +395,9 @@ class PositionManagementService(object):
                 continue
 
             if algo.status == algo.Status.closed or algo.status == algo.Status.done:
-                self.algo_done(algo=algo)
+                self.on_algo_done(algo=algo)
             elif algo.status == algo.Status.rejected or algo.status == algo.Status.error:
-                self.algo_error(algo=algo)
+                self.on_algo_error(algo=algo)
 
     def _algo_pnl(self, algo: AlgoTemplate):
         if algo.exposure_volume:
@@ -381,16 +409,14 @@ class PositionManagementService(object):
             pnl = algo.cash_flow
         return pnl
 
-    def algo_done(self, algo: AlgoTemplate):
-        self.working_algos.pop(algo.algo_id, None)
-
-    def algo_error(self, algo: AlgoTemplate):
-        self.working_algos.pop(algo.algo_id, None)
-        self.logger.warning(f'{algo} encounter error, manual intervention')
+    def clear_cache(self):
+        self._exposure = None
+        self._working = None
 
     def clear(self):
         self.algos.clear()
         self.working_algos.clear()
+        self.clear_cache()
 
     def pnl(self) -> dict[str, float]:
         pnl = {}
@@ -428,6 +454,10 @@ class PositionManagementService(object):
 
         :return: a dict with non-negative numbers
         """
+
+        if not self.no_cache and self._working is not None:
+            return self._working
+
         working_long = {}
         working_short = {}
         working = {'Long': working_long, 'Short': working_short}
@@ -458,6 +488,10 @@ class PositionManagementService(object):
 
         :return: a dict with float numbers (positive and negatives)
         """
+
+        if not self.no_cache and self._exposure is not None:
+            return self._exposure
+
         exposure = {}
 
         for algo_id in list(self.algos):
@@ -608,10 +642,11 @@ class Balance(object):
         self.position_tracker.pop(map_id, None)
 
     def get(self, **kwargs) -> PositionManagementService | None:
-        map_id = kwargs.pop('map_id', None)
+        map_id: str | None = kwargs.pop('map_id', None)
         strategy = kwargs.pop('strategy', None)
 
         if map_id is not None:
+            map_id: str
             return self.position_tracker.get(map_id)
         elif strategy is not None:
             map_id = self.reversed_strategy_mapping.get(id(strategy))
@@ -757,9 +792,9 @@ class Balance(object):
                 pos_tracker.algos[algo.algo_id] = pos_tracker.working_algos[algo.algo_id] = algo
 
                 if algo.status == algo.Status.closed or algo.status == algo.Status.done:
-                    pos_tracker.algo_done(algo=algo)
+                    pos_tracker.on_algo_done(algo=algo)
                 elif algo.status == algo.Status.rejected or algo.status == algo.Status.error:
-                    pos_tracker.algo_error(algo=algo)
+                    pos_tracker.on_algo_error(algo=algo)
 
         return self
 
@@ -1020,7 +1055,7 @@ class Balance(object):
     @property
     def trades_today(self):
         trades = {}
-        from .MarketEngine import MDS
+        from .market_engine import MDS
 
         market_date = MDS.market_date
         if market_date is None:
@@ -1536,7 +1571,8 @@ class RiskProfile(object):
         fake_order = TradeInstruction(
             ticker=ticker,
             side=side,
-            volume=volume
+            volume=volume,
+            timestamp=self.mds.timestamp
         )
 
         return self.check(order=fake_order)
@@ -1986,284 +2022,3 @@ class RiskProfile(object):
 
         return pd.DataFrame(info_dict).T
 
-
-class SimMatch(object):
-    def __init__(self, ticker, instant_fill: bool = False, event_engine=None, **kwargs):
-        self.ticker = ticker
-        self.instant_fill = instant_fill
-        self.event_engine = event_engine if event_engine is not None else EVENT_ENGINE
-        self.topic_set = kwargs.pop('topic_set', TOPIC)
-
-        self.fee = kwargs.pop('fee', 0.)
-        self.working: dict[str, TradeInstruction] = {}
-        self.history: dict[str, TradeInstruction] = {}
-
-        self.market_time = datetime.datetime.min
-
-    def __call__(self, **kwargs):
-        order: TradeInstruction | None = kwargs.pop('order', None)
-        market_data = kwargs.pop('market_data', None)
-
-        if order is not None:
-            if order.order_type == OrderType.LimitOrder:
-                self.launch_order(order=order)
-            elif order.order_type == OrderType.CancelOrder:
-                self.cancel_order(order=order)
-            else:
-                raise ValueError(f'Invalid order {order}')
-
-        if market_data is not None:
-            self.market_time = max(self.market_time, market_data.market_time)
-
-            if isinstance(market_data, BarData):
-                self._check_bar_data(market_data=market_data)
-            elif isinstance(market_data, TickData):
-                self._check_tick_data(market_data=market_data)
-            elif isinstance(market_data, TradeData):
-                self._check_trade_data(market_data=market_data)
-            elif isinstance(market_data, OrderBook):
-                self._check_order_book(market_data=market_data)
-
-    def register(self, topic_set=None, event_engine=None):
-        if topic_set is not None:
-            self.topic_set = topic_set
-
-        if event_engine is not None:
-            self.event_engine = event_engine
-
-        self.event_engine.register_handler(topic=self.topic_set.launch_order(ticker=self.ticker), handler=self.launch_order)
-        self.event_engine.register_handler(topic=self.topic_set.cancel_order(ticker=self.ticker), handler=self.cancel_order)
-        self.event_engine.register_handler(topic=self.topic_set.realtime(ticker=self.ticker), handler=self)
-
-    def unregister(self):
-        self.event_engine.unregister_handler(topic=self.topic_set.launch_order(ticker=self.ticker), handler=self.launch_order)
-        self.event_engine.unregister_handler(topic=self.topic_set.cancel_order(ticker=self.ticker), handler=self.cancel_order)
-        self.event_engine.unregister_handler(topic=self.topic_set.realtime(ticker=self.ticker), handler=self)
-
-    def launch_order(self, order: TradeInstruction, **kwargs):
-        if (order.order_id in self.working) or (order.order_id in self.history):
-            raise ValueError(f'Invalid instruction {order}, OrderId already in working or history')
-        elif order.limit_price is None:
-            LOGGER.warning(f'order {order} does not have a valid limit price!')
-            # raise ValueError(f'Invalid instruction {order}, instruction must have a LimitPrice')
-
-        order.set_order_state(order_state=OrderState.Placed, market_datetime=self.market_time)
-        self.working[order.order_id] = order
-        if 'market_time' not in kwargs:
-            kwargs['market_time'] = self.market_time
-        self.on_order(order=order, **kwargs)
-
-        if self.instant_fill:
-            if order.limit_price:
-                self._match(order=order, match_price=order.limit_price)
-            else:
-                LOGGER.warning(f'No limit price provided for {order}, instant_fill mode not available.')
-
-    def cancel_order(self, order: TradeInstruction = None, order_id: str = None, **kwargs):
-        if order is None and order_id is None:
-            raise ValueError('Must assign a order or order_id to cancel order')
-        elif order_id is None:
-            order_id = order.order_id
-
-        # if order_id not in self.working:
-        #     raise ValueError(f'Invalid cancel order {order}, OrderId not found')
-
-        order: TradeInstruction = self.working.pop(order_id, None)
-        if order is None:
-            LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] failed to cancel {order_id} order!')
-            return
-
-        if order.order_state == OrderState.Filled:
-            pass
-        else:
-            order.set_order_state(order_state=OrderState.Canceled, market_datetime=self.market_time)
-            LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] Sim-canceled {order.side.name} {order.ticker} order!')
-
-        self.history[order_id] = order
-        self.on_order(order=order, **kwargs)
-
-    def _check_bar_data(self, market_data: BarData):
-        for order_id in list(self.working):
-            order = self.working.get(order_id)
-            if order is None:
-                pass
-            elif order.order_state in [OrderState.Placed, OrderState.PartFilled]:
-                if order.side.sign > 0:
-                    # match order based on worst offer
-                    if order.limit_price is None:
-                        self._match(order=order, match_price=market_data.vwap)
-                    elif market_data.high_price < order.limit_price:
-                        self._match(order=order, match_price=market_data.high_price)
-                    # match order based on limit price
-                    elif market_data.low_price < order.limit_price:
-                        self._match(order=order, match_price=order.limit_price)
-                    # no match
-                    else:
-                        pass
-                elif order.side.sign < 0:
-                    # match order based on worst offer
-                    if order.limit_price is None:
-                        self._match(order=order, match_price=market_data.vwap)
-                    elif market_data.low_price > order.limit_price:
-                        self._match(order=order, match_price=market_data.low_price)
-                    # match order based on limit price
-                    elif market_data.high_price > order.limit_price:
-                        self._match(order=order, match_price=order.limit_price)
-                    # no match
-                    else:
-                        pass
-            else:
-                continue
-                # raise ValueError(f'Invalid working order state {order}')
-
-    def _check_trade_data(self, market_data: TradeData):
-        for order_id in list(self.working):
-            order = self.working.get(order_id)
-            if order is None:
-                pass
-            elif order.is_working:
-                if order.start_time > market_data.market_time:
-                    pass
-                elif order.limit_price is None:
-                    if order.side.sign * market_data.side.sign > 0:
-                        self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
-                elif order.side.sign > 0 and market_data.market_price < order.limit_price:
-                    self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
-                elif order.side.sign < 0 and market_data.market_price > order.limit_price:
-                    self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
-            else:
-                continue
-                # raise ValueError(f'Invalid working order state {order}')
-
-    def _check_order_book(self, market_data: OrderBook):
-        for order_id in list(self.working):
-            order = self.working.get(order_id)
-
-            match_volume = 0.
-            match_notional = 0.
-
-            if order is None:
-                pass
-            elif order.order_state in [OrderState.Placed, OrderState.PartFilled]:
-                if order.limit_price is None:
-                    if order.side.sign > 0:
-                        for entry in market_data.ask:
-                            if match_volume < order.working_volume:
-                                addition_volume = min(entry.volume, order.working_volume - match_volume)
-                                match_volume += addition_volume
-                                match_notional += addition_volume * entry.price
-                            else:
-                                break
-                    else:
-                        for entry in market_data.bid:
-                            if match_volume < order.working_volume:
-                                addition_volume = min(entry.volume, order.working_volume - match_volume)
-                                match_volume += addition_volume
-                                match_notional += addition_volume * entry.price
-                            else:
-                                break
-                elif order.side.sign > 0 and market_data.best_ask_price <= order.limit_price:
-                    for entry in market_data.ask:
-                        if entry.price <= order.limit_price:
-                            if match_volume < order.working_volume:
-                                addition_volume = min(entry.volume, order.working_volume - match_volume)
-                                match_volume += addition_volume
-                                match_notional += addition_volume * entry.price
-                            else:
-                                break
-                        else:
-                            break
-                elif order.side.sign < 0 and market_data.best_bid_price >= order.limit_price:
-                    for entry in market_data.bid:
-                        if entry.price >= order.limit_price:
-                            if match_volume < order.working_volume:
-                                addition_volume = min(entry.volume, order.working_volume - match_volume)
-                                match_volume += addition_volume
-                                match_notional += addition_volume * entry.price
-                            else:
-                                break
-                        else:
-                            break
-
-                if match_volume:
-                    self._match(order=order, match_volume=match_volume, match_price=match_notional / match_volume)
-            else:
-                continue
-                # raise ValueError(f'Invalid working order state {order}')
-
-    def _check_tick_data(self, market_data: TickData):
-        for order_id in list(self.working):
-            order = self.working.get(order_id)
-
-            if order is None:
-                pass
-            elif order.order_state in [OrderState.Placed, OrderState.PartFilled]:
-                if order.limit_price is None:
-                    self._match(order=order, match_volume=order.working_volume, match_price=market_data.market_price)
-                elif order.side.sign > 0 and market_data.market_price <= order.limit_price:
-                    self._match(order=order, match_volume=order.working_volume, match_price=market_data.market_price)
-                elif order.side.sign < 0 and market_data.market_price >= order.limit_price:
-                    self._match(order=order, match_volume=order.working_volume, match_price=market_data.market_price)
-                else:
-                    continue
-            else:
-                continue
-
-    def _match(self, order: TradeInstruction, match_volume: float = None, match_price: float = None):
-        if match_volume is None:
-            match_volume = order.working_volume
-        elif match_volume > order.working_volume:
-            match_volume = order.working_volume
-
-        if order.limit_price is None:
-            pass
-        elif match_price is None:
-            match_price = order.limit_price
-        elif order.side.sign > 0 and match_price > order.limit_price:
-            LOGGER.warning(f'match price greater than limit price for bid order {order}')
-            match_price = order.limit_price
-        elif order.side.sign < 0 and match_price < order.limit_price:
-            match_price = order.limit_price
-            LOGGER.warning(f'match price less than limit price for ask order {order}')
-
-        if match_volume:
-            report = TradeReport(
-                ticker=order.ticker,
-                side=order.side,
-                volume=match_volume,
-                notional=match_volume * match_price * order.multiplier,
-                trade_time=self.market_time,
-                order_id=order.order_id,
-                price=match_price,
-                multiplier=order.multiplier,
-                fee=self.fee * match_volume * match_price * order.multiplier
-            )
-
-            LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] Sim-filled {order.ticker} {order.side.name} {report.volume:,.2f} @ {report.price:.2f}')
-            order.fill(trade_report=report)
-
-            if order.order_state == OrderState.Filled:
-                self.working.pop(order.order_id, None)
-                self.history[order.order_id] = order
-
-            self.on_report(report=report)
-            self.on_order(order=order)
-            return report
-        else:
-            return None
-
-    def on_order(self, order, **kwargs):
-        self.event_engine.put(topic=self.topic_set.on_order, order=order)
-
-    def on_report(self, report, **kwargs):
-        self.event_engine.put(topic=self.topic_set.on_report, report=report, **kwargs)
-
-    def eod(self):
-        for order_id in list(self.working):
-            self.cancel_order(order_id=order_id)
-
-    def clear(self):
-        self.fee = 0.
-        self.working.clear()
-        self.history.clear()
-        self.market_time = datetime.datetime.min

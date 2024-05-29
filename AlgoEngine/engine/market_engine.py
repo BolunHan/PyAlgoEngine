@@ -12,7 +12,6 @@ from . import LOGGER
 from ..profile import Profile, DefaultProfile, CN_Profile
 
 __all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager']
-LOGGER = LOGGER.getChild('MarketEngine')
 
 
 class MarketDataMonitor(object, metaclass=abc.ABCMeta):

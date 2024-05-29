@@ -6,7 +6,7 @@ from event_engine import Topic, PatternTopic, EventEngine
 from . import LOGGER
 
 __all__ = ['EVENT_ENGINE', 'TOPIC']
-LOGGER = LOGGER.getChild('EventEngine')
+
 event_engine.set_logger(LOGGER)
 
 
