@@ -788,7 +788,7 @@ class Balance(object):
 
             for algo_id in algo_json:
                 algo_dict = algo_json[algo_id]
-                algo = ALGO_ENGINE.from_json(algo_dict)
+                algo = pos_tracker.algo_engine.from_json(algo_dict)
                 pos_tracker.algos[algo.algo_id] = pos_tracker.working_algos[algo.algo_id] = algo
 
                 if algo.status == algo.Status.closed or algo.status == algo.Status.done:
