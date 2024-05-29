@@ -4,9 +4,8 @@ import inspect
 from typing import Iterable
 
 from PyQuantKit import Progress, TickData, TransactionData, TradeData, OrderBook
-from .. import LOGGER
 
-LOGGER = LOGGER.getChild('Replay')
+from . import LOGGER
 
 
 class Replay(object, metaclass=abc.ABCMeta):
