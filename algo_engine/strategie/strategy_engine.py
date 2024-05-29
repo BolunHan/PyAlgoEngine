@@ -206,7 +206,7 @@ class StrategyEngine(StrategyEngineTemplate):
             algo_id = position_tracker.reversed_order_mapping.get(order_id).algo_id
             if algo_id:
                 LOGGER.info(f'No algo_id specified, found algo {algo_id} associated with order_id {order_id}! Canceling all trade action associated with algo')
-                LOGGER.warning('Strategy should not cancel single trade order, this will break the AlgoEngine Consistency!')
+                LOGGER.warning('Strategy should not cancel single trade order, this will break the algo_engine Consistency!')
 
         if not algo_id:
             LOGGER.warning(f'No algo_id given! Canceling all {ticker} {side.side_name} algos!')

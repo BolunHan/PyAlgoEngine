@@ -433,7 +433,7 @@ class Passive(AlgoTemplate):
     Algo will stop after order get filled or canceled.
     no additional order will be launched except the initial one
 
-    a limit price can be set by keyword arguments, see also in doc: AlgoEngine.calculate_limit
+    a limit price can be set by keyword arguments, see also in doc: algo_engine.calculate_limit
 
     """
 
