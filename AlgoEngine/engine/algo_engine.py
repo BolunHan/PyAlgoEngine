@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import abc
 import datetime
 import enum
@@ -7,15 +5,17 @@ import functools
 import json
 import threading
 import uuid
-from typing import Type
+from typing import Type, TYPE_CHECKING
 
 import numpy as np
 from PyQuantKit import TransactionSide, TradeInstruction, MarketData, TradeReport, OrderState, OrderType
 
 from . import LOGGER
-from .MarketEngine import MDS
+from .market_engine import MDS
 
-LOGGER = LOGGER.getChild('AlgoEngine')
+if TYPE_CHECKING:
+    from .trade_engine import DirectMarketAccess
+
 __all__ = ['AlgoTemplate', 'AlgoRegistry', 'AlgoEngine', 'ALGO_ENGINE', 'ALGO_REGISTRY']
 
 
@@ -34,7 +34,7 @@ class AlgoStatus(enum.Enum):
 class AlgoTemplate(object, metaclass=abc.ABCMeta):
     Status = AlgoStatus
 
-    def __init__(self, dma, ticker: str, target_volume: float, side: TransactionSide, **kwargs):
+    def __init__(self, dma: DirectMarketAccess, ticker: str, target_volume: float, side: TransactionSide, **kwargs):
         """ Template for trading algorithm
         an abstract class to create a trading algorithm
 
@@ -487,7 +487,8 @@ class Passive(AlgoTemplate):
                 order_type=order_type,
                 volume=volume,
                 limit_price=limit,
-                order_id=f'{self.__class__.__name__}.{self.ticker}.{self.side.side_name}.{uuid.uuid4().hex}'
+                order_id=f'{self.__class__.__name__}.{self.ticker}.{self.side.side_name}.{uuid.uuid4().hex}',
+                timestamp=self.dma.timestamp
             )
 
             self.working_order[order.order_id] = order
@@ -675,60 +676,6 @@ class AggressiveTimeout(PassiveTimeout, Aggressive):
         return Aggressive._canceled(self=self, order=order, **kwargs)
 
 
-class AlgoRegistry(object):
-    """
-    registry for trade algos
-
-    to add a new algo, add name to __init__ method, add handler to .cast() method
-
-    DO NOT add any other value to __init__.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-        self.alias = {}
-        self.registry = {}
-
-        # pre-defined algo name for easy access
-        self.aggressive = 'aggressive'
-        self.passive = 'passive'
-        self.aggressive_timeout = 'aggressive_timeout'
-        self.passive_timeout = 'passive_timeout'
-        self.limit_range = 'limit_range'
-
-    def add_algo(self, name: str, *alias, handler: Type[AlgoTemplate]):
-        self.registry[name] = handler
-
-        for _alias in alias:
-            self.alias[_alias] = name
-
-    def cast(self, value: str):
-        name = value.lower()
-
-        # check alias
-        if name in self.alias:
-            name = self.alias[name]
-
-        # init from storage
-        if name in self.registry:
-            return self.registry[name]
-        else:
-            raise ValueError(f'Invalid name {value}')
-
-    @property
-    def reversed_registry(self) -> dict[str, str]:
-        reversed_registry = {algo.__name__: name for name, algo in self.registry.items()}
-        return reversed_registry
-
-    def to_algo(self, name: str, algo_engine: AlgoEngine = None):
-        if algo_engine is None:
-            algo_engine = ALGO_ENGINE
-
-        algo = self.registry.get(name.lower())
-        return functools.partial(algo, algo_engine=algo_engine)
-
-
 class AlgoEngine(object):
     def __init__(self, mds=None, registry=None):
         self.mds = mds if mds is not None else MDS
@@ -852,6 +799,60 @@ class AlgoEngine(object):
         algo.from_json(json_dict)
 
         return algo
+
+
+class AlgoRegistry(object):
+    """
+    registry for trade algos
+
+    to add a new algo, add name to __init__ method, add handler to .cast() method
+
+    DO NOT add any other value to __init__.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.alias = {}
+        self.registry = {}
+
+        # pre-defined algo name for easy access
+        self.aggressive = 'aggressive'
+        self.passive = 'passive'
+        self.aggressive_timeout = 'aggressive_timeout'
+        self.passive_timeout = 'passive_timeout'
+        self.limit_range = 'limit_range'
+
+    def add_algo(self, name: str, *alias, handler: Type[AlgoTemplate]):
+        self.registry[name] = handler
+
+        for _alias in alias:
+            self.alias[_alias] = name
+
+    def cast(self, value: str):
+        name = value.lower()
+
+        # check alias
+        if name in self.alias:
+            name = self.alias[name]
+
+        # init from storage
+        if name in self.registry:
+            return self.registry[name]
+        else:
+            raise ValueError(f'Invalid name {value}')
+
+    @property
+    def reversed_registry(self) -> dict[str, str]:
+        reversed_registry = {algo.__name__: name for name, algo in self.registry.items()}
+        return reversed_registry
+
+    def to_algo(self, name: str, algo_engine: AlgoEngine = None):
+        if algo_engine is None:
+            algo_engine = ALGO_ENGINE
+
+        algo = self.registry.get(name.lower())
+        return functools.partial(algo, algo_engine=algo_engine)
 
 
 ALGO_REGISTRY = AlgoRegistry()
