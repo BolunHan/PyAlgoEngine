@@ -24,7 +24,7 @@ long_description = read("README.md")
 
 setuptools.setup(
     name="PyAlgoEngine",
-    version=get_version(os.path.join('AlgoEngine', '__init__.py')),
+    version=get_version(os.path.join('algo_engine', '__init__.py')),
     author="Bolun.Han",
     author_email="Bolun.Han@outlook.com",
     description="Basic algo engine",
