@@ -19,7 +19,6 @@ from . import LOGGER
 from .algo_engine import ALGO_ENGINE, AlgoTemplate
 from .market_engine import MarketDataService
 
-
 __all__ = ['DirectMarketAccess', 'PositionManagementService', 'Balance', 'Inventory', 'RiskProfile']
 
 
@@ -161,15 +160,20 @@ class DirectMarketAccess(object, metaclass=abc.ABCMeta):
             LOGGER.error(f'{self} already started!')
 
         self.enabled = True
-        self.worker.start()
+
+        if self.cool_down:
+            self.worker.start()
 
     def shut_down(self):
         if not self.enabled:
             LOGGER.error(f'{self} already stopped!')
 
         self.enabled = False
-        self.lock.release()
-        LOGGER.info(f'Order buff shutting down!')
+
+        if self.cool_down:
+            self.lock.release()
+            self.worker = Thread(target=self._order_buffer)
+            LOGGER.info(f'Order buff shutting down!')
 
     @property
     def timestamp(self):
@@ -2021,4 +2025,3 @@ class RiskProfile(object):
                 info_dict['global'][key] = rules[key]
 
         return pd.DataFrame(info_dict).T
-
