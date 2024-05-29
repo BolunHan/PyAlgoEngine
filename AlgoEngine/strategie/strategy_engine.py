@@ -1,15 +1,14 @@
-from __future__ import annotations
-
 import abc
 import datetime
 import threading
 import time
+from typing import Callable
 
 from PyQuantKit import MarketData, TradeReport, TradeInstruction, TransactionSide
 
-from ..Engine import PositionManagementService, TOPIC, EVENT_ENGINE, SimMatch, LOGGER, MDS
-
-LOGGER = LOGGER.getChild('StrategyEngine')
+from . import LOGGER
+from ..back_test import SimMatch, ProgressiveReplay
+from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE, MDS
 
 
 class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):
@@ -349,9 +348,7 @@ class StrategyEngine(StrategyEngineTemplate):
         for handler in self._on_bod:
             handler(market_date=market_date, **kwargs)
 
-    def back_test(self, start_date: datetime.date, end_date: datetime.date, data_loader: callable, **kwargs):
-        from ..Engine import ProgressiveReplay
-
+    def back_test(self, start_date: datetime.date, end_date: datetime.date, data_loader: Callable, **kwargs):
         replay = ProgressiveReplay(
             loader=data_loader,
             tickers=list(self.subscription),

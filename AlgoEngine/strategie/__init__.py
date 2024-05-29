@@ -1,14 +1,10 @@
-from __future__ import annotations
-
-import threading
+from threading import Lock
 
 from PyQuantKit import TradeInstruction
 
-from ._StrategyEngine import StrategyEngine
-from ..Engine import LOGGER
-from ..Engine.EventEngine import EVENT_ENGINE, TOPIC
-from ..Engine.MarketEngine import MDS, MarketDataService
-from ..Engine.TradeEngine import Balance, Inventory, DirectMarketAccess, RiskProfile, PositionManagementService
+from .strategy_engine import StrategyEngine
+from .. import LOGGER
+from ..engine import EVENT_ENGINE, TOPIC, MDS, MarketDataService, Balance, Inventory, DirectMarketAccess, RiskProfile, PositionManagementService
 
 LOGGER = LOGGER.getChild('Strategies')
 
@@ -28,7 +24,7 @@ class EventDMA(DirectMarketAccess):
         raise NotImplementedError()
 
 
-REPLAY_LOCK = threading.Lock()
+REPLAY_LOCK = Lock()
 INVENTORY = Inventory()
 BALANCE = Balance(inventory=INVENTORY)
 RISK_PROFILE = RiskProfile(mds=MDS, balance=BALANCE)
