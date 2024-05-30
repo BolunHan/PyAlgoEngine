@@ -48,7 +48,7 @@ setuptools.setup(
         'numpy',
         'pandas',
         'exchange_calendars',
-        'PyQuantKit>=0.3.0',
-        'PyEventEngine>=0.3.0.post3',
+        'PyQuantKit>=0.3.1',
+        'PyEventEngine>=0.3.0.post4',
     ]
 )
