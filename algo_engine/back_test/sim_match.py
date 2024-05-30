@@ -67,7 +67,10 @@ class SimMatch(object):
             # raise ValueError(f'Invalid instruction {order}, instruction must have a LimitPrice')
 
         order.set_order_state(order_state=OrderState.Placed, timestamp=self.timestamp)
-        self.working[order.order_id] = order
+
+        if not self.instant_fill:
+            self.working[order.order_id] = order
+
         self.on_order(order=order, **kwargs)
 
         if self.instant_fill:
@@ -253,7 +256,7 @@ class SimMatch(object):
                 order_id=order.order_id,
                 price=match_price,
                 multiplier=order.multiplier,
-                fee=self.fee * match_volume * match_price * order.multiplier
+                fee=self.fee_rate * match_volume * match_price * order.multiplier
             )
 
             LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] Sim-filled {order.ticker} {order.side.name} {report.volume:,.2f} @ {report.price:.2f}')
@@ -280,7 +283,7 @@ class SimMatch(object):
             self.cancel_order(order_id=order_id)
 
     def clear(self):
-        self.fee = 0.
+        # self.fee_rate = 0.
         self.working.clear()
         self.history.clear()
         self.timestamp = 0.
