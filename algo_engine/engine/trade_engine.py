@@ -13,12 +13,13 @@ from threading import Thread, Semaphore
 
 import numpy as np
 import pandas as pd
-from PyQuantKit import TransactionSide, TradeInstruction, MarketData, OrderState, TradeReport
 
 from . import LOGGER
 from .algo_engine import ALGO_ENGINE, AlgoTemplate
 from .market_engine import MarketDataService
+from ..base import TransactionSide, TradeInstruction, MarketData, OrderState, TradeReport
 
+LOGGER = LOGGER.getChild('TradeEngine')
 __all__ = ['DirectMarketAccess', 'PositionManagementService', 'Balance', 'Inventory', 'RiskProfile']
 
 
