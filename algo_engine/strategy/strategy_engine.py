@@ -4,11 +4,12 @@ import threading
 import time
 from typing import Callable
 
-from PyQuantKit import MarketData, TradeReport, TradeInstruction, TransactionSide
-
 from . import LOGGER
 from ..back_test import SimMatch, ProgressiveReplay
+from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide
 from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE, MDS
+
+LOGGER = LOGGER.getChild('Strategy')
 
 
 class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):

@@ -1,11 +1,11 @@
+import logging
 from threading import Lock
 
-from PyQuantKit import TradeInstruction
-
 from .. import LOGGER
+from ..base import TradeInstruction
 from ..engine import EVENT_ENGINE, TOPIC, MDS, MarketDataService, Balance, Inventory, DirectMarketAccess, RiskProfile, PositionManagementService
 
-LOGGER = LOGGER.getChild('Strategies')
+LOGGER = LOGGER.getChild('Strategy')
 
 from .strategy_engine import StrategyEngine
 
@@ -23,6 +23,13 @@ class EventDMA(DirectMarketAccess):
 
     def _reject_order_handler(self, order: TradeInstruction, **kwargs):
         raise NotImplementedError()
+
+
+def set_logger(logger: logging.Logger):
+    global LOGGER
+    LOGGER = logger
+
+    strategy_engine.LOGGER = logger.getChild('Strategy')
 
 
 REPLAY_LOCK = Lock()
