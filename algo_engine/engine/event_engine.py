@@ -7,7 +7,7 @@ from . import LOGGER
 
 __all__ = ['EVENT_ENGINE', 'TOPIC']
 
-event_engine.set_logger(LOGGER)
+event_engine.set_logger(LOGGER.getChild('EventEngine'))
 
 
 class TopicSet(object):

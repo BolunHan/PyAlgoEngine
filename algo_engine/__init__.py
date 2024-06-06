@@ -1,15 +1,11 @@
-__version__ = "0.4.0.post2"
+__version__ = "0.4.1"
 
 import logging
 import os
-import sys
-import time
 import traceback
 
-from PyQuantKit import ColoredFormatter
-
-LOGGER: logging.Logger | None = None
-LOG_LEVEL = logging.INFO
+from . import profile
+from .base.telemetrics import LOGGER
 
 if 'ALGO_DIR' in os.environ:
     WORKING_DIRECTORY = os.path.realpath(os.environ['ALGO_DIR'])
@@ -17,58 +13,27 @@ else:
     WORKING_DIRECTORY = str(os.getcwd())
 
 
-def get_logger(**kwargs) -> logging.Logger:
-    level = kwargs.get('level', LOG_LEVEL)
-    stream_io = kwargs.get('stream_io', sys.stdout)
-    formatter = kwargs.get('formatter', ColoredFormatter())
-    global LOGGER
-
-    if LOGGER is not None:
-        return LOGGER
-
-    LOGGER = logging.getLogger('PyAlgoEngine')
-    LOGGER.setLevel(level)
-    logging.Formatter.converter = time.gmtime
-
-    if stream_io:
-        have_handler = False
-        for handler in LOGGER.handlers:
-            # noinspection PyUnresolvedReferences
-            if type(handler) == logging.StreamHandler and handler.stream == stream_io:
-                have_handler = True
-                break
-
-        if not have_handler:
-            logger_ch = logging.StreamHandler(stream=stream_io)
-            logger_ch.setLevel(level=level)
-            logger_ch.setFormatter(fmt=formatter)
-            LOGGER.addHandler(logger_ch)
-
-    return LOGGER
-
-
 def set_logger(logger: logging.Logger):
-    global LOGGER
-    LOGGER = logger
-
-    engine.LOGGER = LOGGER.getChild('Engine')
-    back_test.LOGGER = LOGGER.getChild('BackTest')
-    strategie.LOGGER = LOGGER.getChild('Strategies')
+    base.set_logger(logger=logger)
+    engine.set_logger(logger=logger.getChild('Engine'))
+    back_test.set_logger(logger=logger.getChild('BackTest'))
+    strategy.set_logger(logger=logger.getChild('Strategy'))
 
 
-_ = get_logger()
-
+from . import base
 from . import engine
 from . import back_test
-from . import profile
-from . import strategie
+from . import strategy
 
 engine.LOGGER.info(f'AlgoEngine version {__version__}')
 
 # import addon module
 try:
-    from . import EngineAddon
+    from . import algo_addon
 
-    engine.LOGGER.info(f'AlgoEngine_Addons import successful, version {EngineAddon.__version__}')
+    engine.LOGGER.info(f'PyAlgoEngineAddons import successful, version {algo_addon.__version__}')
 except ImportError:
-    engine.LOGGER.debug(f'Install AlgoEngine_Addons to use Statistics module\n{traceback.format_exc()}')
+    algo_addon = None
+    engine.LOGGER.debug(f'Install PyAlgoEngineAddons to use additional trading algos module\n{traceback.format_exc()}')
+
+__all__ = ['LOGGER', 'base', 'engine', 'back_test', 'strategy', 'algo_addon']

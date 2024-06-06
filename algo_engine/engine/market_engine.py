@@ -6,10 +6,11 @@ from collections import defaultdict
 from multiprocessing import shared_memory
 from typing import Self
 
-from PyQuantKit import TickData, TradeData, OrderBook, MarketData, TransactionSide
-
 from . import LOGGER
-from ..profile import Profile, DefaultProfile, CN_Profile
+from ..base import TickData, TradeData, OrderBook, MarketData, TransactionSide
+from ..profile import PROFILE, Profile, PROFILE_CN
+
+LOGGER = LOGGER.getChild('MarketEngine')
 
 __all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager']
 
@@ -155,7 +156,7 @@ class MonitorManager(object):
 
 class MarketDataService(object):
     def __init__(self, profile: Profile = None, **kwargs):
-        self.profile = DefaultProfile() if profile is None else profile
+        self.profile = PROFILE if profile is None else profile
         self.cache_history = kwargs.pop('cache_history', False)
 
         self._market_price = {}
@@ -199,7 +200,7 @@ class MarketDataService(object):
         self.monitor_manager.pop_monitor(monitor_id)
 
     def init_cn_override(self):
-        self.profile = CN_Profile()
+        self.profile = PROFILE_CN
 
     def _on_trade_data(self, trade_data: TradeData):
         ticker = trade_data.ticker
@@ -309,7 +310,7 @@ class MarketDataService(object):
             if self._timestamp is None:
                 return None
             else:
-                return datetime.datetime.fromtimestamp(self._timestamp)
+                return datetime.datetime.fromtimestamp(self._timestamp, tz=self.profile.timezone)
         else:
             return self._market_time
 

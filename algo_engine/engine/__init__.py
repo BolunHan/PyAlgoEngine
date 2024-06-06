@@ -1,8 +1,21 @@
 from __future__ import annotations
 
+import logging
+
 from .. import LOGGER
 
 LOGGER = LOGGER.getChild('Engine')
+
+
+def set_logger(logger: logging.Logger):
+    global LOGGER
+    LOGGER = logger
+
+    algo_engine.LOGGER = logger.getChild('AlgoEngine')
+    event_engine.EVENT_ENGINE.logger = logger.getChild('EventEngine')
+    market_engine.LOGGER = logger.getChild('MarketEngine')
+    trade_engine.LOGGER = logger.getChild('TradeEngine')
+
 
 from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .event_engine import EVENT_ENGINE, TOPIC

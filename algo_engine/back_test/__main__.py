@@ -3,12 +3,12 @@ __package__ = 'algo_engine.back_test'
 import datetime
 from typing import Callable
 
-import EventEngine
+import event_engine
 
 from ..engine import TOPIC, MarketDataService, Balance, RiskProfile, PositionManagementService
 from ..engine.algo_engine import AlgoRegistry, AlgoEngine
-from ..strategie import EventDMA
-from ..strategie.strategy_engine import StrategyEngine
+from ..strategy import EventDMA
+from ..strategy.strategy_engine import StrategyEngine
 
 
 def test_stop(code=0):
@@ -29,7 +29,7 @@ def test_start(start_date: datetime.date, end_date: datetime.date, data_loader: 
 
 
 # in backtest, the global objects is newly inited to separate from production
-EVENT_ENGINE = EventEngine.EventEngine()
+EVENT_ENGINE = event_engine.EventEngine()
 MDS = MarketDataService()
 ALGO_REGISTRY = AlgoRegistry()
 ALGO_ENGINE = AlgoEngine(mds=MDS, registry=ALGO_REGISTRY)

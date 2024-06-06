@@ -4,26 +4,41 @@ import functools
 from . import Profile
 
 
-class CN_Profile(Profile):
+class ProfileCN(Profile):
     def __init__(self):
-
         super().__init__(
             session_start=datetime.time(9, 30),
             session_end=datetime.time(15, 0),
-            session_break=(datetime.time(11, 30), datetime.time(13, 0))
+            session_break=[(datetime.time(11, 30), datetime.time(13, 0))]
         )
 
-        self._trade_calendar = {}
+        self.trade_calendar = {}
+
+    def override_profile(self, profile: Profile):
+        profile.session_start = self.session_start
+        profile.session_end = self.session_end
+        profile.session_break.clear()
+        profile.session_break.extend(self.session_break)
+
+        profile.trade_calendar = self.trade_calendar
+
+        # profile.trade_calendar = cls.trade_calendar
+        # profile.is_trade_day = cls.is_trade_day
+        # profile.trade_days_between = cls.trade_days_between
+        # profile.time_to_seconds = cls.time_to_seconds
+
+        profile.trade_time_between = self.trade_time_between
+        profile.in_trade_session = self.in_trade_session
 
     @functools.lru_cache
     def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
         import pandas as pd
 
-        if market in self._trade_calendar:
-            trade_calendar = self._trade_calendar[market]
+        if market in self.trade_calendar:
+            trade_calendar = self.trade_calendar[market]
         else:
             import exchange_calendars
-            trade_calendar = self._trade_calendar[market] = exchange_calendars.get_calendar(market)
+            trade_calendar = self.trade_calendar[market] = exchange_calendars.get_calendar(market)
 
         calendar = trade_calendar.sessions_in_range(
             pd.Timestamp(start_date, tz=tz),
@@ -37,11 +52,11 @@ class CN_Profile(Profile):
 
     @functools.lru_cache
     def is_trade_day(self, market_date: datetime.date, market='XSHG', tz='UTC') -> bool:
-        if market in self._trade_calendar:
-            trade_calendar = self._trade_calendar[market]
+        if market in self.trade_calendar:
+            trade_calendar = self.trade_calendar[market]
         else:
             import exchange_calendars
-            trade_calendar = self._trade_calendar[market] = exchange_calendars.get_calendar(market)
+            trade_calendar = self.trade_calendar[market] = exchange_calendars.get_calendar(market)
 
         return trade_calendar.is_session(market_date)
 
@@ -91,11 +106,11 @@ class CN_Profile(Profile):
         implied_date = datetime.date.today()
 
         if isinstance(start_time, (float, int)):
-            start_time = datetime.datetime.fromtimestamp(start_time)
+            start_time = datetime.datetime.fromtimestamp(start_time, tz=self.timezone)
             implied_date = start_time.date()
 
         if isinstance(end_time, (float, int)):
-            end_time = datetime.datetime.fromtimestamp(end_time)
+            end_time = datetime.datetime.fromtimestamp(end_time, tz=self.timezone)
             implied_date = end_time.date()
 
         if isinstance(start_time, datetime.time):
@@ -154,7 +169,7 @@ class CN_Profile(Profile):
             market_time = datetime.datetime.now()
 
         if isinstance(market_time, (float, int)):
-            market_time = datetime.datetime.fromtimestamp(market_time)
+            market_time = datetime.datetime.fromtimestamp(market_time, tz=self.timezone)
 
         market_date = market_time.date()
         market_time = market_time.time()
@@ -172,3 +187,6 @@ class CN_Profile(Profile):
             return False
 
         return True
+
+
+PROFILE_CN = ProfileCN()

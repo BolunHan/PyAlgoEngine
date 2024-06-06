@@ -4,9 +4,8 @@ import pickle
 from multiprocessing import shared_memory
 from typing import Self
 
-from PyQuantKit import TradeData, OrderBook, MarketData, BarData, TransactionData
-
 from . import Monitor
+from ..base import TradeData, OrderBook, MarketData, BarData, TransactionData
 
 
 class SyntheticOrderBookMonitor(Monitor):

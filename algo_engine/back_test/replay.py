@@ -3,9 +3,10 @@ import datetime
 import inspect
 from typing import Iterable
 
-from PyQuantKit import Progress, TickData, TransactionData, TradeData, OrderBook
-
 from . import LOGGER
+from ..base import Progress, TickData, TransactionData, TradeData, OrderBook
+
+LOGGER = LOGGER.getChild('Replay')
 
 
 class Replay(object, metaclass=abc.ABCMeta):

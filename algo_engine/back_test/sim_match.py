@@ -1,9 +1,11 @@
 import datetime
 
-from PyQuantKit import OrderType, MarketData, BarData, TradeData, TickData, OrderState, OrderBook, TradeReport, TradeInstruction
-
 from . import LOGGER
+from ..base import OrderType, MarketData, BarData, TradeData, TickData, OrderState, OrderBook, TradeReport, TradeInstruction
 from ..engine.event_engine import TOPIC, EVENT_ENGINE
+from ..profile import PROFILE
+
+LOGGER = LOGGER.getChild('SimMatch')
 
 
 class SimMatch(object):
@@ -290,4 +292,4 @@ class SimMatch(object):
 
     @property
     def market_time(self) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(self.timestamp)
+        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.timezone)

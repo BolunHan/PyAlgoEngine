@@ -8,11 +8,12 @@ import uuid
 from typing import Type, TYPE_CHECKING
 
 import numpy as np
-from PyQuantKit import TransactionSide, TradeInstruction, MarketData, TradeReport, OrderState, OrderType
 
 from . import LOGGER
 from .market_engine import MDS
+from ..base import TransactionSide, TradeInstruction, MarketData, TradeReport, OrderState, OrderType
 
+LOGGER = LOGGER.getChild('AlgoEngine')
 if TYPE_CHECKING:
     from .trade_engine import DirectMarketAccess
 
@@ -20,7 +21,7 @@ __all__ = ['AlgoTemplate', 'AlgoRegistry', 'AlgoEngine', 'ALGO_ENGINE', 'ALGO_RE
 
 
 class AlgoStatus(enum.Enum):
-    idle = 'idle'  # init state 
+    idle = 'idle'  # init state
     preparing = 'preparing'  # preparing
     ready = 'ready'  # ready to launch order
     working = 'working'  # order launched
@@ -64,8 +65,9 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         self.order: dict[str, TradeInstruction] = {}
 
         self.is_active = False
-        self.start_time = None
-        self.finish_time = None
+
+        self.ts_started = None
+        self.ts_finished = None
 
     def __repr__(self):
         return f'<TradeAlgo>(ticker={self.ticker}, target={self.side.sign * self.target_volume}, done={self.side.sign * self.exposure_volume}, algo={self.__class__.__name__}, status={self.status.value}, id={id(self)})'
@@ -106,13 +108,13 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
 
         if not self.working_volume:
             if self.exposure_volume:
-                self._update_status(status=self.Status.done)
+                self._assign_status(status=self.Status.done)
             else:
-                self._update_status(status=self.Status.closed)
+                self._assign_status(status=self.Status.closed)
             LOGGER.info(f'{self} recovery successful! status {self.status}')
         else:
             LOGGER.warning(f'Caution! Recovering WORKING trade handler {self} may cause unexpected error!')
-            self._update_status(status=self.Status.working)
+            self._assign_status(status=self.Status.working)
 
     def _update_working_order(self):
         """
@@ -130,11 +132,30 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
 
         return self.working_order
 
+    def _assign_status(self, status: Status, timestamp: float = None, **kwargs):
+        if not isinstance(status, self.Status):
+            raise TypeError(f'Invalid status {status}! Expect {self.Status}, got {type(status)}.')
+
+        state_0, state_1 = self.status, status
+
+        if timestamp is None:
+            timestamp = self.timestamp
+
+        if 'market_time' in kwargs:
+            LOGGER.warning(DeprecationWarning('Assigning market_time deprecated, use timestamp instead!'))
+
+        if state_0 == self.Status.idle and state_1 == self.Status.working:
+            self.ts_started = timestamp
+        elif state_1 == self.Status.done or state_1 == self.Status.closed:
+            self.ts_finished = timestamp
+
+        self.status = state_1
+
     def _update_status(self, status=None, sync_pos=True, **kwargs):
         """
-        ._update_status provides a method to clear working orders and auto assign status
-        ._update_status DOES NOT call .on_filled, .on_rejected nor .on_canceled, these method is triggered by position management service
-        ._update_status should be called in .on_filled .on_rejected and .on_canceled
+        ._update_status provides a method to clear working orders and auto assign status.
+        ._update_status DOES NOT call .on_filled, .on_rejected nor .on_canceled, these method is triggered by position management service.
+        ._update_status should be called in .on_filled .on_rejected and .on_canceled.
 
         as the result of concurrency, assigning status while sync_pos may cause unexpected result, use with caution
 
@@ -145,25 +166,23 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         if sync_pos:
             self._update_working_order()
 
-        if 'market_time' in kwargs:
-            self.start_time = kwargs['market_time']
+        # if 'market_time' in kwargs:
+        #     market_time: datetime.datetime = kwargs['market_time']
+        #     self.ts_started = market_time.timestamp()
 
-        # update status with given status and datetime
+        # assign status with given status
         if status is not None:
-            if isinstance(status, self.Status):
-                self.status = status
-            else:
-                raise TypeError(f'Invalid status {status}')
+            return self._assign_status(status=status)
+
         # update status with self info
+        if self.working_order:
+            if self.status == self.Status.idle:
+                self.status = self.Status.working
+                self.ts_started = self.timestamp
         else:
-            # with working order
-            if self.working_order:
-                if self.status == self.Status.idle:
-                    self.status = self.Status.working
-            # without any working order
-            else:
-                if self.filled_volume == self.target_volume:
-                    self.status = self.Status.done
+            if self.filled_volume == self.target_volume:
+                self.status = self.Status.done
+                self.ts_finished = self.timestamp
 
         return self.status
 
@@ -203,17 +222,16 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         :param kwargs: keyword args for updating status. e.g. timestamp
         """
         self._update_working_order()
-        kwargs['sync_pos'] = False
 
         if self.working_order:
-            self._update_status(status=self.Status.working, **kwargs)
+            self._assign_status(status=self.Status.working, **kwargs)
         elif self.exposure_volume:
-            self._update_status(status=self.Status.done, **kwargs)
+            self._assign_status(status=self.Status.done, **kwargs)
         else:
-            self._update_status(status=self.Status.closed, **kwargs)
+            self._assign_status(status=self.Status.closed, **kwargs)
 
     def _rejected(self, order: TradeInstruction, **kwargs):
-        self._update_status(status=self.Status.rejected, **kwargs)
+        self._assign_status(status=self.Status.rejected, **kwargs)
 
     def _sync(self, progress, **kwargs):
         ...
@@ -227,8 +245,8 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
             'algo_id': self.algo_id,
             'status': self.status.name,
             'target_progress': self._target_progress,
-            'start_time': datetime.datetime.timestamp(self.start_time) if self.start_time else None,
-            'finish_time': datetime.datetime.timestamp(self.finish_time) if self.finish_time else None,
+            'ts_started': self.ts_started,
+            'ts_finished': self.ts_finished,
             'order': {_: self.order[_].to_json(fmt='dict') for _ in self.order},
         }
 
@@ -251,8 +269,8 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         self.algo_id = json_dict['algo_id']
         self.status = self.Status[json_dict['status']]
         self._target_progress = json_dict['target_progress']
-        self.start_time = None if json_dict['start_time'] is None else datetime.datetime.fromtimestamp(json_dict['start_time'])
-        self.finish_time = None if json_dict['finish_time'] is None else datetime.datetime.fromtimestamp(json_dict['finish_time'])
+        self.ts_started = json_dict['ts_started']
+        self.ts_finished = json_dict['ts_finished']
         self.order = {_: TradeInstruction.from_json(json_dict['order'][_]) for _ in json_dict['order']}
         self.working_order = {order_id: order for order_id, order in self.order.items() if not order.is_done}
 
@@ -423,8 +441,26 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         return self.algo_engine.mds.market_price.get(self.ticker)
 
     @property
-    def market_time(self):
+    def market_time(self) -> datetime.datetime:
         return self.algo_engine.mds.market_time
+
+    @property
+    def timestamp(self) -> float:
+        return self.algo_engine.mds.timestamp
+
+    @property
+    def start_time(self) -> datetime.datetime | None:
+        if self.ts_started is None:
+            return None
+
+        return datetime.datetime.fromtimestamp(self.ts_started, tz=self.algo_engine.mds.profile.timezone)
+
+    @property
+    def finish_time(self) -> datetime.datetime | None:
+        if self.ts_finished is None:
+            return None
+
+        return datetime.datetime.fromtimestamp(self.ts_finished, tz=self.algo_engine.mds.profile.timezone)
 
 
 class Passive(AlgoTemplate):
@@ -493,7 +529,7 @@ class Passive(AlgoTemplate):
 
             self.working_order[order.order_id] = order
             self.order[order.order_id] = order
-            self.start_time = self.market_time
+            self.ts_started = self.dma.timestamp
             self._launch(order=order, **kwargs)
 
     def cancel(self, **kwargs):
@@ -516,9 +552,9 @@ class Passive(AlgoTemplate):
         super()._rejected(order=order)
 
         if not self.exposure_volume:
-            self._update_status(status=self.Status.closed)
+            self._assign_status(status=self.Status.closed)
         else:
-            self._update_status(status=self.Status.done)
+            self._assign_status(status=self.Status.done)
 
     def _filled(self, order: TradeInstruction, report: TradeReport, **kwargs):
         super()._filled(order=order, report=report, **kwargs)
@@ -526,9 +562,9 @@ class Passive(AlgoTemplate):
         if order.order_id not in self.working_order:
             if self.status == self.Status.working:
                 if self.filled_volume:
-                    self._update_status(status=self.Status.done)
+                    self._assign_status(status=self.Status.done)
                 else:
-                    self._update_status(status=self.Status.closed)
+                    self._assign_status(status=self.Status.closed)
 
     def _canceled(self, order: TradeInstruction, **kwargs):
         super()._canceled(order=order, **kwargs)
@@ -536,12 +572,12 @@ class Passive(AlgoTemplate):
         if order.order_id not in self.working_order:
             if self.status == self.Status.working:
                 if self.filled_volume:
-                    self._update_status(status=self.Status.done)
+                    self._assign_status(status=self.Status.done)
                 else:
-                    self._update_status(status=self.Status.closed)
+                    self._assign_status(status=self.Status.closed)
 
         if not self.is_active:
-            self._update_status(status=self.Status.done)
+            self._assign_status(status=self.Status.done)
 
     def to_json(self, fmt='str') -> str | dict:
         json_dict = super().to_json(fmt='dict')
@@ -595,7 +631,7 @@ class PassiveTimeout(Passive):
             self.work()
 
     def work(self):
-        ts = self.algo_engine.mds.trade_time_between(start_time=self.start_time, end_time=self.market_time).total_seconds()
+        ts = self.algo_engine.mds.trade_time_between(start_time=self.ts_started, end_time=self.timestamp).total_seconds()
         if self.status == self.Status.working and self.timeout and ts > self.timeout:
             self.cancel()
             self.logger.debug(f'{self} canceling. status={self.status}, ts={ts:.3f}s')
@@ -647,7 +683,7 @@ class Aggressive(Passive):
         super()._filled(order=order, report=report, **kwargs)
 
         if not self.is_active:
-            self._update_status(status=self.Status.done)
+            self._assign_status(status=self.Status.done)
         elif order.order_id not in self.working_order:
             if self.status == self.Status.working:
                 self.launch()
@@ -656,7 +692,7 @@ class Aggressive(Passive):
         super()._canceled(order=order, **kwargs)
 
         if not self.is_active:
-            self._update_status(status=self.Status.done)
+            self._assign_status(status=self.Status.done)
         elif order.order_id not in self.working_order:
             if self.status == self.Status.working:
                 self.launch()
