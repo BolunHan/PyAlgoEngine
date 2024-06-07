@@ -8,7 +8,7 @@ from typing import Self
 
 from . import LOGGER
 from ..base import TickData, TradeData, OrderBook, MarketData, TransactionSide
-from ..profile import PROFILE, Profile, PROFILE_CN
+from ..profile import PROFILE, Profile
 
 LOGGER = LOGGER.getChild('MarketEngine')
 
@@ -199,9 +199,6 @@ class MarketDataService(object):
         self.monitor.pop(monitor_id)
         self.monitor_manager.pop_monitor(monitor_id)
 
-    def init_cn_override(self):
-        self.profile = PROFILE_CN
-
     def _on_trade_data(self, trade_data: TradeData):
         ticker = trade_data.ticker
 
@@ -281,8 +278,8 @@ class MarketDataService(object):
     def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
         return self.profile.trade_time_between(start_time=start_time, end_time=end_time, **kwargs)
 
-    def in_trade_session(self, market_time: datetime.datetime | float) -> bool:
-        return self.profile.in_trade_session(market_time=market_time)
+    def is_market_session(self, market_time: datetime.datetime | float | int) -> bool:
+        return self.profile.is_market_session(timestamp=market_time)
 
     def clear(self):
         # self._market_price.clear()
@@ -310,7 +307,7 @@ class MarketDataService(object):
             if self._timestamp is None:
                 return None
             else:
-                return datetime.datetime.fromtimestamp(self._timestamp, tz=self.profile.timezone)
+                return datetime.datetime.fromtimestamp(self._timestamp, tz=self.profile.time_zone)
         else:
             return self._market_time
 

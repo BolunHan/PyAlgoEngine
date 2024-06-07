@@ -152,7 +152,7 @@ class TradeBaseClass(dict, metaclass=abc.ABCMeta):
 
     @property
     def market_time(self) -> datetime.datetime | datetime.date:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.timezone)
+        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
 
 
 class TradeReport(TradeBaseClass):
@@ -377,7 +377,7 @@ class TradeReport(TradeBaseClass):
 
     @property
     def trade_time(self) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.timezone)
+        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
 
 
 class TradeInstruction(TradeBaseClass):
@@ -681,26 +681,26 @@ class TradeInstruction(TradeBaseClass):
 
     @property
     def start_time(self) -> datetime.datetime | None:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.timezone)
+        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
 
     @property
     def placed_time(self) -> datetime.datetime | None:
         if 'ts_placed' in self:
-            return datetime.datetime.fromtimestamp(self['ts_placed'], tz=PROFILE.timezone)
+            return datetime.datetime.fromtimestamp(self['ts_placed'], tz=PROFILE.time_zone)
 
         return None
 
     @property
     def canceled_time(self) -> datetime.datetime | None:
         if 'ts_canceled' in self:
-            return datetime.datetime.fromtimestamp(self['ts_canceled'], tz=PROFILE.timezone)
+            return datetime.datetime.fromtimestamp(self['ts_canceled'], tz=PROFILE.time_zone)
 
         return None
 
     @property
     def finished_time(self) -> datetime.datetime | None:
         if 'ts_finished' in self:
-            return datetime.datetime.fromtimestamp(self['ts_finished'], tz=PROFILE.timezone)
+            return datetime.datetime.fromtimestamp(self['ts_finished'], tz=PROFILE.time_zone)
 
         return None
 

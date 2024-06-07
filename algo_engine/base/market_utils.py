@@ -269,7 +269,7 @@ class MarketData(dict, metaclass=abc.ABCMeta):
 
     @property
     def market_time(self) -> datetime.datetime | datetime.date:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.timezone)
+        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
 
     @property
     @abc.abstractmethod
@@ -823,9 +823,9 @@ class BarData(MarketData):
     @property
     def bar_start_time(self) -> datetime.datetime:
         if 'start_timestamp' in self:
-            return datetime.datetime.fromtimestamp(self['start_timestamp'], tz=PROFILE.timezone)
+            return datetime.datetime.fromtimestamp(self['start_timestamp'], tz=PROFILE.time_zone)
         else:
-            return datetime.datetime.fromtimestamp(self['timestamp'] - self['bar_span'], tz=PROFILE.timezone)
+            return datetime.datetime.fromtimestamp(self['timestamp'] - self['bar_span'], tz=PROFILE.time_zone)
 
     @property
     def vwap(self) -> float:

@@ -453,14 +453,14 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         if self.ts_started is None:
             return None
 
-        return datetime.datetime.fromtimestamp(self.ts_started, tz=self.algo_engine.mds.profile.timezone)
+        return datetime.datetime.fromtimestamp(self.ts_started, tz=self.algo_engine.mds.profile.time_zone)
 
     @property
     def finish_time(self) -> datetime.datetime | None:
         if self.ts_finished is None:
             return None
 
-        return datetime.datetime.fromtimestamp(self.ts_finished, tz=self.algo_engine.mds.profile.timezone)
+        return datetime.datetime.fromtimestamp(self.ts_finished, tz=self.algo_engine.mds.profile.time_zone)
 
 
 class Passive(AlgoTemplate):

@@ -31,7 +31,7 @@ class ProfileCN(Profile):
         profile.in_trade_session = self.in_trade_session
 
     @functools.lru_cache
-    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
+    def query_trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
         import pandas as pd
 
         if market in self.trade_calendar:
@@ -72,7 +72,7 @@ class ProfileCN(Profile):
         if start_date == end_date:
             offset = 0
         else:
-            market_date_list = self.trade_calendar(start_date=start_date, end_date=end_date, **kwargs)
+            market_date_list = self.query_trade_calendar(start_date=start_date, end_date=end_date, **kwargs)
             if not market_date_list:
                 offset = 0
             else:
@@ -106,11 +106,11 @@ class ProfileCN(Profile):
         implied_date = datetime.date.today()
 
         if isinstance(start_time, (float, int)):
-            start_time = datetime.datetime.fromtimestamp(start_time, tz=self.timezone)
+            start_time = datetime.datetime.fromtimestamp(start_time, tz=self.time_zone)
             implied_date = start_time.date()
 
         if isinstance(end_time, (float, int)):
-            end_time = datetime.datetime.fromtimestamp(end_time, tz=self.timezone)
+            end_time = datetime.datetime.fromtimestamp(end_time, tz=self.time_zone)
             implied_date = end_time.date()
 
         if isinstance(start_time, datetime.time):
@@ -164,29 +164,24 @@ class ProfileCN(Profile):
         else:
             raise NotImplementedError(f'Invalid fmt {fmt}, should be "timestamp" or "timedelta"')
 
-    def in_trade_session(self, market_time: datetime.datetime | float | int = None) -> bool:
-        if market_time is None:
-            market_time = datetime.datetime.now()
+    def is_market_session(self, timestamp: float | int | datetime.datetime) -> bool:
+        if isinstance(timestamp, (float, int)):
+            market_time = datetime.datetime.fromtimestamp(timestamp, tz=self.time_zone).time()
+        elif isinstance(timestamp, datetime.datetime):
+            market_time = timestamp
+        else:
+            raise TypeError(f'Expect timestamp to be a float, int or datetime, got {type(timestamp)}!')
 
-        if isinstance(market_time, (float, int)):
-            market_time = datetime.datetime.fromtimestamp(market_time, tz=self.timezone)
-
-        market_date = market_time.date()
-        market_time = market_time.time()
-
-        if not self.is_trade_day(market_date=market_date):
-            return False
-
-        if market_time < datetime.time(9, 30):
-            return False
-
-        if datetime.time(11, 30) < market_time < datetime.time(13, 00):
-            return False
-
-        if market_time > datetime.time(15, 00):
+        if (market_time < datetime.time(9, 30)
+                or datetime.time(11, 30) < market_time < datetime.time(13, 0)
+                or datetime.time(15, 0) < market_time):
             return False
 
         return True
+
+    @property
+    def range_break(self) -> list[dict]:
+        return [dict(bounds=[0, 9.5], pattern="hour"), dict(bounds=[11.5, 13], pattern="hour"), dict(bounds=[15, 24], pattern="hour")]
 
 
 PROFILE_CN = ProfileCN()

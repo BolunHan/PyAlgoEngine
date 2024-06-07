@@ -14,7 +14,7 @@ class Profile(object, metaclass=abc.ABCMeta):
         self.session_end = session_end
         self.session_break = [] if session_break is None else session_break
 
-        self.timezone = None
+        self.time_zone = None
 
     @abc.abstractmethod
     def override_profile(self, profile: Self): ...
@@ -24,8 +24,15 @@ class Profile(object, metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def in_trade_session(self, market_time: datetime.datetime | float) -> bool:
+    def is_market_session(self, timestamp: float | int | datetime.datetime) -> bool:
         ...
+
+    @property
+    def range_break(self) -> list[dict]:
+        """
+        an range break designed for plotly.
+        """
+        return []
 
 
 class DefaultProfile(Profile):
@@ -41,10 +48,10 @@ class DefaultProfile(Profile):
 
     def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
         if start_time is not None and isinstance(start_time, (float, int)):
-            start_time = datetime.datetime.fromtimestamp(start_time, tz=self.timezone)
+            start_time = datetime.datetime.fromtimestamp(start_time, tz=self.time_zone)
 
         if end_time is not None and isinstance(end_time, (float, int)):
-            end_time = datetime.datetime.fromtimestamp(end_time, tz=self.timezone)
+            end_time = datetime.datetime.fromtimestamp(end_time, tz=self.time_zone)
 
         if start_time is None or end_time is None:
             return datetime.timedelta(seconds=0)
@@ -54,7 +61,7 @@ class DefaultProfile(Profile):
 
         return end_time - start_time
 
-    def in_trade_session(self, market_time: datetime.datetime | float) -> bool:
+    def is_market_session(self, timestamp: float | int | datetime.datetime) -> bool:
         return True
 
 

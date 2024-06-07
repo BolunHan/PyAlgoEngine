@@ -292,4 +292,4 @@ class SimMatch(object):
 
     @property
     def market_time(self) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.timezone)
+        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
