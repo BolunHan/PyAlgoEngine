@@ -28,7 +28,7 @@ class ProfileCN(Profile):
         # profile.time_to_seconds = cls.time_to_seconds
 
         profile.trade_time_between = self.trade_time_between
-        profile.in_trade_session = self.in_trade_session
+        profile.is_market_session = self.is_market_session
 
     @functools.lru_cache
     def query_trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
