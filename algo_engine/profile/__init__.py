@@ -17,7 +17,7 @@ class Profile(object, metaclass=abc.ABCMeta):
         self.time_zone = None
 
     @abc.abstractmethod
-    def override_profile(self, profile: Self): ...
+    def override_profile(self, profile: Self = None): ...
 
     @abc.abstractmethod
     def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
@@ -43,7 +43,7 @@ class DefaultProfile(Profile):
             session_break=None
         )
 
-    def override_profile(self, profile: Self):
+    def override_profile(self, profile: Self = None):
         pass
 
     def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:

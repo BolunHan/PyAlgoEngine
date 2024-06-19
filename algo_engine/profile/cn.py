@@ -14,7 +14,12 @@ class ProfileCN(Profile):
 
         self.trade_calendar = {}
 
-    def override_profile(self, profile: Profile):
+    def override_profile(self, profile: Profile = None):
+
+        if profile is None:
+            from . import PROFILE
+            profile = PROFILE
+
         profile.session_start = self.session_start
         profile.session_end = self.session_end
         profile.session_break.clear()
