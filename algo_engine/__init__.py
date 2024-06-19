@@ -1,4 +1,4 @@
-__version__ = "0.4.3"
+__version__ = "0.5.0a"
 
 import logging
 import os
@@ -18,12 +18,14 @@ def set_logger(logger: logging.Logger):
     engine.set_logger(logger=logger.getChild('Engine'))
     back_test.set_logger(logger=logger.getChild('BackTest'))
     strategy.set_logger(logger=logger.getChild('Strategy'))
+    apps.set_logger(logger=logger.getChild('Apps'))
 
 
 from . import base
 from . import engine
 from . import back_test
 from . import strategy
+from . import apps
 
 engine.LOGGER.info(f'AlgoEngine version {__version__}')
 
