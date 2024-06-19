@@ -48,6 +48,12 @@ setuptools.setup(
         'numpy',
         'pandas',
         'exchange_calendars',
-        'PyEventEngine>=0.3.0.post4',
-    ]
+        'PyEventEngine',
+    ],
+    extras_require={
+        "WebApps": [
+            "flask",
+            "bokeh"
+        ],
+    },
 )
