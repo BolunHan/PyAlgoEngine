@@ -12,4 +12,5 @@ def set_logger(logger: logging.Logger):
     backtester.set_logger(LOGGER.getChild('Backtester'))
 
 
+from .bokeh_server import DocServer, DocTheme
 from . import backtester

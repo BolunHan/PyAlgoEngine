@@ -3,7 +3,7 @@ import sys
 import time
 from threading import Thread
 
-from algo_engine.apps.backtester import DOC_MANAGER, start_app, LOGGER
+from algo_engine.apps.backtester import WebApp, start_app, LOGGER
 from algo_engine.base import Progress
 from algo_engine.profile import PROFILE_CN
 from algo_engine.utils import fake_data
@@ -15,16 +15,16 @@ def main():
     market_date = datetime.date.today()
 
     data_set = fake_data(market_date=market_date)
+    web_app = WebApp()
     LOGGER.info(f'{len(data_set)} fake data generated for {ticker} {market_date}.')
 
-    doc_server = DOC_MANAGER.register(ticker=ticker, bokeh_update_interval=0)
-    Thread(target=start_app, daemon=True).start()
+    web_app.register(ticker=ticker)
+    web_app.serve(blocking=False)
 
-    LOGGER.info(f'web application started at http://localhost:{DOC_MANAGER.port}')
-    LOGGER.info(f'bokeh server started at http://localhost:5006{doc_server.url}')
+    LOGGER.info(f'web app started at {web_app.url}')
 
     for ts, row in Progress(list(data_set.iterrows())):
-        doc_server.update(
+        web_app.update(
             timestamp=ts,
             open_price=row['open_price'],
             close_price=row['close_price'],

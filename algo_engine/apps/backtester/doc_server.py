@@ -1,31 +1,18 @@
 import datetime
 import pathlib
-import uuid
-from copy import deepcopy
 from functools import partial
 from typing import overload, TypedDict, NotRequired
 
 import pandas as pd
-from bokeh.document import Document
 from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, RangeTool
+from bokeh.models import RangeTool
 from bokeh.plotting import figure
 
-from . import LOGGER
+from .. import DocServer, DocTheme
 from ...base import MarketData, TradeData, TransactionData
 
 
-class ActiveBarData(TypedDict):
-    ts_start: float
-    ts_end: float
-    open_price: float
-    close_price: float
-    high_price: float
-    low_price: float
-    volume: NotRequired[float]
-
-
-class ClassicTheme(object):
+class StickTheme(DocTheme):
     stick_padding = 0.1
 
     @classmethod
@@ -40,21 +27,31 @@ class ClassicTheme(object):
         return style_dict
 
 
-class DocServer:
-    def __init__(self, ticker: str, url: str = None, interval: float = 60., themes: ClassicTheme = None, max_size: int = None, **kwargs):
-        self.ticker = ticker
-        self.url = f'/{ticker}' if url is None else url
-        self.interval = interval
-        self.themes = ClassicTheme() if themes is None else themes
-        self.max_size = max_size
+class CandleStick(DocServer):
+    class ActiveBarData(TypedDict):
+        ts_start: float
+        ts_end: float
+        open_price: float
+        close_price: float
+        high_price: float
+        low_price: float
+        volume: NotRequired[float]
 
+    def __init__(self, ticker: str, interval: float = 60., **kwargs):
+        self.ticker = ticker
+        self.interval = interval
+
+        super().__init__(
+            url=kwargs.get('url', f'/{ticker}'),
+            theme=None,
+            max_size=kwargs.get('max_size'),
+            update_interval=kwargs.get('update_interval', 0)
+        )
+
+        self.theme = kwargs.get('theme', StickTheme())
         self.timestamp: float = 0.
-        self.active_bar_data: ActiveBarData | None = None
-        self.bokeh_documents: dict[int, Document] = {}
-        self.bokeh_source: dict[int, ColumnDataSource] = {}
-        self.bokeh_data_queue: dict[int, dict[str, list]] = {}  # this is a dict of deepcopy of self.data, to update each documents
-        self.bokeh_update_interval = kwargs.get('bokeh_update_interval', 0)
-        self.data: dict[str, list] = dict(
+        self.active_bar_data: CandleStick.ActiveBarData | None = None
+        self.data.update(
             market_time=[],
             open_price=[],
             high_price=[],
@@ -65,12 +62,6 @@ class DocServer:
             _min_price=[],
             stick_color=[]
         )
-
-    def __str__(self):
-        return f'<{self.__class__.__name__}>(id={id(self.__class__)}, url={self.url})'
-
-    def __call__(self, doc: Document):
-        self.register_document(doc=doc)
 
     @overload
     def update(self, timestamp: float, market_price: float, **kwargs):
@@ -110,7 +101,7 @@ class DocServer:
         if self.active_bar_data is None:
             ts_index = timestamp // self.interval * self.interval
 
-            self.active_bar_data = ActiveBarData(
+            self.active_bar_data = self.ActiveBarData(
                 ts_start=ts_index,
                 ts_end=ts_index + self.interval,
                 open_price=open_price,
@@ -155,40 +146,13 @@ class DocServer:
             new_data['volume'].append(self.active_bar_data['volume'])
             new_data['_max_price'].append(max(self.active_bar_data['open_price'], self.active_bar_data['close_price']))
             new_data['_min_price'].append(min(self.active_bar_data['open_price'], self.active_bar_data['close_price']))
-            new_data['stick_color'].append(self.themes.stick_style(self.active_bar_data['close_price'] - self.active_bar_data['open_price'])['stick_color'])
+            new_data['stick_color'].append(self.theme.stick_style(self.active_bar_data['close_price'] - self.active_bar_data['open_price'])['stick_color'])
 
-            if not self.bokeh_update_interval:
+            if not self.update_interval:
                 doc.add_next_tick_callback(partial(self.stream, doc_id=doc_id))
 
-    def stream(self, doc_id: int = None):
-        if doc_id is None:
-            for doc_id in list(self.bokeh_documents):
-                self.stream(doc_id=doc_id)
-            return
-
-        doc = self.bokeh_documents[doc_id]
-        new_data = self.bokeh_data_queue[doc_id]
-        source = self.bokeh_source[doc_id]
-
-        source.stream(new_data=deepcopy(new_data), rollover=self.max_size)
-        for key, seq in new_data.items():
-            seq.clear()
-
-        LOGGER.debug(f'{self.__class__} {self.url} stream updated!')
-
-    def register_document(self, doc: Document):
-        doc_id = uuid.uuid4().int
-
-        self.bokeh_documents[doc_id] = doc
-        self.bokeh_data_queue[doc_id] = {key: [] for key in self.data}
-        self.bokeh_source[doc_id] = ColumnDataSource(data=self.data)
-
+    def layout(self, doc_id: int):
         self._register_candlestick(doc_id=doc_id)
-
-        if self.bokeh_update_interval:
-            doc.add_periodic_callback(callback=partial(self.stream, doc_id=doc_id), period_milliseconds=int(self.bokeh_update_interval * 1000))
-
-        LOGGER.info(f'{self} registered Bokeh document id = {doc_id}!')
 
     def _register_candlestick(self, doc_id: int):
         doc = self.bokeh_documents[doc_id]
@@ -229,7 +193,7 @@ class DocServer:
             x='market_time',
             top='_max_price',
             bottom='_min_price',
-            width=datetime.timedelta(seconds=(1 - self.themes.stick_padding) * self.interval),
+            width=datetime.timedelta(seconds=(1 - self.theme.stick_padding) * self.interval),
             color='stick_color',
             alpha=0.5,
             source=source

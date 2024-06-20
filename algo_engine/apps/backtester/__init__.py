@@ -4,8 +4,8 @@ from .. import LOGGER
 
 LOGGER = LOGGER.getChild('Backtester')
 
-from .doc_server import DocServer, ClassicTheme
-from .web_app import DOC_MANAGER, DocManager, start_app
+from .doc_server import CandleStick, StickTheme
+from .web_app import WebApp, start_app
 
 
 def set_logger(logger: logging.Logger):
@@ -16,4 +16,4 @@ def set_logger(logger: logging.Logger):
     web_app.LOGGER = LOGGER
 
 
-__all__ = [DocServer, ClassicTheme, DOC_MANAGER, DocManager, start_app]
+__all__ = ['CandleStick', 'StickTheme', 'WebApp', 'start_app']
