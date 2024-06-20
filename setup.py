@@ -53,6 +53,7 @@ setuptools.setup(
     extras_require={
         "WebApps": [
             "flask",
+            "waitress",
             "bokeh"
         ],
     },

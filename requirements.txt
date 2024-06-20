@@ -1,1 +1,11 @@
 .
+
+numpy
+pandas
+exchange_calendars
+PyEventEngine
+
+# extra dependencies to run web app
+flask
+waitress
+bokeh
