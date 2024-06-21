@@ -2,11 +2,83 @@ __package__ = 'algo_engine.utils'
 
 import argparse
 import datetime
+from typing import Literal, overload
 
 import numpy as np
 import pandas as pd
 
 from ..profile import Profile, PROFILE
+
+
+@overload
+def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode, ts_format='timestamp') -> list[float]:
+    ...
+
+
+@overload
+def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode, ts_format='datetime') -> list[datetime.datetime]:
+    ...
+
+
+def ts_indices(
+        market_date: datetime.date = None,
+        interval: float = 60.,
+        session_start: datetime.time = datetime.time.min,
+        session_end: datetime.time = None,
+        session_break: list[tuple[datetime.time, datetime.time]] = None,
+        time_zone: datetime.tzinfo = None,
+        ts_mode: Literal['start', 'end', 'both'] = 'end',
+        ts_format: Literal['timestamp', 'datetime'] = 'timestamp'
+) -> list[float]:
+    if market_date is None:
+        market_date = datetime.date.today()
+
+    # this is supposed to be the end_time of the given candle stick
+    market_time = datetime.datetime.combine(market_date, session_start, tzinfo=time_zone) + datetime.timedelta(seconds=interval)
+
+    if not session_end:
+        session_end = datetime.datetime.combine(market_date + datetime.timedelta(days=1), datetime.time(0), tzinfo=time_zone)
+    # session end in next day
+    elif session_end < session_start:
+        session_end = datetime.datetime.combine(market_date + datetime.timedelta(days=1), session_end, tzinfo=time_zone)
+    else:
+        session_end = datetime.datetime.combine(market_date, session_end, tzinfo=time_zone)
+
+    if ts_mode == 'both':
+        session_end += datetime.timedelta(seconds=interval)
+
+    ts_index = []
+    while market_time <= session_end:
+        # check if the given market_time is in session break
+        in_session = True
+
+        if session_break:
+            for break_range in session_break:
+                break_start, break_end = break_range
+
+                if break_start < market_time.time() <= break_end:
+                    in_session = False
+                    break
+
+        if ts_mode == 'start' or ts_mode == 'both':
+            _market_time = market_time - datetime.timedelta(seconds=interval)
+        elif ts_mode == 'end':
+            _market_time = market_time
+        else:
+            raise ValueError(f'Invalid ts_mode {ts_mode}!')
+
+        if in_session:
+            if ts_format == 'timestamp':
+                timestamp = _market_time.timestamp()
+                ts_index.append(timestamp)
+            elif ts_format == 'datetime':
+                ts_index.append(_market_time)
+            else:
+                raise ValueError(f'Invalid ts_format {ts_format}!')
+
+        market_time += datetime.timedelta(seconds=interval)
+
+    return ts_index
 
 
 def fake_daily_data(
@@ -78,41 +150,20 @@ def fake_data(
     time_zone = kwargs.get('time_zone', profile.time_zone)
 
     if not session_start:
-        session_start = datetime.time(0)
+        session_start = datetime.time.min
 
-    # this is supposed to be the end_time of the given candle stick
-    market_time = datetime.datetime.combine(market_date, session_start, tzinfo=time_zone) + datetime.timedelta(seconds=interval)
-
-    if not session_end:
-        session_end = datetime.datetime.combine(market_date + datetime.timedelta(days=1), datetime.time(0), tzinfo=time_zone)
-    # session end in next day
-    elif session_end < session_start:
-        session_end = datetime.datetime.combine(market_date + datetime.timedelta(days=1), session_end, tzinfo=time_zone)
-    else:
-        session_end = datetime.datetime.combine(market_date, session_end, tzinfo=time_zone)
-
-    ts_index = []
-    while market_time <= session_end:
-        # check if the given market_time is in session break
-        in_session = True
-
-        if session_break:
-            for break_range in session_break:
-                break_start, break_end = break_range
-
-                if break_start < market_time.time() <= break_end:
-                    in_session = False
-                    break
-
-        if in_session:
-            timestamp = market_time.timestamp()
-            ts_index.append(timestamp)
-
-        market_time += datetime.timedelta(seconds=interval)
+    _ts_indices = ts_indices(
+        market_date=market_date,
+        interval=interval,
+        session_start=session_start,
+        session_end=session_end,
+        session_break=session_break,
+        time_zone=time_zone
+    )
 
     ttl_days = kwargs.get('ttl_days', 252)
     risk_free_rate = kwargs.get('risk_free_rate', 0.04)
-    num_obs = len(ts_index)
+    num_obs = len(_ts_indices)
     obs_volatility = volatility / np.sqrt(ttl_days * num_obs)
     obs_risk_free_rate = np.log(1 + risk_free_rate) / ttl_days / num_obs
 
@@ -134,7 +185,7 @@ def fake_data(
     low_price = np.min([low_price, open_price], axis=0)
 
     data = pd.DataFrame({
-        'timestamp': ts_index,
+        'timestamp': _ts_indices,
         'open_price': open_price,
         'high_price': high_price,
         'low_price': low_price,
