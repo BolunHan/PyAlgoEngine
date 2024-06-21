@@ -7,48 +7,33 @@ from . import Profile
 class ProfileCN(Profile):
     def __init__(self):
         super().__init__(
+            profile_id='cn',
             session_start=datetime.time(9, 30),
             session_end=datetime.time(15, 0),
             session_break=[(datetime.time(11, 30), datetime.time(13, 0))]
         )
 
-        self.trade_calendar = {}
+        self.cn_trade_calendar_cache = {}
 
     def override_profile(self, profile: Profile = None):
+        profile = super().override_profile(profile=profile)
 
-        if profile is None:
-            from . import PROFILE
-            profile = PROFILE
-
-        profile.session_start = self.session_start
-        profile.session_end = self.session_end
-        profile.session_break.clear()
-        profile.session_break.extend(self.session_break)
-
-        profile.trade_calendar = self.trade_calendar
-
-        # profile.trade_calendar = cls.trade_calendar
-        # profile.is_trade_day = cls.is_trade_day
-        # profile.trade_days_between = cls.trade_days_between
-        # profile.time_to_seconds = cls.time_to_seconds
-
-        profile.trade_time_between = self.trade_time_between
-        profile.is_market_session = self.is_market_session
+        setattr(profile, 'cn_trade_calendar_cache', self.cn_trade_calendar_cache)
 
     @functools.lru_cache
-    def query_trade_calendar(self, start_date: datetime.date, end_date: datetime.date, market='XSHG', tz='UTC') -> list[datetime.date]:
+    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, **kwargs) -> list[datetime.date]:
         import pandas as pd
+        import exchange_calendars
 
-        if market in self.trade_calendar:
-            trade_calendar = self.trade_calendar[market]
+        market = kwargs.get('market', 'XSHG')
+        tz = kwargs.get('tz', 'UTC')
+
+        if market in self.cn_trade_calendar_cache:
+            trade_calendar = self.cn_trade_calendar_cache[market]
         else:
-            import exchange_calendars
-            trade_calendar = self.trade_calendar[market] = exchange_calendars.get_calendar(market)
+            trade_calendar = self.cn_trade_calendar_cache[market] = exchange_calendars.get_calendar(market)
 
-        calendar = trade_calendar.sessions_in_range(
-            pd.Timestamp(start_date, tz=tz),
-            pd.Timestamp(end_date, tz=tz)
-        )
+        calendar = trade_calendar.sessions_in_range(start_date, end_date)
 
         # noinspection PyTypeChecker
         result = list(pd.to_datetime(calendar).date)
@@ -57,11 +42,11 @@ class ProfileCN(Profile):
 
     @functools.lru_cache
     def is_trade_day(self, market_date: datetime.date, market='XSHG', tz='UTC') -> bool:
-        if market in self.trade_calendar:
-            trade_calendar = self.trade_calendar[market]
+        if market in self.cn_trade_calendar_cache:
+            trade_calendar = self.cn_trade_calendar_cache[market]
         else:
             import exchange_calendars
-            trade_calendar = self.trade_calendar[market] = exchange_calendars.get_calendar(market)
+            trade_calendar = self.cn_trade_calendar_cache[market] = exchange_calendars.get_calendar(market)
 
         return trade_calendar.is_session(market_date)
 
@@ -77,7 +62,7 @@ class ProfileCN(Profile):
         if start_date == end_date:
             offset = 0
         else:
-            market_date_list = self.query_trade_calendar(start_date=start_date, end_date=end_date, **kwargs)
+            market_date_list = self.trade_calendar(start_date=start_date, end_date=end_date, **kwargs)
             if not market_date_list:
                 offset = 0
             else:
@@ -169,7 +154,7 @@ class ProfileCN(Profile):
         else:
             raise NotImplementedError(f'Invalid fmt {fmt}, should be "timestamp" or "timedelta"')
 
-    def is_market_session(self, timestamp: float | int | datetime.datetime) -> bool:
+    def is_market_session(self, timestamp: float | int | datetime.datetime, **kwargs) -> bool:
         if isinstance(timestamp, (float, int)):
             market_time = datetime.datetime.fromtimestamp(timestamp, tz=self.time_zone).time()
         elif isinstance(timestamp, datetime.datetime):
@@ -183,10 +168,6 @@ class ProfileCN(Profile):
             return False
 
         return True
-
-    @property
-    def range_break(self) -> list[dict]:
-        return [dict(bounds=[0, 9.5], pattern="hour"), dict(bounds=[11.5, 13], pattern="hour"), dict(bounds=[15, 24], pattern="hour")]
 
 
 PROFILE_CN = ProfileCN()
