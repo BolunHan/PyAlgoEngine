@@ -2,7 +2,7 @@ import abc
 import uuid
 from copy import deepcopy
 from functools import partial
-from threading import Thread
+from threading import Thread, Lock
 
 from bokeh.document import Document
 from bokeh.models import ColumnDataSource
@@ -16,10 +16,11 @@ class DocTheme(object, metaclass=abc.ABCMeta):
 
 
 class DocServer(object, metaclass=abc.ABCMeta):
-    def __init__(self, theme: DocTheme = None, max_size: int = None, update_interval: float = 0., **kwargs):
+    def __init__(self, theme: DocTheme = None, max_size: int = None, update_interval: float = 0., lock: Lock = None, **kwargs):
         self.theme: DocTheme = theme
         self.max_size: int = max_size
         self.update_interval: float = update_interval
+        self.lock = Lock() if lock is None else lock
 
         self.bokeh_documents: dict[int, Document] = {}
         self.bokeh_source: dict[int, ColumnDataSource] = {}
@@ -57,11 +58,13 @@ class DocServer(object, metaclass=abc.ABCMeta):
         LOGGER.debug(f'{self.__class__} stream updated!')
 
     def register_document(self, doc: Document):
+        self.lock.acquire()
+
         doc_id = uuid.uuid4().int
 
         self.bokeh_documents[doc_id] = doc
         self.bokeh_data_queue[doc_id] = {key: [] for key in self.data}
-        self.bokeh_source[doc_id] = ColumnDataSource(data=self.data)
+        self.bokeh_source[doc_id] = ColumnDataSource(data=deepcopy(self.data))
 
         self.layout(doc_id=doc_id)
 
@@ -71,13 +74,16 @@ class DocServer(object, metaclass=abc.ABCMeta):
         doc.on_session_destroyed(partial(self._unregister_document, doc_id=doc_id))
 
         LOGGER.info(f'{self} registered Bokeh document id = {doc_id}!')
+        self.lock.release()
 
     def _unregister_document(self, session_context, doc_id: int):
+        self.lock.acquire()
         LOGGER.info(f'Session {doc_id} {session_context} disconnected!')
 
         self.bokeh_documents.pop(doc_id)
         self.bokeh_source.pop(doc_id)
         self.bokeh_data_queue.pop(doc_id)
+        self.lock.release()
 
 
 class DocManager(object):

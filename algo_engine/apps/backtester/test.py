@@ -31,6 +31,9 @@ def main():
         )
         time.sleep(0.05)
 
+        for _ in web_app.doc_manager.doc_server.values():
+            _.to_csv('data.csv')
+
 
 if __name__ == '__main__':
     main()

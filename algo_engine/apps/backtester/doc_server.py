@@ -1,11 +1,12 @@
 import datetime
 import pathlib
 from functools import partial
+from threading import Lock
 from typing import overload, TypedDict, NotRequired
 
 import pandas as pd
 from bokeh.models import PanTool, WheelPanTool, WheelZoomTool, BoxZoomTool, ResetTool, ExamineTool, SaveTool, CrosshairTool, HoverTool
-from bokeh.models import RangeTool, CustomLabelingPolicy, Range1d
+from bokeh.models import RangeTool, Range1d
 from bokeh.plotting import figure, gridplot
 
 from .. import DocServer, DocTheme
@@ -21,55 +22,6 @@ class StickTheme(DocTheme):
     ColorStyle = TypedDict('ColorStyle', fields={'up': str, 'down': str})
     ws_style = ColorStyle(up="green", down="red")
     cn_style = ColorStyle(up="red", down="green")
-
-    x_axis_policy = CustomLabelingPolicy(
-        code="""
-            const trading_hours = (date) => {
-                const hour = date.getHours();
-                const minutes = date.getMinutes();
-                // Define trading hours: 09:30 - 11:30, 13:00 - 15:00
-                if ((hour === 9 && minutes >= 30) || (hour > 9 && hour < 11) || 
-                    (hour === 11 && minutes <= 30) || (hour >= 13 && hour < 15)) {
-                    return true;
-                }
-                return false;
-            };
-    
-            for (const i of indices) {
-                const label_date = new Date(indices[i]);
-                console.log(`Index: ${i}, Value: ${indices}, Type: ${typeof indices}`);
-                console.log(`Index: ${i}, Value: ${bboxes}, Type: ${typeof bboxes}`);
-                console.log(`Index: ${i}, Value: ${bboxes[i]}, Type: ${typeof bboxes}`);
-                const is_trading_hour = trading_hours(label_date);
-                console.log(`Trading Hour: ${is_trading_hour}`);
-                if (!is_trading_hour) {
-                    indices.unset(i);
-                }
-            }
-        """
-    )
-
-    class Policy(CustomLabelingPolicy):
-        from bokeh.core.property.primitive import String
-        code = String("""
-            const trading_hours = (date) => {
-                const hour = date.getHours();
-                const minutes = date.getMinutes();
-                // Define trading hours: 09:30 - 11:30, 13:00 - 15:00
-                if ((hour === 9 && minutes >= 30) || (hour > 9 && hour < 11) || 
-                    (hour === 11 && minutes <= 30) || (hour >= 13 && hour < 15)) {
-                    return true;
-                }
-                return false;
-            };
-
-            for (const i of indices) {
-                const label_date = new Date(ticks[i]);
-                if (!trading_hours(label_date)) {
-                    indices.unset(i);
-                }
-            }
-        """)
 
     def __init__(self, profile: Profile = PROFILE, style: ColorStyle = None):
         self.profile = profile
@@ -185,6 +137,8 @@ class CandleStick(DocServer):
         ...
 
     def update(self, **kwargs):
+        self.lock.acquire()
+
         if 'market_data' in kwargs:
             market_data: MarketData = kwargs['market_data']
 
@@ -203,6 +157,8 @@ class CandleStick(DocServer):
 
             self._on_obs(timestamp=timestamp, price=price, volume=volume, **kwargs)
             self.timestamp = timestamp
+
+        self.lock.release()
 
     def _on_obs(self, timestamp: float, price: float, volume: float = 0., **kwargs):
         open_price = kwargs.get('open_price', price)
@@ -236,6 +192,7 @@ class CandleStick(DocServer):
 
         if timestamp >= self.active_bar_data['ts_end']:
             self.pipe(sequence=self.data)
+
             for doc_id in list(self.bokeh_documents):
                 doc = self.bokeh_documents[doc_id]
                 new_data = self.bokeh_data_queue[doc_id]
@@ -329,9 +286,9 @@ class CandleStick(DocServer):
         )
 
         plot.xaxis.major_label_overrides = {i: datetime.datetime.fromtimestamp(ts, tz=self.profile.time_zone).strftime('%Y-%m-%d %H:%M:%S') for i, ts in enumerate(self.indices)}
-        plot.toolbar.autohide = True
-        plot.toolbar.active_drag = tools[0]
-        plot.toolbar.active_scroll = tools[3]
+        # plot.toolbar.autohide = True
+        # plot.toolbar.active_drag = tools[0]
+        # plot.toolbar.active_scroll = tools[3]
         tools[5].renderers = [_candlestick]
 
         range_selector = figure(
