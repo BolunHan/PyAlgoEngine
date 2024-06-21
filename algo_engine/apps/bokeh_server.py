@@ -16,8 +16,7 @@ class DocTheme(object, metaclass=abc.ABCMeta):
 
 
 class DocServer(object, metaclass=abc.ABCMeta):
-    def __init__(self, url: str, theme: DocTheme = None, max_size: int = None, update_interval: float = 0., **kwargs):
-        self.url: str = url
+    def __init__(self, theme: DocTheme = None, max_size: int = None, update_interval: float = 0., **kwargs):
         self.theme: DocTheme = theme
         self.max_size: int = max_size
         self.update_interval: float = update_interval
@@ -28,7 +27,7 @@ class DocServer(object, metaclass=abc.ABCMeta):
         self.data: dict[str, list] = dict()
 
     def __str__(self):
-        return f'<{self.__class__.__name__}>(id={id(self.__class__)}, url={self.url})'
+        return f'<{self.__class__.__name__}>(id={id(self.__class__)})'
 
     def __call__(self, doc: Document):
         self.register_document(doc=doc)
@@ -55,7 +54,7 @@ class DocServer(object, metaclass=abc.ABCMeta):
         for key, seq in new_data.items():
             seq.clear()
 
-        LOGGER.debug(f'{self.__class__} {self.url} stream updated!')
+        LOGGER.debug(f'{self.__class__} stream updated!')
 
     def register_document(self, doc: Document):
         doc_id = uuid.uuid4().int
@@ -93,20 +92,16 @@ class DocManager(object):
         self.doc_server: dict[str, DocServer] = {}
         self.bokeh_thread = Thread(target=self.serve_bokeh, daemon=True)
 
-    def register(self, doc_server: DocServer):
-        url = doc_server.url
-
+    def register(self, url: str, doc_server: DocServer):
         if url in self.doc_server:
             LOGGER.warning(f'{url} already registered! Existed doc_server {self.doc_server[url]} overridden!')
 
-        self.doc_server[doc_server.url] = doc_server
+        self.doc_server[url] = doc_server
         return doc_server
 
     def serve_bokeh(self):
-        applications = {doc_server.url: doc_server for doc_server in self.doc_server.values()}
-
         server = Server(
-            applications=applications,
+            applications=self.doc_server,
             address=self.bokeh_host,
             port=self.bokeh_port,
             check_unused_sessions_milliseconds=(self.bokeh_check_unused_sessions * 1000),
@@ -116,7 +111,7 @@ class DocManager(object):
 
         LOGGER.info(
             f'bokeh service started at {self.bokeh_host}:{self.bokeh_port}!\n' +
-            '\n'.join([f'http://{self.bokeh_host}:{self.bokeh_port}{url} => {app}' for url, app in applications.items()])
+            '\n'.join([f'http://{self.bokeh_host}:{self.bokeh_port}{url} => {app}' for url, app in self.doc_server.items()])
         )
 
         server.start()

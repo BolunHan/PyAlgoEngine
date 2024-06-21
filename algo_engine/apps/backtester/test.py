@@ -1,9 +1,7 @@
 import datetime
-import sys
 import time
-from threading import Thread
 
-from algo_engine.apps.backtester import WebApp, start_app, LOGGER
+from algo_engine.apps.backtester import WebApp, LOGGER
 from algo_engine.base import Progress
 from algo_engine.profile import PROFILE_CN
 from algo_engine.utils import fake_data
@@ -15,7 +13,7 @@ def main():
     market_date = datetime.date.today()
 
     data_set = fake_data(market_date=market_date)
-    web_app = WebApp()
+    web_app = WebApp(start_date=market_date, end_date=market_date)
     LOGGER.info(f'{len(data_set)} fake data generated for {ticker} {market_date}.')
 
     web_app.register(ticker=ticker)
@@ -31,7 +29,7 @@ def main():
             high_price=row['high_price'],
             low_price=row['low_price'],
         )
-        time.sleep(0.2)
+        time.sleep(0.05)
 
 
 if __name__ == '__main__':

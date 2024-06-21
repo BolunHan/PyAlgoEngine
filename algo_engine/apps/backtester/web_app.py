@@ -1,3 +1,4 @@
+import datetime
 from threading import Thread
 
 from bokeh.embed import server_document
@@ -7,12 +8,15 @@ from waitress import serve
 from .doc_server import CandleStick
 from ..bokeh_server import DocManager
 from .. import LOGGER
+from ...profile import Profile, PROFILE
 
 
 class WebApp(object):
-    def __init__(self, name: str = 'WebApp.Backtest', address: str = '0.0.0.0', port: int = 8080, **kwargs):
+    def __init__(self, start_date: datetime.date, end_date: datetime.date, name: str = 'WebApp.Backtest', address: str = '0.0.0.0', port: int = 8080, profile: Profile = None, **kwargs):
+        self.start_date = start_date
+        self.end_date = end_date
         self.name = name
-
+        self.profile = PROFILE if profile is None else profile
         self.host = address
         self.port = port
 
@@ -25,9 +29,9 @@ class WebApp(object):
             doc_server.update(**kwargs)
 
     def register(self, ticker: str, **kwargs):
-        self.candle_sticks[ticker] = candlestick = CandleStick(ticker=ticker, url=f'/candlesticks/{ticker}', **kwargs)
+        self.candle_sticks[ticker] = candlestick = CandleStick(ticker=ticker, start_date=self.start_date, end_date=self.end_date, **kwargs)
 
-        self.doc_manager.register(doc_server=candlestick)
+        self.doc_manager.register(url=f'/candlesticks/{ticker}', doc_server=candlestick)
 
     def index(self):
         embedded_docs = []
