@@ -158,6 +158,8 @@ class ProfileCN(Profile):
         if isinstance(timestamp, (float, int)):
             market_time = datetime.datetime.fromtimestamp(timestamp, tz=self.time_zone).time()
         elif isinstance(timestamp, datetime.datetime):
+            market_time = timestamp.time()
+        elif isinstance(timestamp, datetime.time):
             market_time = timestamp
         else:
             raise TypeError(f'Expect timestamp to be a float, int or datetime, got {type(timestamp)}!')
