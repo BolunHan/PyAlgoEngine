@@ -4,7 +4,7 @@ import inspect
 from typing import Iterable
 
 from . import LOGGER
-from ..base import Progress, TickData, TransactionData, TradeData, OrderBook
+from ..base import Progress, TickData, TransactionData, TradeData, OrderBook, MarketData
 
 LOGGER = LOGGER.getChild('Replay')
 
@@ -239,7 +239,7 @@ class ProgressiveReplay(Replay):
 
         return data
 
-    def __next__(self):
+    def __next__(self) -> MarketData:
         try:
             return self.next_task()
         except StopIteration:
