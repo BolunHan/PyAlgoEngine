@@ -1,13 +1,13 @@
 import datetime
 import pathlib
 from functools import partial
-from threading import Lock
 from typing import overload, TypedDict, NotRequired
 
 import pandas as pd
-from bokeh.models import PanTool, WheelPanTool, WheelZoomTool, BoxZoomTool, ResetTool, ExamineTool, SaveTool, CrosshairTool, HoverTool
-from bokeh.models import RangeTool, Range1d
+import yaml
+from bokeh.models import PanTool, WheelPanTool, WheelZoomTool, BoxZoomTool, ResetTool, ExamineTool, SaveTool, CrosshairTool, HoverTool, RangeTool, Range1d
 from bokeh.plotting import figure, gridplot
+from bokeh.themes import Theme
 
 from .. import DocServer, DocTheme
 from ...base import MarketData, TradeData, TransactionData
@@ -234,13 +234,13 @@ class CandleStick(DocServer):
         tools = [
             PanTool(dimensions="width", syncable=False),
             WheelPanTool(dimension="width", syncable=False),
-            BoxZoomTool(dimensions="width", syncable=False),
+            BoxZoomTool(dimensions="auto", syncable=False),
             WheelZoomTool(dimensions="width", syncable=False),
             CrosshairTool(dimensions="both", syncable=False),
             HoverTool(mode='vline', syncable=False, formatters={'@market_time': 'datetime'}),
-            ExamineTool(),
-            ResetTool(),
-            SaveTool()
+            ExamineTool(syncable=False),
+            ResetTool(syncable=False),
+            SaveTool(syncable=False)
         ]
 
         tooltips = [
@@ -255,7 +255,7 @@ class CandleStick(DocServer):
             title=f"{self.ticker} Candlestick",
             x_range=Range1d(start=0, end=len(self.indices), bounds='auto'),
             x_axis_type="linear",
-            sizing_mode="stretch_both",
+            # sizing_mode="stretch_both",
             min_height=80,
             tools=tools,
             tooltips=tooltips,
@@ -286,18 +286,15 @@ class CandleStick(DocServer):
         )
 
         plot.xaxis.major_label_overrides = {i: datetime.datetime.fromtimestamp(ts, tz=self.profile.time_zone).strftime('%Y-%m-%d %H:%M:%S') for i, ts in enumerate(self.indices)}
-        # plot.toolbar.autohide = True
-        # plot.toolbar.active_drag = tools[0]
-        # plot.toolbar.active_scroll = tools[3]
+        plot.xaxis.ticker.min_interval = 1.
         tools[5].renderers = [_candlestick]
 
         range_selector = figure(
-            # x_range=plot.x_range,
             y_range=plot.y_range,
             min_height=20,
             tools=[],
             toolbar_location=None,
-            sizing_mode="stretch_both"
+            # sizing_mode="stretch_both"
         )
 
         range_tool = RangeTool(x_range=plot.x_range)
@@ -310,8 +307,23 @@ class CandleStick(DocServer):
         range_selector.xgrid.visible = False
         range_selector.ygrid.visible = False
 
-        root = gridplot(children=[[plot], [range_selector]], sizing_mode="stretch_both")
+        root = gridplot(
+            children=[
+                [plot],
+                [range_selector]
+            ],
+            sizing_mode="stretch_both",
+            merge_tools=True,
+            toolbar_options={
+                'autohide': True,
+                'active_drag': tools[0],
+                'active_scroll': tools[3]
+            },
+        )
         root.rows = ['80%', '20%']
+        root.width_policy = 'max'
+        root.height_policy = 'max'
+
         doc.add_root(root)
 
     def to_csv(self, filename: str | pathlib.Path):

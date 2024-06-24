@@ -1,0 +1,66 @@
+/* styles.css */
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    /* border: 1px solid red; !* Debugging border *! */
+}
+
+.header {
+    flex: 0 1 auto;
+    text-align: center;
+    padding: 10px;
+    background-color: #1f1f1f;
+    /* border-bottom: 1px solid #333; */
+    /* border: 1px solid yellow; !* Debugging border *! */
+}
+
+.header h1 {
+    margin: 0;
+    color: #e0e0e0;
+}
+
+.content {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    /* border: 1px solid green; !* Debugging border *! */
+}
+
+.content.candlesticks {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    /*border: 1px solid blue; !* Debugging border *!*/
+}
+
+.content.candlesticks > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.content.candlesticks .bk-GridPlot {
+    width: 100% !important;
+    height: 100% !important;
+    /*border: 1px solid purple; !* Debugging border *!*/
+}

@@ -9,8 +9,8 @@ def set_logger(logger: logging.Logger):
     global LOGGER
     LOGGER = logger
 
-    backtester.set_logger(LOGGER.getChild('Backtester'))
+    backtest.set_logger(LOGGER.getChild('Backtester'))
 
 
 from .bokeh_server import DocServer, DocTheme
-from . import backtester
+from . import backtest

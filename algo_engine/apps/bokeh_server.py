@@ -33,6 +33,9 @@ class DocServer(object, metaclass=abc.ABCMeta):
     def __call__(self, doc: Document):
         self.register_document(doc=doc)
 
+    def __hash__(self):
+        return id(self)
+
     @abc.abstractmethod
     def update(self, **kwargs):
         ...
@@ -78,7 +81,7 @@ class DocServer(object, metaclass=abc.ABCMeta):
 
     def _unregister_document(self, session_context, doc_id: int):
         self.lock.acquire()
-        LOGGER.info(f'Session {doc_id} {session_context} disconnected!')
+        LOGGER.info(f'Session {doc_id} disconnected!')
 
         self.bokeh_documents.pop(doc_id)
         self.bokeh_source.pop(doc_id)
@@ -96,13 +99,24 @@ class DocManager(object):
         self.bokeh_check_unused_sessions = kwargs.get('bokeh_check_unused_sessions', 1)
 
         self.doc_server: dict[str, DocServer] = {}
+        self.doc_url: dict[DocServer, str] = {}
         self.bokeh_thread = Thread(target=self.serve_bokeh, daemon=True)
+
+    def __getitem__(self, url: str):
+        return self.doc_server.__getitem__(url)
+
+    def __setitem__(self, url: str, doc_server: DocServer):
+        return self.register(url=url, doc_server=doc_server)
+
+    def __contains__(self, url: str):
+        return self.doc_server.__contains__(url)
 
     def register(self, url: str, doc_server: DocServer):
         if url in self.doc_server:
             LOGGER.warning(f'{url} already registered! Existed doc_server {self.doc_server[url]} overridden!')
 
         self.doc_server[url] = doc_server
+        self.doc_url[doc_server] = url
         return doc_server
 
     def serve_bokeh(self):

@@ -1,7 +1,7 @@
 import datetime
 import time
 
-from algo_engine.apps.backtester import WebApp, LOGGER
+from algo_engine.apps.backtest import WebApp, LOGGER
 from algo_engine.base import Progress
 from algo_engine.profile import PROFILE_CN
 from algo_engine.utils import fake_data
@@ -30,9 +30,6 @@ def main():
             low_price=row['low_price'],
         )
         time.sleep(0.05)
-
-        for _ in web_app.doc_manager.doc_server.values():
-            _.to_csv('data.csv')
 
 
 if __name__ == '__main__':
