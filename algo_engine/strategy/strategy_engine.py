@@ -1,8 +1,8 @@
 import abc
 import datetime
 import time
+from collections.abc import Callable
 from functools import cached_property
-from typing import Callable
 
 from . import LOGGER
 from ..back_test import SimMatch, ProgressiveReplay

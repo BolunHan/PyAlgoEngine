@@ -1,7 +1,7 @@
 __package__ = 'algo_engine.back_test'
 
 import datetime
-from typing import Callable
+from collections.abc import Callable
 
 import event_engine
 
