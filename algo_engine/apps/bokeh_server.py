@@ -3,14 +3,10 @@ import uuid
 from copy import deepcopy
 from functools import partial
 from threading import Thread, Lock
-from typing import overload, TYPE_CHECKING
+from typing import overload
 
 from . import LOGGER
 from ..base import MarketData
-
-if TYPE_CHECKING:
-    from bokeh.document import Document
-    from bokeh.models import ColumnDataSource
 
 
 class DocTheme(object, metaclass=abc.ABCMeta):
@@ -19,6 +15,9 @@ class DocTheme(object, metaclass=abc.ABCMeta):
 
 class DocServer(object, metaclass=abc.ABCMeta):
     def __init__(self, theme: DocTheme = None, max_size: int = None, update_interval: float = 0., lock: Lock = None, **kwargs):
+        from bokeh.document import Document
+        from bokeh.models import ColumnDataSource
+
         self.theme: DocTheme = theme
         self.max_size: int = max_size
         self.update_interval: float = update_interval
@@ -32,7 +31,7 @@ class DocServer(object, metaclass=abc.ABCMeta):
     def __str__(self):
         return f'<{self.__class__.__name__}>(id={id(self.__class__)})'
 
-    def __call__(self, doc: Document):
+    def __call__(self, doc):
         self.register_document(doc=doc)
 
     def __hash__(self):
@@ -74,7 +73,7 @@ class DocServer(object, metaclass=abc.ABCMeta):
 
         LOGGER.debug(f'{self.__class__} stream updated!')
 
-    def register_document(self, doc: Document):
+    def register_document(self, doc):
         from bokeh.models import ColumnDataSource
 
         self.lock.acquire()
