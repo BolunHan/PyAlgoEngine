@@ -12,7 +12,16 @@ from ..profile import PROFILE, Profile
 
 LOGGER = LOGGER.getChild('MarketEngine')
 
-__all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager']
+__all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton']
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 
 class MarketDataMonitor(object, metaclass=abc.ABCMeta):
@@ -107,7 +116,7 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
         return True
 
 
-class MonitorManager(object):
+class MonitorManager(object, metaclass=Singleton):
     """
     manage market data monitor
 
@@ -154,7 +163,7 @@ class MonitorManager(object):
         return values
 
 
-class MarketDataService(object):
+class MarketDataService(object, metaclass=Singleton):
     def __init__(self, profile: Profile = None, **kwargs):
         self.profile = PROFILE if profile is None else profile
         self.cache_history = kwargs.pop('cache_history', False)

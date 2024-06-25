@@ -16,7 +16,7 @@ import pandas as pd
 
 from . import LOGGER
 from .algo_engine import ALGO_ENGINE, AlgoTemplate
-from .market_engine import MarketDataService
+from .market_engine import MarketDataService, Singleton
 from ..base import TransactionSide, TradeInstruction, MarketData, OrderState, TradeReport
 
 LOGGER = LOGGER.getChild('TradeEngine')
@@ -614,7 +614,7 @@ class PositionManagementService(object):
         return reversed_order_mapping
 
 
-class Balance(object):
+class Balance(object, metaclass=Singleton):
     """
     Balance handles mapping of PositionTracker <-> Strategy
     """
@@ -1101,7 +1101,7 @@ class Balance(object):
         return pd.DataFrame(info_dict).fillna(0)
 
 
-class Inventory(object):
+class Inventory(object, metaclass=Singleton):
     """
     Inventory stores the info of security lending
     """
@@ -1425,7 +1425,7 @@ class Inventory(object):
         return pd.DataFrame(info_dict)
 
 
-class RiskProfile(object):
+class RiskProfile(object, metaclass=Singleton):
     class Risk(Exception):
         def __init__(self, risk_type: str, code: int, msg: str, *args, **kwargs):
             self.code = code
