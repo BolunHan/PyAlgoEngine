@@ -34,11 +34,11 @@ def set_logger(logger: logging.Logger):
 
 REPLAY_LOCK = Lock()
 INVENTORY = Inventory()
-BALANCE = Balance(inventory=INVENTORY)
+BALANCE = Balance(inventory=INVENTORY)  # need to be registered
 RISK_PROFILE = RiskProfile(mds=MDS, balance=BALANCE)
 DMA = EventDMA(mds=MDS, risk_profile=RISK_PROFILE)
 POSITION_TRACKER = PositionManagementService(dma=DMA)
-STRATEGY_ENGINE = StrategyEngine(event_engine=EVENT_ENGINE, position_tracker=POSITION_TRACKER)
+STRATEGY_ENGINE = StrategyEngine(event_engine=EVENT_ENGINE, position_tracker=POSITION_TRACKER)  # need to be registered, also register MDS
 BALANCE.add(strategy=STRATEGY_ENGINE, position_tracker=POSITION_TRACKER)
 
 __all__ = ['INVENTORY', 'BALANCE', 'RISK_PROFILE', 'DMA', 'POSITION_TRACKER', 'STRATEGY_ENGINE']

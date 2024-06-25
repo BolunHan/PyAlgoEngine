@@ -1,13 +1,13 @@
 import abc
 import datetime
-import threading
 import time
+from functools import cached_property
 from typing import Callable
 
 from . import LOGGER
 from ..back_test import SimMatch, ProgressiveReplay
 from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide
-from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE, MDS
+from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE
 
 LOGGER = LOGGER.getChild('Strategy')
 
@@ -29,15 +29,37 @@ class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def on_order(self, order: TradeInstruction, **kwargs): ...
 
+    @property
+    def mds(self):
+        return self.position_tracker.dma.mds
+
+    @property
+    def dma(self):
+        return self.position_tracker.dma.mds
+
+    @property
+    def risk_profile(self):
+        return self.position_tracker.dma.risk_profile
+
+    @property
+    def balance(self):
+        return self.position_tracker.dma.risk_profile.balance
+
+    @property
+    def inventory(self):
+        return self.position_tracker.dma.risk_profile.balance.inventory
+
+    @cached_property
+    def lock(self):
+        from . import REPLAY_LOCK
+        return REPLAY_LOCK
+
 
 class StrategyEngine(StrategyEngineTemplate):
     def __init__(self, position_tracker: PositionManagementService, **kwargs):
         super().__init__(position_tracker=position_tracker)
 
-        self.mds = kwargs.pop('mds', MDS)
         self.event_engine = kwargs.pop('event_engine', EVENT_ENGINE)
-        self.multi_threading = kwargs.pop('multi_threading', False)
-        self.lock = threading.Lock()
         self.topic_set = kwargs.pop('topic_set', TOPIC)
 
         self._on_market_data = []
@@ -54,7 +76,7 @@ class StrategyEngine(StrategyEngineTemplate):
         if 'market_data' in kwargs:
             self.on_market_data(market_data=kwargs['market_data'])
 
-        if self.multi_threading and self.lock.locked():
+        if self.lock.locked():
             self.lock.release()
 
     def add_handler(self, **kwargs):
@@ -178,12 +200,18 @@ class StrategyEngine(StrategyEngineTemplate):
         for handler in self._on_order:
             handler(order=order, **kwargs)
 
-    def register(self, event_engine=None, topic_set=None):
+    def register(self, event_engine=None, topic_set=None, auto_register: bool = True):
         if event_engine is None:
             event_engine = self.event_engine
 
         if topic_set is None:
             topic_set = self.topic_set
+
+        if auto_register:
+            event_engine.register_handler(topic=topic_set.realtime, handler=self.mds)
+            event_engine.register_handler(topic=topic_set.realtime, handler=self.position_tracker.on_market_data)
+            event_engine.register_handler(topic=topic_set.on_order, handler=self.balance.on_order)
+            event_engine.register_handler(topic=topic_set.on_report, handler=self.balance.on_report)
 
         event_engine.register_handler(topic=topic_set.realtime, handler=self.__call__)
         event_engine.register_handler(topic=topic_set.on_order, handler=self.on_order)
@@ -350,6 +378,9 @@ class StrategyEngine(StrategyEngineTemplate):
             handler(market_date=market_date, **kwargs)
 
     def back_test(self, start_date: datetime.date, end_date: datetime.date, data_loader: Callable, **kwargs):
+        pass
+
+    def back_test_lite(self, start_date: datetime.date, end_date: datetime.date, data_loader: Callable, **kwargs):
         replay = ProgressiveReplay(
             loader=data_loader,
             tickers=list(self.subscription),
@@ -362,6 +393,7 @@ class StrategyEngine(StrategyEngineTemplate):
         )
 
         sim_match = {}
+        multi_threading = kwargs.get('multi_threading', False)
         _start_ts = 0.
         self.event_engine.start()
 
@@ -375,7 +407,7 @@ class StrategyEngine(StrategyEngineTemplate):
                 _ = sim_match[_ticker] = SimMatch(ticker=_ticker)
                 _.register(event_engine=self.event_engine, topic_set=self.topic_set)
 
-            if self.multi_threading:
+            if multi_threading:
                 self.lock.acquire()
                 self.event_engine.put(topic=self.topic_set.push(market_data=_market_data), market_data=_market_data)
             else:
