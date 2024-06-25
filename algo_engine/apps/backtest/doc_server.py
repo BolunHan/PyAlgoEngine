@@ -4,8 +4,6 @@ from functools import partial
 from typing import TypedDict, NotRequired
 
 import pandas as pd
-from bokeh.models import PanTool, WheelPanTool, WheelZoomTool, BoxZoomTool, ResetTool, ExamineTool, SaveTool, CrosshairTool, HoverTool, RangeTool, Range1d
-from bokeh.plotting import figure, gridplot
 
 from .. import DocServer, DocTheme
 from ...base import MarketData, TradeData, TransactionData
@@ -222,6 +220,9 @@ class CandleStick(DocServer):
         self._register_candlestick(doc_id=doc_id)
 
     def _register_candlestick(self, doc_id: int):
+        from bokeh.models import PanTool, WheelPanTool, WheelZoomTool, BoxZoomTool, ResetTool, ExamineTool, SaveTool, CrosshairTool, HoverTool, RangeTool, Range1d
+        from bokeh.plotting import figure, gridplot
+
         doc = self.bokeh_documents[doc_id]
         source = self.bokeh_source[doc_id]
 

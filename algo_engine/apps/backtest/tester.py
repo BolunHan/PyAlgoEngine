@@ -1,20 +1,16 @@
 import abc
 import datetime
-import threading
 import time
 from typing import Literal
 
 import numpy as np
-from event_engine import EventEngine
 
 from algo_engine.back_test.metrics import TradeMetrics
 from . import LOGGER
 from .web_app import WebApp
 from ...back_test import SimMatch, ProgressiveReplay
 from ...base import MarketData, TradeReport, TradeInstruction
-from ...engine import EVENT_ENGINE, TOPIC
 from ...profile import Profile, PROFILE
-from ...strategy import REPLAY_LOCK
 
 
 class Tester(object, metaclass=abc.ABCMeta):

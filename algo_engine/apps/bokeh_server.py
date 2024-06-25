@@ -3,14 +3,14 @@ import uuid
 from copy import deepcopy
 from functools import partial
 from threading import Thread, Lock
-from typing import overload
-
-from bokeh.document import Document
-from bokeh.models import ColumnDataSource
-from bokeh.server.server import Server
+from typing import overload, TYPE_CHECKING
 
 from . import LOGGER
 from ..base import MarketData
+
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.models import ColumnDataSource
 
 
 class DocTheme(object, metaclass=abc.ABCMeta):
@@ -75,6 +75,8 @@ class DocServer(object, metaclass=abc.ABCMeta):
         LOGGER.debug(f'{self.__class__} stream updated!')
 
     def register_document(self, doc: Document):
+        from bokeh.models import ColumnDataSource
+
         self.lock.acquire()
 
         doc_id = uuid.uuid4().int
@@ -134,6 +136,8 @@ class DocManager(object):
         return doc_server
 
     def serve_bokeh(self):
+        from bokeh.server.server import Server
+
         server = Server(
             applications=self.doc_server,
             address=self.bokeh_host,

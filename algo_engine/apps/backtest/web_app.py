@@ -1,22 +1,17 @@
 import argparse
 import datetime
 import pathlib
-from functools import partial
 from threading import Thread
 
-from bokeh.embed import server_document
-from bokeh.resources import CDN
-from flask import Flask, render_template, render_template_string
-from waitress import serve
-
 from .doc_server import CandleStick
-from ..bokeh_server import DocManager, DocServer
 from .. import LOGGER
+from ..bokeh_server import DocManager, DocServer
 from ...profile import Profile, PROFILE
 
 
 class WebApp(object):
     def __init__(self, start_date: datetime.date, end_date: datetime.date, name: str = 'WebApp.Backtest', address: str = '0.0.0.0', port: int = 8080, profile: Profile = None, **kwargs):
+        from flask import Flask
         self.start_date = start_date
         self.end_date = end_date
         self.name = name
@@ -47,6 +42,8 @@ class WebApp(object):
         self.doc_manager.register(url=f'/candlesticks/{ticker}', doc_server=candlestick)
 
     def render_index(self):
+        from flask import render_template
+
         dashboard_url = {ticker: f'{self.url}/{ticker}' for ticker in self.dashboard}
 
         html = render_template(
@@ -58,6 +55,9 @@ class WebApp(object):
         return html
 
     def render_dashboard(self, ticker: str):
+        from flask import render_template
+        from bokeh.embed import server_document
+
         dashboard = self.dashboard[ticker]
         bokeh_scripts = {}
 
@@ -75,6 +75,8 @@ class WebApp(object):
         return html
 
     def serve(self, blocking: bool = True):
+        from waitress import serve
+
         LOGGER.info(f'starting {self} service...')
 
         self.doc_manager.start()
