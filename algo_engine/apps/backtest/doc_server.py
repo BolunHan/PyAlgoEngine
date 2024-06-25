@@ -1,13 +1,11 @@
 import datetime
 import pathlib
 from functools import partial
-from typing import overload, TypedDict, NotRequired
+from typing import TypedDict, NotRequired
 
 import pandas as pd
-import yaml
 from bokeh.models import PanTool, WheelPanTool, WheelZoomTool, BoxZoomTool, ResetTool, ExamineTool, SaveTool, CrosshairTool, HoverTool, RangeTool, Range1d
 from bokeh.plotting import figure, gridplot
-from bokeh.themes import Theme
 
 from .. import DocServer, DocTheme
 from ...base import MarketData, TradeData, TransactionData
@@ -124,23 +122,14 @@ class CandleStick(DocServer):
 
         return last_idx, self.indices[last_idx]
 
-    @overload
-    def update(self, timestamp: float, market_price: float, **kwargs):
-        ...
-
-    @overload
-    def update(self, timestamp: float, open_price: float, close_price: float, high_price: float, low_price: float, **kwargs):
-        ...
-
-    @overload
-    def update(self, market_data: MarketData, **kwargs):
-        ...
-
     def update(self, **kwargs):
         self.lock.acquire()
 
         if 'market_data' in kwargs:
             market_data: MarketData = kwargs['market_data']
+
+            if market_data.ticker != self.ticker:
+                return
 
             if isinstance(market_data, (TradeData, TransactionData)):
                 self._on_obs(timestamp=market_data.timestamp, price=market_data.price, volume=market_data.volume)
@@ -150,10 +139,15 @@ class CandleStick(DocServer):
         else:
             kwargs = kwargs.copy()
             timestamp = kwargs.pop('timestamp', self.timestamp)
+            ticker = kwargs.pop('ticker')
             price = kwargs.pop('market_price', kwargs.pop('close_price'))
             volume = kwargs.pop('volume', 0)
 
+            assert ticker is not None, 'Must assign a ticker for update function!'
             assert price is not None, f'Must assign a market_price or close_price for {self.__class__} update function!'
+
+            if ticker != self.ticker:
+                return
 
             self._on_obs(timestamp=timestamp, price=price, volume=volume, **kwargs)
             self.timestamp = timestamp

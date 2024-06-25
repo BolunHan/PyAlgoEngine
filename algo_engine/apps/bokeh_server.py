@@ -3,12 +3,14 @@ import uuid
 from copy import deepcopy
 from functools import partial
 from threading import Thread, Lock
+from typing import overload
 
 from bokeh.document import Document
 from bokeh.models import ColumnDataSource
 from bokeh.server.server import Server
 
 from . import LOGGER
+from ..base import MarketData
 
 
 class DocTheme(object, metaclass=abc.ABCMeta):
@@ -35,6 +37,18 @@ class DocServer(object, metaclass=abc.ABCMeta):
 
     def __hash__(self):
         return id(self)
+
+    @overload
+    def update(self, timestamp: float, market_price: float, **kwargs):
+        ...
+
+    @overload
+    def update(self, timestamp: float, open_price: float, close_price: float, high_price: float, low_price: float, **kwargs):
+        ...
+
+    @overload
+    def update(self, market_data: MarketData, **kwargs):
+        ...
 
     @abc.abstractmethod
     def update(self, **kwargs):

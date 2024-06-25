@@ -24,6 +24,7 @@ def main():
     for ts, row in Progress(list(data_set.iterrows())):
         web_app.update(
             timestamp=ts,
+            ticker=ticker,
             open_price=row['open_price'],
             close_price=row['close_price'],
             high_price=row['high_price'],

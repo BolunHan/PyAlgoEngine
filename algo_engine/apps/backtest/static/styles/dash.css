@@ -14,7 +14,6 @@ html, body {
     flex-direction: column;
     height: 100%;
     width: 100%;
-    /* border: 1px solid red; !* Debugging border *! */
 }
 
 .header {
@@ -22,8 +21,6 @@ html, body {
     text-align: center;
     padding: 10px;
     background-color: #1f1f1f;
-    /* border-bottom: 1px solid #333; */
-    /* border: 1px solid yellow; !* Debugging border *! */
 }
 
 .header h1 {
@@ -32,14 +29,6 @@ html, body {
 }
 
 .content {
-    flex: 1 1 auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    /* border: 1px solid green; !* Debugging border *! */
 }
 
 .content.candlesticks {
@@ -48,7 +37,6 @@ html, body {
     align-items: center;
     width: 100%;
     height: 100%;
-    /*border: 1px solid blue; !* Debugging border *!*/
 }
 
 .content.candlesticks > div {
@@ -57,10 +45,4 @@ html, body {
     align-items: center;
     width: 100%;
     height: 100%;
-}
-
-.content.candlesticks .bk-GridPlot {
-    width: 100% !important;
-    height: 100% !important;
-    /*border: 1px solid purple; !* Debugging border *!*/
 }

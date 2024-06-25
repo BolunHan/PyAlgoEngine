@@ -7,13 +7,14 @@ from typing import Literal
 import numpy as np
 from event_engine import EventEngine
 
-from .metrics import TradeMetrics
+from algo_engine.back_test.metrics import TradeMetrics
+from . import LOGGER
 from .web_app import WebApp
 from ...back_test import SimMatch, ProgressiveReplay
 from ...base import MarketData, TradeReport, TradeInstruction
 from ...engine import EVENT_ENGINE, TOPIC
 from ...profile import Profile, PROFILE
-from . import LOGGER
+from ...strategy import REPLAY_LOCK
 
 
 class Tester(object, metaclass=abc.ABCMeta):
@@ -23,19 +24,12 @@ class Tester(object, metaclass=abc.ABCMeta):
             end_date: datetime.date,
             dtype: list[str] = None,
             profile: Profile = None,
-            event_engine: EventEngine = None,
-            topic_set: EventEngine = None,
-            multi_threading: bool = False,
             **kwargs
     ):
         self.start_date = start_date
         self.end_date = end_date
         self.dtype = ['TickData', 'TradeData'] if dtype is None else dtype
         self.profile = PROFILE if profile is None else profile
-        self.event_engine = EVENT_ENGINE if event_engine is None else event_engine
-        self.topic_set = TOPIC if topic_set is None else topic_set
-        self.multi_threading = multi_threading
-        self.lock = threading.Lock()
 
         self.timestamp = 0.
         self.last_price = {}
@@ -53,10 +47,12 @@ class Tester(object, metaclass=abc.ABCMeta):
 
         sim_match = self.sim_match[ticker] = SimMatch(
             ticker=ticker,
-            instant_fill=kwargs.get('instant_fill', True),
-            event_engine=self.event_engine
+            instant_fill=kwargs.get('instant_fill', True)
         )
-        sim_match.register()
+
+        # to add callback function to sim_match, use following codes.
+        # sim_match.on_order = self.on_order
+        # sim_match.on_report = self.on_report
 
     def unregister_ticker(self, ticker: str, **kwargs):
         self.subscription.remove(ticker)
@@ -70,11 +66,7 @@ class Tester(object, metaclass=abc.ABCMeta):
 
     def _launch_order(self, ticker: str, volume: float, limit_price: float):
         order = TradeInstruction(ticker=ticker, side=np.sign(volume), volume=abs(float), timestamp=self.timestamp)
-
-        if self.multi_threading:
-            self.event_engine.put(topic=self.topic_set.launch_order, order=order)
-        else:
-            self.sim_match[ticker].launch_order(order=order)
+        self.sim_match[ticker].launch_order(order=order)
 
     def buy(self, ticker: str, volume: float = None, limit_price: float = None):
         if volume is None:
@@ -98,18 +90,8 @@ class Tester(object, metaclass=abc.ABCMeta):
 
         self._launch_order(ticker=ticker, volume=volume, limit_price=limit_price)
 
-    def register(self):
-        self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.on_market_data)
-        self.event_engine.register_handler(topic=self.topic_set.on_order, handler=self.on_order)
-        self.event_engine.register_handler(topic=self.topic_set.on_report, handler=self.on_report)
-
-    def unregister(self):
-        self.event_engine.unregister_handler(topic=self.topic_set.realtime, handler=self.on_market_data)
-        self.event_engine.unregister_handler(topic=self.topic_set.on_order, handler=self.on_order)
-        self.event_engine.unregister_handler(topic=self.topic_set.on_report, handler=self.on_report)
-
     @abc.abstractmethod
-    def load_data(self, ticker: str, dtype: Literal['TickData', 'TradeData', 'TransactionData', 'OrderBook']) -> list[MarketData]:
+    def load_data(self, ticker: str, market_date: datetime.date, dtype: Literal['TickData', 'TradeData', 'TransactionData', 'OrderBook']) -> list[MarketData]:
         ...
 
     @abc.abstractmethod
@@ -142,19 +124,133 @@ class Tester(object, metaclass=abc.ABCMeta):
             tick_size=kwargs.get('progress_tick_size', 0.001),
         )
 
+        _start_ts = time.time()
+
+        for market_data in replay:
+            self.on_market_data(market_data=market_data)
+            self.sim_match[market_data.ticker](market_data=market_data)
+            self.web_app.update(market_data=market_data)
+
+            self.timestamp = market_data.timestamp
+            self.last_price[market_data.ticker] = market_data.market_price
+
+        LOGGER.info(f'All done! time_cost: {time.time() - _start_ts:,.3}s')
+
+
+class StrategyTester(Tester):
+    from ...strategy.strategy_engine import StrategyEngine
+
+    def __init__(self, start_date: datetime.date, end_date: datetime.date, data_loader, strategy: StrategyEngine, **kwargs):
+        self.data_loader = data_loader
+        self.strategy = strategy
+        self.event_engine = self.strategy.event_engine
+        self.topic_set = self.strategy.topic_set
+        self.multi_threading = kwargs.get('multi_threading', False)
+        self.lock = self.strategy.lock
+
+        super().__init__(
+            start_date=start_date,
+            end_date=end_date,
+            dtype=kwargs.pop('dtype', ['TickData', 'TradeData']),
+            profile=kwargs.pop('profile', PROFILE),
+            event_engine=strategy.event_engine,
+            topic_set=strategy.topic_set,
+            multi_threading=kwargs.pop('multi_threading', False),
+            **kwargs
+        )
+
+    def register_ticker(self, ticker: str, **kwargs):
+        super().register_ticker(ticker=ticker, **kwargs)
+
+        for ticker, sim_match in self.sim_match.items():
+            sim_match.register(event_engine=self.event_engine, topic_set=self.topic_set)
+
+    def register(self):
+        self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.strategy.mds.on_market_data)
+        self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.strategy.position_tracker.on_market_data)
+        self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.on_market_data)
+
+        self.event_engine.register_handler(topic=self.topic_set.on_order, handler=self.strategy.balance.on_order)
+        self.event_engine.register_handler(topic=self.topic_set.on_order, handler=self.on_order)
+        self.event_engine.register_handler(topic=self.topic_set.on_report, handler=self.strategy.balance.on_report)
+        self.event_engine.register_handler(topic=self.topic_set.on_report, handler=self.on_report)
+
+    def initialize_position_management(self):
+        for ticker in self.subscription:
+            risk_profile = self.strategy.position_tracker.dma.risk_profile
+
+            risk_profile.set_rule(ticker=ticker, key='max_trade_long', value=np.inf)
+            risk_profile.set_rule(ticker=ticker, key='max_trade_short', value=np.inf)
+            risk_profile.set_rule(ticker=ticker, key='max_exposure_long', value=np.inf)
+            risk_profile.set_rule(ticker=ticker, key='max_exposure_short', value=np.inf)
+
+    def load_data(self, ticker: str, market_date: datetime.date, dtype: Literal['TickData', 'TradeData', 'TransactionData', 'OrderBook']) -> list[MarketData]:
+        return self.data_loader(ticker=ticker, market_date=market_date, dtype=dtype)
+
+    def bod(self, market_date: datetime.date, **kwargs):
+        super().bod(market_date=market_date, **kwargs)
+        self.bod(market_date=market_date, **kwargs)
+
+    def eod(self, market_date: datetime.date, **kwargs):
+        super().bod(market_date=market_date, **kwargs)
+        self.bod(market_date=market_date, **kwargs)
+
+    def on_market_data(self, market_data: MarketData, **kwargs):
+        self.strategy.__call__(market_data=market_data, **kwargs)
+
+        if self.lock.locked():
+            self.lock.release()
+
+    def on_report(self, report: TradeReport, **kwargs):
+        self.strategy.on_report(report=report, **kwargs)
+
+    def on_order(self, order: TradeInstruction, **kwargs):
+        self.strategy.on_order(order=order, **kwargs)
+
+    def _launch_order(self, ticker: str, volume: float, limit_price: float):
+        self.strategy.open_pos(ticker=ticker, volume=abs(volume), trade_side=np.sign(volume))
+
+    def buy(self, ticker: str, volume: float = None, limit_price: float = None):
+        if ticker not in self.subscription:
+            raise ValueError(f'{ticker} not subscribed for trading!')
+
+        super().buy(ticker=ticker, volume=volume, limit_price=limit_price)
+
+    def sell(self, ticker: str, volume: float = None, limit_price: float = None):
+        if ticker not in self.subscription:
+            raise ValueError(f'{ticker} not subscribed for trading!')
+
+        super().sell(ticker=ticker, volume=volume, limit_price=limit_price)
+
+    def run(self, **kwargs):
         if not self.event_engine.active:
             self.event_engine.start()
+
+        replay = ProgressiveReplay(
+            loader=self.load_data,
+            tickers=list(self.subscription),
+            dtype=['TickData', 'TradeData'],
+            start_date=self.start_date,
+            end_date=self.end_date,
+            bod=self.bod,
+            eod=self.eod,
+            tick_size=kwargs.get('progress_tick_size', 0.001),
+        )
 
         _start_ts = time.time()
 
         for market_data in replay:
-
             if self.multi_threading:
                 self.lock.acquire()
                 self.event_engine.put(topic=self.topic_set.push(market_data=market_data), market_data=market_data)
             else:
-                self.on_market_data(market_data=market_data)
-                self.sim_match[market_data.ticker](market_data=market_data)
+                self.strategy.mds.on_market_data(market_data=market_data)
+                self.strategy.position_tracker.on_market_data(market_data=market_data)
+                self.strategy.on_market_data(market_data=market_data)
+
+                if market_data.ticker in self.subscription:
+                    self.sim_match[market_data.ticker](market_data=market_data)
+                    self.web_app.update(market_data=market_data)
 
             self.timestamp = market_data.timestamp
             self.last_price[market_data.ticker] = market_data.market_price
