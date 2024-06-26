@@ -5,10 +5,10 @@ from typing import Literal
 
 import numpy as np
 
-from algo_engine.back_test.metrics import TradeMetrics
+from algo_engine.backtest.metrics import TradeMetrics
 from . import LOGGER
 from .web_app import WebApp
-from ...back_test import SimMatch, ProgressiveReplay
+from ...backtest import SimMatch, ProgressiveReplay
 from ...base import MarketData, TradeReport, TradeInstruction
 from ...profile import Profile, PROFILE
 

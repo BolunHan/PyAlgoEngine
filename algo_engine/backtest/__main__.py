@@ -1,4 +1,4 @@
-__package__ = 'algo_engine.back_test'
+__package__ = 'algo_engine.backtest'
 
 import datetime
 from collections.abc import Callable

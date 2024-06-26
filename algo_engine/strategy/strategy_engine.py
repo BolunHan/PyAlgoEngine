@@ -5,7 +5,7 @@ from collections.abc import Callable
 from functools import cached_property
 
 from . import LOGGER
-from ..back_test import SimMatch, ProgressiveReplay
+from ..backtest import SimMatch, ProgressiveReplay
 from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide
 from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE
 
