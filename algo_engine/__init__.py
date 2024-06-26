@@ -1,4 +1,4 @@
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 import logging
 import os
@@ -16,14 +16,14 @@ else:
 def set_logger(logger: logging.Logger):
     base.set_logger(logger=logger)
     engine.set_logger(logger=logger.getChild('Engine'))
-    back_test.set_logger(logger=logger.getChild('BackTest'))
+    backtest.set_logger(logger=logger.getChild('BackTest'))
     strategy.set_logger(logger=logger.getChild('Strategy'))
     apps.set_logger(logger=logger.getChild('Apps'))
 
 
 from . import base
 from . import engine
-from . import back_test
+from . import backtest
 from . import strategy
 from . import apps
 
