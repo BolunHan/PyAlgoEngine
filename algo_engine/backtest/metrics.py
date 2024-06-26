@@ -13,16 +13,16 @@ class TradeMetrics(object):
         self.total_pnl = 0.
         self.total_cash_flow = 0.
 
-        self._current_pnl = 0.
-        self._current_cash_flow = 0.
-        self._current_trade_batch = {'cash_flow': 0., 'pnl': 0., 'turnover': 0., 'trades': []}
-        self._market_price = None
+        self.current_pnl = 0.
+        self.current_cash_flow = 0.
+        self.current_trade_batch = {'cash_flow': 0., 'pnl': 0., 'turnover': 0., 'trades': []}
+        self.market_price = None
 
     def update(self, market_price: float):
-        self._market_price = market_price
+        self.market_price = market_price
         self.total_pnl = self.exposure * market_price + self.total_cash_flow
-        self._current_pnl = self.exposure * market_price + self._current_cash_flow
-        self._current_trade_batch['pnl'] = self.exposure * market_price + self._current_trade_batch['cash_flow']
+        self.current_pnl = self.exposure * market_price + self.current_cash_flow
+        self.current_trade_batch['pnl'] = self.exposure * market_price + self.current_trade_batch['cash_flow']
 
     def add_trades(self, side: int, price: float, timestamp: float, volume: float = None, trade_id: int | str = None):
         assert side in {1, -1}, f"trade side must in {1, -1}, got {side}."
@@ -50,9 +50,9 @@ class TradeMetrics(object):
         self.exposure += volume * side
         self.total_cash_flow -= volume * side * price
         self.total_pnl = self.exposure * price + self.total_cash_flow
-        self._current_cash_flow -= volume * side * price
-        self._current_pnl = self.exposure * price + self._current_cash_flow
-        self._market_price = price
+        self.current_cash_flow -= volume * side * price
+        self.current_pnl = self.exposure * price + self.current_cash_flow
+        self.market_price = price
 
         self.trades[trade_id] = trade_log = dict(
             side=side,
@@ -60,22 +60,22 @@ class TradeMetrics(object):
             timestamp=timestamp,
             price=price,
             exposure=self.exposure,
-            cash_flow=self._current_cash_flow,
-            pnl=self._current_pnl
+            cash_flow=self.current_cash_flow,
+            pnl=self.current_pnl
         )
 
-        if 'init_side' not in self._current_trade_batch:
-            self._current_trade_batch['init_side'] = side
+        if 'init_side' not in self.current_trade_batch:
+            self.current_trade_batch['init_side'] = side
 
-        self._current_trade_batch['cash_flow'] -= volume * side * price
-        self._current_trade_batch['pnl'] = self.exposure * price + self._current_trade_batch['cash_flow']
-        self._current_trade_batch['turnover'] += abs(volume) * price
-        self._current_trade_batch['trades'].append(trade_log)
+        self.current_trade_batch['cash_flow'] -= volume * side * price
+        self.current_trade_batch['pnl'] = self.exposure * price + self.current_trade_batch['cash_flow']
+        self.current_trade_batch['turnover'] += abs(volume) * price
+        self.current_trade_batch['trades'].append(trade_log)
 
         if not self.exposure:
-            self.trade_batch.append(self._current_trade_batch)
-            self._current_trade_batch = {'cash_flow': 0., 'pnl': 0., 'turnover': 0., 'trades': []}
-            self._current_pnl = self._current_cash_flow = 0.
+            self.trade_batch.append(self.current_trade_batch)
+            self.current_trade_batch = {'cash_flow': 0., 'pnl': 0., 'turnover': 0., 'trades': []}
+            self.current_pnl = self.current_cash_flow = 0.
 
     def add_trades_batch(self, trade_logs: pd.DataFrame):
         for timestamp, row in trade_logs.iterrows():  # type: float, dict
@@ -92,10 +92,10 @@ class TradeMetrics(object):
         self.total_pnl = 0.
         self.total_cash_flow = 0.
 
-        self._current_pnl = 0.
-        self._current_cash_flow = 0.
-        self._current_trade_batch = {'cash_flow': 0., 'pnl': 0., 'turnover': 0., 'trades': []}
-        self._market_price = None
+        self.current_pnl = 0.
+        self.current_cash_flow = 0.
+        self.current_trade_batch = {'cash_flow': 0., 'pnl': 0., 'turnover': 0., 'trades': []}
+        self.market_price = None
 
     @property
     def summary(self):
@@ -121,11 +121,11 @@ class TradeMetrics(object):
                 info_dict['turnover'] += trade_batch['turnover']
 
         info_dict['win_rate'] = info_dict['win_count'] / info_dict['trade_count'] if info_dict['trade_count'] else 0.
-        info_dict['average_gain'] = info_dict['total_gain'] / info_dict['win_count'] / self._market_price if info_dict['win_count'] else 0.
-        info_dict['average_loss'] = info_dict['total_loss'] / info_dict['lose_count'] / self._market_price if info_dict['lose_count'] else 0.
+        info_dict['average_gain'] = info_dict['total_gain'] / info_dict['win_count'] / self.market_price if info_dict['win_count'] else 0.
+        info_dict['average_loss'] = info_dict['total_loss'] / info_dict['lose_count'] / self.market_price if info_dict['lose_count'] else 0.
         info_dict['gain_loss_ratio'] = -info_dict['average_gain'] / info_dict['average_loss'] if info_dict['average_loss'] else 1.
-        info_dict['long_avg_pnl'] = np.average([_['pnl'] for _ in long_trades]) / self._market_price if (long_trades := [_ for _ in self.trade_batch if _['init_side'] == 1]) else np.nan
-        info_dict['short_avg_pnl'] = np.average([_['pnl'] for _ in short_trades]) / self._market_price if (short_trades := [_ for _ in self.trade_batch if _['init_side'] == -1]) else np.nan
+        info_dict['long_avg_pnl'] = np.average([_['pnl'] for _ in long_trades]) / self.market_price if (long_trades := [_ for _ in self.trade_batch if _['init_side'] == 1]) else np.nan
+        info_dict['short_avg_pnl'] = np.average([_['pnl'] for _ in short_trades]) / self.market_price if (short_trades := [_ for _ in self.trade_batch if _['init_side'] == -1]) else np.nan
         info_dict['ttl_pnl.no_leverage'] = np.sum([trade_batch['pnl'] for trade_batch in self.trade_batch])
         info_dict['net_pnl.optimistic'] = info_dict['ttl_pnl.no_leverage'] - (0.00034 + 0.000023) / 2 * info_dict['turnover']
 
