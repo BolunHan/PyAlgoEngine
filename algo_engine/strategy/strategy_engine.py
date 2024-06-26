@@ -35,7 +35,7 @@ class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):
 
     @property
     def dma(self):
-        return self.position_tracker.dma.mds
+        return self.position_tracker.dma
 
     @property
     def risk_profile(self):
