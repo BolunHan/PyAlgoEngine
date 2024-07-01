@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import time
+import traceback
 import uuid
 from collections import defaultdict, deque
 from enum import Enum
@@ -632,15 +633,23 @@ class Balance(object, metaclass=Singleton):
         return f'<Balance>{{id={id(self)}}}'
 
     def add(self, map_id: str = None, strategy=None, position_tracker: PositionManagementService = None):
+        if strategy is None and position_tracker is None:
+            raise ValueError('Must assign ether strategy or position_tracker')
+
         if map_id is None:
             map_id = uuid.uuid4().hex
 
         if strategy is not None:
             self.strategy[map_id] = strategy
-        elif position_tracker is not None:
+
+        if position_tracker is not None:
             self.position_tracker[map_id] = position_tracker
         else:
-            raise ValueError('Must assign ether strategy or position_tracker')
+            try:
+                position_tracker = strategy.position_tracker
+                self.position_tracker[map_id] = position_tracker
+            except Exception as _:
+                LOGGER.error(traceback.format_exc())
 
     def pop(self, map_id: str):
         self.strategy.pop(map_id, None)
