@@ -74,7 +74,7 @@ class Profile(object, metaclass=abc.ABCMeta):
 
         if self.session_end is not None and self.session_end != datetime.time.max:
             range_break.append(
-                dict(bounds=[self.session_start.hour + self.session_start.minute / 60, 24], pattern="hour"),
+                dict(bounds=[self.session_end.hour + self.session_end.minute / 60, 24], pattern="hour"),
             )
 
         return range_break
