@@ -688,7 +688,7 @@ class BarData(MarketData):
             ticker: str,
             timestamp: float,  # the bar end timestamp
             start_timestamp: float = None,
-            bar_span: datetime.timedelta = None,
+            bar_span: datetime.timedelta | int | float = None,
             high_price: float = math.nan,
             low_price: float = math.nan,
             open_price: float = math.nan,
@@ -886,6 +886,66 @@ class BarData(MarketData):
             return self.market_time.date()
         else:
             return self.market_time
+
+
+# alias of the BarData
+CandleStick = BarData
+
+
+class DailyBar(BarData):
+    def __init__(
+            self, *,
+            ticker: str,
+            market_date: datetime.date,  # The market date of the bar, if with 1D data, or the END date of the bar.
+            timestamp: float = None,
+            start_date: datetime.date = None,
+            bar_span: datetime.timedelta | int = None,  # expect to be a timedelta for several days, or the number of days
+            high_price: float = math.nan,
+            low_price: float = math.nan,
+            open_price: float = math.nan,
+            close_price: float = math.nan,
+            volume: float = 0.,
+            notional: float = 0.,
+            trade_count: int = 0,
+            **kwargs
+    ):
+        if bar_span is None and start_date is None:
+            raise ValueError('Must assign ether datetime.date or bar_span or both.')
+        elif start_date is None:
+            if isinstance(bar_span, datetime.timedelta):
+                bar_span = bar_span.days
+            elif isinstance(bar_span, int):
+                pass
+            else:
+                raise ValueError(f'Invalid bar_span, expect int, float or timedelta, got {bar_span}')
+        elif bar_span is None:
+            bar_span = (market_date - start_date).days
+        else:
+            assert (market_date - start_date).days == bar_span.days
+
+        super().__init__(
+            ticker=ticker,
+            timestamp=datetime.datetime.combine(market_date, datetime.time.min).timestamp() if timestamp is None else timestamp,
+            bar_span=bar_span,
+            high_price=high_price,
+            low_price=low_price,
+            open_price=open_price,
+            close_price=close_price,
+            volume=volume,
+            notional=notional,
+            trade_count=trade_count,
+            **kwargs
+        )
+
+        self['market_date'] = market_date
+
+    @property
+    def bar_span(self) -> datetime.timedelta:
+        return datetime.timedelta(days=self['bar_span'])
+
+    @property
+    def market_date(self) -> datetime.date:
+        return self['market_date']
 
 
 class TickData(MarketData):
