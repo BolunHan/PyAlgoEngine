@@ -17,7 +17,7 @@ from . import LOGGER, PROFILE
 
 LOGGER = LOGGER.getChild('MarketUtils')
 __all__ = ['TransactionSide',
-           'MarketData', 'OrderBook', 'BarData', 'TickData', 'TransactionData', 'TradeData',
+           'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
            'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer']
 
 

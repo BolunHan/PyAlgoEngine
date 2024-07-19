@@ -15,7 +15,7 @@ def set_logger(logger: logging.Logger):
 
 
 from .finance_decimal import FinancialDecimal
-from .market_utils import TransactionSide, MarketData, OrderBook, BarData, TickData, TransactionData, TradeData, OrderBookBuffer, BarDataBuffer, TickDataBuffer, TransactionDataBuffer
+from .market_utils import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderBookBuffer, BarDataBuffer, TickDataBuffer, TransactionDataBuffer
 from .technical_analysis import TechnicalAnalysis
 from .trade_utils import OrderState, OrderType, TradeInstruction, TradeReport
 from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalStyle, InteractiveShell, ShellTransfer
