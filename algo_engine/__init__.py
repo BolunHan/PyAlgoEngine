@@ -1,4 +1,4 @@
-__version__ = "0.5.4.post7"
+__version__ = "0.5.4.post8"
 
 import logging
 import os
