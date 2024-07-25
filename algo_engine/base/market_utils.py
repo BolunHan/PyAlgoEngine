@@ -11,6 +11,7 @@ from ctypes import c_ulong, c_double, c_wchar, c_int, c_longlong
 from multiprocessing import RawValue, RawArray
 from typing import overload, Literal
 
+import ciso8601
 import numpy as np
 
 from . import LOGGER, PROFILE
@@ -889,7 +890,7 @@ class DailyBar(BarData):
     def __init__(
             self, *,
             ticker: str,
-            market_date: datetime.date,  # The market date of the bar, if with 1D data, or the END date of the bar.
+            market_date: datetime.date | str,  # The market date of the bar, if with 1D data, or the END date of the bar.
             timestamp: float = None,
             start_date: datetime.date = None,
             bar_span: datetime.timedelta | int = None,  # expect to be a timedelta for several days, or the number of days
@@ -902,6 +903,9 @@ class DailyBar(BarData):
             trade_count: int = 0,
             **kwargs
     ):
+        if isinstance(market_date, str):
+            market_date = datetime.date.fromisoformat(market_date)
+
         if bar_span is None and start_date is None:
             raise ValueError('Must assign ether datetime.date or bar_span or both.')
         elif start_date is None:
@@ -940,6 +944,54 @@ class DailyBar(BarData):
 
     def __repr__(self):
         return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
+
+    def to_json(self, fmt='str', **kwargs) -> str | dict:
+        data_dict = super().to_json(fmt='dict', **kwargs)
+
+        data_dict['market_date'] = self.market_date.isoformat()
+
+        if fmt == 'dict':
+            return data_dict
+        elif fmt == 'str':
+            return json.dumps(data_dict, **kwargs)
+        else:
+            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
+
+    def to_list(self) -> list[float | int | str | bool]:
+        return [self.__class__.__name__,
+                self.ticker,
+                self.market_date.isoformat(),
+                self.timestamp,
+                self.high_price,
+                self.low_price,
+                self.open_price,
+                self.close_price,
+                self['bar_span'],
+                self.volume,
+                self.notional,
+                self.trade_count]
+
+    @classmethod
+    def from_list(cls, data_list: list[float | int | str | bool]) -> BarData:
+        (dtype, ticker, market_date, timestamp, high_price, low_price, open_price, close_price,
+         bar_span, volume, notional, trade_count) = data_list
+
+        if dtype != cls.__name__:
+            raise TypeError(f'dtype mismatch, expect {cls.__name__}, got {dtype}.')
+
+        return cls(
+            ticker=ticker,
+            market_date=market_date,
+            timestamp=timestamp,
+            high_price=high_price,
+            low_price=low_price,
+            open_price=open_price,
+            close_price=close_price,
+            bar_span=datetime.timedelta(bar_span) if bar_span else None,
+            volume=volume,
+            notional=notional,
+            trade_count=trade_count
+        )
 
     @property
     def bar_span(self) -> datetime.timedelta:
