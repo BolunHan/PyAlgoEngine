@@ -9,7 +9,7 @@ import re
 import warnings
 from ctypes import c_ulong, c_double, c_wchar, c_int, c_longlong
 from multiprocessing import RawValue, RawArray
-from typing import overload
+from typing import overload, Literal
 
 import numpy as np
 
@@ -733,7 +733,7 @@ class BarData(MarketData):
                 raise ValueError(f'Invalid bar_span, expect int, float or timedelta, got {bar_span}')
 
     def __repr__(self):
-        return f'<BarData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
+        return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> BarData:
@@ -864,28 +864,21 @@ class BarData(MarketData):
         return self.close_price
 
     @property
-    def bar_type(self):
-        if self.bar_span > datetime.timedelta(days=1):
-            return 'Over-Daily'
-        elif self.bar_span == datetime.timedelta(days=1):
-            return 'Daily'
-        elif self.bar_span > datetime.timedelta(hours=1):
-            return 'Over-Hourly'
-        elif self.bar_span == datetime.timedelta(hours=1):
+    def bar_type(self) -> Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']:
+        if self['bar_span'] > 3600:
+            return 'Hourly-Plus'
+        elif self['bar_span'] == 3600:
             return 'Hourly'
-        elif self.bar_span > datetime.timedelta(minutes=1):
-            return 'Over-Minute'
-        elif self.bar_span == datetime.timedelta(minutes=1):
+        elif self['bar_span'] > 60:
+            return 'Minute-Plus'
+        elif self['bar_span'] == 60:
             return 'Minute'
         else:
             return 'Sub-Minute'
 
     @property
     def bar_end_time(self) -> datetime.datetime | datetime.date:
-        if self.bar_type == 'Daily':
-            return self.market_time.date()
-        else:
-            return self.market_time
+        return self.market_time
 
 
 # alias of the BarData
@@ -923,9 +916,15 @@ class DailyBar(BarData):
         else:
             assert (market_date - start_date).days == bar_span.days
 
+        if timestamp is None:
+            if PROFILE.session_end is None:
+                timestamp = datetime.datetime.combine(market_date, datetime.time.min, tzinfo=PROFILE.time_zone).timestamp()
+            else:
+                timestamp = datetime.datetime.combine(market_date, PROFILE.session_end, tzinfo=PROFILE.time_zone).timestamp()
+
         super().__init__(
             ticker=ticker,
-            timestamp=datetime.datetime.combine(market_date, datetime.time.min).timestamp() if timestamp is None else timestamp,
+            timestamp=timestamp,
             bar_span=bar_span,
             high_price=high_price,
             low_price=low_price,
@@ -939,6 +938,9 @@ class DailyBar(BarData):
 
         self['market_date'] = market_date
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
+
     @property
     def bar_span(self) -> datetime.timedelta:
         return datetime.timedelta(days=self['bar_span'])
@@ -946,6 +948,27 @@ class DailyBar(BarData):
     @property
     def market_date(self) -> datetime.date:
         return self['market_date']
+
+    @property
+    def market_time(self) -> datetime.date:
+        return self.market_date
+
+    @property
+    def bar_start_time(self) -> datetime.date:
+        return self.market_date - self.bar_span
+
+    @property
+    def bar_end_time(self) -> datetime.date:
+        return self.market_date
+
+    @property
+    def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
+        if self['bar_span'] == 1:
+            return 'Daily'
+        elif self['bar_span'] > 1:
+            return 'Daily-Plus'
+        else:
+            raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect a int greater or equal to 1, got {self["bar_span"]}')
 
 
 class TickData(MarketData):
