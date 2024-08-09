@@ -18,6 +18,9 @@ class Profile(object, metaclass=abc.ABCMeta):
 
         self.time_zone = None
 
+    def __repr__(self):
+        return f'<Profile {self.profile_id}>({id(self)})'
+
     def override_profile(self, profile: Self = None) -> Self:
         if profile is None:
             profile = PROFILE
