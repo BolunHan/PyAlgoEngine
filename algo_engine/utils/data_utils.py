@@ -11,12 +11,12 @@ from ..profile import Profile, PROFILE
 
 
 @overload
-def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode, ts_format='timestamp') -> list[float]:
+def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode: Literal['start', 'end', 'both'], ts_format='timestamp') -> list[float]:
     ...
 
 
 @overload
-def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode, ts_format='datetime') -> list[datetime.datetime]:
+def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode: Literal['start', 'end', 'both'], ts_format='datetime') -> list[datetime.datetime]:
     ...
 
 
@@ -158,7 +158,8 @@ def fake_data(
         session_start=session_start,
         session_end=session_end,
         session_break=session_break,
-        time_zone=time_zone
+        time_zone=time_zone,
+        ts_mode='end',
     )
 
     ttl_days = kwargs.get('ttl_days', 252)
