@@ -1055,7 +1055,7 @@ class TickData(MarketData):
 
             The `OrderBook` class extends `MarketData` and represents an order book with bids and asks. The `__init__` method initializes the order book with the provided bid and ask data and parses any additional keyword arguments to populate other attributes.
         """
-        super().__init__(ticker=ticker, timestamp=timestamp, **kwargs)
+        super().__init__(ticker=ticker, timestamp=timestamp)
 
         self.update(
             last_price=last_price,
@@ -1078,6 +1078,8 @@ class TickData(MarketData):
 
         if order_book is not None:
             self['order_book'] = {'bid': order_book['bid'], 'ask': order_book['ask']}
+        elif 'bid' in kwargs and 'ask' in kwargs:
+            self['order_book'] = {'bid': kwargs.pop('bid'), 'ask': kwargs.pop('ask')}
 
         if kwargs:
             self['additional'] = dict(kwargs)
