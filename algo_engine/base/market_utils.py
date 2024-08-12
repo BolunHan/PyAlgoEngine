@@ -476,6 +476,22 @@ class OrderBook(MarketData):
             return [entry[1] for entry in self._book]
 
     def __init__(self, *, ticker: str, timestamp: float, bid: list[list[float | int]] = None, ask: list[list[float | int]] = None, **kwargs):
+        """
+            Initialize an OrderBook instance with market data.
+
+            Args:
+                ticker (str): The ticker symbol of the financial instrument.
+                timestamp (float): The timestamp of the market data.
+                bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order details. Defaults to None.
+                ask (list[list[float | int]], optional): A list of ask data.
+                **kwargs: Additional key-value pairs for parsing extra data fields.
+
+            Attributes:
+                bid (OrderBook.Book): An instance of the Book class representing the bid side of the order book.
+                ask (OrderBook.Book): An instance of the Book class representing the ask side of the order book.
+
+            The `OrderBook` class extends `MarketData` and represents an order book with bids and asks. The `__init__` method initializes the order book with the provided bid and ask data and parses any additional keyword arguments to populate other attributes.
+        """
         super().__init__(ticker=ticker, timestamp=timestamp)
         self.update(
             bid=[] if bid is None else bid,
@@ -1034,28 +1050,14 @@ class TickData(MarketData):
             ask_price: float = None,
             ask_volume: float = None,
             order_book: OrderBook = None,
+            bid: list[float | int] = None,
+            ask: list[float | int] = None,
             total_traded_volume: float = 0.,
             total_traded_notional: float = 0.,
             total_trade_count: int = 0,
             **kwargs
     ):
-        """
-            Initialize an OrderBook instance with market data.
-
-            Args:
-                ticker (str): The ticker symbol of the financial instrument.
-                timestamp (float): The timestamp of the market data.
-                bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order details. Defaults to None.
-                ask (list[list[float | int]], optional): A list of ask data.
-                **kwargs: Additional key-value pairs for parsing extra data fields.
-
-            Attributes:
-                bid (OrderBook.Book): An instance of the Book class representing the bid side of the order book.
-                ask (OrderBook.Book): An instance of the Book class representing the ask side of the order book.
-
-            The `OrderBook` class extends `MarketData` and represents an order book with bids and asks. The `__init__` method initializes the order book with the provided bid and ask data and parses any additional keyword arguments to populate other attributes.
-        """
-        super().__init__(ticker=ticker, timestamp=timestamp)
+        super().__init__(ticker=ticker, timestamp=timestamp, **kwargs)
 
         self.update(
             last_price=last_price,
@@ -1063,6 +1065,23 @@ class TickData(MarketData):
             total_traded_notional=total_traded_notional,
             total_trade_count=total_trade_count,
         )
+
+        if order_book is not None:
+            self['order_book'] = {'bid': order_book['bid'], 'ask': order_book['ask']}
+        elif bid and ask:
+            self['order_book'] = {
+                'bid': sorted(bid, key=lambda _: _[0], reverse=True),
+                'ask': sorted(ask, key=lambda _: _[0], reverse=False)
+            }
+
+            if bid_price is None:
+                bid_price, _, *_ = bid[0]
+            if bid_volume is None:
+                _, bid_volume, *_ = bid[0]
+            if ask_price is None:
+                ask_price, _, *_ = ask[0]
+            if ask_volume is None:
+                _, ask_volume, *_ = ask[0]
 
         if bid_price is not None and math.isfinite(bid_price):
             self['bid_price'] = bid_price
@@ -1075,14 +1094,6 @@ class TickData(MarketData):
 
         if ask_volume is not None and math.isfinite(ask_volume):
             self['ask_volume'] = ask_volume
-
-        if order_book is not None:
-            self['order_book'] = {'bid': order_book['bid'], 'ask': order_book['ask']}
-        elif 'bid' in kwargs and 'ask' in kwargs:
-            self['order_book'] = {'bid': kwargs.pop('bid'), 'ask': kwargs.pop('ask')}
-
-        if kwargs:
-            self['additional'] = dict(kwargs)
 
     @property
     def level_2(self) -> OrderBook | None:
