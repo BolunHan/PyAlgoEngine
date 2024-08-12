@@ -1103,6 +1103,10 @@ class TickData(MarketData):
             return None
 
     @property
+    def order_book(self) -> OrderBook | None:
+        return self.level_2
+
+    @property
     def last_price(self) -> float:
         return self['last_price']
 
