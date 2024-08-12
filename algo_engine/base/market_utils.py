@@ -1039,6 +1039,22 @@ class TickData(MarketData):
             total_trade_count: int = 0,
             **kwargs
     ):
+        """
+            Initialize an OrderBook instance with market data.
+
+            Args:
+                ticker (str): The ticker symbol of the financial instrument.
+                timestamp (float): The timestamp of the market data.
+                bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order details. Defaults to None.
+                ask (list[list[float | int]], optional): A list of ask data.
+                **kwargs: Additional key-value pairs for parsing extra data fields.
+
+            Attributes:
+                bid (OrderBook.Book): An instance of the Book class representing the bid side of the order book.
+                ask (OrderBook.Book): An instance of the Book class representing the ask side of the order book.
+
+            The `OrderBook` class extends `MarketData` and represents an order book with bids and asks. The `__init__` method initializes the order book with the provided bid and ask data and parses any additional keyword arguments to populate other attributes.
+        """
         super().__init__(ticker=ticker, timestamp=timestamp, **kwargs)
 
         self.update(
@@ -1061,7 +1077,7 @@ class TickData(MarketData):
             self['ask_volume'] = ask_volume
 
         if order_book is not None:
-            self['order_book'] = order_book
+            self['order_book'] = {'bid': order_book['bid'], 'ask': order_book['ask']}
 
         if kwargs:
             self['additional'] = dict(kwargs)
@@ -1069,7 +1085,7 @@ class TickData(MarketData):
     @property
     def level_2(self) -> OrderBook | None:
         if 'order_book' in self:
-            return OrderBook(**self['order_book'])
+            return OrderBook(ticker=self.ticker, timestamp=self.timestamp, **self['order_book'])
         else:
             return None
 
