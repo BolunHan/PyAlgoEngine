@@ -1471,7 +1471,7 @@ class OrderBookBuffer(_MarketDataMemoryBuffer):
                     ask_memory.value = ask_entry_value
             else:
                 for ask_memory in ask_memory_array:
-                    ask_memory.value = 0.
+                    ask_memory.value = 0
 
     def to_market_data(self) -> OrderBook:
         bid, ask = [], []
