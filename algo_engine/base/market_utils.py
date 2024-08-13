@@ -289,7 +289,7 @@ class OrderBook(MarketData):
 
         def __iter__(self):
             self.sort()
-            return sorted(self._book).__iter__()
+            return self._book.__iter__()
 
         def __getitem__(self, item):
             if isinstance(item, int) and item not in self._dict:
@@ -673,14 +673,14 @@ class OrderBook(MarketData):
     @property
     def best_bid_price(self):
         if book := self.bid:
-            return book[0][0]
+            return book.at_level(0)[0]
         else:
             return math.nan
 
     @property
     def best_ask_price(self):
         if book := self.ask:
-            return book[0][0]
+            return book.at_level(0)[0]
         else:
             return math.nan
 
