@@ -27,8 +27,8 @@ def ts_indices(
         session_end: datetime.time = None,
         session_break: list[tuple[datetime.time, datetime.time]] = None,
         time_zone: datetime.tzinfo = None,
-        ts_mode: Literal['start', 'end', 'both'] = 'end',
-        ts_format: Literal['timestamp', 'datetime'] = 'timestamp'
+        ts_mode: Literal['start', 'end', 'both'] | str = 'end',
+        ts_format: Literal['timestamp', 'datetime'] | str = 'timestamp'
 ) -> list[float]:
     if market_date is None:
         market_date = datetime.date.today()
