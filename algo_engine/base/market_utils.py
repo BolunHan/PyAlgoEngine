@@ -9,9 +9,8 @@ import re
 import warnings
 from ctypes import c_ulong, c_double, c_wchar, c_int, c_longlong
 from multiprocessing import RawValue, RawArray
-from typing import overload, Literal
+from typing import overload, Literal, Self
 
-import ciso8601
 import numpy as np
 
 from . import LOGGER, PROFILE
@@ -23,6 +22,19 @@ __all__ = ['TransactionSide',
 
 
 class TransactionSide(enum.Enum):
+    """
+    Enumeration representing different sides of a financial transaction.
+
+    Attributes:
+        ShortOrder: Represents an order to short.
+        ShortOpen: Represents the opening of a short position.
+        ShortFilled: Represents a filled short order.
+        UNKNOWN: Represents an unknown transaction side. Normally a cancel order.
+        LongFilled: Represents a filled long order.
+        ShortClose: Represents the closing of a short position.
+        LongOrder: Represents an order to go long.
+    """
+
     ShortOrder = AskOrder = Offer_to_Short = -3
     ShortOpen = Sell_to_Short = -2
     ShortFilled = LongClose = Sell_to_Unwind = ask = -1
@@ -32,6 +44,17 @@ class TransactionSide(enum.Enum):
     LongOrder = BidOrder = Bid_to_Long = 3
 
     def __lt__(self, other):
+        """
+        Compare if this transaction side is less than another.
+
+        This comparison is deprecated.
+
+        Args:
+            other: The other TransactionSide to compare with.
+
+        Returns:
+            bool: True if this transaction side is less than the other, otherwise False.
+        """
         warnings.warn(DeprecationWarning('Comparison of the <TransactionSide> deprecated!'))
         if self.__class__ is other.__class__:
             return self.value < other.value
@@ -39,6 +62,17 @@ class TransactionSide(enum.Enum):
             return self.value < other
 
     def __gt__(self, other):
+        """
+        Compare if this transaction side is greater than another.
+
+        This comparison is deprecated.
+
+        Args:
+            other: The other TransactionSide to compare with.
+
+        Returns:
+            bool: True if this transaction side is greater than the other, otherwise False.
+        """
         warnings.warn(DeprecationWarning('Comparison of the <TransactionSide> deprecated!'))
         if self.__class__ is other.__class__:
             return self.value > other.value
@@ -46,6 +80,15 @@ class TransactionSide(enum.Enum):
             return self.value > other
 
     def __eq__(self, other):
+        """
+        Compare if this transaction side is equal to another.
+
+        Args:
+            other: The other TransactionSide to compare with.
+
+        Returns:
+            bool: True if this transaction side is equal to the other, otherwise False.
+        """
         if self.__class__ is other.__class__:
             return self.value == other.value
         else:
@@ -53,8 +96,10 @@ class TransactionSide(enum.Enum):
 
     def __neg__(self) -> TransactionSide:
         """
-        return a opposite trade side, Long -> Short and Short -> Long
-        :return: tr
+        Get the opposite transaction side.
+
+        Returns:
+            TransactionSide: The opposite transaction side.
         """
         if self is self.LongOpen:
             return self.LongClose
@@ -73,11 +118,29 @@ class TransactionSide(enum.Enum):
             return self.UNKNOWN
 
     def __hash__(self):
+        """
+        Get the hash value of this transaction side.
+
+        Returns:
+            int: The hash value of the transaction side.
+        """
         return self.value
 
     @classmethod
     def from_offset(cls, direction: str, offset: str) -> TransactionSide:
+        """
+        Determine the transaction side from direction and offset.
 
+        Args:
+            direction (str): The trade direction (e.g., 'buy', 'sell').
+            offset (str): The trade offset (e.g., 'open', 'close').
+
+        Returns:
+            TransactionSide: The corresponding transaction side.
+
+        Raises:
+            ValueError: If the direction or offset is not recognized.
+        """
         direction = direction.lower()
         offset = offset.lower()
 
@@ -100,6 +163,15 @@ class TransactionSide(enum.Enum):
 
     @classmethod
     def _missing_(cls, value: str | int):
+        """
+        Handle missing values in the enumeration.
+
+        Args:
+            value (str | int): The value to resolve.
+
+        Returns:
+            TransactionSide: The resolved transaction side, or UNKNOWN if not recognized.
+        """
         capital_str = str(value).capitalize()
 
         if capital_str == 'Long' or capital_str == 'Buy' or capital_str == 'B':
@@ -126,6 +198,12 @@ class TransactionSide(enum.Enum):
 
     @property
     def sign(self) -> int:
+        """
+        Get the sign of the transaction side.
+
+        Returns:
+            int: 1 for buy/long, -1 for sell/short, 0 for unknown.
+        """
         if self.value == self.Buy_to_Long.value or self.value == self.Buy_to_Cover.value:
             return 1
         elif self.value == self.Sell_to_Unwind.value or self.value == self.Sell_to_Short.value:
@@ -138,6 +216,12 @@ class TransactionSide(enum.Enum):
 
     @property
     def order_sign(self) -> int:
+        """
+        Get the order sign of the transaction side.
+
+        Returns:
+            int: 1 for long orders, -1 for short orders, 0 for unknown.
+        """
         if self.value == self.LongOrder.value:
             return 1
         elif self.value == self.ShortOrder.value:
@@ -150,10 +234,22 @@ class TransactionSide(enum.Enum):
 
     @property
     def offset(self) -> int:
+        """
+        Get the offset of the transaction side.
+
+        Returns:
+            int: The offset value, equivalent to the sign.
+        """
         return self.sign
 
     @property
-    def side_name(self):
+    def side_name(self) -> str:
+        """
+        Get the name of the transaction side.
+
+        Returns:
+            str: 'Long', 'Short', 'ask', 'bid', or 'Unknown'.
+        """
         if self.value == self.Buy_to_Long.value or self.value == self.Buy_to_Cover.value:
             return 'Long'
         elif self.value == self.Sell_to_Unwind.value or self.value == self.Sell_to_Short.value:
@@ -166,7 +262,13 @@ class TransactionSide(enum.Enum):
             return 'Unknown'
 
     @property
-    def offset_name(self):
+    def offset_name(self) -> str:
+        """
+        Get the offset name of the transaction side.
+
+        Returns:
+            str: 'Open', 'Close', 'ask', 'bid', or 'Unknown'.
+        """
         if self.value == self.Buy_to_Long.value or self.value == self.Sell_to_Short.value:
             return 'Open'
         elif self.value == self.Buy_to_Cover.value or self.value == self.Sell_to_Unwind.value:
@@ -179,19 +281,67 @@ class TransactionSide(enum.Enum):
 
 
 class MarketData(dict, metaclass=abc.ABCMeta):
+    """
+    Abstract base class for representing market data in the form of a dictionary.
+
+    Properties:
+        ticker (str): The ticker symbol associated with the market data.
+        timestamp (float): The timestamp of the market data in seconds since the epoch.
+        additional (dict): A dictionary to store any additional attributes provided during initialization.
+
+    Methods:
+        __copy__(): Create a shallow copy of the MarketData instance.
+        copy(): Alias for __copy__().
+        to_json(fmt='str', **kwargs): Convert the MarketData instance to a JSON-compatible format.
+        from_json(json_message: str | bytes | bytearray | dict) -> MarketData: Create a MarketData instance from a JSON string or dictionary.
+        to_list() -> list[float | int | str | bool]: Abstract method to convert the MarketData instance to a list.
+        from_list(data_list: list[float | int | str | bool]) -> MarketData: Create a MarketData instance from a list.
+    """
+
     def __init__(self, ticker: str, timestamp: float, **kwargs):
+        """
+        Initialize a MarketData instance.
+
+        Args:
+            ticker (str): The ticker symbol associated with the market data.
+            timestamp (float): The timestamp of the market data in seconds since the epoch.
+            **kwargs: Additional keyword arguments to store as extra attributes.
+        """
         super().__init__(ticker=ticker, timestamp=timestamp)
 
         if kwargs:
             self['additional'] = dict(kwargs)
 
     def __copy__(self):
-        return self.__class__.__init__(**self)
+        """
+        Create a shallow copy of the MarketData instance.
+
+        Returns:
+            MarketData: A new instance of MarketData with the same data.
+        """
+        return self.__class__(**self)
 
     def copy(self):
+        """
+        Alias for __copy__().
+
+        Returns:
+            MarketData: A new instance of MarketData with the same data.
+        """
         return self.__copy__()
 
     def to_json(self, fmt='str', **kwargs) -> str | dict:
+        """
+        Convert the MarketData instance to a JSON-compatible format.
+
+        Args:
+            fmt (str, optional): The output format. Can be 'str' to return a JSON string,
+                                 or 'dict' to return a dictionary. Defaults to 'str'.
+            **kwargs: Additional keyword arguments passed to the json.dumps function.
+
+        Returns:
+            str | dict: The MarketData instance as a JSON string or dictionary.
+        """
         data_dict = dict(
             dtype=self.__class__.__name__,
             **self
@@ -206,10 +356,22 @@ class MarketData(dict, metaclass=abc.ABCMeta):
         elif fmt == 'str':
             return json.dumps(data_dict, **kwargs)
         else:
-            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
+            raise ValueError(f'Invalid format {fmt}, expected "dict" or "str".')
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> MarketData:
+        """
+        Create a MarketData instance from a JSON string or dictionary.
+
+        Args:
+            json_message (str | bytes | bytearray | dict): The JSON string or dictionary containing market data information.
+
+        Returns:
+            MarketData: An instance of a subclass of MarketData.
+
+        Raises:
+            TypeError: If the 'dtype' key in the JSON message is invalid or unrecognized.
+        """
         if isinstance(json_message, dict):
             json_dict = json_message
         else:
@@ -231,10 +393,31 @@ class MarketData(dict, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def to_list(self) -> list[float | int | str | bool]:
+        """
+        Convert the MarketData instance to a list.
+
+        Returns:
+            list[float | int | str | bool]: A list representing the MarketData instance.
+
+        Note:
+            This method must be implemented by subclasses.
+        """
         ...
 
     @classmethod
     def from_list(cls, data_list: list[float | int | str | bool]) -> MarketData:
+        """
+        Create a MarketData instance from a list.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list containing market data information.
+
+        Returns:
+            MarketData: An instance of a subclass of MarketData.
+
+        Raises:
+            TypeError: If the first element of the list (dtype) is invalid or unrecognized.
+        """
         dtype = data_list[0]
 
         if dtype == 'BarData':
@@ -251,36 +434,98 @@ class MarketData(dict, metaclass=abc.ABCMeta):
             raise TypeError(f'Invalid dtype {dtype}')
 
     @property
-    def ticker(self):
+    def ticker(self) -> str:
+        """
+        Get the ticker symbol of the market data.
+
+        Returns:
+            str: The ticker symbol.
+        """
         return self['ticker']
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> float:
+        """
+        Get the timestamp of the market data.
+
+        Returns:
+            float: The timestamp in seconds since the epoch.
+        """
         return self['timestamp']
 
     @property
-    def additional(self):
+    def additional(self) -> dict:
+        """
+        Get the additional attributes stored in the market data.
+
+        Returns:
+            dict: A dictionary of additional attributes.
+        """
         if 'additional' not in self:
             self['additional'] = {}
         return self['additional']
 
     @property
     def topic(self) -> str:
+        """
+        Get the topic string for the market data, used for messaging or logging.
+
+        Returns:
+            str: The topic string in the format 'ticker.MarketDataClassName'.
+        """
         return f'{self.ticker}.{self.__class__.__name__}'
 
     @property
     def market_time(self) -> datetime.datetime | datetime.date:
+        """
+        Get the market time as a datetime object.
+
+        Returns:
+            datetime.datetime | datetime.date: The market time based on the timestamp.
+        """
         return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
 
     @property
     @abc.abstractmethod
     def market_price(self) -> float:
+        """
+        Abstract property to get the market price.
+
+        Returns:
+            float: The market price.
+
+        Note:
+            This property must be implemented by subclasses.
+        """
         ...
 
 
 class OrderBook(MarketData):
+    """
+    Class representing an order book, which tracks bid and ask orders for a financial instrument.
+
+    Nested Classes:
+        Book: Represents a side of the order book (either bid or ask), with methods for managing entries.
+    """
+
     class Book(object):
+        """
+        Class representing a side of the order book (either bid or ask).
+
+        Attributes:
+            side (int): Indicates the side of the book; positive for bid, negative for ask.
+            _book (list[tuple[float, float, ...]]): A list of tuples representing (price, volume, order).
+            _dict (dict[float, tuple[float, float, ...]]): A dictionary mapping prices to order book entries.
+            sorted (bool): Indicates whether the book is sorted.
+        """
+
         def __init__(self, side: int):
+            """
+            Initialize the order book for a specific side.
+
+            Args:
+                side (int): Side of the book; positive for bid, negative for ask.
+            """
             self.side: int = side
             # store the entry in order of (price, volume, order, etc...)
             self._book: list[tuple[float, float, ...]] = []
@@ -288,10 +533,28 @@ class OrderBook(MarketData):
             self.sorted = False
 
         def __iter__(self):
+            """
+            Iterate over the sorted order book.
+
+            Returns:
+                iterator: An iterator over the sorted book entries.
+            """
             self.sort()
             return self._book.__iter__()
 
         def __getitem__(self, item):
+            """
+            Retrieve an entry by price or level.
+
+            Args:
+                item (int | float): Level number (int) or price (float).
+
+            Returns:
+                tuple[float, float, ...]: The order book entry at the specified level or price.
+
+            Raises:
+                KeyError: If the index value is ambiguous.
+            """
             if isinstance(item, int) and item not in self._dict:
                 return self.at_level(item)
             elif isinstance(item, float):
@@ -300,18 +563,58 @@ class OrderBook(MarketData):
                 raise KeyError(f'Ambiguous index value {item}, please use at_price or at_level specifically')
 
         def __contains__(self, price: float):
+            """
+            Check if a price exists in the order book.
+
+            Args:
+                price (float): The price to check.
+
+            Returns:
+                bool: True if the price exists, False otherwise.
+            """
             return self._dict.__contains__(price)
 
         def __len__(self):
+            """
+            Get the number of entries in the order book.
+
+            Returns:
+                int: The number of entries.
+            """
             return self._book.__len__()
 
         def __repr__(self):
+            """
+            Get a string representation of the book.
+
+            Returns:
+                str: A string indicating whether the book is for bids or asks.
+            """
             return f'<OrderBook.Book.{"Bid" if self.side > 0 else "Ask"}>'
 
         def __bool__(self):
+            """
+            Check if the order book has any entries.
+
+            Returns:
+                bool: True if the book is not empty, False otherwise.
+            """
             return bool(self._book)
 
         def __sub__(self, other: OrderBook.Book) -> dict[float, float]:
+            """
+            Subtract another order book from this one to find the differences in volumes at matching prices.
+
+            Args:
+                other (OrderBook.Book): The other book to compare against.
+
+            Returns:
+                dict[float, float]: A dictionary of price differences.
+
+            Raises:
+                TypeError: If the other object is not of type OrderBook.Book.
+                ValueError: If the sides of the books do not match.
+            """
             if not isinstance(other, self.__class__):
                 raise TypeError(f'Expect type {self.__class__.__name__}, got {type(other)}')
 
@@ -327,7 +630,7 @@ class OrderBook(MarketData):
                 limit_0 = min(self._dict)
                 limit_1 = min(other._dict)
                 limit = max(limit_0, limit_1)
-                contain_limit = True if limit_0 == limit_1 else False
+                contain_limit = limit_0 == limit_1
 
                 for entry in self._book:
                     price, volume, *_ = entry
@@ -345,7 +648,7 @@ class OrderBook(MarketData):
                 limit_0 = max(self._dict)
                 limit_1 = max(other._dict)
                 limit = min(limit_0, limit_1)
-                contain_limit = True if limit_0 == limit_1 else False
+                contain_limit = limit_0 == limit_1
 
                 for entry in self._book:
                     price, volume, *_ = entry
@@ -362,6 +665,19 @@ class OrderBook(MarketData):
             return diff
 
         def get(self, item=None, **kwargs) -> tuple[float, float, ...] | None:
+            """
+            Retrieve an entry by price or level, with flexibility for keyword arguments.
+
+            Args:
+                item (int | float, optional): The level (int) or price (float) to retrieve.
+                **kwargs: Additional arguments for price or level.
+
+            Returns:
+                tuple[float, float, ...] | None: The entry at the specified price or level, or None if not found.
+
+            Raises:
+                ValueError: If both price and level are not provided or both are provided.
+            """
             if item is None:
                 price = kwargs.pop('price', None)
                 level = kwargs.pop('level', None)
@@ -388,28 +704,53 @@ class OrderBook(MarketData):
                 except KeyError:
                     return None
             else:
-                raise ValueError('Must NOT assign both price or level in kwargs')
+                raise ValueError('Must NOT assign both price and level in kwargs')
 
         def pop(self, price: float):
+            """
+            Remove and return an entry at the specified price.
+
+            Args:
+                price (float): The price of the entry to remove.
+
+            Returns:
+                tuple[float, float, ...]: The removed entry.
+
+            Raises:
+                KeyError: If the price does not exist in the order book.
+            """
             entry = self._dict.pop(price, None)
             if entry is not None:
                 self._book.remove(entry)
             else:
-                raise KeyError(f'Price {price} not exist in order book')
+                raise KeyError(f'Price {price} does not exist in the order book')
             return entry
 
-        def remove(self, entry: OrderBook.OrderBookEntry):
+        def remove(self, entry: tuple[float, float, ...]):
+            """
+            Remove a specific entry from the order book.
+
+            Args:
+                entry (tuple[float, float, ...]): The entry to remove.
+
+            Raises:
+                ValueError: If the entry does not exist in the order book.
+            """
             try:
                 self._book.remove(entry)
-                self._dict.pop(entry.price)
+                self._dict.pop(entry[0])
             except ValueError:
-                raise ValueError(f'Entry {entry} not exist in order book')
+                raise ValueError(f'Entry {entry} does not exist in the order book')
 
         def at_price(self, price: float):
             """
-            get OrderBook.Book.Entry with specific price
-            :param price: the given price
-            :return: the logged OrderBook.Book.Entry
+            Get the entry at a specific price.
+
+            Args:
+                price (float): The price to search for.
+
+            Returns:
+                tuple[float, float, ...]: The entry at the given price, or None if not found.
             """
             if price in self._dict:
                 return self._dict.__getitem__(price)
@@ -418,13 +759,28 @@ class OrderBook(MarketData):
 
         def at_level(self, level: int):
             """
-            get OrderBook.Book.Entry with level num
-            :param level: the given level
-            :return: the logged OrderBook.Book.Entry
+            Get the entry at a specific level.
+
+            Args:
+                level (int): The level to search for.
+
+            Returns:
+                tuple[float, float, ...]: The entry at the given level.
             """
             return self._book.__getitem__(level)
 
         def update(self, price: float, volume: float, order: int = None):
+            """
+            Update or add an entry in the order book.
+
+            Args:
+                price (float): The price of the entry to update.
+                volume (float): The new volume for the entry.
+                order (int, optional): The order number. Defaults to None.
+
+            Raises:
+                ValueError: If the volume is invalid.
+            """
             if price in self._dict:
                 if volume == 0:
                     self.pop(price=price)
@@ -433,43 +789,79 @@ class OrderBook(MarketData):
                     self.pop(price=price)
                 else:
                     entry = self._dict[price]
-                    entry.volume = volume
+                    new_entry = list(entry)
+                    new_entry[1] = volume
+                    self._dict[price] = tuple(new_entry)
+                    self._book[self._book.index(entry)] = tuple(new_entry)
             else:
                 self.add(price=price, volume=volume, order=order)
 
         def add(self, price: float, volume: float, order: int = None):
+            """
+            Add a new entry to the order book.
+
+            Args:
+                price (float): The price of the new entry.
+                volume (float): The volume of the new entry.
+                order (int, optional): The order number. Defaults to None.
+            """
             entry = (price, volume, order if order else 0)
             self._dict[price] = entry
             self._book.append(entry)
 
-        def loc_volume(self, p0: float, p1: float):
-            volume = 0.
+        def loc_volume(self, p0: float, p1: float) -> float:
+            """
+            Calculate the total volume between two price levels. Inclusive of the 2 given price.
+
+            Args:
+                p0 (float): The first price level.
+                p1 (float): The second price level.
+
+            Returns:
+                float: The total volume between the two prices.
+            """
+            volume = 0.0
             p_min = min(p0, p1)
             p_max = max(p0, p1)
 
             for entry in self._book:
-                price, volume, *_ = entry
-                if p_min < price < p_max:
-                    volume += volume
+                price, vol, *_ = entry
+                if p_min <= price <= p_max:
+                    volume += vol
 
             return volume
 
         def sort(self):
+            """
+            Sort the order book by price in the appropriate order (descending for bids, ascending for asks).
+            """
             if self.side > 0:  # bid
                 self._book.sort(reverse=True, key=lambda x: x[0])
-            else:
+            else:  # ask
                 self._book.sort(key=lambda x: x[0])
             self.sorted = True
 
         @property
-        def price(self):
+        def price(self) -> list[float]:
+            """
+            Get a sorted list of all prices in the order book.
+
+            Returns:
+                list[float]: A list of all prices.
+            """
             if not self.sorted:
                 self.sort()
 
             return [entry[0] for entry in self._book]
 
         @property
-        def volume(self):
+        def volume(self) -> list[float]:
+            """
+            Get a sorted list of all volumes in the order book.
+
+            Returns:
+                list[float]: A list of all volumes.
+            """
             if not self.sorted:
                 self.sort()
 
@@ -477,20 +869,14 @@ class OrderBook(MarketData):
 
     def __init__(self, *, ticker: str, timestamp: float, bid: list[list[float | int]] = None, ask: list[list[float | int]] = None, **kwargs):
         """
-            Initialize an OrderBook instance with market data.
+        Initialize an OrderBook instance with market data.
 
-            Args:
-                ticker (str): The ticker symbol of the financial instrument.
-                timestamp (float): The timestamp of the market data.
-                bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order details. Defaults to None.
-                ask (list[list[float | int]], optional): A list of ask data.
-                **kwargs: Additional key-value pairs for parsing extra data fields.
-
-            Attributes:
-                bid (OrderBook.Book): An instance of the Book class representing the bid side of the order book.
-                ask (OrderBook.Book): An instance of the Book class representing the ask side of the order book.
-
-            The `OrderBook` class extends `MarketData` and represents an order book with bids and asks. The `__init__` method initializes the order book with the provided bid and ask data and parses any additional keyword arguments to populate other attributes.
+        Args:
+            ticker (str): The ticker symbol of the financial instrument.
+            timestamp (float): The timestamp of the market data.
+            bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order details. Defaults to None.
+            ask (list[list[float | int]], optional): A list of ask data. Defaults to None.
+            **kwargs: Additional key-value pairs for parsing extra data fields.
         """
         super().__init__(ticker=ticker, timestamp=timestamp)
         self.update(
@@ -500,38 +886,87 @@ class OrderBook(MarketData):
         self.parse(**kwargs)
 
     def __getattr__(self, item: str):
+        """
+        Dynamically retrieve attributes like bid_price_X or ask_volume_Y.
+
+        Args:
+            item (str): The name of the attribute to retrieve.
+
+        Returns:
+            The value of the requested attribute.
+
+        Raises:
+            AttributeError: If the attribute is not found or the query level exceeds the maximum level.
+        """
         if re.match('^((bid_)|(ask_))((price_)|(volume_))[0-9]+$', item):
-            side = item.split('_')[0]
-            key = item.split('_')[1]
-            level = int(item.split('_')[2])
-            book: 'OrderBook.Book' = self.__getattribute__(f'{side}')
+            side, key, level, *_ = item.split('_')
+            level = int(level)
+            book: OrderBook.Book = self.__getattribute__(f'{side}')
             if 0 < level <= len(book):
-                return book[level].__getattribute__(key)
+                return book[level - 1].__getattribute__(key)
             else:
                 raise AttributeError(f'query level [{level}] exceed max level [{len(book)}]')
         else:
             raise AttributeError(f'{item} not found in {self.__class__}')
 
     def __setattr__(self, key, value):
+        """
+        Dynamically set attributes like bid_price_X or ask_volume_Y.
+
+        Args:
+            key (str): The name of the attribute to set.
+            value: The value to set for the attribute.
+        """
         if re.match('^((bid_)|(ask_))((price_)|(volume_))[0-9]+$', key):
             self.update({key: value})
         else:
             super().__setattr__(key, value)
 
     def __repr__(self):
+        """
+        String representation of the OrderBook instance.
+
+        Returns:
+            str: A string describing the OrderBook.
+        """
         return f'<OrderBook>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.best_bid_price}, ask={self.best_ask_price})'
 
     def __str__(self):
+        """
+        String representation for print output.
+
+        Returns:
+            str: A detailed string representation of the OrderBook.
+        """
         return f'<OrderBook>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker} {{Bid: {self.best_bid_price, self.best_bid_volume}, Ask: {self.best_ask_price, self.best_ask_volume}, Level: {self.max_level}}})'
 
     def __bool__(self):
+        """
+        Boolean value of the OrderBook instance.
+
+        Returns:
+            bool: True if both bid and ask sides have entries, False otherwise.
+        """
         return bool(self.bid) and bool(self.ask)
 
     @classmethod
     def _parse_entry_name(cls, name: str, validate: bool = False) -> tuple[str, str, int]:
+        """
+        Parse an entry name like bid_price_X into its components.
+
+        Args:
+            name (str): The entry name to parse.
+            validate (bool, optional): Whether to validate the entry name. Defaults to False.
+
+        Returns:
+            tuple[str, str, int]: The parsed side, key, and level.
+
+        Raises:
+            ValueError: If validation fails and the name is not parsable.
+        """
         if validate:
             if not re.match('^((bid_)|(ask_))((price_)|(volume_)|(order_))[0-9]+$', name):
-                raise ValueError(f'Can not parse kwargs {name}.')
+                raise ValueError(f'Cannot parse kwargs {name}.')
 
         side, key, level = name.split('_')
         level = int(level)
@@ -543,47 +978,27 @@ class OrderBook(MarketData):
         ...
 
     def parse(self, data: dict[str, float] = None, validate: bool = False, **kwargs):
+        """
+        Parse bid and ask data into the OrderBook.
+
+        Args:
+            data (dict[str, float], optional): A dictionary of data entries to parse. Defaults to None.
+            validate (bool, optional): Whether to validate the entry names. Defaults to False.
+            **kwargs: Additional key-value pairs for parsing into the OrderBook.
+        """
         if not data:
             data = {}
 
         data.update(kwargs)
 
         for name, value in data.items():
-            split_str = name.split('_')
-
-            if validate:
-                if len(split_str) != 3:
-                    self.additional[name] = value
-
-                side, key, level = name.split('_')
-
-                if not (side == 'bid' or side == 'ask'):
-                    self.additional[name] = value
-
-                if not (key == 'price' or key == 'volume' or key == 'order'):
-                    self.additional[name] = value
-
-                if level.isnumeric():
-                    level = int(level)
-                else:
-                    self.additional[name] = value
-            else:
-                side, key, level = name.split('_')
-                level = int(level)
-
+            side, key, level = self._parse_entry_name(name, validate)
             book: list = self[side]
 
             if level <= 0:
                 raise ValueError(f'Level of name [{name}] must be greater than zero!')
 
-            if key == 'price':
-                entry_idx = 0
-            elif key == 'volume':
-                entry_idx = 1
-            elif key == 'order':
-                entry_idx = 2
-            else:
-                raise ValueError(f'Can not parse kwargs {name}.')
+            entry_idx = {'price': 0, 'volume': 1, 'order': 2}[key]
 
             while level > len(book):
                 book.append([math.nan, 0, 0])
@@ -591,7 +1006,19 @@ class OrderBook(MarketData):
             book[level - 1][entry_idx] = value
 
     @classmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> OrderBook:
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
+        """
+        Create an OrderBook instance from a JSON message.
+
+        Args:
+            json_message (str | bytes | bytearray | dict): The JSON message to parse.
+
+        Returns:
+            OrderBook: An instance of the OrderBook class.
+
+        Raises:
+            TypeError: If the dtype in the JSON message does not match the class name.
+        """
         if isinstance(json_message, dict):
             json_dict = json_message
         else:
@@ -605,6 +1032,12 @@ class OrderBook(MarketData):
         return self
 
     def to_list(self) -> list[float | int | str | bool]:
+        """
+        Convert the OrderBook to a list format.
+
+        Returns:
+            list[float | int | str | bool]: A list representation of the OrderBook.
+        """
         min_length = min(len(self.bid), len(self.ask))
         r = ([self.__class__.__name__, self.ticker, self.timestamp]
              + [value for entry in self.bid[:min_length] for value in entry]
@@ -613,7 +1046,19 @@ class OrderBook(MarketData):
         return r
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> OrderBook:
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
+        """
+        Create an OrderBook instance from a list format.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list representation of an OrderBook.
+
+        Returns:
+            OrderBook: An instance of the OrderBook class.
+
+        Raises:
+            TypeError: If the dtype in the list does not match the class name.
+        """
         dtype, ticker, timestamp = data_list[:3]
         bid_data, ask_data = np.array(data_list[3:]).reshape(2, -1).tolist()
         bid = np.array(bid_data).reshape(-1, 3).tolist()
@@ -631,10 +1076,22 @@ class OrderBook(MarketData):
 
     @property
     def market_price(self):
+        """
+        Get the mid price of the order book.
+
+        Returns:
+            float: The mid price, or NaN if not available.
+        """
         return self.mid_price
 
     @property
     def mid_price(self):
+        """
+        Calculate the mid price of the order book.
+
+        Returns:
+            float: The mid price, or NaN if not available.
+        """
         if math.isfinite(self.best_bid_price) and math.isfinite(self.best_ask_price):
             return (self.best_bid_price + self.best_ask_price) / 2
         else:
@@ -642,6 +1099,12 @@ class OrderBook(MarketData):
 
     @property
     def spread(self):
+        """
+        Calculate the bid-ask spread.
+
+        Returns:
+            float: The spread, or NaN if not available.
+        """
         if math.isfinite(self.best_bid_price) and math.isfinite(self.best_ask_price):
             return self.best_ask_price - self.best_bid_price
         else:
@@ -649,6 +1112,12 @@ class OrderBook(MarketData):
 
     @property
     def spread_pct(self):
+        """
+        Calculate the bid-ask spread as a percentage of the mid price.
+
+        Returns:
+            float: The spread percentage, or infinity if mid price is zero.
+        """
         if self.mid_price != 0:
             return self.spread / self.mid_price
         else:
@@ -656,6 +1125,12 @@ class OrderBook(MarketData):
 
     @property
     def bid(self) -> Book:
+        """
+        Get the bid side of the order book.
+
+        Returns:
+            Book: An instance of the Book class representing the bid side.
+        """
         book = self.Book(side=1)
         for price, volume, *_ in self['bid']:
             book.add(price=price, volume=volume)
@@ -664,6 +1139,12 @@ class OrderBook(MarketData):
 
     @property
     def ask(self) -> Book:
+        """
+        Get the ask side of the order book.
+
+        Returns:
+            Book: An instance of the Book class representing the ask side.
+        """
         book = self.Book(side=-1)
         for price, volume, *_ in self['ask']:
             book.add(price=price, volume=volume)
@@ -672,6 +1153,12 @@ class OrderBook(MarketData):
 
     @property
     def best_bid_price(self):
+        """
+        Get the best bid price in the order book.
+
+        Returns:
+            float: The best bid price, or NaN if not available.
+        """
         if book := self.bid:
             return book.at_level(0)[0]
         else:
@@ -679,6 +1166,12 @@ class OrderBook(MarketData):
 
     @property
     def best_ask_price(self):
+        """
+        Get the best ask price in the order book.
+
+        Returns:
+            float: The best ask price, or NaN if not available.
+        """
         if book := self.ask:
             return book.at_level(0)[0]
         else:
@@ -686,6 +1179,12 @@ class OrderBook(MarketData):
 
     @property
     def best_bid_volume(self):
+        """
+        Get the best bid volume in the order book.
+
+        Returns:
+            float: The best bid volume, or NaN if not available.
+        """
         if book := self.bid:
             return book[0][1]
         else:
@@ -693,6 +1192,12 @@ class OrderBook(MarketData):
 
     @property
     def best_ask_volume(self):
+        """
+        Get the best ask volume in the order book.
+
+        Returns:
+            float: The best ask volume, or NaN if not available.
+        """
         if book := self.ask:
             return book[0][1]
         else:
@@ -700,10 +1205,45 @@ class OrderBook(MarketData):
 
 
 class BarData(MarketData):
+    """
+    Represents a single bar of market data for a specific ticker within a given time frame.
+
+    This class extends the `MarketData` class and includes attributes and methods relevant to a market bar,
+    such as price, volume, and duration. It also provides functionality for data serialization and validation.
+
+    Methods:
+        from_json(json_message: str | bytes | bytearray | dict) -> BarData:
+            Creates a `BarData` instance from a JSON-encoded message or dictionary.
+
+        to_list() -> list[float | int | str | bool]:
+            Converts the `BarData` instance to a list of its attributes.
+
+        from_list(data_list: list[float | int | str | bool]) -> BarData:
+            Creates a `BarData` instance from a list of attributes.
+
+        is_valid(verbose=False) -> bool:
+            Validates the `BarData` instance to ensure all required fields are set correctly.
+
+    Properties:
+        high_price (float): The highest price during the bar.
+        low_price (float): The lowest price during the bar.
+        open_price (float): The opening price of the bar.
+        close_price (float): The closing price of the bar.
+        bar_span (datetime.timedelta): The duration of the bar.
+        volume (float): The total volume of trades during the bar.
+        notional (float): The total notional value of trades during the bar.
+        trade_count (int): The number of trades that occurred during the bar.
+        bar_start_time (datetime.datetime): The start time of the bar.
+        vwap (float): The volume-weighted average price for the bar.
+        market_price (float): The closing price of the bar.
+        bar_type (Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']): The type of the bar based on its span.
+        bar_end_time (datetime.datetime | datetime.date): The end time of the bar.
+    """
+
     def __init__(
             self, *,
             ticker: str,
-            timestamp: float,  # the bar end timestamp
+            timestamp: float,  # The bar end timestamp
             start_timestamp: float = None,
             bar_span: datetime.timedelta | int | float = None,
             high_price: float = math.nan,
@@ -715,6 +1255,26 @@ class BarData(MarketData):
             trade_count: int = 0,
             **kwargs
     ):
+        """
+        Initializes a new instance of `BarData`.
+
+        Args:
+            ticker (str): The ticker symbol for the market data.
+            timestamp (float): The timestamp marking the end of the bar.
+            start_timestamp (float, optional): The timestamp marking the start of the bar. Required if `bar_span` is not provided.
+            bar_span (datetime.timedelta | int | float, optional): The duration of the bar. Either this or `start_timestamp` must be provided.
+            high_price (float, optional): The highest price during the bar. Defaults to NaN.
+            low_price (float, optional): The lowest price during the bar. Defaults to NaN.
+            open_price (float, optional): The opening price of the bar. Defaults to NaN.
+            close_price (float, optional): The closing price of the bar. Defaults to NaN.
+            volume (float, optional): The total volume of trades during the bar. Defaults to 0.0.
+            notional (float, optional): The total notional value of trades during the bar. Defaults to 0.0.
+            trade_count (int, optional): The number of trades that occurred during the bar. Defaults to 0.
+            **kwargs: Additional keyword arguments passed to the parent `MarketData` class.
+
+        Raises:
+            ValueError: If neither `start_timestamp` nor `bar_span` is provided or if `bar_span` is of invalid type.
+        """
         super().__init__(ticker=ticker, timestamp=timestamp, **kwargs)
         self.update(
             high_price=high_price,
@@ -727,7 +1287,7 @@ class BarData(MarketData):
         )
 
         if bar_span is None and start_timestamp is None:
-            raise ValueError('Must assign ether start_timestamp or bar_span or both.')
+            raise ValueError('Must assign either start_timestamp or bar_span or both.')
         elif start_timestamp is None:
             # self['start_timestamp'] = timestamp - bar_span.total_seconds()
             if isinstance(bar_span, datetime.timedelta):
@@ -738,7 +1298,6 @@ class BarData(MarketData):
                 raise ValueError(f'Invalid bar_span, expect int, float or timedelta, got {bar_span}')
         elif bar_span is None:
             self['start_timestamp'] = start_timestamp
-            # self['bar_span'] = timestamp - start_timestamp
         else:
             self['start_timestamp'] = start_timestamp
 
@@ -750,10 +1309,30 @@ class BarData(MarketData):
                 raise ValueError(f'Invalid bar_span, expect int, float or timedelta, got {bar_span}')
 
     def __repr__(self):
+        """
+        Returns a string representation of the `BarData` instance.
+
+        The string representation includes the class name, market time, ticker symbol, and key price attributes.
+
+        Returns:
+            str: A string representation of the `BarData` instance.
+        """
         return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> BarData:
+        """
+        Creates a `BarData` instance from a JSON-encoded message or dictionary.
+
+        Args:
+            json_message (str | bytes | bytearray | dict): The JSON-encoded message or dictionary containing `BarData` attributes.
+
+        Returns:
+            BarData: A `BarData` instance initialized with the data from the JSON message.
+
+        Raises:
+            TypeError: If the dtype in the JSON does not match the class name.
+        """
         if isinstance(json_message, dict):
             json_dict = json_message
         else:
@@ -767,6 +1346,12 @@ class BarData(MarketData):
         return self
 
     def to_list(self) -> list[float | int | str | bool]:
+        """
+        Converts the `BarData` instance to a list of its attributes.
+
+        Returns:
+            list[float | int | str | bool]: A list containing the `BarData` instance's attributes.
+        """
         return [self.__class__.__name__,
                 self.ticker,
                 self.timestamp,
@@ -782,6 +1367,18 @@ class BarData(MarketData):
 
     @classmethod
     def from_list(cls, data_list: list[float | int | str | bool]) -> BarData:
+        """
+        Creates a `BarData` instance from a list of attributes.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list of attributes representing a `BarData` instance.
+
+        Returns:
+            BarData: A `BarData` instance initialized with the data from the list.
+
+        Raises:
+            TypeError: If the dtype in the list does not match the class name.
+        """
         (dtype, ticker, timestamp, high_price, low_price, open_price, close_price,
          start_timestamp, bar_span, volume, notional, trade_count) = data_list
 
@@ -804,22 +1401,52 @@ class BarData(MarketData):
 
     @property
     def high_price(self) -> float:
+        """
+        The highest price during the bar.
+
+        Returns:
+            float: The highest price during the bar.
+        """
         return self['high_price']
 
     @property
     def low_price(self) -> float:
+        """
+        The lowest price during the bar.
+
+        Returns:
+            float: The lowest price during the bar.
+        """
         return self['low_price']
 
     @property
     def open_price(self) -> float:
+        """
+        The opening price of the bar.
+
+        Returns:
+            float: The opening price of the bar.
+        """
         return self['open_price']
 
     @property
     def close_price(self) -> float:
+        """
+        The closing price of the bar.
+
+        Returns:
+            float: The closing price of the bar.
+        """
         return self['close_price']
 
     @property
     def bar_span(self) -> datetime.timedelta:
+        """
+        The duration of the bar.
+
+        Returns:
+            datetime.timedelta: The duration of the bar.
+        """
         if 'bar_span' in self:
             return datetime.timedelta(seconds=self['bar_span'])
         else:
@@ -827,18 +1454,42 @@ class BarData(MarketData):
 
     @property
     def volume(self) -> float:
+        """
+        The total volume of trades during the bar.
+
+        Returns:
+            float: The total volume of trades during the bar.
+        """
         return self['volume']
 
     @property
     def notional(self) -> float:
+        """
+        The total notional value of trades during the bar.
+
+        Returns:
+            float: The total notional value of trades during the bar.
+        """
         return self['notional']
 
     @property
     def trade_count(self) -> int:
+        """
+        The number of trades that occurred during the bar.
+
+        Returns:
+            int: The number of trades that occurred during the bar.
+        """
         return self['trade_count']
 
     @property
     def bar_start_time(self) -> datetime.datetime:
+        """
+        The start time of the bar.
+
+        Returns:
+            datetime.datetime: The start time of the bar.
+        """
         if 'start_timestamp' in self:
             return datetime.datetime.fromtimestamp(self['start_timestamp'], tz=PROFILE.time_zone)
         else:
@@ -846,6 +1497,12 @@ class BarData(MarketData):
 
     @property
     def vwap(self) -> float:
+        """
+        The volume-weighted average price for the bar.
+
+        Returns:
+            float: The VWAP for the bar. Defaults to the closing price if volume is zero.
+        """
         if self.volume != 0:
             return self.notional / self.volume
         else:
@@ -854,6 +1511,15 @@ class BarData(MarketData):
 
     @property
     def is_valid(self, verbose=False) -> bool:
+        """
+        Validates the `BarData` instance to ensure all required fields are set correctly.
+
+        Args:
+            verbose (bool, optional): If True, logs detailed validation errors. Defaults to False.
+
+        Returns:
+            bool: True if the `BarData` instance is valid, False otherwise.
+        """
         try:
             assert type(self.ticker) is str, '{} Invalid ticker'.format(str(self))
             assert math.isfinite(self.high_price), '{} Invalid high_price'.format(str(self))
@@ -873,15 +1539,23 @@ class BarData(MarketData):
             return False
 
     @property
-    def market_price(self):
+    def market_price(self) -> float:
         """
-        close price for a BarData
-        :return: float
+        The closing price for the `BarData`.
+
+        Returns:
+            float: The closing price of the bar.
         """
         return self.close_price
 
     @property
     def bar_type(self) -> Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']:
+        """
+        Determines the type of the bar based on its span.
+
+        Returns:
+            Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']: The type of the bar.
+        """
         if self['bar_span'] > 3600:
             return 'Hourly-Plus'
         elif self['bar_span'] == 3600:
@@ -895,6 +1569,12 @@ class BarData(MarketData):
 
     @property
     def bar_end_time(self) -> datetime.datetime | datetime.date:
+        """
+        The end time of the bar.
+
+        Returns:
+            datetime.datetime | datetime.date: The end time of the bar.
+        """
         return self.market_time
 
 
@@ -903,13 +1583,55 @@ CandleStick = BarData
 
 
 class DailyBar(BarData):
+    """
+    Represents a daily bar of market data for a specific ticker.
+
+    This class extends the `BarData` class and focuses on daily bar data, which includes attributes and methods
+    specific to daily market bars. It supports various ways to define the bar span and manage the market date.
+
+    Attributes:
+        ticker (str): The ticker symbol for the market data.
+        market_date (datetime.date): The market date of the bar, or the end date of the bar.
+        timestamp (float): The timestamp marking the end of the bar.
+        start_date (datetime.date, optional): The start date of the bar period. Required if `bar_span` is not provided.
+        bar_span (datetime.timedelta | int, optional): The duration of the bar in days. Either this or `start_date` must be provided.
+        high_price (float): The highest price during the bar.
+        low_price (float): The lowest price during the bar.
+        open_price (float): The opening price of the bar.
+        close_price (float): The closing price of the bar.
+        volume (float): The total volume of trades during the bar.
+        notional (float): The total notional value of trades during the bar.
+        trade_count (int): The number of trades that occurred during the bar.
+
+    Methods:
+        __repr__() -> str:
+            Returns a string representation of the `DailyBar` instance.
+
+        to_json(fmt='str', **kwargs) -> str | dict:
+            Converts the `DailyBar` instance to a JSON string or dictionary.
+
+        to_list() -> list[float | int | str | bool]:
+            Converts the `DailyBar` instance to a list of its attributes.
+
+        from_list(data_list: list[float | int | str | bool]) -> DailyBar:
+            Creates a `DailyBar` instance from a list of attributes.
+
+    Properties:
+        bar_span (datetime.timedelta): The duration of the bar in days.
+        market_date (datetime.date): The market date of the bar.
+        market_time (datetime.date): The market date of the bar (same as `market_date`).
+        bar_start_time (datetime.date): The start date of the bar period.
+        bar_end_time (datetime.date): The end date of the bar period.
+        bar_type (Literal['Daily', 'Daily-Plus']): The type of the bar based on its span.
+    """
+
     def __init__(
             self, *,
             ticker: str,
             market_date: datetime.date | str,  # The market date of the bar, if with 1D data, or the END date of the bar.
             timestamp: float = None,
             start_date: datetime.date = None,
-            bar_span: datetime.timedelta | int = None,  # expect to be a timedelta for several days, or the number of days
+            bar_span: datetime.timedelta | int = None,  # Expect to be a timedelta for several days, or the number of days
             high_price: float = math.nan,
             low_price: float = math.nan,
             open_price: float = math.nan,
@@ -919,11 +1641,32 @@ class DailyBar(BarData):
             trade_count: int = 0,
             **kwargs
     ):
+        """
+        Initializes a new instance of `DailyBar`.
+
+        Args:
+            ticker (str): The ticker symbol for the market data.
+            market_date (datetime.date | str): The market date of the bar or the end date of the bar.
+            timestamp (float, optional): The timestamp marking the end of the bar. Defaults to None.
+            start_date (datetime.date, optional): The start date of the bar period. Required if `bar_span` is not provided.
+            bar_span (datetime.timedelta | int, optional): The duration of the bar in days. Either this or `start_date` must be provided.
+            high_price (float, optional): The highest price during the bar. Defaults to NaN.
+            low_price (float, optional): The lowest price during the bar. Defaults to NaN.
+            open_price (float, optional): The opening price of the bar. Defaults to NaN.
+            close_price (float, optional): The closing price of the bar. Defaults to NaN.
+            volume (float, optional): The total volume of trades during the bar. Defaults to 0.0.
+            notional (float, optional): The total notional value of trades during the bar. Defaults to 0.0.
+            trade_count (int, optional): The number of trades that occurred during the bar. Defaults to 0.
+            **kwargs: Additional keyword arguments passed to the parent `BarData` class.
+
+        Raises:
+            ValueError: If neither `start_date` nor `bar_span` is provided or if `bar_span` is of invalid type.
+        """
         if isinstance(market_date, str):
             market_date = datetime.date.fromisoformat(market_date)
 
         if bar_span is None and start_date is None:
-            raise ValueError('Must assign ether datetime.date or bar_span or both.')
+            raise ValueError('Must assign either datetime.date or bar_span or both.')
         elif start_date is None:
             if isinstance(bar_span, datetime.timedelta):
                 bar_span = bar_span.days
@@ -958,12 +1701,32 @@ class DailyBar(BarData):
 
         self['market_date'] = market_date
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of the `DailyBar` instance.
+
+        The string representation includes the class name, market date, ticker symbol, and key price attributes.
+
+        Returns:
+            str: A string representation of the `DailyBar` instance.
+        """
         return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
 
     def to_json(self, fmt='str', **kwargs) -> str | dict:
-        data_dict = super().to_json(fmt='dict', **kwargs)
+        """
+        Converts the `DailyBar` instance to a JSON string or dictionary.
 
+        Args:
+            fmt (str, optional): The format for the JSON output. Either 'dict' or 'str'. Defaults to 'str'.
+            **kwargs: Additional keyword arguments passed to `json.dumps()` if `fmt='str'`.
+
+        Returns:
+            str | dict: The JSON-encoded representation of the `DailyBar` instance, in the specified format.
+
+        Raises:
+            ValueError: If an invalid format is specified.
+        """
+        data_dict = super().to_json(fmt='dict', **kwargs)
         data_dict['market_date'] = self.market_date.isoformat()
 
         if fmt == 'dict':
@@ -971,9 +1734,15 @@ class DailyBar(BarData):
         elif fmt == 'str':
             return json.dumps(data_dict, **kwargs)
         else:
-            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
+            raise ValueError(f'Invalid format {fmt}, expected "dict" or "str".')
 
     def to_list(self) -> list[float | int | str | bool]:
+        """
+        Converts the `DailyBar` instance to a list of its attributes.
+
+        Returns:
+            list[float | int | str | bool]: A list containing the `DailyBar` instance's attributes.
+        """
         return [self.__class__.__name__,
                 self.ticker,
                 self.market_date.isoformat(),
@@ -988,7 +1757,19 @@ class DailyBar(BarData):
                 self.trade_count]
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> BarData:
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
+        """
+        Creates a `DailyBar` instance from a list of attributes.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list of attributes representing a `DailyBar` instance.
+
+        Returns:
+            DailyBar: A `DailyBar` instance initialized with the data from the list.
+
+        Raises:
+            TypeError: If the dtype in the list does not match the class name.
+        """
         (dtype, ticker, market_date, timestamp, high_price, low_price, open_price, close_price,
          bar_span, volume, notional, trade_count) = data_list
 
@@ -1003,7 +1784,7 @@ class DailyBar(BarData):
             low_price=low_price,
             open_price=open_price,
             close_price=close_price,
-            bar_span=datetime.timedelta(bar_span) if bar_span else None,
+            bar_span=datetime.timedelta(days=bar_span) if bar_span else None,
             volume=volume,
             notional=notional,
             trade_count=trade_count
@@ -1011,35 +1792,123 @@ class DailyBar(BarData):
 
     @property
     def bar_span(self) -> datetime.timedelta:
+        """
+        The duration of the bar in days.
+
+        Returns:
+            datetime.timedelta: The duration of the bar.
+        """
         return datetime.timedelta(days=self['bar_span'])
 
     @property
     def market_date(self) -> datetime.date:
+        """
+        The market date of the bar.
+
+        Returns:
+            datetime.date: The market date of the bar.
+        """
         return self['market_date']
 
     @property
     def market_time(self) -> datetime.date:
+        """
+        The market date of the bar (same as `market_date`).
+
+        Returns:
+            datetime.date: The market date of the bar.
+        """
         return self.market_date
 
     @property
     def bar_start_time(self) -> datetime.date:
+        """
+        The start date of the bar period.
+
+        Returns:
+            datetime.date: The start date of the bar.
+        """
         return self.market_date - self.bar_span
 
     @property
     def bar_end_time(self) -> datetime.date:
+        """
+        The end date of the bar period.
+
+        Returns:
+            datetime.date: The end date of the bar.
+        """
         return self.market_date
 
     @property
     def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
+        """
+        Determines the type of the bar based on its span.
+
+        Returns:
+            Literal['Daily', 'Daily-Plus']: The type of the bar.
+
+        Raises:
+            ValueError: If `bar_span` is not valid for a daily bar.
+        """
         if self['bar_span'] == 1:
             return 'Daily'
         elif self['bar_span'] > 1:
             return 'Daily-Plus'
         else:
-            raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect a int greater or equal to 1, got {self["bar_span"]}')
+            raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {self["bar_span"]}')
 
 
 class TickData(MarketData):
+    """
+    Represents tick data for a specific ticker.
+
+    This class extends the `MarketData` class and focuses on tick-level market data, including last price, bid/ask prices,
+    bid/ask volumes, and order book details.
+
+    Attributes:
+        ticker (str): The ticker symbol for the market data.
+        timestamp (float): The timestamp of the tick data.
+        last_price (float): The last traded price.
+        bid_price (float | None): The bid price. Optional, if not provided, it can be inferred from the bid data.
+        bid_volume (float | None): The bid volume. Optional, if not provided, it can be inferred from the bid data.
+        ask_price (float | None): The ask price. Optional, if not provided, it can be inferred from the ask data.
+        ask_volume (float | None): The ask volume. Optional, if not provided, it can be inferred from the ask data.
+        order_book (OrderBook | None): The order book containing bid and ask prices/volumes. Optional.
+        bid (list[list[float | int]] | None): A list of bid prices and volumes. Optional, used to build the order book.
+        ask (list[list[float | int]] | None): A list of ask prices and volumes. Optional, used to build the order book.
+        total_traded_volume (float): The total traded volume. Defaults to 0.0.
+        total_traded_notional (float): The total traded notional value. Defaults to 0.0.
+        total_trade_count (int): The total number of trades. Defaults to 0.
+
+    Methods:
+        __repr__() -> str:
+            Returns a string representation of the `TickData` instance.
+
+        from_json(json_message: str | bytes | bytearray | dict) -> TickData:
+            Creates a `TickData` instance from a JSON message.
+
+        to_list() -> list[float | int | str | bool]:
+            Converts the `TickData` instance to a list of its attributes, excluding order book information.
+
+        from_list(data_list: list[float | int | str | bool]) -> TickData:
+            Creates a `TickData` instance from a list of attributes.
+
+    Properties:
+        level_2 (OrderBook | None): The level 2 order book created from the bid and ask data.
+        order_book (OrderBook | None): Alias for `level_2`.
+        last_price (float): The last traded price.
+        bid_price (float | None): The bid price.
+        ask_price (float | None): The ask price.
+        bid_volume (float | None): The bid volume.
+        ask_volume (float | None): The ask volume.
+        total_traded_volume (float): The total traded volume.
+        total_traded_notional (float): The total traded notional value.
+        total_trade_count (float): The total number of trades.
+        mid_price (float): The midpoint price calculated as the average of bid and ask prices.
+        market_price (float): The last traded price.
+    """
+
     def __init__(
             self, *,
             ticker: str,
@@ -1057,6 +1926,25 @@ class TickData(MarketData):
             total_trade_count: int = 0,
             **kwargs
     ):
+        """
+        Initializes a new instance of `TickData`.
+
+        Args:
+            ticker (str): The ticker symbol for the market data.
+            timestamp (float): The timestamp of the tick data.
+            last_price (float): The last traded price.
+            bid_price (float, optional): The bid price. Defaults to None.
+            bid_volume (float, optional): The bid volume. Defaults to None.
+            ask_price (float, optional): The ask price. Defaults to None.
+            ask_volume (float, optional): The ask volume. Defaults to None.
+            order_book (OrderBook, optional): The order book containing bid and ask data. Defaults to None.
+            bid (list[list[float | int]], optional): A list of bid prices and volumes. Defaults to None.
+            ask (list[list[float | int]], optional): A list of ask prices and volumes. Defaults to None.
+            total_traded_volume (float, optional): The total traded volume. Defaults to 0.0.
+            total_traded_notional (float, optional): The total traded notional value. Defaults to 0.0.
+            total_trade_count (int, optional): The total number of trades. Defaults to 0.
+            **kwargs: Additional keyword arguments passed to the parent `MarketData` class.
+        """
         super().__init__(ticker=ticker, timestamp=timestamp, **kwargs)
 
         self.update(
@@ -1097,6 +1985,12 @@ class TickData(MarketData):
 
     @property
     def level_2(self) -> OrderBook | None:
+        """
+        The level 2 order book created from the bid and ask data.
+
+        Returns:
+            OrderBook | None: The `OrderBook` instance if available, otherwise `None`.
+        """
         if 'order_book' in self:
             return OrderBook(ticker=self.ticker, timestamp=self.timestamp, **self['order_book'])
         else:
@@ -1104,45 +1998,119 @@ class TickData(MarketData):
 
     @property
     def order_book(self) -> OrderBook | None:
+        """
+        Alias for `level_2`.
+
+        Returns:
+            OrderBook | None: The `OrderBook` instance if available, otherwise `None`.
+        """
         return self.level_2
 
     @property
     def last_price(self) -> float:
+        """
+        The last traded price.
+
+        Returns:
+            float: The last traded price.
+        """
         return self['last_price']
 
     @property
     def bid_price(self) -> float | None:
+        """
+        The bid price.
+
+        Returns:
+            float | None: The bid price if available, otherwise `None`.
+        """
         return self.get('bid_price')
 
     @property
     def ask_price(self) -> float | None:
+        """
+        The ask price.
+
+        Returns:
+            float | None: The ask price if available, otherwise `None`.
+        """
         return self.get('ask_price')
 
     @property
     def bid_volume(self) -> float | None:
+        """
+        The bid volume.
+
+        Returns:
+            float | None: The bid volume if available, otherwise `None`.
+        """
         return self.get('bid_volume')
 
     @property
     def ask_volume(self) -> float | None:
+        """
+        The ask volume.
+
+        Returns:
+            float | None: The ask volume if available, otherwise `None`.
+        """
         return self.get('ask_volume')
 
     @property
     def total_traded_volume(self) -> float:
+        """
+        The total traded volume.
+
+        Returns:
+            float: The total traded volume.
+        """
         return self['total_traded_volume']
 
     @property
     def total_traded_notional(self) -> float:
+        """
+        The total traded notional value.
+
+        Returns:
+            float: The total traded notional value.
+        """
         return self['total_traded_notional']
 
     @property
     def total_trade_count(self) -> float:
+        """
+        The total number of trades.
+
+        Returns:
+            float: The total number of trades.
+        """
         return self['total_trade_count']
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of the `TickData` instance.
+
+        The string representation includes the class name, market time, ticker symbol, and bid/ask prices.
+
+        Returns:
+            str: A string representation of the `TickData` instance.
+        """
         return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> TickData:
+        """
+        Creates a `TickData` instance from a JSON message.
+
+        Args:
+            json_message (str | bytes | bytearray | dict): The JSON message containing tick data.
+
+        Returns:
+            TickData: A `TickData` instance.
+
+        Raises:
+            TypeError: If the JSON message does not match the expected data type.
+        """
         if isinstance(json_message, dict):
             json_dict = json_message
         else:
@@ -1157,8 +2125,13 @@ class TickData(MarketData):
 
     def to_list(self) -> list[float | int | str | bool]:
         """
-        note that to_list WILL NOT retain orderbook info.
-        to save all info, use to_json instead.
+        Converts the `TickData` instance to a list of its attributes.
+
+        Note:
+            This method does not retain order book information. To save all information, use `to_json` instead.
+
+        Returns:
+            list[float | int | str | bool]: A list of attribute values.
         """
         return [self.__class__.__name__,
                 self.ticker,
@@ -1174,6 +2147,29 @@ class TickData(MarketData):
 
     @classmethod
     def from_list(cls, data_list: list[float | int | str | bool]) -> TickData:
+        """
+        Creates a `TickData` instance from a list of attributes.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list of attributes in the order:
+                - dtype (str)
+                - ticker (str)
+                - timestamp (float)
+                - last_price (float)
+                - bid_price (float | None)
+                - bid_volume (float | None)
+                - ask_price (float | None)
+                - ask_volume (float | None)
+                - total_traded_volume (float)
+                - total_traded_notional (float)
+                - total_trade_count (int)
+
+        Returns:
+            TickData: A `TickData` instance.
+
+        Raises:
+            TypeError: If the dtype in the list does not match the class name.
+        """
         (dtype, ticker, timestamp, last_price,
          bid_price, bid_volume, ask_price, ask_volume,
          total_traded_volume, total_traded_notional, total_trade_count) = data_list
@@ -1207,14 +2203,72 @@ class TickData(MarketData):
 
     @property
     def mid_price(self) -> float:
+        """
+        The midpoint price calculated as the average of bid and ask prices.
+
+        Returns:
+            float: The midpoint price.
+        """
         return (self.bid_price + self.ask_price) / 2
 
     @property
     def market_price(self) -> float:
+        """
+        The last traded price.
+
+        Returns:
+            float: The last traded price.
+        """
         return self.last_price
 
 
 class TransactionData(MarketData):
+    """
+    Represents transaction data for a specific market.
+
+    This class extends the `MarketData` class to handle transaction-level data, including price, volume, side, and identifiers.
+
+    Attributes:
+        ticker (str): The ticker symbol for the transaction.
+        price (float): The price at which the transaction occurred.
+        volume (float): The volume of the transaction.
+        timestamp (float): The timestamp of the transaction.
+        side (int | float | str | TransactionSide): The side of the transaction (buy or sell).
+        multiplier (float | None): The multiplier for the transaction. Optional.
+        notional (float | None): The notional value of the transaction. Optional.
+        transaction_id (str | int | None): The identifier for the transaction. Optional.
+        buy_id (str | int | None): The identifier for the buying transaction. Optional.
+        sell_id (str | int | None): The identifier for the selling transaction. Optional.
+
+    Methods:
+        __repr__() -> str:
+            Returns a string representation of the `TransactionData` instance.
+
+        from_json(json_message: str | bytes | bytearray | dict) -> TransactionData:
+            Creates a `TransactionData` instance from a JSON message.
+
+        to_list() -> list[float | int | str | bool]:
+            Converts the `TransactionData` instance to a list of its attributes.
+
+        from_list(data_list: list[float | int | str | bool]) -> TransactionData:
+            Creates a `TransactionData` instance from a list of attributes.
+
+        merge(trade_data_list: list[TransactionData]) -> TransactionData | None:
+            Merges multiple `TransactionData` instances into a single aggregated `TransactionData` instance.
+
+    Properties:
+        price (float): The price at which the transaction occurred.
+        volume (float): The volume of the transaction.
+        side (TransactionSide): The side of the transaction (buy or sell).
+        multiplier (float): The multiplier for the transaction.
+        transaction_id (int | str | None): The identifier for the transaction.
+        buy_id (int | str | None): The identifier for the buying transaction.
+        sell_id (int | str | None): The identifier for the selling transaction.
+        notional (float): The notional value of the transaction.
+        market_price (float): Alias for `price`.
+        flow (float): The flow of the transaction, calculated as side.sign * volume.
+    """
+
     def __init__(
             self, *,
             ticker: str,
@@ -1229,6 +2283,22 @@ class TransactionData(MarketData):
             sell_id: str | int = None,
             **kwargs
     ):
+        """
+        Initializes a new instance of `TransactionData`.
+
+        Args:
+            ticker (str): The ticker symbol for the transaction.
+            price (float): The price at which the transaction occurred.
+            volume (float): The volume of the transaction.
+            timestamp (float): The timestamp of the transaction.
+            side (int | float | str | TransactionSide, optional): The side of the transaction (buy or sell). Defaults to 0.
+            multiplier (float, optional): The multiplier for the transaction. Defaults to None.
+            notional (float, optional): The notional value of the transaction. Defaults to None.
+            transaction_id (str | int, optional): The identifier for the transaction. Defaults to None.
+            buy_id (str | int, optional): The identifier for the buying transaction. Defaults to None.
+            sell_id (str | int, optional): The identifier for the selling transaction. Defaults to None.
+            **kwargs: Additional keyword arguments passed to the parent `MarketData` class.
+        """
         super().__init__(ticker=ticker, timestamp=timestamp, **kwargs)
 
         self['price'] = price
@@ -1250,11 +2320,31 @@ class TransactionData(MarketData):
         if sell_id is not None:
             self['sell_id'] = sell_id
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of the `TransactionData` instance.
+
+        The string representation includes the class name, market time, side, ticker symbol, price, and volume.
+
+        Returns:
+            str: A string representation of the `TransactionData` instance.
+        """
         return f'<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.side.side_name} {self.ticker}, price={self.price}, volume={self.volume})'
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> TransactionData:
+        """
+        Creates a `TransactionData` instance from a JSON message.
+
+        Args:
+            json_message (str | bytes | bytearray | dict): The JSON message containing transaction data.
+
+        Returns:
+            TransactionData: A `TransactionData` instance.
+
+        Raises:
+            TypeError: If the JSON message does not match the expected data type.
+        """
         if isinstance(json_message, dict):
             json_dict = json_message
         else:
@@ -1268,6 +2358,12 @@ class TransactionData(MarketData):
         return self
 
     def to_list(self) -> list[float | int | str | bool]:
+        """
+        Converts the `TransactionData` instance to a list of its attributes.
+
+        Returns:
+            list[float | int | str | bool]: A list of attribute values.
+        """
         return [self.__class__.__name__,
                 self.ticker,
                 self.timestamp,
@@ -1282,6 +2378,29 @@ class TransactionData(MarketData):
 
     @classmethod
     def from_list(cls, data_list: list[float | int | str | bool]) -> TransactionData:
+        """
+        Creates a `TransactionData` instance from a list of attributes.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list of attributes in the order:
+                - dtype (str)
+                - ticker (str)
+                - timestamp (float)
+                - price (float)
+                - volume (float)
+                - side (int | float | str)
+                - multiplier (float | None)
+                - notional (float | None)
+                - transaction_id (str | int | None)
+                - buy_id (str | int | None)
+                - sell_id (str | int | None)
+
+        Returns:
+            TransactionData: A `TransactionData` instance.
+
+        Raises:
+            TypeError: If the dtype in the list does not match the class name.
+        """
         (dtype, ticker, timestamp, price, volume, side,
          multiplier, notional, transaction_id, buy_id, sell_id) = data_list
 
@@ -1293,16 +2412,16 @@ class TransactionData(MarketData):
         if multiplier is not None:
             kwargs['multiplier'] = multiplier
 
-        if notional in kwargs:
+        if notional is not None:
             kwargs['notional'] = notional
 
-        if transaction_id in kwargs:
+        if transaction_id is not None:
             kwargs['transaction_id'] = transaction_id
 
-        if buy_id in kwargs:
+        if buy_id is not None:
             kwargs['buy_id'] = buy_id
 
-        if sell_id in kwargs:
+        if sell_id is not None:
             kwargs['sell_id'] = sell_id
 
         return cls(
@@ -1316,6 +2435,18 @@ class TransactionData(MarketData):
 
     @classmethod
     def merge(cls, trade_data_list: list[TransactionData]) -> TransactionData | None:
+        """
+        Merges multiple `TransactionData` instances into a single aggregated `TransactionData` instance.
+
+        Args:
+            trade_data_list (list[TransactionData]): A list of `TransactionData` instances to merge.
+
+        Returns:
+            TransactionData | None: A merged `TransactionData` instance if the list is not empty, otherwise `None`.
+
+        Raises:
+            AssertionError: If the list contains transaction data for multiple tickers.
+        """
         if not trade_data_list:
             return None
 
@@ -1350,53 +2481,132 @@ class TransactionData(MarketData):
 
     @property
     def price(self) -> float:
+        """
+        The price at which the transaction occurred.
+
+        Returns:
+            float: The transaction price.
+        """
         return self['price']
 
     @property
     def volume(self) -> float:
+        """
+        The volume of the transaction.
+
+        Returns:
+            float: The transaction volume.
+        """
         return self['volume']
 
     @property
     def side(self) -> TransactionSide:
+        """
+        The side of the transaction (buy or sell).
+
+        Returns:
+            TransactionSide: The side of the transaction.
+        """
         return TransactionSide(self['side'])
 
     @property
     def multiplier(self) -> float:
+        """
+        The multiplier for the transaction. Defaults to 1 if not specified.
+
+        Returns:
+            float: The transaction multiplier.
+        """
         return self.get('multiplier', 1.)
 
     @property
     def transaction_id(self) -> int | str | None:
+        """
+        The identifier for the transaction.
+
+        Returns:
+            int | str | None: The transaction identifier.
+        """
         return self.get('transaction_id', None)
 
     @property
     def buy_id(self) -> int | str | None:
+        """
+        The identifier for the buying transaction.
+
+        Returns:
+            int | str | None: The buying transaction identifier.
+        """
         return self.get('buy_id', None)
 
     @property
     def sell_id(self) -> int | str | None:
+        """
+        The identifier for the selling transaction.
+
+        Returns:
+            int | str | None: The selling transaction identifier.
+        """
         return self.get('sell_id', None)
 
     @property
     def notional(self) -> float:
+        """
+        The notional value of the transaction. Calculated as price * volume * multiplier.
+
+        Returns:
+            float: The transaction notional.
+        """
         return self.get('notional', self.price * self.volume * self.multiplier)
 
     @property
     def market_price(self) -> float:
+        """
+        Alias for the transaction price.
+
+        Returns:
+            float: The transaction price.
+        """
         return self.price
 
     @property
-    def flow(self):
+    def flow(self) -> float:
+        """
+        The flow of the transaction, calculated as side.sign * volume.
+
+        Returns:
+            float: The transaction flow.
+        """
         return self.side.sign * self.volume
 
 
 class TradeData(TransactionData):
     """
-    TradeData is an alias of TransactionData
-    TradeData can be initialized with 'trade_price' instead of 'price'; 'trade_volume' instead of 'volume'.
-    The corresponding properties are added.
+    Alias for `TransactionData` with alternate property names for trade price and volume.
+
+    This class allows initialization with 'trade_price' instead of 'price' and 'trade_volume' instead of 'volume'.
+    It provides additional properties for these alternate names.
+
+    Properties:
+        trade_price (float): Alias for `price`.
+        trade_volume (float): Alias for `volume`.
+
+    Methods:
+        from_json(json_message: str | bytes | bytearray | dict) -> TradeData:
+            Creates a `TradeData` instance from a JSON message.
+
+        from_list(data_list: list[float | int | str | bool]) -> TradeData:
+            Creates a `TradeData` instance from a list of attributes.
     """
 
     def __init__(self, **kwargs):
+        """
+        Initializes a new instance of `TradeData`.
+
+        Args:
+            **kwargs: Keyword arguments passed to the parent `TransactionData` class.
+                If 'trade_price' or 'trade_volume' are provided, they are converted to 'price' and 'volume'.
+        """
         if 'trade_price' in kwargs:
             kwargs['price'] = kwargs.pop('trade_price')
 
@@ -1407,41 +2617,125 @@ class TradeData(TransactionData):
 
     @property
     def trade_price(self) -> float:
+        """
+        Alias for the transaction price.
+
+        Returns:
+            float: The transaction price.
+        """
         return self['price']
 
     @property
     def trade_volume(self) -> float:
+        """
+        Alias for the transaction volume.
+
+        Returns:
+            float: The transaction volume.
+        """
         return self['volume']
 
     @classmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> TradeData:
-        # noinspection PyTypeChecker
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
+        """
+        Creates a `TradeData` instance from a JSON message.
+
+        Args:
+            json_message (str | bytes | bytearray | dict): The JSON message containing trade data.
+
+        Returns:
+            TradeData: A `TradeData` instance.
+
+        Raises:
+            TypeError: If the JSON message does not match the expected data type.
+        """
         return super(TradeData, cls).from_json(json_message=json_message)
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> TradeData:
-        # noinspection PyTypeChecker
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
+        """
+        Creates a `TradeData` instance from a list of attributes.
+
+        Args:
+            data_list (list[float | int | str | bool]): A list of attributes.
+
+        Returns:
+            TradeData: A `TradeData` instance.
+        """
         return super(TradeData, cls).from_list(data_list=data_list)
 
 
 class _MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
+    """
+    Abstract base class for a market data memory buffer.
+
+    Attributes:
+        dtype (RawArray): Data type of the market data.
+        ticker (RawArray): Ticker symbol.
+        timestamp (RawValue): Timestamp of the market data.
+
+    Methods:
+        update(market_data: MarketData):
+            Updates the buffer with new market data.
+
+        to_market_data() -> MarketData:
+            Abstract method to convert the buffer data to a `MarketData` instance.
+    """
+
     def __init__(self):
+        """
+        Initializes the memory buffer with default values.
+        """
         self.dtype = RawArray(c_wchar, 16)
         self.ticker = RawArray(c_wchar, 32)  # max length of ticker is 32
         self.timestamp = RawValue(c_double)
 
     def update(self, market_data: MarketData):
+        """
+        Updates the buffer with new market data.
+
+        Args:
+            market_data (MarketData): An instance of `MarketData` containing new data.
+        """
         self.dtype.value = market_data.__class__.__name__
         self.ticker.value = market_data['ticker']
         self.timestamp.value = market_data['timestamp']
 
     @abc.abstractmethod
     def to_market_data(self) -> MarketData:
+        """
+        Abstract method to convert the buffer data to a `MarketData` instance.
+
+        Returns:
+            MarketData: A `MarketData` instance populated with buffer data.
+        """
         ...
 
 
 class OrderBookBuffer(_MarketDataMemoryBuffer):
+    """
+    Memory buffer for order book data.
+
+    Attributes:
+        max_level (int): Maximum levels for bid and ask data.
+        bid (list[tuple[RawValue, RawValue, RawValue]]): List of bid data buffers.
+        ask (list[tuple[RawValue, RawValue, RawValue]]): List of ask data buffers.
+
+    Methods:
+        update(market_data: OrderBook):
+            Updates the buffer with new order book data.
+
+        to_market_data() -> OrderBook:
+            Converts the buffer data to an `OrderBook` instance.
+    """
+
     def __init__(self, max_level: int = 20):
+        """
+        Initializes the order book buffer with the specified maximum levels.
+
+        Args:
+            max_level (int): Maximum number of levels for bid and ask data. Defaults to 20.
+        """
         super().__init__()
 
         self.max_level = max_level
@@ -1450,6 +2744,12 @@ class OrderBookBuffer(_MarketDataMemoryBuffer):
         self.ask = [(RawValue(c_double), RawValue(c_double), RawValue(c_ulong)) for _ in range(self.max_level)]
 
     def update(self, market_data: OrderBook):
+        """
+        Updates the buffer with new order book data.
+
+        Args:
+            market_data (OrderBook): An instance of `OrderBook` containing new data.
+        """
         super().update(market_data=market_data)
 
         bid = market_data['bid']
@@ -1474,6 +2774,12 @@ class OrderBookBuffer(_MarketDataMemoryBuffer):
                     ask_memory.value = 0
 
     def to_market_data(self) -> OrderBook:
+        """
+        Converts the buffer data to an `OrderBook` instance.
+
+        Returns:
+            OrderBook: An `OrderBook` instance populated with buffer data.
+        """
         bid, ask = [], []
 
         for i in range(self.max_level):
@@ -1503,7 +2809,32 @@ class OrderBookBuffer(_MarketDataMemoryBuffer):
 
 
 class BarDataBuffer(_MarketDataMemoryBuffer):
+    """
+    Memory buffer for bar data.
+
+    Attributes:
+        start_timestamp (RawValue): Start timestamp of the bar.
+        bar_span (RawValue): Span of the bar.
+        high_price (RawValue): Highest price during the bar.
+        low_price (RawValue): Lowest price during the bar.
+        open_price (RawValue): Opening price of the bar.
+        close_price (RawValue): Closing price of the bar.
+        volume (RawValue): Total volume during the bar.
+        notional (RawValue): Total notional value during the bar.
+        trade_count (RawValue): Number of trades during the bar.
+
+    Methods:
+        update(market_data: BarData):
+            Updates the buffer with new bar data.
+
+        to_market_data() -> BarData:
+            Converts the buffer data to a `BarData` instance.
+    """
+
     def __init__(self):
+        """
+        Initializes the bar data buffer with default values.
+        """
         super().__init__()
 
         self.start_timestamp = RawValue(c_double)
@@ -1517,6 +2848,12 @@ class BarDataBuffer(_MarketDataMemoryBuffer):
         self.trade_count = RawValue(c_longlong)
 
     def update(self, market_data: BarData):
+        """
+        Updates the buffer with new bar data.
+
+        Args:
+            market_data (BarData): An instance of `BarData` containing new data.
+        """
         super().update(market_data=market_data)
 
         self.start_timestamp.value = market_data['start_timestamp'] if 'start_timestamp' in market_data else math.nan
@@ -1531,6 +2868,12 @@ class BarDataBuffer(_MarketDataMemoryBuffer):
         self.trade_count.value = market_data['trade_count']
 
     def to_market_data(self) -> BarData:
+        """
+        Converts the buffer data to a `BarData` instance.
+
+        Returns:
+            BarData: A `BarData` instance populated with buffer data.
+        """
         bar_data = BarData(
             ticker=self.ticker.value,
             timestamp=self.timestamp.value,
@@ -1549,7 +2892,31 @@ class BarDataBuffer(_MarketDataMemoryBuffer):
 
 
 class TickDataBuffer(_MarketDataMemoryBuffer):
+    """
+    Memory buffer for tick data.
+
+    Attributes:
+        last_price (RawValue): Last traded price.
+        bid_price (RawValue): Current bid price.
+        bid_volume (RawValue): Volume at the bid price.
+        ask_price (RawValue): Current ask price.
+        ask_volume (RawValue): Volume at the ask price.
+        total_traded_volume (RawValue): Total traded volume.
+        total_traded_notional (RawValue): Total traded notional value.
+        total_trade_count (RawValue): Total number of trades.
+
+    Methods:
+        update(market_data: TickData):
+            Updates the buffer with new tick data.
+
+        to_market_data() -> TickData:
+            Converts the buffer data to a `TickData` instance.
+    """
+
     def __init__(self):
+        """
+        Initializes the tick data buffer with default values.
+        """
         super().__init__()
 
         self.last_price = RawValue(c_double)
@@ -1563,8 +2930,13 @@ class TickDataBuffer(_MarketDataMemoryBuffer):
 
     def update(self, market_data: TickData):
         """
-        note that the order book is not stored in shared memory.
-        use OrderBookShared to store the level2 data.
+        Updates the buffer with new tick data.
+
+        Args:
+            market_data (TickData): An instance of `TickData` containing new data.
+
+        Notes:
+            The order book is not stored in shared memory. Use `OrderBookShared` to store the level 2 data.
         """
         super().update(market_data=market_data)
 
@@ -1580,6 +2952,12 @@ class TickDataBuffer(_MarketDataMemoryBuffer):
         self.total_trade_count.value = market_data['total_trade_count']
 
     def to_market_data(self) -> TickData:
+        """
+        Converts the buffer data to a `TickData` instance.
+
+        Returns:
+            TickData: A `TickData` instance populated with buffer data.
+        """
         tick_data = TickData(
             ticker=self.ticker.value,
             timestamp=self.timestamp.value,
@@ -1598,7 +2976,29 @@ class TickDataBuffer(_MarketDataMemoryBuffer):
 
 
 class TransactionDataBuffer(_MarketDataMemoryBuffer):
+    """
+    Memory buffer for transaction data.
+
+    Attributes:
+        price (RawValue): Transaction price.
+        volume (RawValue): Transaction volume.
+        side (RawValue): Side of the transaction (buy/sell).
+        multiplier (RawValue): Multiplier for the transaction.
+        notional (RawValue): Notional value of the transaction.
+        id_map (dict[str, tuple[RawValue, RawArray]]): Map for various IDs related to the transaction.
+
+    Methods:
+        update(market_data: TradeData | TransactionData):
+            Updates the buffer with new transaction data.
+
+        to_market_data() -> TradeData | TransactionData:
+            Converts the buffer data to a `TradeData` or `TransactionData` instance.
+    """
+
     def __init__(self):
+        """
+        Initializes the transaction data buffer with default values.
+        """
         super().__init__()
 
         self.dtype = RawArray(c_wchar, 16)
@@ -1609,12 +3009,18 @@ class TransactionDataBuffer(_MarketDataMemoryBuffer):
         self.multiplier = RawValue(c_double)
         self.notional = RawValue(c_double)
         self.id_map = dict(
-            transaction_id=(RawValue(c_longlong), RawArray(c_wchar, 64)),  # id can be a int, str or None
+            transaction_id=(RawValue(c_longlong), RawArray(c_wchar, 64)),  # id can be an int, str or None
             buy_id=(RawValue(c_longlong), RawArray(c_wchar, 64)),
             sell_id=(RawValue(c_longlong), RawArray(c_wchar, 64)),
         )
 
     def update(self, market_data: TradeData | TransactionData):
+        """
+        Updates the buffer with new transaction data.
+
+        Args:
+            market_data (TradeData | TransactionData): An instance of `TradeData` or `TransactionData` containing new data.
+        """
         super().update(market_data=market_data)
 
         self.price.value = market_data['price']
@@ -1627,9 +3033,9 @@ class TransactionDataBuffer(_MarketDataMemoryBuffer):
             self.multiplier.value = math.nan
 
         if 'notional' in market_data:
-            self.multiplier.value = market_data['notional']
+            self.notional.value = market_data['notional']
         else:
-            self.multiplier.value = math.nan
+            self.notional.value = math.nan
 
         for id_name in ['transaction_id', 'buy_id', 'sell_id']:
             if id_name in market_data:
@@ -1647,10 +3053,16 @@ class TransactionDataBuffer(_MarketDataMemoryBuffer):
                 self.id_map[id_name][1].value = ''
 
     def to_market_data(self) -> TradeData | TransactionData:
+        """
+        Converts the buffer data to a `TradeData` or `TransactionData` instance.
+
+        Returns:
+            TradeData | TransactionData: An instance of `TradeData` or `TransactionData` populated with buffer data.
+        """
         if math.isnan(multiplier := self.multiplier.value):
             multiplier = None
 
-        if math.isnan(notional := self.multiplier.value):
+        if math.isnan(notional := self.notional.value):
             notional = None
 
         id_map = {}
