@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import abc
 import datetime
 import enum
@@ -18,7 +16,7 @@ from . import LOGGER, PROFILE
 LOGGER = LOGGER.getChild('MarketUtils')
 __all__ = ['TransactionSide',
            'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
-           'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer']
+           'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer']
 
 
 class TransactionSide(enum.Enum):
@@ -94,7 +92,7 @@ class TransactionSide(enum.Enum):
         else:
             return self.value == other
 
-    def __neg__(self) -> TransactionSide:
+    def __neg__(self) -> Self:
         """
         Get the opposite transaction side.
 
@@ -127,7 +125,7 @@ class TransactionSide(enum.Enum):
         return self.value
 
     @classmethod
-    def from_offset(cls, direction: str, offset: str) -> TransactionSide:
+    def from_offset(cls, direction: str, offset: str) -> Self:
         """
         Determine the transaction side from direction and offset.
 
@@ -359,7 +357,7 @@ class MarketData(dict, metaclass=abc.ABCMeta):
             raise ValueError(f'Invalid format {fmt}, expected "dict" or "str".')
 
     @classmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> MarketData:
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
         """
         Create a MarketData instance from a JSON string or dictionary.
 
@@ -405,7 +403,7 @@ class MarketData(dict, metaclass=abc.ABCMeta):
         ...
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> MarketData:
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
         """
         Create a MarketData instance from a list.
 
@@ -601,7 +599,7 @@ class OrderBook(MarketData):
             """
             return bool(self._book)
 
-        def __sub__(self, other: OrderBook.Book) -> dict[float, float]:
+        def __sub__(self, other: Self) -> dict[float, float]:
             """
             Subtract another order book from this one to find the differences in volumes at matching prices.
 
@@ -874,7 +872,7 @@ class OrderBook(MarketData):
         Args:
             ticker (str): The ticker symbol of the financial instrument.
             timestamp (float): The timestamp of the market data.
-            bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order details. Defaults to None.
+            bid (list[list[float | int]], optional): A list of bid data, where each sublist contains price, volume, and optionally, order numbers. Defaults to None.
             ask (list[list[float | int]], optional): A list of ask data. Defaults to None.
             **kwargs: Additional key-value pairs for parsing extra data fields.
         """
@@ -1320,7 +1318,7 @@ class BarData(MarketData):
         return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, close={self.close_price}, high={self.high_price}, low={self.low_price})'
 
     @classmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> BarData:
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
         """
         Creates a `BarData` instance from a JSON-encoded message or dictionary.
 
@@ -1366,7 +1364,7 @@ class BarData(MarketData):
                 self.trade_count]
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> BarData:
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
         """
         Creates a `BarData` instance from a list of attributes.
 
@@ -2098,7 +2096,7 @@ class TickData(MarketData):
         return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
     @classmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> TickData:
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
         """
         Creates a `TickData` instance from a JSON message.
 
@@ -2146,7 +2144,7 @@ class TickData(MarketData):
                 self.total_trade_count]
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> TickData:
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
         """
         Creates a `TickData` instance from a list of attributes.
 
@@ -2332,7 +2330,7 @@ class TransactionData(MarketData):
         return f'<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.side.side_name} {self.ticker}, price={self.price}, volume={self.volume})'
 
     @classmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> TransactionData:
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
         """
         Creates a `TransactionData` instance from a JSON message.
 
@@ -2377,7 +2375,7 @@ class TransactionData(MarketData):
                 self.get('sell_id')]
 
     @classmethod
-    def from_list(cls, data_list: list[float | int | str | bool]) -> TransactionData:
+    def from_list(cls, data_list: list[float | int | str | bool]) -> Self:
         """
         Creates a `TransactionData` instance from a list of attributes.
 
@@ -2434,7 +2432,7 @@ class TransactionData(MarketData):
         )
 
     @classmethod
-    def merge(cls, trade_data_list: list[TransactionData]) -> TransactionData | None:
+    def merge(cls, trade_data_list: list[Self]) -> Self | None:
         """
         Merges multiple `TransactionData` instances into a single aggregated `TransactionData` instance.
 
@@ -2665,7 +2663,7 @@ class TradeData(TransactionData):
         return super(TradeData, cls).from_list(data_list=data_list)
 
 
-class _MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
+class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
     """
     Abstract base class for a market data memory buffer.
 
@@ -2686,6 +2684,7 @@ class _MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
         """
         Initializes the memory buffer with default values.
         """
+        LOGGER.warning(DeprecationWarning(f'{self.__class__.__name__} deprecated. Please use the module from algo_engine.base.market_buffer instead.'))
         self.dtype = RawArray(c_wchar, 16)
         self.ticker = RawArray(c_wchar, 32)  # max length of ticker is 32
         self.timestamp = RawValue(c_double)
@@ -2712,7 +2711,7 @@ class _MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
         ...
 
 
-class OrderBookBuffer(_MarketDataMemoryBuffer):
+class OrderBookBuffer(MarketDataMemoryBuffer):
     """
     Memory buffer for order book data.
 
@@ -2736,6 +2735,7 @@ class OrderBookBuffer(_MarketDataMemoryBuffer):
         Args:
             max_level (int): Maximum number of levels for bid and ask data. Defaults to 20.
         """
+        LOGGER.warning(DeprecationWarning(f'{self.__class__.__name__} deprecated. Please use the module from algo_engine.base.market_buffer instead.'))
         super().__init__()
 
         self.max_level = max_level
@@ -2808,7 +2808,7 @@ class OrderBookBuffer(_MarketDataMemoryBuffer):
         return order_book
 
 
-class BarDataBuffer(_MarketDataMemoryBuffer):
+class BarDataBuffer(MarketDataMemoryBuffer):
     """
     Memory buffer for bar data.
 
@@ -2835,6 +2835,7 @@ class BarDataBuffer(_MarketDataMemoryBuffer):
         """
         Initializes the bar data buffer with default values.
         """
+        LOGGER.warning(DeprecationWarning(f'{self.__class__.__name__} deprecated. Please use the module from algo_engine.base.market_buffer instead.'))
         super().__init__()
 
         self.start_timestamp = RawValue(c_double)
@@ -2891,7 +2892,7 @@ class BarDataBuffer(_MarketDataMemoryBuffer):
         return bar_data
 
 
-class TickDataBuffer(_MarketDataMemoryBuffer):
+class TickDataBuffer(MarketDataMemoryBuffer):
     """
     Memory buffer for tick data.
 
@@ -2917,6 +2918,7 @@ class TickDataBuffer(_MarketDataMemoryBuffer):
         """
         Initializes the tick data buffer with default values.
         """
+        LOGGER.warning(DeprecationWarning(f'{self.__class__.__name__} deprecated. Please use the module from algo_engine.base.market_buffer instead.'))
         super().__init__()
 
         self.last_price = RawValue(c_double)
@@ -2975,7 +2977,7 @@ class TickDataBuffer(_MarketDataMemoryBuffer):
         return tick_data
 
 
-class TransactionDataBuffer(_MarketDataMemoryBuffer):
+class TransactionDataBuffer(MarketDataMemoryBuffer):
     """
     Memory buffer for transaction data.
 
@@ -2999,6 +3001,7 @@ class TransactionDataBuffer(_MarketDataMemoryBuffer):
         """
         Initializes the transaction data buffer with default values.
         """
+        LOGGER.warning(DeprecationWarning(f'{self.__class__.__name__} deprecated. Please use the module from algo_engine.base.market_buffer instead.'))
         super().__init__()
 
         self.dtype = RawArray(c_wchar, 16)
