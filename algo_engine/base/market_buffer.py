@@ -69,7 +69,7 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
             raise TypeError(f'Invalid index {index}. Expected int or slice!')
 
     def __len__(self) -> int:
-        return self.tail.value - self.head.value
+        return self.tail - self.head
 
     def _get_slice(self, index: slice) -> list[MarketDataPointer]:
         start, stop, step = index.start, index.stop, index.step
@@ -79,15 +79,13 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
         """
         the internal method of get will not increase the index
         """
-        if index > len(self):
+        valid_length = self.__len__()
+        if -valid_length <= index < valid_length:
+            index = index % valid_length
+        else:
             raise IndexError(f'Index {index} is out of bounds!')
-        elif index < 0:
-            index += self.size
 
-            if index < 0:
-                raise IndexError(f'Index {index} is out of bounds!')
-
-        internal_index = (index + self.head.value) % self.size
+        internal_index = (index + self.head) % self.size
         return self.at(internal_index)
 
     def get(self, raise_on_empty: bool = False, encoding='utf-8') -> MarketData | None:
@@ -101,14 +99,14 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
             with self.condition_get:
                 self.condition_get.wait()
 
-        md_ptr = self.at(index=self.head.value)
+        md_ptr = self.at(index=self.head)
         md = md_ptr.to_market_data(encoding=encoding)
 
         if self.is_full() and self.block:
-            self.head.value += 1
+            self.head += 1
             self.condition_put.notify_all()
         else:
-            self.head.value += 1
+            self.head += 1
 
         return md
 
@@ -116,7 +114,7 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
         """
         the internal method of put will not increase the index
         """
-        md_ptr = self.at(index=self.tail.value)
+        md_ptr = self.at(index=self.tail)
         md_ptr.update(market_data=market_data, encoding=encoding)
 
     def put(self, market_data: MarketData, raise_on_full: bool = False, encoding='utf-8'):
@@ -137,13 +135,16 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
 
         if self.is_empty() and self.block:
             with self.condition_get:
-                self.tail.value += 1
+                self.tail += 1
                 self.condition_get.notify_all()
         else:
-            self.tail.value += 1
+            self.tail += 1
+
+    def at(self, index: int) -> MarketDataPointer:
+        return self._at(index % self.size)
 
     @abc.abstractmethod
-    def at(self, index: int) -> MarketDataPointer:
+    def _at(self, index: int) -> MarketDataPointer:
         """
         get pointer by actual index
         """
@@ -277,7 +278,7 @@ class OrderBookBuffer(MarketDataMemoryBuffer):
         self.bid_n_orders = RawArray(ctypes.c_int * self.max_level, self.size)
         self.ask_n_orders = RawArray(ctypes.c_int * self.max_level, self.size)
 
-    def at(self, index: int) -> OrderBookPointer:
+    def _at(self, index: int) -> OrderBookPointer:
         ptr = OrderBookPointer(
             dtype=ctypes.pointer(self.dtype),
             ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
@@ -369,7 +370,7 @@ class BarDataBuffer(MarketDataMemoryBuffer):
         # self.notional = RawArray(c_double)
         # self.trade_count = RawArray(ctypes.c_int8)
 
-    def at(self, index: int) -> BarDataPointer:
+    def _at(self, index: int) -> BarDataPointer:
         ptr = BarDataPointer(
             dtype=ctypes.pointer(self.dtype),
             ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
@@ -438,7 +439,7 @@ class TickDataBuffer(MarketDataMemoryBuffer):
 
         self.data = RawArray(ctypes.c_double * 8, self.size)
 
-    def at(self, index: int) -> TickDataPointer:
+    def _at(self, index: int) -> TickDataPointer:
         ptr = TickDataPointer(
             dtype=ctypes.pointer(self.dtype),
             ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
@@ -532,7 +533,7 @@ class TransactionDataBuffer(MarketDataMemoryBuffer):
         self.buy_id = RawArray(ctypes.c_char * self._id_size, self.size)
         self.sell_id = RawArray(ctypes.c_char * self._id_size, self.size)
 
-    def at(self, index: int) -> TransactionDataPointer:
+    def _at(self, index: int) -> TransactionDataPointer:
         ptr = TransactionDataPointer(
             dtype=ctypes.pointer(self.dtype),
             ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
