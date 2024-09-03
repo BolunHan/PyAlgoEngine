@@ -609,7 +609,7 @@ class PositionManagementService(object):
             if algo is None:
                 continue
 
-            for order_id in algo.order:
+            for order_id in list(algo.order):
                 reversed_order_mapping[order_id] = algo
 
         return reversed_order_mapping

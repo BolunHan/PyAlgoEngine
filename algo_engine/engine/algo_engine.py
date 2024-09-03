@@ -359,7 +359,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         """
         working = 0.
 
-        for order_id in self.working_order:
+        for order_id in list(self.working_order):
             working_order = self.working_order.get(order_id)
 
             if working_order is None:
