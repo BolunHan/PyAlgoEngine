@@ -1,6 +1,7 @@
 import abc
 import datetime
 import inspect
+import operator
 from typing import Iterable
 
 from . import LOGGER
@@ -196,17 +197,17 @@ class ProgressiveReplay(Replay):
                 ticker, dtype = self.replay_subscription[topic]
                 LOGGER.info(f'{self} loading {market_date} {ticker} {dtype}')
                 data = self.loader(market_date=market_date, ticker=ticker, dtype=dtype)
-
                 if isinstance(data, dict):
                     self.replay_task.extend(list(data.values()))
                 elif isinstance(data, (list, tuple)):
                     self.replay_task.extend(data)
 
+            LOGGER.info(f'{market_date} data loaded! {len(self.replay_task):,} entries.')
             self.date_progress += 1
         else:
             raise StopIteration()
 
-        self.replay_task.sort(key=lambda x: x.market_time)
+        self.replay_task.sort(key=operator.attrgetter('timestamp', 'ticker', '__class__.__name__'))
 
     def next_task(self):
         if self.task_progress < len(self.replay_task):
@@ -223,6 +224,8 @@ class ProgressiveReplay(Replay):
                 self.bod(market_date=self.replay_calendar[self.date_progress], replay=self)
 
             self.next_trade_day()
+
+            #  the bod process should be moved here!
 
             data = self.next_task()
 
