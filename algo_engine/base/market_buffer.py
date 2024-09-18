@@ -11,9 +11,9 @@ from .market_utils import MarketData, OrderBook, BarData, TickData, TransactionD
 
 class MarketDataPointer(object, metaclass=abc.ABCMeta):
     def __init__(self, **kwargs):
-        self._ptr_dtype = kwargs.get('dtype')  # type: ctypes.POINTER(ctypes.c_char * 16)
-        self._ptr_ticker = kwargs.get('ticker')  # type: ctypes.POINTER(ctypes.c_char * 32)
-        self._ptr_timestamp = kwargs.get('timestamp')  # type: ctypes.POINTER(ctypes.c_double)
+        self._ptr_dtype = kwargs.get('dtype')
+        self._ptr_ticker = kwargs.get('ticker')
+        self._ptr_timestamp = kwargs.get('timestamp')
 
     def update(self, market_data: MarketData, encoding='utf-8'):
         self._ptr_dtype.contents.value = market_data.__class__.__name__.encode(encoding).ljust(ctypes.sizeof(self._ptr_dtype.contents), b'\x00')
@@ -44,8 +44,11 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
         self._dtype_size = kwargs.get('dtype_size', 16)
         self._ticker_size = kwargs.get('ticker_size', 32)
 
-        self.dtype = RawValue(ctypes.c_char * self._dtype_size)
-        self.ticker = RawArray(ctypes.c_char * self._ticker_size, self.size)
+        self._ticker_c_arr = ctypes.c_char * self._ticker_size
+        self._dtype_c_arr = ctypes.c_char * self._dtype_size
+
+        self.dtype = RawValue(self._dtype_c_arr)
+        self.ticker = RawArray(self._ticker_c_arr, self.size)
         self.timestamp = RawArray(ctypes.c_double, self.size)
         self._index = RawValue(ctypes.c_int * 2)
 
@@ -251,8 +254,8 @@ class OrderBookPointer(MarketDataPointer):
         order_book = OrderBook(
             ticker=self._ptr_ticker.contents.value.decode(encoding),
             timestamp=self._ptr_timestamp.contents.value,
-            bid=list(bid),
-            ask=list(ask)
+            bid=[list(_) for _ in bid],
+            ask=[list(_) for _ in ask]
         )
 
         return order_book
@@ -269,31 +272,34 @@ class OrderBookBuffer(MarketDataMemoryBuffer):
         super().__init__(size=size, **kwargs)
         self.max_level = max_level
 
-        self.bid_price = RawArray(ctypes.c_double * self.max_level, self.size)
-        self.ask_price = RawArray(ctypes.c_double * self.max_level, self.size)
+        self._book_c_arr = ctypes.c_double * self.max_level
+        self._order_c_arr = ctypes.c_int * self.max_level
 
-        self.bid_volume = RawArray(ctypes.c_double * self.max_level, self.size)
-        self.ask_volume = RawArray(ctypes.c_double * self.max_level, self.size)
+        self.bid_price = RawArray(self._book_c_arr, self.size)
+        self.ask_price = RawArray(self._book_c_arr, self.size)
 
-        self.bid_n_orders = RawArray(ctypes.c_int * self.max_level, self.size)
-        self.ask_n_orders = RawArray(ctypes.c_int * self.max_level, self.size)
+        self.bid_volume = RawArray(self._book_c_arr, self.size)
+        self.ask_volume = RawArray(self._book_c_arr, self.size)
+
+        self.bid_n_orders = RawArray(self._order_c_arr, self.size)
+        self.ask_n_orders = RawArray(self._order_c_arr, self.size)
 
     def _at(self, index: int) -> OrderBookPointer:
         ptr = OrderBookPointer(
             dtype=ctypes.pointer(self.dtype),
-            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
+            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(self._ticker_c_arr), ctypes.POINTER(self._ticker_c_arr)),
             timestamp=ctypes.cast(ctypes.addressof(self.timestamp) + index * ctypes.sizeof(ctypes.c_double), ctypes.POINTER(ctypes.c_double)),
             max_level=self.max_level
         )
 
-        ptr._ptr_bid_price = ctypes.cast(ctypes.addressof(self.bid_price) + index * ctypes.sizeof(ctypes.c_double * self.max_level), ctypes.POINTER(ctypes.c_double * self.max_level))
-        ptr._ptr_ask_price = ctypes.cast(ctypes.addressof(self.ask_price) + index * ctypes.sizeof(ctypes.c_double * self.max_level), ctypes.POINTER(ctypes.c_double * self.max_level))
+        ptr._ptr_bid_price = ctypes.cast(ctypes.addressof(self.bid_price) + index * ctypes.sizeof(self._book_c_arr), ctypes.POINTER(self._book_c_arr))
+        ptr._ptr_ask_price = ctypes.cast(ctypes.addressof(self.ask_price) + index * ctypes.sizeof(self._book_c_arr), ctypes.POINTER(self._book_c_arr))
 
-        ptr._ptr_bid_volume = ctypes.cast(ctypes.addressof(self.bid_volume) + index * ctypes.sizeof(ctypes.c_double * self.max_level), ctypes.POINTER(ctypes.c_double * self.max_level))
-        ptr._ptr_ask_volume = ctypes.cast(ctypes.addressof(self.ask_volume) + index * ctypes.sizeof(ctypes.c_double * self.max_level), ctypes.POINTER(ctypes.c_double * self.max_level))
+        ptr._ptr_bid_volume = ctypes.cast(ctypes.addressof(self.bid_volume) + index * ctypes.sizeof(self._book_c_arr), ctypes.POINTER(self._book_c_arr))
+        ptr._ptr_ask_volume = ctypes.cast(ctypes.addressof(self.ask_volume) + index * ctypes.sizeof(self._book_c_arr), ctypes.POINTER(self._book_c_arr))
 
-        ptr._ptr_bid_n_orders = ctypes.cast(ctypes.addressof(self.bid_n_orders) + index * ctypes.sizeof(ctypes.c_int * self.max_level), ctypes.POINTER(ctypes.c_int * self.max_level))
-        ptr._ptr_ask_n_orders = ctypes.cast(ctypes.addressof(self.ask_n_orders) + index * ctypes.sizeof(ctypes.c_int * self.max_level), ctypes.POINTER(ctypes.c_int * self.max_level))
+        ptr._ptr_bid_n_orders = ctypes.cast(ctypes.addressof(self.bid_n_orders) + index * ctypes.sizeof(self._order_c_arr), ctypes.POINTER(self._order_c_arr))
+        ptr._ptr_ask_n_orders = ctypes.cast(ctypes.addressof(self.ask_n_orders) + index * ctypes.sizeof(self._order_c_arr), ctypes.POINTER(self._order_c_arr))
 
         return ptr
 
@@ -351,6 +357,8 @@ class BarDataPointer(MarketDataPointer):
 
 
 class BarDataBuffer(MarketDataMemoryBuffer):
+    _c_data_arr = ctypes.c_double * 9
+
     def __init__(self, size: int, **kwargs):
         super().__init__(size=size, **kwargs)
         # the data should store the info in following orders
@@ -358,7 +366,7 @@ class BarDataBuffer(MarketDataMemoryBuffer):
         # high_price, low_price, open_price, close_price
         # volume, notional
         # trade_count
-        self.data = RawArray(ctypes.c_double * 9, self.size)
+        self.data = RawArray(self._c_data_arr, self.size)
 
         # self.start_timestamp = RawArray(c_double)
         # self.bar_span = RawArray(c_double)
@@ -373,9 +381,9 @@ class BarDataBuffer(MarketDataMemoryBuffer):
     def _at(self, index: int) -> BarDataPointer:
         ptr = BarDataPointer(
             dtype=ctypes.pointer(self.dtype),
-            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
+            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(self._ticker_c_arr), ctypes.POINTER(self._ticker_c_arr)),
             timestamp=ctypes.cast(ctypes.addressof(self.timestamp) + index * ctypes.sizeof(ctypes.c_double), ctypes.POINTER(ctypes.c_double)),
-            data=ctypes.cast(ctypes.addressof(self.data) + index * ctypes.sizeof(ctypes.c_double * 9), ctypes.POINTER(ctypes.c_double * 9))
+            data=ctypes.cast(ctypes.addressof(self.data) + index * ctypes.sizeof(self._c_data_arr), ctypes.POINTER(self._c_data_arr))
         )
 
         return ptr
@@ -434,17 +442,19 @@ class TickDataPointer(MarketDataPointer):
 
 
 class TickDataBuffer(MarketDataMemoryBuffer):
+    _c_data_arr = ctypes.c_double * 8
+
     def __init__(self, size: int, **kwargs):
         super().__init__(size=size, **kwargs)
 
-        self.data = RawArray(ctypes.c_double * 8, self.size)
+        self.data = RawArray(self._dtype_c_arr, self.size)
 
     def _at(self, index: int) -> TickDataPointer:
         ptr = TickDataPointer(
             dtype=ctypes.pointer(self.dtype),
-            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
+            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(self._ticker_c_arr), ctypes.POINTER(self._ticker_c_arr)),
             timestamp=ctypes.cast(ctypes.addressof(self.timestamp) + index * ctypes.sizeof(ctypes.c_double), ctypes.POINTER(ctypes.c_double)),
-            data=ctypes.cast(ctypes.addressof(self.data) + index * ctypes.sizeof(ctypes.c_double * 8), ctypes.POINTER(ctypes.c_double * 8))
+            data=ctypes.cast(ctypes.addressof(self.data) + index * ctypes.sizeof(self._c_data_arr), ctypes.POINTER(self._c_data_arr))
         )
 
         return ptr
@@ -523,26 +533,30 @@ class TransactionDataPointer(MarketDataPointer):
 
 
 class TransactionDataBuffer(MarketDataMemoryBuffer):
+    _c_data_arr = ctypes.c_double * 5
+    _c_id_type_arr = ctypes.c_int * 3
+
     def __init__(self, size: int, **kwargs):
         super().__init__(size=size, **kwargs)
         self._id_size = kwargs.get('id_size', 16)
+        self._c_id_arr = ctypes.c_char * self._id_size
 
-        self.data = RawArray(ctypes.c_double * 5, self.size)
-        self.data_id_type = RawArray(ctypes.c_int * 3, self.size)
-        self.transaction_id = RawArray(ctypes.c_char * self._id_size, self.size)
-        self.buy_id = RawArray(ctypes.c_char * self._id_size, self.size)
-        self.sell_id = RawArray(ctypes.c_char * self._id_size, self.size)
+        self.data = RawArray(self._c_data_arr, self.size)
+        self.data_id_type = RawArray(self._c_id_type_arr, self.size)
+        self.transaction_id = RawArray(self._c_id_arr, self.size)
+        self.buy_id = RawArray(self._c_id_arr, self.size)
+        self.sell_id = RawArray(self._c_id_arr, self.size)
 
     def _at(self, index: int) -> TransactionDataPointer:
         ptr = TransactionDataPointer(
             dtype=ctypes.pointer(self.dtype),
-            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(ctypes.c_char * self._ticker_size), ctypes.POINTER(ctypes.c_char * self._ticker_size)),
+            ticker=ctypes.cast(ctypes.addressof(self.ticker) + index * ctypes.sizeof(self._ticker_c_arr), ctypes.POINTER(self._ticker_c_arr)),
             timestamp=ctypes.cast(ctypes.addressof(self.timestamp) + index * ctypes.sizeof(ctypes.c_double), ctypes.POINTER(ctypes.c_double)),
-            data=ctypes.cast(ctypes.addressof(self.data) + index * ctypes.sizeof(ctypes.c_double * 5), ctypes.POINTER(ctypes.c_double * 5)),
-            id_type=ctypes.cast(ctypes.addressof(self.data_id_type) + index * ctypes.sizeof(ctypes.c_int * 3), ctypes.POINTER(ctypes.c_int * 3)),
-            transaction_id=ctypes.cast(ctypes.addressof(self.transaction_id) + index * ctypes.sizeof(ctypes.c_char * 16), ctypes.POINTER(ctypes.c_char * 16)),
-            buy_id=ctypes.cast(ctypes.addressof(self.buy_id) + index * ctypes.sizeof(ctypes.c_char * 16), ctypes.POINTER(ctypes.c_char * 16)),
-            sell_id=ctypes.cast(ctypes.addressof(self.sell_id) + index * ctypes.sizeof(ctypes.c_char * 16), ctypes.POINTER(ctypes.c_char * 16))
+            data=ctypes.cast(ctypes.addressof(self.data) + index * ctypes.sizeof(self._c_data_arr), ctypes.POINTER(self._c_data_arr)),
+            id_type=ctypes.cast(ctypes.addressof(self.data_id_type) + index * ctypes.sizeof(self._c_id_type_arr), ctypes.POINTER(self._c_id_type_arr)),
+            transaction_id=ctypes.cast(ctypes.addressof(self.transaction_id) + index * ctypes.sizeof(self._c_id_arr), ctypes.POINTER(self._c_id_arr)),
+            buy_id=ctypes.cast(ctypes.addressof(self.buy_id) + index * ctypes.sizeof(self._c_id_arr), ctypes.POINTER(self._c_id_arr)),
+            sell_id=ctypes.cast(ctypes.addressof(self.sell_id) + index * ctypes.sizeof(self._c_id_arr), ctypes.POINTER(self._c_id_arr))
         )
 
         return ptr
