@@ -16,7 +16,7 @@ from . import LOGGER, PROFILE
 LOGGER = LOGGER.getChild('MarketUtils')
 __all__ = ['TransactionSide',
            'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
-           'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer']
+           'MarketDataMemoryBuffer', 'OrderBookRawValue', 'BarDataRawValue', 'TickDataRawValue', 'TransactionDataRawValue']
 
 
 class TransactionSide(enum.Enum):
@@ -1588,18 +1588,7 @@ class DailyBar(BarData):
     specific to daily market bars. It supports various ways to define the bar span and manage the market date.
 
     Attributes:
-        ticker (str): The ticker symbol for the market data.
-        market_date (datetime.date): The market date of the bar, or the end date of the bar.
-        timestamp (float): The timestamp marking the end of the bar.
-        start_date (datetime.date, optional): The start date of the bar period. Required if `bar_span` is not provided.
-        bar_span (datetime.timedelta | int, optional): The duration of the bar in days. Either this or `start_date` must be provided.
-        high_price (float): The highest price during the bar.
-        low_price (float): The lowest price during the bar.
-        open_price (float): The opening price of the bar.
-        close_price (float): The closing price of the bar.
-        volume (float): The total volume of trades during the bar.
-        notional (float): The total notional value of trades during the bar.
-        trade_count (int): The number of trades that occurred during the bar.
+        ...
 
     Methods:
         __repr__() -> str:
@@ -1615,7 +1604,19 @@ class DailyBar(BarData):
             Creates a `DailyBar` instance from a list of attributes.
 
     Properties:
+        ticker (str): The ticker symbol for the market data.
+        timestamp (float): The timestamp marking the end of the bar.
+        start_date (datetime.date, optional): The start date of the bar period. Required if `bar_span` is not provided.
+        bar_span (datetime.timedelta | int, optional): The duration of the bar in days. Either this or `start_date` must be provided.
+        high_price (float): The highest price during the bar.
+        low_price (float): The lowest price during the bar.
+        open_price (float): The opening price of the bar.
+        close_price (float): The closing price of the bar.
+        volume (float): The total volume of trades during the bar.
+        notional (float): The total notional value of trades during the bar.
+        trade_count (int): The number of trades that occurred during the bar.
         bar_span (datetime.timedelta): The duration of the bar in days.
+
         market_date (datetime.date): The market date of the bar.
         market_time (datetime.date): The market date of the bar (same as `market_date`).
         bar_start_time (datetime.date): The start date of the bar period.
@@ -1865,19 +1866,7 @@ class TickData(MarketData):
     bid/ask volumes, and order book details.
 
     Attributes:
-        ticker (str): The ticker symbol for the market data.
-        timestamp (float): The timestamp of the tick data.
-        last_price (float): The last traded price.
-        bid_price (float | None): The bid price. Optional, if not provided, it can be inferred from the bid data.
-        bid_volume (float | None): The bid volume. Optional, if not provided, it can be inferred from the bid data.
-        ask_price (float | None): The ask price. Optional, if not provided, it can be inferred from the ask data.
-        ask_volume (float | None): The ask volume. Optional, if not provided, it can be inferred from the ask data.
-        order_book (OrderBook | None): The order book containing bid and ask prices/volumes. Optional.
-        bid (list[list[float | int]] | None): A list of bid prices and volumes. Optional, used to build the order book.
-        ask (list[list[float | int]] | None): A list of ask prices and volumes. Optional, used to build the order book.
-        total_traded_volume (float): The total traded volume. Defaults to 0.0.
-        total_traded_notional (float): The total traded notional value. Defaults to 0.0.
-        total_trade_count (int): The total number of trades. Defaults to 0.
+        ...
 
     Methods:
         __repr__() -> str:
@@ -1893,6 +1882,10 @@ class TickData(MarketData):
             Creates a `TickData` instance from a list of attributes.
 
     Properties:
+    ticker (str): The ticker symbol for the market data.
+        timestamp (float): The timestamp of the tick data.
+        bid (list[list[float | int]] | None): A list of bid prices and volumes. Optional, used to build the order book.
+        ask (list[list[float | int]] | None): A list of ask prices and volumes. Optional, used to build the order book.
         level_2 (OrderBook | None): The level 2 order book created from the bid and ask data.
         order_book (OrderBook | None): Alias for `level_2`.
         last_price (float): The last traded price.
@@ -2227,16 +2220,7 @@ class TransactionData(MarketData):
     This class extends the `MarketData` class to handle transaction-level data, including price, volume, side, and identifiers.
 
     Attributes:
-        ticker (str): The ticker symbol for the transaction.
-        price (float): The price at which the transaction occurred.
-        volume (float): The volume of the transaction.
-        timestamp (float): The timestamp of the transaction.
-        side (int | float | str | TransactionSide): The side of the transaction (buy or sell).
-        multiplier (float | None): The multiplier for the transaction. Optional.
-        notional (float | None): The notional value of the transaction. Optional.
-        transaction_id (str | int | None): The identifier for the transaction. Optional.
-        buy_id (str | int | None): The identifier for the buying transaction. Optional.
-        sell_id (str | int | None): The identifier for the selling transaction. Optional.
+        ...
 
     Methods:
         __repr__() -> str:
@@ -2255,6 +2239,9 @@ class TransactionData(MarketData):
             Merges multiple `TransactionData` instances into a single aggregated `TransactionData` instance.
 
     Properties:
+        ticker (str): The ticker symbol for the transaction.
+        timestamp (float): The timestamp of the transaction.
+
         price (float): The price at which the transaction occurred.
         volume (float): The volume of the transaction.
         side (TransactionSide): The side of the transaction (buy or sell).
@@ -2711,7 +2698,7 @@ class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
         ...
 
 
-class OrderBookBuffer(MarketDataMemoryBuffer):
+class OrderBookRawValue(MarketDataMemoryBuffer):
     """
     Memory buffer for order book data.
 
@@ -2808,7 +2795,7 @@ class OrderBookBuffer(MarketDataMemoryBuffer):
         return order_book
 
 
-class BarDataBuffer(MarketDataMemoryBuffer):
+class BarDataRawValue(MarketDataMemoryBuffer):
     """
     Memory buffer for bar data.
 
@@ -2892,7 +2879,7 @@ class BarDataBuffer(MarketDataMemoryBuffer):
         return bar_data
 
 
-class TickDataBuffer(MarketDataMemoryBuffer):
+class TickDataRawValue(MarketDataMemoryBuffer):
     """
     Memory buffer for tick data.
 
@@ -2977,7 +2964,7 @@ class TickDataBuffer(MarketDataMemoryBuffer):
         return tick_data
 
 
-class TransactionDataBuffer(MarketDataMemoryBuffer):
+class TransactionDataRawValue(MarketDataMemoryBuffer):
     """
     Memory buffer for transaction data.
 
