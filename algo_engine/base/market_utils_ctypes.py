@@ -366,8 +366,8 @@ class MarketData(object, metaclass=abc.ABCMeta):
 
     @classmethod
     def from_bytes(cls, data) -> Self:
-        buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer_copy(data)
-        return cls.from_buffer(buffer=buffer)
+        buffer = _BUFFER_CONSTRUCTOR.new_market_data_buffer().from_buffer_copy(data)
+        return cls.cast_buffer(buffer=buffer)
 
     @property
     def ticker(self) -> str:
