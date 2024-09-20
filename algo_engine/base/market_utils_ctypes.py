@@ -365,9 +365,29 @@ class MarketData(object, metaclass=abc.ABCMeta):
             raise ValueError(f'Invalid buffer type {dtype_int}!')
 
     @classmethod
-    def from_bytes(cls, data) -> Self:
-        buffer = _BUFFER_CONSTRUCTOR.new_market_data_buffer().from_buffer_copy(data)
-        return cls.cast_buffer(buffer=buffer)
+    def from_bytes(cls, data: bytes) -> Self:
+        dtype_int = data[0]
+
+        if dtype_int == 10:
+            buffer = _BUFFER_CONSTRUCTOR.new_orderbook_buffer().from_buffer_copy(data)
+            return OrderBook.from_buffer(buffer=buffer)
+        elif dtype_int == 20:
+            buffer = _BUFFER_CONSTRUCTOR.new_candlestick_buffer().from_buffer_copy(data)
+            return BarData.from_buffer(buffer=buffer)
+        elif dtype_int == 21:
+            buffer = _BUFFER_CONSTRUCTOR.new_candlestick_buffer().from_buffer_copy(data)
+            return DailyBar.from_buffer(buffer=buffer)
+        elif dtype_int == 30:
+            buffer = _BUFFER_CONSTRUCTOR.new_tick_buffer().from_buffer_copy(data)
+            return TickData.from_buffer(buffer=buffer)
+        elif dtype_int == 40:
+            buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer_copy(data)
+            return TransactionData.from_buffer(buffer=buffer)
+        elif dtype_int == 41:
+            buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer_copy(data)
+            return TradeData.from_buffer(buffer=buffer)
+        else:
+            raise ValueError(f'Invalid buffer type {dtype_int}!')
 
     @property
     def ticker(self) -> str:
