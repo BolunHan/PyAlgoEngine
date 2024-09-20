@@ -396,6 +396,10 @@ class MarketData(object, metaclass=abc.ABCMeta):
         return tuple(name for name, *_ in getattr(self._buffer, '_fields_'))
 
     @property
+    def byte_size(self) -> int:
+        return ctypes.sizeof(self._buffer)
+
+    @property
     @abc.abstractmethod
     def market_price(self) -> float:
         ...
