@@ -1,7 +1,7 @@
 import abc
 import ctypes
 import math
-from multiprocessing import RawArray, RawValue, Event, Condition
+from multiprocessing import RawArray, RawValue, Condition
 from typing import overload
 
 import numpy as np
@@ -498,7 +498,7 @@ class TransactionDataPointer(MarketDataPointer):
                 id_ptr.contents[:] = _id.to_bytes(length=ctypes.sizeof(id_ptr.contents), byteorder='big')
                 self.id_type.contents[i] = 0
             else:
-                raise TypeError(f'Invalid {id_name} type: {type(_id)}, expect int or str.')
+                raise TypeError(f'Invalid {id_name} {_id} type: {type(_id)}, expect int or str.')
 
         self.data.contents[:] = data
 
