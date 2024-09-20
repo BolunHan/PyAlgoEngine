@@ -7,7 +7,8 @@ import math
 import re
 import warnings
 from collections import namedtuple
-from multiprocessing import RawValue, RawArray
+from collections.abc import Iterable
+from multiprocessing import RawValue, RawArray, Condition
 from typing import overload, Literal, Self
 
 import numpy as np
@@ -17,7 +18,7 @@ from . import LOGGER, PROFILE
 LOGGER = LOGGER.getChild('MarketUtils')
 __all__ = ['TransactionSide',
            'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
-           'MarketDataMemoryBuffer']
+           'MarketDataBuffer', 'MarketDataRingBuffer']
 __cache__ = {}
 
 # TICKER_SIZE: int = 16
@@ -27,7 +28,7 @@ __cache__ = {}
 Contexts = namedtuple(
     typename='Contexts',
     field_names=['TICKER_SIZE', 'ID_SIZE', 'BOOK_SIZE'],
-    defaults=[16, 16, 10],
+    defaults=[16, 17, 10],
 )()
 
 DTYPE_MAPPING: dict[str, int] = {
@@ -251,7 +252,11 @@ class MarketData(object, metaclass=abc.ABCMeta):
 
     def __getitem__(self, key):
         warnings.warn(f'getitem from {self.__class__.__name__} deprecated!', DeprecationWarning, stacklevel=2)
+        LOGGER.warning(f'getitem from {self.__class__.__name__} deprecated!')
         return getattr(self._buffer, key)
+
+    def __reduce__(self):
+        return self.__class__.from_bytes, (bytes(self._buffer),)
 
     def copy(self):
         return self.__copy__()
@@ -259,7 +264,7 @@ class MarketData(object, metaclass=abc.ABCMeta):
     def to_json(self, fmt='str', **kwargs) -> str | dict:
         data_dict = dict(
             dtype=self.__class__.__name__,
-            **{name: value[:] if isinstance(value := getattr(self._buffer, name), ctypes.Array) else value for name, _ in getattr(self._buffer, '_fields_')}
+            **{name: value[:] if isinstance(value := getattr(self._buffer, name), ctypes.Array) else value for name in self.fields}
         )
 
         if hasattr(self, '_additional'):
@@ -297,23 +302,72 @@ class MarketData(object, metaclass=abc.ABCMeta):
             raise TypeError(f'Invalid dtype {dtype}')
 
     @classmethod
-    def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
+    def parse_buffer(cls, buffer: ctypes.Union) -> ctypes.Structure:
         dtype_int = buffer.dtype
 
         if dtype_int == 10:
-            return OrderBook.from_buffer(buffer)
+            return buffer.OrderBook
         elif dtype_int == 20:
-            return BarData.from_buffer(buffer)
+            return buffer.BarData
         elif dtype_int == 21:
-            return DailyBar.from_buffer(buffer)
+            return buffer.BarData
         elif dtype_int == 30:
-            return TickData.from_buffer(buffer)
+            return buffer.TickData
         elif dtype_int == 40:
-            return TransactionData.from_buffer(buffer)
+            return buffer.TransactionData
         elif dtype_int == 41:
-            return TradeData.from_buffer(buffer)
+            return buffer.TransactionData
         else:
             raise ValueError(f'Invalid buffer type {dtype_int}!')
+
+    @classmethod
+    def cast_buffer(cls, buffer: ctypes.Structure | ctypes.Union | memoryview) -> Self:
+        dtype_int = buffer.dtype
+
+        if dtype_int == 10:
+            buffer = _BUFFER_CONSTRUCTOR.new_orderbook_buffer().from_buffer(buffer)
+            return OrderBook.from_buffer(buffer=buffer)
+        elif dtype_int == 20:
+            buffer = _BUFFER_CONSTRUCTOR.new_candlestick_buffer().from_buffer(buffer)
+            return BarData.from_buffer(buffer=buffer)
+        elif dtype_int == 21:
+            buffer = _BUFFER_CONSTRUCTOR.new_candlestick_buffer().from_buffer(buffer)
+            return DailyBar.from_buffer(buffer=buffer)
+        elif dtype_int == 30:
+            buffer = _BUFFER_CONSTRUCTOR.new_tick_buffer().from_buffer(buffer)
+            return TickData.from_buffer(buffer=buffer)
+        elif dtype_int == 40:
+            buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer(buffer)
+            return TransactionData.from_buffer(buffer=buffer)
+        elif dtype_int == 41:
+            buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer(buffer)
+            return TradeData.from_buffer(buffer=buffer)
+        else:
+            raise ValueError(f'Invalid buffer type {dtype_int}!')
+
+    @classmethod
+    def from_buffer(cls, buffer: ctypes.Structure) -> Self:
+        dtype_int = buffer.dtype
+
+        if dtype_int == 10:
+            return OrderBook.from_buffer(buffer=buffer)
+        elif dtype_int == 20:
+            return BarData.from_buffer(buffer=buffer)
+        elif dtype_int == 21:
+            return DailyBar.from_buffer(buffer=buffer)
+        elif dtype_int == 30:
+            return TickData.from_buffer(buffer=buffer)
+        elif dtype_int == 40:
+            return TransactionData.from_buffer(buffer=buffer)
+        elif dtype_int == 41:
+            return TradeData.from_buffer(buffer=buffer)
+        else:
+            raise ValueError(f'Invalid buffer type {dtype_int}!')
+
+    @classmethod
+    def from_bytes(cls, data) -> Self:
+        buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer_copy(data)
+        return cls.from_buffer(buffer=buffer)
 
     @property
     def ticker(self) -> str:
@@ -336,6 +390,10 @@ class MarketData(object, metaclass=abc.ABCMeta):
     @property
     def market_time(self) -> datetime.datetime | datetime.date:
         return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
+
+    @property
+    def fields(self) -> Iterable[str]:
+        return tuple(name for name, *_ in getattr(self._buffer, '_fields_'))
 
     @property
     @abc.abstractmethod
@@ -408,6 +466,7 @@ class BufferConstructor(object):
                 ('ask_n_orders', ctypes.c_uint * book_size)
             ]
 
+        self._orderbook_cache[key] = _Buffer
         return _Buffer
 
     def new_candlestick_buffer(self) -> type[ctypes.Structure]:
@@ -432,6 +491,7 @@ class BufferConstructor(object):
                 ('trade_count', ctypes.c_uint),
             ]
 
+        self._candlestick_cache[key] = _Buffer
         return _Buffer
 
     def new_tick_buffer(self) -> type[ctypes.Structure]:
@@ -445,7 +505,7 @@ class BufferConstructor(object):
                 ("dtype", ctypes.c_uint8),
                 ("ticker", ctypes.c_char * ticker_size),
                 ("timestamp", ctypes.c_double),
-                ('order_book', ctypes.c_void_p),
+                ('order_book', self.new_orderbook_buffer()),
                 ('bid_price', ctypes.c_double),
                 ('bid_volume', ctypes.c_double),
                 ('ask_price', ctypes.c_double),
@@ -456,6 +516,7 @@ class BufferConstructor(object):
                 ('total_trade_count', ctypes.c_uint),
             ]
 
+        self._tick_cache[key] = _Buffer
         return _Buffer
 
     def new_transaction_buffer(self) -> type[ctypes.Structure]:
@@ -480,20 +541,23 @@ class BufferConstructor(object):
                 ("sell_id", ctypes.c_char * id_size)
             ]
 
+        self._trade_cache[key] = _Buffer
         return _Buffer
 
     def new_market_data_buffer(self) -> type[ctypes.Union]:
-        if Contexts in self._md_cache:
-            return self._md_cache[Contexts]
+        if (key := Contexts) in self._md_cache:
+            return self._md_cache[key]
 
         class _Buffer(ctypes.Union):
             _fields_ = [
+                ("dtype", ctypes.c_uint8),
                 ("OrderBook", self.new_orderbook_buffer()),
                 ("BarData", self.new_candlestick_buffer()),
                 ("TickData", self.new_tick_buffer()),
                 ("TransactionData", self.new_transaction_buffer())
             ]
 
+        self._md_cache[key] = _Buffer
         return _Buffer
 
 
@@ -894,6 +958,8 @@ class OrderBook(MarketData):
             timestamp=timestamp
         )
 
+        super().__init__(buffer=buffer, **kwargs)
+
         if bid_price:
             buffer.bid_price = (ctypes.c_double * book_size)(*bid_price)
 
@@ -912,7 +978,6 @@ class OrderBook(MarketData):
         if ask_n_orders:
             buffer.ask_n_orders = (ctypes.c_uint * book_size)(*ask_n_orders)
 
-        super().__init__(buffer=buffer, **kwargs)
         self.parse(**kwargs)
 
     def __getattr__(self, item: str):
@@ -1079,10 +1144,7 @@ class OrderBook(MarketData):
         return self
 
     @classmethod
-    def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
-        if isinstance(buffer, memoryview):
-            buffer = _BUFFER_CONSTRUCTOR.new_orderbook_buffer().from_buffer(buffer)
-
+    def from_buffer(cls, buffer: ctypes.Structure) -> Self:
         self = cls(
             ticker='',
             timestamp=0,
@@ -1314,6 +1376,8 @@ class BarData(MarketData):
             trade_count=trade_count,
         )
 
+        super().__init__(buffer=buffer, **kwargs)
+
         if bar_span is None and start_timestamp is None:
             raise ValueError('Must assign either start_timestamp or bar_span or both.')
         elif start_timestamp is None:
@@ -1335,8 +1399,6 @@ class BarData(MarketData):
                 buffer.bar_span = bar_span
             else:
                 raise ValueError(f'Invalid bar_span {bar_span}! Expected a int, float or timedelta!')
-
-        super().__init__(buffer=buffer, **kwargs)
 
     def __repr__(self):
         """
@@ -1377,9 +1439,6 @@ class BarData(MarketData):
 
     @classmethod
     def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
-        if isinstance(buffer, memoryview):
-            buffer = _BUFFER_CONSTRUCTOR.new_candlestick_buffer().from_buffer(buffer)
-
         self = cls(
             ticker='',
             timestamp=0,
@@ -1885,6 +1944,7 @@ class TickData(MarketData):
             bid_volume: float = None,
             ask_price: float = None,
             ask_volume: float = None,
+            order_book: OrderBook = None,
             bid: list[list[float | int]] = None,
             ask: list[list[float | int]] = None,
             total_traded_volume: float = 0.,
@@ -1931,13 +1991,14 @@ class TickData(MarketData):
             total_trade_count=total_trade_count
         )
 
-        # init an orderbook buffer and passed in the pointer
-        if bid and ask:
-            order_book = OrderBook(ticker=ticker, timestamp=timestamp, bid=bid, ask=ask)
-            self._buffer.order_book = ctypes.pointer(order_book._buffer)
-            self._order_book = order_book
-
         super().__init__(buffer=buffer, **kwargs)
+
+        if order_book is not None:
+            self._order_book = order_book
+            buffer.order_book = self._order_book._buffer
+        elif bid and ask:
+            self._order_book = OrderBook(ticker=ticker, timestamp=timestamp, bid=bid, ask=ask)
+            buffer.order_book = self._order_book._buffer
 
     def __repr__(self) -> str:
         """
@@ -1949,6 +2010,19 @@ class TickData(MarketData):
             str: A string representation of the `TickData` instance.
         """
         return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
+
+    def to_json(self, fmt='str', **kwargs) -> str | dict:
+        data_dict = super().to_json(fmt='dict', **kwargs)
+
+        if hasattr(self, '_order_book'):
+            data_dict['order_book'] = self._order_book.to_json(fmt='dict')
+
+        if fmt == 'dict':
+            return data_dict
+        elif fmt == 'str':
+            return json.dumps(data_dict, **kwargs)
+        else:
+            raise ValueError(f'Invalid format {fmt}, expected "dict" or "str".')
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
@@ -1973,14 +2047,15 @@ class TickData(MarketData):
         if dtype is not None and dtype != cls.__name__:
             raise TypeError(f'dtype mismatch, expect {cls.__name__}, got {dtype}.')
 
+        if 'order_book' in json_dict:
+            json_dict['order_book'] = OrderBook.from_json(json_dict.pop('order_book'))
+
         self = cls(**json_dict)
+
         return self
 
     @classmethod
     def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
-        if isinstance(buffer, memoryview):
-            buffer = _BUFFER_CONSTRUCTOR.new_tick_buffer().from_buffer(buffer)
-
         self = cls(
             ticker='',
             timestamp=0,
@@ -1988,6 +2063,10 @@ class TickData(MarketData):
             buffer=buffer
         )
         return self
+
+    @property
+    def fields(self) -> Iterable[str]:
+        return tuple(name for name, *_ in getattr(self._buffer, '_fields_') if name != 'order_book')
 
     @property
     def level_2(self) -> OrderBook | None:
@@ -2000,8 +2079,9 @@ class TickData(MarketData):
 
         if hasattr(self, '_order_book'):
             return self._order_book
-        elif order_book_ptr := self._buffer.order_book:
-            return OrderBook.from_buffer(buffer=order_book_ptr.contents)
+        elif order_book_buffer := self._buffer.order_book:
+            self._order_book = OrderBook.from_buffer(buffer=order_book_buffer)
+            return self._order_book
         else:
             return None
 
@@ -2205,22 +2285,22 @@ class TransactionData(MarketData):
             notional=np.nan if notional is None else notional
         )
 
+        super().__init__(buffer=buffer, **kwargs)
+
         if isinstance(transaction_id, str):
             buffer.transaction_id = b's' + transaction_id.encode(self._encoding)
         elif isinstance(transaction_id, int):
             buffer.transaction_id = b'i' + transaction_id.to_bytes(length=id_size - 1, byteorder='little')
 
         if isinstance(buy_id, str):
-            buffer.transaction_id = b's' + buy_id.encode(self._encoding)
+            buffer.buy_id = b's' + buy_id.encode(self._encoding)
         elif isinstance(buy_id, int):
-            buffer.transaction_id = b'i' + buy_id.to_bytes(length=id_size - 1, byteorder='little')
+            buffer.buy_id = b'i' + buy_id.to_bytes(length=id_size - 1, byteorder='little')
 
         if isinstance(sell_id, str):
-            buffer.transaction_id = b's' + sell_id.encode(self._encoding)
+            buffer.sell_id = b's' + sell_id.encode(self._encoding)
         elif isinstance(sell_id, int):
-            buffer.transaction_id = b'i' + sell_id.to_bytes(length=id_size - 1, byteorder='little')
-
-        super().__init__(buffer=buffer, **kwargs)
+            buffer.sell_id = b'i' + sell_id.to_bytes(length=id_size - 1, byteorder='little')
 
     def __repr__(self) -> str:
         """
@@ -2261,9 +2341,6 @@ class TransactionData(MarketData):
 
     @classmethod
     def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
-        if isinstance(buffer, memoryview):
-            buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer(buffer)
-
         self = cls(
             ticker='',
             timestamp=0,
@@ -2376,9 +2453,9 @@ class TransactionData(MarketData):
 
         if not bytes_id:
             return None
-        elif bytes_id[0] == 'i':
+        elif bytes_id[0] == 105:
             return int.from_bytes(bytes_id[1:], byteorder='little')
-        elif bytes_id[0] == 's':
+        elif bytes_id[0] == 115:
             return bytes_id[1:].decode(self._encoding)
         else:
             raise ValueError(f'Invalid transaction_id buffer {bytes_id}!')
@@ -2395,9 +2472,9 @@ class TransactionData(MarketData):
 
         if not bytes_id:
             return None
-        elif bytes_id[0] == 'i':
+        elif bytes_id[0] == 105:  # b'i'
             return int.from_bytes(bytes_id[1:], byteorder='little')
-        elif bytes_id[0] == 's':
+        elif bytes_id[0] == 115:  # b's'
             return bytes_id[1:].decode(self._encoding)
         else:
             raise ValueError(f'Invalid transaction_id buffer {bytes_id}!')
@@ -2414,9 +2491,9 @@ class TransactionData(MarketData):
 
         if not bytes_id:
             return None
-        elif bytes_id[0] == 'i':
+        elif bytes_id[0] == 105:
             return int.from_bytes(bytes_id[1:], byteorder='little')
-        elif bytes_id[0] == 's':
+        elif bytes_id[0] == 115:
             return bytes_id[1:].decode(self._encoding)
         else:
             raise ValueError(f'Invalid transaction_id buffer {bytes_id}!')
@@ -2533,9 +2610,202 @@ class TradeData(TransactionData):
     def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
         return super(TradeData, cls).from_buffer(buffer=buffer)
 
+    @classmethod
+    def from_bytes(cls, data) -> Self:
+        return super(TradeData, cls).from_bytes(data=data)
 
-class MarketDataMemoryBuffer(object, metaclass=abc.ABCMeta):
-    ...
+
+class MarketDataBuffer(object):
+    ctype_buffer = _BUFFER_CONSTRUCTOR.new_market_data_buffer()
+
+    def __init__(self, buffer: type[ctypes.Structure | ctypes.Union | ctypes.Array] = None):
+        self.buffer = RawValue(self.ctype_buffer) if buffer is None else buffer
+
+    @classmethod
+    def to_buffer(cls, buffer, market_data: MarketData):
+        try:
+            if isinstance(market_data, OrderBook):
+                buffer.OrderBook = market_data._buffer
+            elif isinstance(market_data, (BarData, DailyBar)):
+                buffer.BarData = market_data._buffer
+            elif isinstance(market_data, TickData):
+                buffer.TickData = market_data._buffer
+            elif isinstance(market_data, (TransactionData, TradeData)):
+                buffer.TransactionData = market_data._buffer
+            else:
+                raise ValueError(f'Invalid market_data type {type(market_data)}!')
+        except TypeError as _:
+            raise TypeError('Incompatible types, this might comes from amending Contexts after initialization. Try to clear the cache and run again!')
+
+    @classmethod
+    def from_buffer(cls, buffer) -> OrderBook | BarData | DailyBar | TickData | TransactionData | TradeData | MarketData:
+        buffer = MarketData.parse_buffer(buffer=buffer)
+        md = MarketData.from_buffer(buffer=buffer)
+        return md
+
+    @classmethod
+    def cast_buffer(cls, buffer) -> OrderBook | BarData | DailyBar | TickData | TransactionData | TradeData | MarketData:
+        md = MarketData.cast_buffer(buffer=buffer)
+        return md
+
+    @classmethod
+    def from_bytes(cls, buffer) -> OrderBook | BarData | DailyBar | TickData | TransactionData | TradeData | MarketData:
+        md = MarketData.from_bytes(buffer)
+        return md
+
+    def update(self, market_data: MarketData):
+        return self.to_buffer(buffer=self.buffer, market_data=market_data)
+
+    def to_market_data(self) -> OrderBook | BarData | DailyBar | TickData | TransactionData | TradeData | MarketData:
+        return self.cast_buffer(buffer=self.buffer)
+
+    @property
+    def contents(self) -> MarketData:
+        return self.from_buffer(buffer=self.buffer)
+
+
+class MarketDataRingBuffer(MarketDataBuffer):
+    def __init__(self, size: int, **kwargs):
+        self.size = size
+        self.block = kwargs.get('block', False)
+        self.condition_put = kwargs.get('condition_put', Condition())
+        self.condition_get = kwargs.get('condition_get', Condition())
+        self._index = RawArray(ctypes.c_int, 2)
+
+        super().__init__(buffer=RawArray(self.ctype_buffer, self.size))
+
+    @overload
+    def __getitem__(self, index: slice) -> list[MarketDataBuffer]:
+        ...
+
+    @overload
+    def __getitem__(self, index: int) -> MarketDataBuffer:
+        ...
+
+    def __getitem__(self, index):
+        """
+        based on the virtual index, not the internal (actual) index.
+        """
+        if isinstance(index, slice):
+            return self._get_slice(index)
+        elif isinstance(index, int):
+            return self._get(index)
+        else:
+            raise TypeError(f'Invalid index {index}. Expected int or slice!')
+
+    def __len__(self) -> int:
+        return self.tail - self.head
+
+    def _get_slice(self, index: slice) -> list[MarketDataBuffer]:
+        start, stop, step = index.start, index.stop, index.step
+        return [self._get(i) for i in range(start, stop, step if step is not None else 1)]
+
+    def _get(self, index: int) -> MarketDataBuffer:
+        """
+        the internal method of get will not increase the index
+        """
+        valid_length = self.__len__()
+        if -valid_length <= index < valid_length:
+            index = index % valid_length
+        else:
+            raise IndexError(f'Index {index} is out of bounds!')
+
+        internal_index = (index + self.head) % self.size
+        return self.at(internal_index)
+
+    def get(self, raise_on_empty: bool = False) -> MarketData | None:
+        while self.is_empty():
+            if raise_on_empty:
+                raise ValueError(f'Buffer {self.__class__.__name__} is empty!')
+
+            if not self.block:
+                return None
+
+            with self.condition_get:
+                self.condition_get.wait()
+
+        buffer = self.at(index=self.head)
+        md = buffer.to_market_data()
+
+        if self.is_full() and self.block:
+            self.head += 1
+            self.condition_put.notify_all()
+        else:
+            self.head += 1
+
+        return md
+
+    def _put(self, market_data: MarketData):
+        """
+        the internal method of put will not increase the index
+        """
+        buffer = self.at(index=self.tail)
+        buffer.update(market_data=market_data)
+
+    def put(self, market_data: MarketData, raise_on_full: bool = False):
+        """
+        the put method is not thread safe, and should only be called in one single thread.
+        """
+        while self.is_full():
+            if raise_on_full:
+                raise ValueError(f'Buffer {self.__class__.__name__} is full!')
+
+            if not self.block:
+                continue
+
+            with self.condition_put:
+                self.condition_put.wait()
+
+        self._put(market_data=market_data)
+
+        if self.is_empty() and self.block:
+            with self.condition_get:
+                self.tail += 1
+                self.condition_get.notify_all()
+        else:
+            self.tail += 1
+
+    def at(self, index: int) -> MarketDataBuffer:
+        return self._at(index % self.size)
+
+    def _at(self, index: int) -> MarketDataBuffer:
+        return MarketDataBuffer(buffer=self.buffer[index])
+
+    def is_full(self) -> bool:
+        _tail_next = self.tail + 1
+        _head_next_circle = self.head + self.size
+
+        # to be more generic
+        # _tail_next = _tail_next % self.size
+        # _head_next_circle = _head_next_circle % self.size
+
+        return _tail_next == _head_next_circle
+
+    def is_empty(self) -> bool:
+        idx_tail = self.tail
+        idx_head = self.head
+
+        # to be more generic
+        # idx_tail = idx_tail % self.size
+        # idx_head = idx_head % self.size
+
+        return idx_head == idx_tail
+
+    @property
+    def head(self) -> int:
+        return self._index[0]
+
+    @property
+    def tail(self) -> int:
+        return self._index[1]
+
+    @head.setter
+    def head(self, value: int):
+        self._index[0] = value
+
+    @tail.setter
+    def tail(self, value: int):
+        self._index[1] = value
 
 
 # alias of the BarData
