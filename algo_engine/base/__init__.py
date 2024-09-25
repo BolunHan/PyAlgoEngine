@@ -1,4 +1,5 @@
 import logging
+import os
 
 from .telemetrics import LOGGER
 from ..profile import PROFILE
@@ -15,9 +16,15 @@ def set_logger(logger: logging.Logger):
 
 
 from .finance_decimal import FinancialDecimal
-# from .market_utils import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData
-# from .market_buffer import MarketDataPointer, MarketDataMemoryBuffer, OrderBookPointer, OrderBookBuffer, BarDataPointer, BarDataBuffer, TickDataPointer, TickDataBuffer, TransactionDataPointer, TransactionDataBuffer
-from .market_utils_ctypes import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, MarketDataBuffer, MarketDataRingBuffer
+
+if os.name == 'posix':
+    from .market_utils_posix import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, MarketDataBuffer, MarketDataRingBuffer
+elif os.name == 'nt':
+    from .market_utils_nt import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, MarketDataBuffer, MarketDataRingBuffer
+else:
+    from .market_utils import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData
+    from .market_buffer import MarketDataPointer, MarketDataMemoryBuffer, OrderBookPointer, OrderBookBuffer, BarDataPointer, BarDataBuffer, TickDataPointer, TickDataBuffer, TransactionDataPointer, TransactionDataBuffer
+
 from .technical_analysis import TechnicalAnalysis
 from .trade_utils import OrderState, OrderType, TradeInstruction, TradeReport
 from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalStyle, InteractiveShell, ShellTransfer

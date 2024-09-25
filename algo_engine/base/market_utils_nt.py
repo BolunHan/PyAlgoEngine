@@ -1,0 +1,137 @@
+import ctypes
+import os
+
+from . import LOGGER
+from . import market_utils_posix
+from .market_utils_posix import Contexts, BufferConstructor as _BufferConstructor
+from .market_utils_posix import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, MarketDataBuffer, MarketDataRingBuffer
+
+LOGGER = LOGGER.getChild('MarketUtils')
+__all__ = ['TransactionSide',
+           'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
+           'MarketDataBuffer', 'MarketDataRingBuffer']
+__cache__ = {}
+
+
+class _OrderBookBuffer(ctypes.Structure):
+    ticker_size = Contexts.TICKER_SIZE
+    book_size = Contexts.BOOK_SIZE
+
+    _fields_ = [
+        ("dtype", ctypes.c_uint8),
+        ("ticker", ctypes.c_char * ticker_size),
+        ("timestamp", ctypes.c_double),
+        ('bid_price', ctypes.c_double * book_size),
+        ('ask_price', ctypes.c_double * book_size),
+        ('bid_volume', ctypes.c_double * book_size),
+        ('ask_volume', ctypes.c_double * book_size),
+        ('bid_n_orders', ctypes.c_uint * book_size),
+        ('ask_n_orders', ctypes.c_uint * book_size)
+    ]
+
+
+class _CandlestickBuffer(ctypes.Structure):
+    ticker_size = Contexts.TICKER_SIZE
+
+    _fields_ = [
+        ("dtype", ctypes.c_uint8),
+        ("ticker", ctypes.c_char * ticker_size),
+        ("timestamp", ctypes.c_double),
+        ('start_timestamp', ctypes.c_double),
+        ('bar_span', ctypes.c_double),
+        ('high_price', ctypes.c_double),
+        ('low_price', ctypes.c_double),
+        ('open_price', ctypes.c_double),
+        ('close_price', ctypes.c_double),
+        ('volume', ctypes.c_double),
+        ('notional', ctypes.c_double),
+        ('trade_count', ctypes.c_uint),
+    ]
+
+
+class _TickDataBuffer(ctypes.Structure):
+    ticker_size = Contexts.TICKER_SIZE
+
+    _fields_ = [
+        ("dtype", ctypes.c_uint8),
+        ("ticker", ctypes.c_char * ticker_size),
+        ("timestamp", ctypes.c_double),
+        ('order_book', _OrderBookBuffer),
+        ('bid_price', ctypes.c_double),
+        ('bid_volume', ctypes.c_double),
+        ('ask_price', ctypes.c_double),
+        ('ask_volume', ctypes.c_double),
+        ('last_price', ctypes.c_double),
+        ('total_traded_volume', ctypes.c_double),
+        ('total_traded_notional', ctypes.c_double),
+        ('total_trade_count', ctypes.c_uint),
+    ]
+
+
+class _TransactionDataBuffer(ctypes.Structure):
+    ticker_size = Contexts.TICKER_SIZE
+    id_size = Contexts.ID_SIZE
+
+    _fields_ = [
+        ("dtype", ctypes.c_uint8),
+        ("ticker", ctypes.c_char * ticker_size),  # Dynamic size based on TICKER_LEN
+        ("timestamp", ctypes.c_double),
+        ("price", ctypes.c_double),
+        ("volume", ctypes.c_double),
+        ("side", ctypes.c_int),
+        ("multiplier", ctypes.c_double),
+        ("notional", ctypes.c_double),
+        ("transaction_id", ctypes.c_char * id_size),
+        ("buy_id", ctypes.c_char * id_size),
+        ("sell_id", ctypes.c_char * id_size)
+    ]
+
+
+class _MarketDataBuffer(ctypes.Union):
+    _fields_ = [
+        ("dtype", ctypes.c_uint8),
+        ("OrderBook", _OrderBookBuffer),
+        ("BarData", _CandlestickBuffer),
+        ("TickData", _TickDataBuffer),
+        ("TransactionData", _TransactionDataBuffer)
+    ]
+
+
+class BufferConstructor(_BufferConstructor):
+    def __init__(self, **kwargs):
+        if os.name == 'nt':
+            LOGGER.warning(f'{self.__class__.__name__} Support for {os.name} is limited! Setting contents will have no effect!')
+
+    def __call__(self, dtype: 'str') -> type[ctypes.Structure]:
+        match dtype:
+            case 'MarketData':
+                return self.new_market_data_buffer()
+            case 'OrderBook':
+                return self.new_orderbook_buffer()
+            case 'BarData':
+                return self.new_candlestick_buffer()
+            case 'TickData':
+                return self.new_tick_buffer()
+            case 'TradeData' | 'TransactionData':
+                return self.new_transaction_buffer()
+            case _:
+                raise ValueError(f'Invalid dtype {dtype}')
+
+    def new_orderbook_buffer(self) -> type[ctypes.Structure]:
+        return _OrderBookBuffer
+
+    def new_candlestick_buffer(self) -> type[ctypes.Structure]:
+        return _CandlestickBuffer
+
+    def new_tick_buffer(self) -> type[ctypes.Structure]:
+        return _TickDataBuffer
+
+    def new_transaction_buffer(self) -> type[ctypes.Structure]:
+        return _TransactionDataBuffer
+
+    def new_market_data_buffer(self) -> type[ctypes.Union]:
+        return _MarketDataBuffer
+
+
+market_utils_posix._BUFFER_CONSTRUCTOR = BufferConstructor()
+MarketDataBuffer.ctype_buffer = _MarketDataBuffer
