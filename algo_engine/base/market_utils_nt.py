@@ -1,5 +1,6 @@
 import ctypes
 import os
+import platform
 
 from . import LOGGER
 from . import market_utils_posix
@@ -11,6 +12,9 @@ __all__ = ['TransactionSide',
            'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
            'MarketDataBuffer', 'MarketDataRingBuffer']
 __cache__ = {}
+
+if os.name == 'nt':
+    LOGGER.warning(f'MarketUtils support for {platform.system()}-{platform.release()}-{platform.machine()} is limited! Setting contents will have no effect!')
 
 
 class _OrderBookBuffer(ctypes.Structure):
@@ -68,6 +72,34 @@ class _TickDataBuffer(ctypes.Structure):
     ]
 
 
+class IntId(ctypes.Structure):
+    id_size = Contexts.ID_SIZE
+
+    _fields_ = [
+        ('id_type', ctypes.c_int),
+        ('data', ctypes.c_byte * id_size),
+    ]
+
+
+class StrId(ctypes.Structure):
+    id_size = Contexts.ID_SIZE
+
+    _fields_ = [
+        ('id_type', ctypes.c_int),
+        ('data', ctypes.c_char * id_size),
+    ]
+
+
+class TransactionID(ctypes.Union):
+    id_size = Contexts.ID_SIZE
+
+    _fields_ = [
+        ('id_type', ctypes.c_int),
+        ('id_int', IntId),
+        ('id_str', StrId),
+    ]
+
+
 class _TransactionDataBuffer(ctypes.Structure):
     ticker_size = Contexts.TICKER_SIZE
     id_size = Contexts.ID_SIZE
@@ -81,9 +113,9 @@ class _TransactionDataBuffer(ctypes.Structure):
         ("side", ctypes.c_int),
         ("multiplier", ctypes.c_double),
         ("notional", ctypes.c_double),
-        ("transaction_id", ctypes.c_char * id_size),
-        ("buy_id", ctypes.c_char * id_size),
-        ("sell_id", ctypes.c_char * id_size)
+        ("transaction_id", TransactionID),
+        ("buy_id", TransactionID),
+        ("sell_id", TransactionID)
     ]
 
 
@@ -99,8 +131,7 @@ class _MarketDataBuffer(ctypes.Union):
 
 class BufferConstructor(_BufferConstructor):
     def __init__(self, **kwargs):
-        if os.name == 'nt':
-            LOGGER.warning(f'{self.__class__.__name__} Support for {os.name} is limited! Setting contents will have no effect!')
+        pass
 
     def __call__(self, dtype: 'str') -> type[ctypes.Structure]:
         match dtype:

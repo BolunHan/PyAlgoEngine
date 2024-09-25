@@ -28,7 +28,7 @@ __cache__ = {}
 Contexts = namedtuple(
     typename='Contexts',
     field_names=['TICKER_SIZE', 'ID_SIZE', 'BOOK_SIZE'],
-    defaults=[16, 17, 10],
+    defaults=[16, 16, 10],
 )()
 
 DTYPE_MAPPING: dict[str, int] = {
@@ -547,6 +547,31 @@ class BufferConstructor(object):
         if (key := (Contexts.TICKER_SIZE, Contexts.ID_SIZE)) in self._trade_cache:
             return self._trade_cache[key]
 
+        class IntId(ctypes.Structure):
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ('id_type', ctypes.c_int),
+                ('data', ctypes.c_byte * id_size),
+            ]
+
+        class StrId(ctypes.Structure):
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ('id_type', ctypes.c_int),
+                ('data', ctypes.c_char * id_size),
+            ]
+
+        class TransactionID(ctypes.Union):
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ('id_type', ctypes.c_int),
+                ('id_int', IntId),
+                ('id_str', StrId),
+            ]
+
         class _Buffer(ctypes.Structure):
             ticker_size = Contexts.TICKER_SIZE
             id_size = Contexts.ID_SIZE
@@ -560,9 +585,9 @@ class BufferConstructor(object):
                 ("side", ctypes.c_int),
                 ("multiplier", ctypes.c_double),
                 ("notional", ctypes.c_double),
-                ("transaction_id", ctypes.c_char * id_size),
-                ("buy_id", ctypes.c_char * id_size),
-                ("sell_id", ctypes.c_char * id_size)
+                ("transaction_id", TransactionID),
+                ("buy_id", TransactionID),
+                ("sell_id", TransactionID)
             ]
 
         self._trade_cache[key] = _Buffer
@@ -2311,20 +2336,9 @@ class TransactionData(MarketData):
 
         super().__init__(buffer=buffer, **kwargs)
 
-        if isinstance(transaction_id, str):
-            buffer.transaction_id = b's' + transaction_id.encode(self._encoding)
-        elif isinstance(transaction_id, int):
-            buffer.transaction_id = b'i' + transaction_id.to_bytes(length=id_size - 1, byteorder='little')
-
-        if isinstance(buy_id, str):
-            buffer.buy_id = b's' + buy_id.encode(self._encoding)
-        elif isinstance(buy_id, int):
-            buffer.buy_id = b'i' + buy_id.to_bytes(length=id_size - 1, byteorder='little')
-
-        if isinstance(sell_id, str):
-            buffer.sell_id = b's' + sell_id.encode(self._encoding)
-        elif isinstance(sell_id, int):
-            buffer.sell_id = b'i' + sell_id.to_bytes(length=id_size - 1, byteorder='little')
+        self._set_id(name='transaction_id', value=transaction_id, size=id_size)
+        self._set_id(name='buy_id', value=buy_id, size=id_size)
+        self._set_id(name='sell_id', value=sell_id, size=id_size)
 
     def __repr__(self) -> str:
         """
@@ -2336,6 +2350,33 @@ class TransactionData(MarketData):
             str: A string representation of the `TransactionData` instance.
         """
         return f'<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.side.side_name} {self.ticker}, price={self.price}, volume={self.volume})'
+
+    def _set_id(self, name: Literal['transaction_id', 'buy_id', 'sell_id'], value: int | str, size: int):
+        buffer = getattr(self._buffer, name)
+
+        if isinstance(value, str):
+            buffer.id_str.id_type = 0
+            buffer.id_str.data = value.encode(self._encoding)
+        elif isinstance(value, int):
+            buffer.id_int.id_type = 1
+            buffer.id_int.data[:] = value.to_bytes(length=size, byteorder='little')
+        elif value is None:
+            buffer.id_type = -1
+        else:
+            raise ValueError(f'Invalid id {value}. Expected str or int.')
+
+    def _get_id(self, name: Literal['transaction_id', 'buy_id', 'sell_id']) -> int | str | None:
+        buffer = getattr(self._buffer, name)
+
+        match buffer.id_type:
+            case 0:
+                return buffer.id_str.data.decode(self._encoding)
+            case 1:
+                return int.from_bytes(buffer.id_int.data, byteorder='little')
+            case -1:
+                return None
+            case _:
+                raise ValueError(f'Invalid id type for {name}!')
 
     @classmethod
     def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
@@ -2473,16 +2514,7 @@ class TransactionData(MarketData):
         Returns:
             int | str | None: The transaction identifier.
         """
-        bytes_id = self._buffer.transaction_id
-
-        if not bytes_id:
-            return None
-        elif bytes_id[0] == 105:
-            return int.from_bytes(bytes_id[1:], byteorder='little')
-        elif bytes_id[0] == 115:
-            return bytes_id[1:].decode(self._encoding)
-        else:
-            raise ValueError(f'Invalid transaction_id buffer {bytes_id}!')
+        return self._get_id(name='transaction_id')
 
     @property
     def buy_id(self) -> int | str | None:
@@ -2492,16 +2524,7 @@ class TransactionData(MarketData):
         Returns:
             int | str | None: The buying transaction identifier.
         """
-        bytes_id = self._buffer.buy_id
-
-        if not bytes_id:
-            return None
-        elif bytes_id[0] == 105:  # b'i'
-            return int.from_bytes(bytes_id[1:], byteorder='little')
-        elif bytes_id[0] == 115:  # b's'
-            return bytes_id[1:].decode(self._encoding)
-        else:
-            raise ValueError(f'Invalid transaction_id buffer {bytes_id}!')
+        return self._get_id(name='buy_id')
 
     @property
     def sell_id(self) -> int | str | None:
@@ -2511,16 +2534,7 @@ class TransactionData(MarketData):
         Returns:
             int | str | None: The selling transaction identifier.
         """
-        bytes_id = self._buffer.sell_id
-
-        if not bytes_id:
-            return None
-        elif bytes_id[0] == 105:
-            return int.from_bytes(bytes_id[1:], byteorder='little')
-        elif bytes_id[0] == 115:
-            return bytes_id[1:].decode(self._encoding)
-        else:
-            raise ValueError(f'Invalid transaction_id buffer {bytes_id}!')
+        return self._get_id(name='sell_id')
 
     @property
     def notional(self) -> float:
