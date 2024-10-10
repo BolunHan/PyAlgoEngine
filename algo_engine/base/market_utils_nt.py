@@ -142,7 +142,7 @@ class _MarketDataBuffer(ctypes.Union):
         ("BarData", _CandlestickBuffer),
         ("TickData", _TickDataBuffer),
         ("TransactionData", _TransactionDataBuffer),
-        ('OrderData', _OrderDataBuffer())
+        ('OrderData', _OrderDataBuffer)
     ]
 
 
