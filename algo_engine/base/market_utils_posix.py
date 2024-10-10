@@ -16,8 +16,8 @@ import numpy as np
 from . import LOGGER, PROFILE
 
 LOGGER = LOGGER.getChild('MarketUtils')
-__all__ = ['TransactionSide',
-           'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
+__all__ = ['TransactionSide', 'OrderType',
+           'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData', 'OrderData',
            'MarketDataBuffer', 'MarketDataRingBuffer']
 __cache__ = {}
 
@@ -37,7 +37,8 @@ DTYPE_MAPPING: dict[str, int] = {
     'DailyBar': 21,
     'TickData': 30,
     'TransactionData': 40,
-    'TradeData': 41
+    'TradeData': 41,
+    'OrderData': 50
 }
 
 
@@ -227,6 +228,18 @@ class TransactionSide(enum.IntEnum):
             return 'Unknown'
 
 
+class OrderType(enum.IntEnum):
+    UNKNOWN = -20
+    CancelOrder = -10
+    Generic = 0
+    LimitOrder = 10
+    LimitMarketMaking = 11
+    MarketOrder = 2
+    FOK = 21
+    FAK = 22
+    IOC = 23
+
+
 class MarketData(object, metaclass=abc.ABCMeta):
     def __init__(self, buffer: ctypes.Structure, encoding='utf-8', **kwargs):
         self._buffer = buffer
@@ -298,6 +311,8 @@ class MarketData(object, metaclass=abc.ABCMeta):
             return TradeData.from_json(json_dict)
         elif dtype == 'OrderBook':
             return OrderBook.from_json(json_dict)
+        elif dtype == 'OrderData':
+            return OrderData.from_json(json_dict)
         else:
             raise TypeError(f'Invalid dtype {dtype}')
 
@@ -317,6 +332,8 @@ class MarketData(object, metaclass=abc.ABCMeta):
             return buffer.TransactionData
         elif dtype_int == 41:
             return buffer.TransactionData
+        elif dtype_int == 50:
+            return buffer.OrderData
         else:
             raise ValueError(f'Invalid buffer type {dtype_int}!')
 
@@ -342,6 +359,9 @@ class MarketData(object, metaclass=abc.ABCMeta):
         elif dtype_int == 41:
             buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer(buffer)
             return TradeData.from_buffer(buffer=buffer)
+        elif dtype_int == 50:
+            buffer = _BUFFER_CONSTRUCTOR.new_order_buffer().from_buffer(buffer)
+            return OrderData.from_buffer(buffer=buffer)
         else:
             raise ValueError(f'Invalid buffer type {dtype_int}!')
 
@@ -361,6 +381,8 @@ class MarketData(object, metaclass=abc.ABCMeta):
             return TransactionData.from_buffer(buffer=buffer)
         elif dtype_int == 41:
             return TradeData.from_buffer(buffer=buffer)
+        elif dtype_int == 50:
+            return OrderData.from_buffer(buffer=buffer)
         else:
             raise ValueError(f'Invalid buffer type {dtype_int}!')
 
@@ -386,6 +408,9 @@ class MarketData(object, metaclass=abc.ABCMeta):
         elif dtype_int == 41:
             buffer = _BUFFER_CONSTRUCTOR.new_transaction_buffer().from_buffer_copy(data)
             return TradeData.from_buffer(buffer=buffer)
+        elif dtype_int == 50:
+            buffer = _BUFFER_CONSTRUCTOR.new_order_buffer().from_buffer_copy(data)
+            return OrderData.from_buffer(buffer=buffer)
         else:
             raise ValueError(f'Invalid buffer type {dtype_int}!')
 
@@ -455,6 +480,11 @@ class BufferConstructor(object):
         else:
             self._trade_cache = self._cache['TransactionData'] = dict()
 
+        if 'OrderData' in self._cache:
+            self._order_cache = self._cache['OrderData']
+        else:
+            self._order_cache = self._cache['OrderData'] = dict()
+
     def __call__(self, dtype: 'str') -> type[ctypes.Structure]:
         match dtype:
             case 'MarketData':
@@ -467,8 +497,38 @@ class BufferConstructor(object):
                 return self.new_tick_buffer()
             case 'TradeData' | 'TransactionData':
                 return self.new_transaction_buffer()
+            case 'OrderData':
+                return self.new_order_buffer()
             case _:
                 raise ValueError(f'Invalid dtype {dtype}')
+
+    def new_id_buffer(self):
+        class IntID(ctypes.Structure):
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ('id_type', ctypes.c_int),
+                ('data', ctypes.c_byte * id_size),
+            ]
+
+        class StrID(ctypes.Structure):
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ('id_type', ctypes.c_int),
+                ('data', ctypes.c_char * id_size),
+            ]
+
+        class UnionID(ctypes.Union):
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ('id_type', ctypes.c_int),
+                ('id_int', IntID),
+                ('id_str', StrID),
+            ]
+
+        return UnionID
 
     def new_orderbook_buffer(self) -> type[ctypes.Structure]:
         if (key := (Contexts.TICKER_SIZE, Contexts.BOOK_SIZE)) in self._orderbook_cache:
@@ -547,30 +607,7 @@ class BufferConstructor(object):
         if (key := (Contexts.TICKER_SIZE, Contexts.ID_SIZE)) in self._trade_cache:
             return self._trade_cache[key]
 
-        class IntId(ctypes.Structure):
-            id_size = Contexts.ID_SIZE
-
-            _fields_ = [
-                ('id_type', ctypes.c_int),
-                ('data', ctypes.c_byte * id_size),
-            ]
-
-        class StrId(ctypes.Structure):
-            id_size = Contexts.ID_SIZE
-
-            _fields_ = [
-                ('id_type', ctypes.c_int),
-                ('data', ctypes.c_char * id_size),
-            ]
-
-        class TransactionID(ctypes.Union):
-            id_size = Contexts.ID_SIZE
-
-            _fields_ = [
-                ('id_type', ctypes.c_int),
-                ('id_int', IntId),
-                ('id_str', StrId),
-            ]
+        TransactionID = self.new_id_buffer()
 
         class _Buffer(ctypes.Structure):
             ticker_size = Contexts.TICKER_SIZE
@@ -593,6 +630,30 @@ class BufferConstructor(object):
         self._trade_cache[key] = _Buffer
         return _Buffer
 
+    def new_order_buffer(self) -> type[ctypes.Structure]:
+        if (key := (Contexts.TICKER_SIZE, Contexts.ID_SIZE)) in self._order_cache:
+            return self._trade_cache[key]
+
+        OrderID = self.new_id_buffer()
+
+        class _Buffer(ctypes.Structure):
+            ticker_size = Contexts.TICKER_SIZE
+            id_size = Contexts.ID_SIZE
+
+            _fields_ = [
+                ("dtype", ctypes.c_uint8),
+                ("ticker", ctypes.c_char * ticker_size),  # Dynamic size based on TICKER_LEN
+                ("timestamp", ctypes.c_double),
+                ("price", ctypes.c_double),
+                ("volume", ctypes.c_double),
+                ("side", ctypes.c_int),
+                ("order_id", OrderID),
+                ("order_type", ctypes.c_int),
+            ]
+
+        self._order_cache[key] = _Buffer
+        return _Buffer
+
     def new_market_data_buffer(self) -> type[ctypes.Union]:
         if (key := Contexts) in self._md_cache:
             return self._md_cache[key]
@@ -603,7 +664,8 @@ class BufferConstructor(object):
                 ("OrderBook", self.new_orderbook_buffer()),
                 ("BarData", self.new_candlestick_buffer()),
                 ("TickData", self.new_tick_buffer()),
-                ("TransactionData", self.new_transaction_buffer())
+                ("TransactionData", self.new_transaction_buffer()),
+                ('OrderData', self.new_order_buffer())
             ]
 
         self._md_cache[key] = _Buffer
@@ -1994,8 +2056,8 @@ class TickData(MarketData):
             ask_price: float = None,
             ask_volume: float = None,
             order_book: OrderBook = None,
-            bid: list[list[float | int]] = None,
-            ask: list[list[float | int]] = None,
+            bid: Iterable[list[float | int]] = None,
+            ask: Iterable[list[float | int]] = None,
             total_traded_volume: float = 0.,
             total_traded_notional: float = 0.,
             total_trade_count: int = 0,
@@ -2013,8 +2075,8 @@ class TickData(MarketData):
             ask_price (float, optional): The ask price. Defaults to None.
             ask_volume (float, optional): The ask volume. Defaults to None.
             order_book (OrderBook, optional): The order book containing bid and ask data. Defaults to None.
-            bid (list[list[float | int]], optional): A list of bid prices and volumes. Defaults to None.
-            ask (list[list[float | int]], optional): A list of ask prices and volumes. Defaults to None.
+            bid (Iterable[list[float | int]], optional): A list of bid prices and volumes. Defaults to None.
+            ask (Iterable[list[float | int]], optional): A list of ask prices and volumes. Defaults to None.
             total_traded_volume (float, optional): The total traded volume. Defaults to 0.0.
             total_traded_notional (float, optional): The total traded notional value. Defaults to 0.0.
             total_trade_count (int, optional): The total number of trades. Defaults to 0.
@@ -2351,7 +2413,7 @@ class TransactionData(MarketData):
         """
         return f'<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.side.side_name} {self.ticker}, price={self.price}, volume={self.volume})'
 
-    def _set_id(self, name: Literal['transaction_id', 'buy_id', 'sell_id'], value: int | str, size: int):
+    def _set_id(self, name: Literal['transaction_id', 'buy_id', 'sell_id', 'order_id'], value: int | str, size: int):
         buffer = getattr(self._buffer, name)
 
         if isinstance(value, str):
@@ -2365,7 +2427,7 @@ class TransactionData(MarketData):
         else:
             raise ValueError(f'Invalid id {value}. Expected str or int.')
 
-    def _get_id(self, name: Literal['transaction_id', 'buy_id', 'sell_id']) -> int | str | None:
+    def _get_id(self, name: Literal['transaction_id', 'buy_id', 'sell_id', 'order_id']) -> int | str | None:
         buffer = getattr(self._buffer, name)
 
         match buffer.id_type:
@@ -2651,6 +2713,98 @@ class TradeData(TransactionData):
     @classmethod
     def from_bytes(cls, data) -> Self:
         return super(TradeData, cls).from_bytes(data=data)
+
+
+class OrderData(MarketData):
+    def __init__(
+            self, *,
+            ticker: str,
+            price: float,
+            volume: float,
+            timestamp: float,
+            side: int | float | str | TransactionSide = 0,
+            order_type: int = 0,
+            order_id: str | int = None,
+            **kwargs
+    ):
+
+        if 'buffer' in kwargs:
+            super().__init__(buffer=kwargs['buffer'])
+            return
+
+        buffer_constructor = _BUFFER_CONSTRUCTOR.new_order_buffer()
+        id_size = buffer_constructor.id_size
+
+        buffer = buffer_constructor(
+            ticker=ticker.encode('utf-8'),
+            timestamp=timestamp,
+            price=price,
+            volume=volume,
+            side=int(side) if isinstance(side, (int, float)) else TransactionSide(side).value,
+            order_type=order_type
+        )
+
+        super().__init__(buffer=buffer, **kwargs)
+
+        TransactionData._set_id(self=self, name='order_id', value=order_id, size=id_size)
+
+    def __repr__(self) -> str:
+        return f'<OrderData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.side.side_name} {self.ticker}, price={self.price}, volume={self.volume})'
+
+    @classmethod
+    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
+        if isinstance(json_message, dict):
+            json_dict = json_message
+        else:
+            json_dict = json.loads(json_message)
+
+        dtype = json_dict.pop('dtype', None)
+        if dtype is not None and dtype != cls.__name__:
+            raise TypeError(f'dtype mismatch, expect {cls.__name__}, got {dtype}.')
+
+        self = cls(**json_dict)
+        return self
+
+    @classmethod
+    def from_buffer(cls, buffer: ctypes.Structure | memoryview) -> Self:
+        self = cls(
+            ticker='',
+            timestamp=0,
+            price=0,
+            volume=0,
+            buffer=buffer
+        )
+        return self
+
+    @property
+    def price(self) -> float:
+        return self._buffer.price
+
+    @property
+    def volume(self) -> float:
+        return self._buffer.volume
+
+    @property
+    def side(self) -> TransactionSide:
+        return TransactionSide(self._buffer.side)
+
+    @property
+    def OrderType(self) -> OrderType:
+        return OrderType(self._buffer.order_type)
+
+    @property
+    def order_id(self) -> int | str | None:
+        return TransactionData._get_id(self=self, name='order_id')
+
+    @property
+    def market_price(self) -> float:
+        """
+        Alias for the transaction price.
+
+        Returns:
+            float: The transaction price.
+        """
+        return self.price
 
 
 class MarketDataBuffer(object):

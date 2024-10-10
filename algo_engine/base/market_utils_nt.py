@@ -5,11 +5,11 @@ import platform
 from . import LOGGER
 from . import market_utils_posix
 from .market_utils_posix import Contexts, BufferConstructor as _BufferConstructor
-from .market_utils_posix import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, MarketDataBuffer, MarketDataRingBuffer
+from .market_utils_posix import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer
 
 LOGGER = LOGGER.getChild('MarketUtils')
-__all__ = ['TransactionSide',
-           'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData',
+__all__ = ['TransactionSide', 'OrderType',
+           'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData', 'OrderData',
            'MarketDataBuffer', 'MarketDataRingBuffer']
 __cache__ = {}
 
@@ -72,7 +72,7 @@ class _TickDataBuffer(ctypes.Structure):
     ]
 
 
-class IntId(ctypes.Structure):
+class IntID(ctypes.Structure):
     id_size = Contexts.ID_SIZE
 
     _fields_ = [
@@ -81,7 +81,7 @@ class IntId(ctypes.Structure):
     ]
 
 
-class StrId(ctypes.Structure):
+class StrID(ctypes.Structure):
     id_size = Contexts.ID_SIZE
 
     _fields_ = [
@@ -90,13 +90,13 @@ class StrId(ctypes.Structure):
     ]
 
 
-class TransactionID(ctypes.Union):
+class UnionID(ctypes.Union):
     id_size = Contexts.ID_SIZE
 
     _fields_ = [
         ('id_type', ctypes.c_int),
-        ('id_int', IntId),
-        ('id_str', StrId),
+        ('id_int', IntID),
+        ('id_str', StrID),
     ]
 
 
@@ -113,9 +113,25 @@ class _TransactionDataBuffer(ctypes.Structure):
         ("side", ctypes.c_int),
         ("multiplier", ctypes.c_double),
         ("notional", ctypes.c_double),
-        ("transaction_id", TransactionID),
-        ("buy_id", TransactionID),
-        ("sell_id", TransactionID)
+        ("transaction_id", UnionID),
+        ("buy_id", UnionID),
+        ("sell_id", UnionID)
+    ]
+
+
+class _OrderDataBuffer(ctypes.Structure):
+    ticker_size = Contexts.TICKER_SIZE
+    id_size = Contexts.ID_SIZE
+
+    _fields_ = [
+        ("dtype", ctypes.c_uint8),
+        ("ticker", ctypes.c_char * ticker_size),  # Dynamic size based on TICKER_LEN
+        ("timestamp", ctypes.c_double),
+        ("price", ctypes.c_double),
+        ("volume", ctypes.c_double),
+        ("side", ctypes.c_int),
+        ("order_id", UnionID),
+        ("order_type", ctypes.c_int),
     ]
 
 
@@ -125,7 +141,8 @@ class _MarketDataBuffer(ctypes.Union):
         ("OrderBook", _OrderBookBuffer),
         ("BarData", _CandlestickBuffer),
         ("TickData", _TickDataBuffer),
-        ("TransactionData", _TransactionDataBuffer)
+        ("TransactionData", _TransactionDataBuffer),
+        ('OrderData', _OrderDataBuffer())
     ]
 
 
@@ -159,6 +176,9 @@ class BufferConstructor(_BufferConstructor):
 
     def new_transaction_buffer(self) -> type[ctypes.Structure]:
         return _TransactionDataBuffer
+
+    def new_order_buffer(self) -> type[ctypes.Structure]:
+        return _OrderDataBuffer
 
     def new_market_data_buffer(self) -> type[ctypes.Union]:
         return _MarketDataBuffer
