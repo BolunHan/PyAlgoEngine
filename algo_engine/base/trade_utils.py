@@ -1,36 +1,20 @@
 import abc
 import copy
 import datetime
+import enum
 import json
 import math
 import time
 import uuid
-from enum import Enum
 from typing import Self
 
-from . import LOGGER, PROFILE
-from .market_utils import TransactionSide, TransactionData
+from . import LOGGER, PROFILE, TransactionSide, TransactionData, OrderType
 
 LOGGER = LOGGER.getChild('TradeUtils')
 __all__ = ['OrderState', 'OrderType', 'TradeInstruction', 'TradeReport']
 
 
-class OrderType(Enum):
-    UNKNOWN = -2
-    CancelOrder = -1
-    Manual = 0
-    LimitOrder = 1
-    LimitMarketMaking = 1.1
-    MarketOrder = 2
-    FOK = 2.1
-    FAK = 2.2
-    IOC = 2.3
-
-    def __hash__(self):
-        return self.value
-
-
-class OrderState(Enum):
+class OrderState(enum.IntEnum):
     UNKNOWN = -3
     Rejected = -2  # order rejected
     Invalid = -1  # invalid order
@@ -387,7 +371,7 @@ class TradeInstruction(TradeBaseClass):
             side: int | float | str | TransactionSide,
             volume: float,
             timestamp: float,
-            order_type: int | float | str | OrderType = OrderType.Manual,
+            order_type: int | float | str | OrderType = OrderType.Generic,
             limit_price: float = None,
             order_id: str = None,
             multiplier: float = None,
