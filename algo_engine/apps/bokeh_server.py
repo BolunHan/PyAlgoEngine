@@ -24,9 +24,10 @@ class DocServer(object, metaclass=abc.ABCMeta):
         self.lock = Lock() if lock is None else lock
 
         self.bokeh_documents: dict[int, Document] = {}
-        self.bokeh_source: dict[int, ColumnDataSource] = {}
-        self.bokeh_data_queue: dict[int, dict[str, list]] = {}  # this is a dict of deepcopy of self.data, to update each documents
-        self.data: dict[str, list] = dict()
+        # self.bokeh_source: dict[int, ColumnDataSource] = {}
+        self.bokeh_data_pipe: dict[int, dict[str, list[...]]] = {}
+        self.bokeh_data_patch: dict[int, dict[str, list[tuple[int, ...]]]] = {}
+        self.bokeh_data_source: dict[int, ColumnDataSource] = {}
 
     def __str__(self):
         return f'<{self.__class__.__name__}>(id={id(self.__class__)})'
@@ -63,15 +64,31 @@ class DocServer(object, metaclass=abc.ABCMeta):
                 self.stream(doc_id=doc_id)
             return
 
-        doc = self.bokeh_documents[doc_id]
-        new_data = self.bokeh_data_queue[doc_id]
-        source = self.bokeh_source[doc_id]
+        # doc = self.bokeh_documents[doc_id]
+        data_pipe = self.bokeh_data_pipe[doc_id]
+        source = self.bokeh_data_source[doc_id]
 
-        source.stream(new_data=deepcopy(new_data), rollover=self.max_size)
-        for key, seq in new_data.items():
+        source.stream(new_data=deepcopy(data_pipe), rollover=self.max_size)
+        for key, seq in data_pipe.items():
             seq.clear()
 
-        LOGGER.debug(f'{self.__class__} stream updated!')
+        LOGGER.debug(f'{self.__class__} <stream> updated!')
+
+    def patch(self, doc_id: int = None):
+        if doc_id is None:
+            for doc_id in list(self.bokeh_documents):
+                self.patch(doc_id=doc_id)
+            return
+
+        # doc = self.bokeh_documents[doc_id]
+        data_patch = self.bokeh_data_patch[doc_id]
+        source = self.bokeh_data_source[doc_id]
+
+        source.patch(patches=deepcopy(data_patch))
+        for key, seq in data_patch.items():
+            seq.clear()
+
+        LOGGER.debug(f'{self.__class__} <patch> updated!')
 
     def register_document(self, doc):
         from bokeh.models import ColumnDataSource
@@ -80,14 +97,17 @@ class DocServer(object, metaclass=abc.ABCMeta):
 
         doc_id = uuid.uuid4().int
 
+        data = deepcopy(self.data)
         self.bokeh_documents[doc_id] = doc
-        self.bokeh_data_queue[doc_id] = {key: [] for key in self.data}
-        self.bokeh_source[doc_id] = ColumnDataSource(data=deepcopy(self.data))
+        self.bokeh_data_pipe[doc_id] = {key: [] for key in data}
+        self.bokeh_data_patch[doc_id] = {key: [] for key in data}
+        self.bokeh_data_source[doc_id] = ColumnDataSource(data=data)
 
         self.layout(doc_id=doc_id)
 
         if self.update_interval:
             doc.add_periodic_callback(callback=partial(self.stream, doc_id=doc_id), period_milliseconds=int(self.update_interval * 1000))
+            doc.add_periodic_callback(callback=partial(self.patch, doc_id=doc_id), period_milliseconds=int(self.update_interval * 1000))
 
         doc.on_session_destroyed(partial(self._unregister_document, doc_id=doc_id))
 
@@ -99,9 +119,18 @@ class DocServer(object, metaclass=abc.ABCMeta):
         LOGGER.info(f'Session {doc_id} disconnected!')
 
         self.bokeh_documents.pop(doc_id)
-        self.bokeh_source.pop(doc_id)
-        self.bokeh_data_queue.pop(doc_id)
+        self.bokeh_data_pipe.pop(doc_id)
+        self.bokeh_data_patch.pop(doc_id)
+        self.bokeh_data_source.pop(doc_id)
         self.lock.release()
+
+    @property
+    @abc.abstractmethod
+    def data(self) -> dict[str, list]:
+        """
+        the data used to provide initial values for new bokeh.ColumnDataSource.
+        """
+        ...
 
 
 class DocManager(object):
@@ -136,13 +165,27 @@ class DocManager(object):
 
     def serve_bokeh(self):
         from bokeh.server.server import Server
+        import psutil
+        import socket
+
+        # Get all network interfaces and their IP addresses
+        addrs = psutil.net_if_addrs()
+        websocket_origin = [
+            f"{self.host}:{self.port}"
+        ]
+
+        for interface, addr_info in addrs.items():
+            for addr in addr_info:
+                if addr.family == socket.AF_INET:  # Filter only IPv4 addresses
+                    LOGGER.info(f"Binding network interface: {interface}, IP Address: {addr.address}")
+                    websocket_origin.append(f"{addr.address}:{self.port}")
 
         server = Server(
             applications=self.doc_server,
             address=self.bokeh_host,
             port=self.bokeh_port,
             check_unused_sessions_milliseconds=(self.bokeh_check_unused_sessions * 1000),
-            allow_websocket_origin=[f"{self.bokeh_host}:{self.bokeh_port}", f"{self.host}:{self.port}"],
+            allow_websocket_origin=[f"{self.bokeh_host}:{self.bokeh_port}"] + websocket_origin,
             # num_procs=1
         )
 

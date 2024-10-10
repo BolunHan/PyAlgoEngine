@@ -71,18 +71,18 @@ class CandleStick(DocServer):
         self.theme = StickTheme(profile=self.profile) if self.theme is None else self.theme
         self.timestamp: float = 0.
         self.active_bar_data: CandleStick.ActiveBarData | None = None
-        self.data.update(
-            index=[],
-            market_time=[],
-            open_price=[],
-            high_price=[],
-            low_price=[],
-            close_price=[],
-            volume=[],
-            _max_price=[],
-            _min_price=[],
-            stick_color=[]
-        )
+        self._data = {
+            'index': [],
+            'market_time': [],
+            'open_price': [],
+            'cs.high_price': [],
+            'cs.low_price': [],
+            'close_price': [],
+            'volume': [],
+            '_max_price': [],
+            '_min_price': [],
+            'stick_color': []
+        }
 
     def ts_indices(self) -> list[float]:
         """generate integer indices
@@ -187,7 +187,7 @@ class CandleStick(DocServer):
 
             for doc_id in list(self.bokeh_documents):
                 doc = self.bokeh_documents[doc_id]
-                new_data = self.bokeh_data_queue[doc_id]
+                new_data = self.bokeh_data_pipe[doc_id]
 
                 self.pipe(sequence=new_data)
 
@@ -209,8 +209,8 @@ class CandleStick(DocServer):
         sequence['market_time'].append(datetime.datetime.fromtimestamp(self.active_bar_data['ts_start'], tz=self.profile.time_zone))
         sequence['open_price'].append(self.active_bar_data['open_price'])
         sequence['close_price'].append(self.active_bar_data['close_price'])
-        sequence['high_price'].append(self.active_bar_data['high_price'])
-        sequence['low_price'].append(self.active_bar_data['low_price'])
+        sequence['cs.high_price'].append(self.active_bar_data['high_price'])
+        sequence['cs.low_price'].append(self.active_bar_data['low_price'])
         sequence['volume'].append(self.active_bar_data['volume'])
         sequence['_max_price'].append(max(self.active_bar_data['open_price'], self.active_bar_data['close_price']))
         sequence['_min_price'].append(min(self.active_bar_data['open_price'], self.active_bar_data['close_price']))
@@ -224,7 +224,7 @@ class CandleStick(DocServer):
         from bokeh.plotting import figure, gridplot
 
         doc = self.bokeh_documents[doc_id]
-        source = self.bokeh_source[doc_id]
+        source = self.bokeh_data_source[doc_id]
 
         tools = [
             PanTool(dimensions="width", syncable=False),
@@ -242,8 +242,8 @@ class CandleStick(DocServer):
             ("market_time", "@market_time{%H:%M:%S}"),
             ("close_price", "@close_price"),
             ("open_price", "@open_price"),
-            ("high_price", "@high_price"),
-            ("low_price", "@low_price"),
+            ("high_price", "@{cs.high_price}"),
+            ("low_price", "@{cs.low_price}"),
         ]
 
         plot = figure(
@@ -261,8 +261,8 @@ class CandleStick(DocServer):
             name='candlestick.shade',
             x0='index',
             x1='index',
-            y0='low_price',
-            y1='high_price',
+            y0='cs.low_price',
+            y1='cs.high_price',
             line_width=1,
             color="black",
             alpha=0.8,
@@ -325,3 +325,7 @@ class CandleStick(DocServer):
         df = pd.DataFrame(self.data).set_index(keys='market_time')
         df = df[['open_price', 'high_price', 'low_price', 'close_price', 'volume']]
         df.to_csv(filename)
+
+    @property
+    def data(self) -> dict[str, list]:
+        return self._data
