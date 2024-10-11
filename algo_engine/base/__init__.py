@@ -9,7 +9,11 @@ def set_logger(logger: logging.Logger):
     global LOGGER
     LOGGER = logger
 
-    market_utils.LOGGER = logger.getChild('MarketUtils')
+    if os.name == 'nt':
+        market_utils_nt.LOGGER = logger.getChild('MarketUtils')
+    else:
+        market_utils_posix.LOGGER = logger.getChild('MarketUtils')
+
     trade_utils.LOGGER = logger.getChild('TradeUtils')
     technical_analysis.LOGGER = logger.getChild('TA')
     console_utils.LOGGER = logger.getChild('Console')
