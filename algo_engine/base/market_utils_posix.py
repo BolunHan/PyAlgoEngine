@@ -2111,6 +2111,12 @@ class TickData(MarketData):
             self._order_book = OrderBook(ticker=ticker, timestamp=timestamp, bid=bid, ask=ask)
             buffer.order_book = self._order_book._buffer
 
+        if hasattr(self, '_order_book'):
+            buffer.bid_price = self._order_book.best_bid_price
+            buffer.bid_volume = self._order_book.best_bid_volume
+            buffer.ask_price = self._order_book.best_ask_price
+            buffer.ask_volume = self._order_book.best_ask_volume
+
     def __repr__(self) -> str:
         """
         Returns a string representation of the `TickData` instance.
