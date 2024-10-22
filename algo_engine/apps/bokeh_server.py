@@ -2,7 +2,7 @@ import abc
 import uuid
 from copy import deepcopy
 from functools import partial
-from threading import Thread, Lock
+from threading import Thread, Lock, Event
 from typing import overload
 
 from . import LOGGER
@@ -144,7 +144,9 @@ class DocManager(object):
 
         self.doc_server: dict[str, DocServer] = {}
         self.doc_url: dict[DocServer, str] = {}
-        self.bokeh_thread = Thread(target=self.serve_bokeh, daemon=True)
+        self.bokeh_thread = Thread(target=self.serve_bokeh)
+        self.stop_event = Event()
+        self.bokeh_server = None
 
     def __getitem__(self, url: str):
         return self.doc_server.__getitem__(url)
@@ -180,7 +182,7 @@ class DocManager(object):
                     LOGGER.info(f"Binding network interface: {interface}, IP Address: {addr.address}")
                     websocket_origin.append(f"{addr.address}:{self.port}")
 
-        server = Server(
+        self.bokeh_server = Server(
             applications=self.doc_server,
             address=self.bokeh_host,
             port=self.bokeh_port,
@@ -194,12 +196,35 @@ class DocManager(object):
             '\n'.join([f'http://{self.bokeh_host}:{self.bokeh_port}{url} => {app}' for url, app in self.doc_server.items()])
         )
 
-        server.start()
+        self.bokeh_server.start()
 
-        # for url in applications:
-        #     server.io_loop.add_callback(server.show, url)
-
-        server.io_loop.start()
+        # Start the Bokeh server IOLoop unless stop_event is triggered
+        while not self.stop_event.is_set():
+            try:
+                self.bokeh_server.io_loop.start()
+            except Exception as e:
+                LOGGER.error(f"Error in Bokeh server: {e}")
+            finally:
+                LOGGER.info("Bokeh server has been stopped.")
+                break
 
     def start(self):
+        LOGGER.info(f'Starting Bokeh service...')
         self.bokeh_thread.start()
+
+    def stop(self):
+        LOGGER.info(f'Stopping Bokeh service...')
+
+        # Signal the event to stop
+        self.stop_event.set()
+
+        # Stop the Bokeh server gracefully
+        if self.bokeh_server is not None:
+            self.bokeh_server.io_loop.stop()  # Stop the IOLoop
+            self.bokeh_server.stop()  # Stop the Bokeh server itself
+
+        # Wait for the Bokeh thread to finish if it's still running
+        if self.bokeh_thread.is_alive():
+            self.bokeh_thread.join()
+
+        LOGGER.info('Bokeh service has been stopped.')
