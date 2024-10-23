@@ -1379,7 +1379,7 @@ class OrderBook(MarketData):
             float: The best bid volume, or NaN if not available.
         """
         if book := self.bid:
-            return book[0][1]
+            return book.at_level(0)[1]
         else:
             return math.nan
 
@@ -1392,7 +1392,7 @@ class OrderBook(MarketData):
             float: The best ask volume, or NaN if not available.
         """
         if book := self.ask:
-            return book[0][1]
+            return book.at_level(0)[1]
         else:
             return math.nan
 
