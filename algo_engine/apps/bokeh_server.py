@@ -188,6 +188,7 @@ class DocManager(object):
             port=self.bokeh_port,
             check_unused_sessions_milliseconds=(self.bokeh_check_unused_sessions * 1000),
             allow_websocket_origin=[f"{self.bokeh_host}:{self.bokeh_port}"] + websocket_origin,
+            use_xheaders=True,
             # num_procs=1
         )
 
