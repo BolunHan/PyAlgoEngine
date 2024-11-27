@@ -90,9 +90,6 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
 
         self.actions: dict[int, list[Action]] = {}
 
-        # self.style = ttk.Style()
-        # self.style.theme_use("vista")  # Choose a modern theme like 'clam', 'vista', or 'alt'
-
     @abc.abstractmethod
     def listen_signal(self) -> int:
         ...
@@ -244,4 +241,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    t = threading.Thread(target=main, daemon=False)
+    t.start()
