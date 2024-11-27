@@ -6,8 +6,9 @@ import time
 from ctypes import wintypes
 from typing import Literal
 
-from . import LOGGER
+from . import LOGGER, check_windows_version
 
+check_windows_version((6, 1))
 LOGGER.getChild('Mouse')
 
 

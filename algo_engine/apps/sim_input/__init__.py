@@ -1,7 +1,6 @@
-from .. import LOGGER
-
 import platform
-import sys
+
+from .. import LOGGER
 
 
 def check_windows_version(min_version=(6, 1)):
@@ -20,7 +19,5 @@ def check_windows_version(min_version=(6, 1)):
     if version_tuple < min_version:
         raise EnvironmentError(f"Unsupported Windows version: {version_str}. Minimum required is {min_version[0]}.{min_version[1]}.")
 
-
-check_windows_version((6, 1))
 
 LOGGER = LOGGER.getChild('SimInput')
