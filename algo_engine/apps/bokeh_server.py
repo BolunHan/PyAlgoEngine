@@ -181,6 +181,16 @@ class DocManager(object):
                 if addr.family == socket.AF_INET:  # Filter only IPv4 addresses
                     LOGGER.info(f"Binding network interface: {interface}, IP Address: {addr.address}")
                     websocket_origin.append(f"{addr.address}:{self.port}")
+                    websocket_origin.append(f"{addr.address}:{self.bokeh_port}")
+
+        if f'localhost:{self.port}' not in websocket_origin:
+            websocket_origin.append(f'localhost:{self.port}')
+        if f'127.0.0.1:{self.port}' not in websocket_origin:
+            websocket_origin.append(f'127.0.0.1:{self.port}')
+        if f'localhost:{self.bokeh_port}' not in websocket_origin:
+            websocket_origin.append(f'localhost:{self.bokeh_port}')
+        if f'127.0.0.1:{self.bokeh_port}' not in websocket_origin:
+            websocket_origin.append(f'127.0.0.1:{self.bokeh_port}')
 
         self.bokeh_server = Server(
             applications=self.doc_server,
