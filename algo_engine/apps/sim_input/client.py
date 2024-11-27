@@ -126,8 +126,12 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
 
                 # Update action status to "Executing"
                 self.update_status(parent_id=action_idx, status="Executing")
+                action_done = False
 
                 for step_idx, step in enumerate(action.steps):
+                    if not self.running:
+                        break
+
                     # Update step status to "Executing"
                     self.update_status(parent_id=action_idx, child_id=step_idx, status="Executing")
 
@@ -136,9 +140,13 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
 
                     # Mark step as "Done"
                     self.update_status(parent_id=action_idx, child_id=step_idx, status="Done")
+                else:
+                    # Mark action as "Done" after all steps
+                    self.update_status(parent_id=action_idx, status="Done")
+                    action_done = True
 
-                # Mark action as "Done" after all steps
-                self.update_status(parent_id=action_idx, status="Done")
+                if not action_done:
+                    self.update_status(parent_id=action_idx, status="Stopped")
 
     def update_table(self, actions: list[Action]):
         """Render the table based on the provided actions."""
