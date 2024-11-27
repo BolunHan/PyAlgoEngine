@@ -124,6 +124,9 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
             self.update_table(actions)
 
             for action_idx, action in enumerate(actions):
+                if not self.running:
+                    break
+
                 # Update action status to "Executing"
                 self.update_status(parent_id=action_idx, status="Executing")
 
