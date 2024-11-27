@@ -183,17 +183,17 @@ class DocManager(object):
                     websocket_origin.append(f"{addr.address}:{self.port}")
                     websocket_origin.append(f"{addr.address}:{self.bokeh_port}")
 
-        if _ := f'localhost:{self.port}' not in websocket_origin:
+        if (_ := f'localhost:{self.port}') not in websocket_origin:
             websocket_origin.append(_)
-        if _ := f'127.0.0.1:{self.port}' not in websocket_origin:
+        if (_ := f'127.0.0.1:{self.port}') not in websocket_origin:
             websocket_origin.append(_)
-        if _ := f'localhost:{self.bokeh_port}' not in websocket_origin:
+        if (_ := f'localhost:{self.bokeh_port}') not in websocket_origin:
             websocket_origin.append(_)
-        if _ := f'127.0.0.1:{self.bokeh_port}' not in websocket_origin:
+        if (_ := f'127.0.0.1:{self.bokeh_port}') not in websocket_origin:
             websocket_origin.append(_)
-        if _ := f'{self.bokeh_host}:{self.port}' not in websocket_origin:
+        if (_ := f'{self.bokeh_host}:{self.port}') not in websocket_origin:
             websocket_origin.append(_)
-        if _ := f'{self.bokeh_host}:{self.bokeh_port}' not in websocket_origin:
+        if (_ := f'{self.bokeh_host}:{self.bokeh_port}') not in websocket_origin:
             websocket_origin.append(_)
 
         self.bokeh_server = Server(
