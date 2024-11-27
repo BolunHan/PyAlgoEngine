@@ -194,7 +194,7 @@ class DocManager(object):
 
         self.bokeh_server = Server(
             applications=self.doc_server,
-            address=self.bokeh_host,
+            address='0.0.0.0',
             port=self.bokeh_port,
             check_unused_sessions_milliseconds=(self.bokeh_check_unused_sessions * 1000),
             allow_websocket_origin=[f"{self.bokeh_host}:{self.bokeh_port}"] + websocket_origin,
