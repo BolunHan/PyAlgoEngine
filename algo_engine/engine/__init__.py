@@ -17,12 +17,12 @@ def set_logger(logger: logging.Logger):
     trade_engine.LOGGER = logger.getChild('TradeEngine')
 
 
-from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .event_engine import EVENT_ENGINE, TOPIC
-from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
+from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager, Singleton
+from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .trade_engine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile
 
 __all__ = ['EVENT_ENGINE', 'TOPIC',
            'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
-           'MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager',
+           'MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton',
            'DirectMarketAccess', 'Balance', 'PositionManagementService', 'Inventory', 'RiskProfile']

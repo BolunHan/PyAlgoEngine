@@ -10,7 +10,7 @@ from typing import Type, TYPE_CHECKING
 import numpy as np
 
 from . import LOGGER
-from .market_engine import MDS
+from .market_engine import MDS, Singleton
 from ..base import TransactionSide, TradeInstruction, MarketData, TradeReport, OrderState, OrderType
 
 LOGGER = LOGGER.getChild('AlgoEngine')
@@ -712,7 +712,7 @@ class AggressiveTimeout(PassiveTimeout, Aggressive):
         return Aggressive._canceled(self=self, order=order, **kwargs)
 
 
-class AlgoEngine(object):
+class AlgoEngine(object, metaclass=Singleton):
     def __init__(self, mds=None, registry=None):
         self.mds = mds if mds is not None else MDS
         self.registry = registry if registry is not None else ALGO_REGISTRY
@@ -837,7 +837,7 @@ class AlgoEngine(object):
         return algo
 
 
-class AlgoRegistry(object):
+class AlgoRegistry(object, metaclass=Singleton):
     """
     registry for trade algos
 
@@ -847,8 +847,6 @@ class AlgoRegistry(object):
     """
 
     def __init__(self):
-        super().__init__()
-
         self.alias = {}
         self.registry = {}
 
