@@ -189,6 +189,7 @@ class MarketDataService(object, metaclass=Singleton):
     def add_monitor(self, monitor: MarketDataMonitor):
         self.monitor[monitor.monitor_id] = monitor
         self.monitor_manager.add_monitor(monitor)
+        monitor.mds = self
 
     def pop_monitor(self, monitor: MarketDataMonitor = None, monitor_id: str = None, monitor_name: str = None):
         if monitor_id is not None:
