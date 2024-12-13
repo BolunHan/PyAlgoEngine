@@ -68,6 +68,11 @@ setuptools.setup(
             # '--enable-plugin': ("setup.py", "pyside2"),
             # options with several values, e.g. avoiding including modules
             # '--nofollow-import-to': ("setup.py", ["*.tests", "*.distutils"]),
+            # disable LTO
+            '--lto': ("setup.py", 'yes'),
+            # include some common 3rd party packages
+            '--include-package': ("setup.py", ['ctypes', 'datetime', 'typing', 'multiprocessing']),
+            # '--mode': ("setup.py", 'standalone')
         }
     }
 )
