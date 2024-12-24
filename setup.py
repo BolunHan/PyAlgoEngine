@@ -35,13 +35,19 @@ class BuildExtWithFallback(build_ext):
             print("Falling back to pure Python implementation.")
 
 
-# Define Cython extension (use the .pyx file)
-ext_modules = [
-    Extension(
-        "algo_engine.base.market_utils_posix",
-        ["algo_engine/base/market_utils_posix.pyx"],
-    )
-]
+# Skip building ext_modules in CI
+if os.getenv('GITHUB_ACTIONS') == 'true':
+    print("Skipping ext_modules as we're in a CI environment.")
+    ext_modules = []
+else:
+    # Define Cython extension (use the .pyx file)
+    ext_modules = [
+        Extension(
+            "algo_engine.base.market_utils_posix",
+            ["algo_engine/base/market_utils_posix.pyx"],
+        )
+    ]
+
 
 long_description = read("README.md")
 
@@ -81,7 +87,7 @@ setuptools.setup(
         ],
     },
     ext_modules=ext_modules,
-    # cmdclass={"build_ext": BuildExtWithFallback},
+    cmdclass={"build_ext": BuildExtWithFallback},
     command_options={
         'nuitka': {
             # boolean option, e.g. if you cared for C compilation commands

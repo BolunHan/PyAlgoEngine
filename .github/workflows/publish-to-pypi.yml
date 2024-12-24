@@ -3,9 +3,9 @@ name: Publish Python Package to PyPI
 on:
   push:
     branches:
-      - main  # Trigger workflow on push to main branch
+      - main
     tags:
-      - 'v*.*.*'  # Also trigger on version tags
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -21,18 +21,22 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
+        env:
+          GITHUB_ACTIONS: "true"
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt  # Optional, if you have dependencies
+          pip install -r requirements.txt  # Optional
 
       - name: Build package
+        env:
+          GITHUB_ACTIONS: "true"
         run: |
           python setup.py sdist bdist_wheel
 
       - name: Publish to PyPI
         env:
-          TWINE_USERNAME: "__token__"  # Special username for token authentication
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}  # Use the token from GitHub Secrets
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
           pip install twine
           twine upload dist/*
