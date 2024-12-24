@@ -1,7 +1,9 @@
 import datetime
 
+import numpy as np
+
 from . import LOGGER
-from ..base import OrderType, MarketData, BarData, TradeData, TickData, OrderState, OrderBook, TradeReport, TradeInstruction
+from ..base import OrderType, MarketData, BarData, TradeData, TickData, OrderState, OrderBook, TradeReport, TradeInstruction, TransactionSide
 from ..engine.event_engine import TOPIC, EVENT_ENGINE
 from ..profile import PROFILE
 
@@ -9,17 +11,26 @@ LOGGER = LOGGER.getChild('SimMatch')
 
 
 class SimMatch(object):
-    def __init__(self, ticker, instant_fill: bool = False, event_engine=None, topic_set=None, fee_rate: float = 0.):
+    def __init__(self, ticker, event_engine=None, topic_set=None, **kwargs):
         self.ticker = ticker
-        self.instant_fill = instant_fill
         self.event_engine = event_engine if event_engine is not None else EVENT_ENGINE
         self.topic_set = topic_set if topic_set is not None else TOPIC
-        self.fee_rate = fee_rate
+        self.fee_rate = kwargs.get('fee_rate', 0.)
 
         self.working: dict[str, TradeInstruction] = {}
         self.history: dict[str, TradeInstruction] = {}
 
         self.timestamp = 0.
+        self.last_price = None
+        self.matching_config = {
+            'instant_fill': kwargs.get('instant_fill', False),
+            'lag': {
+                'ts': kwargs.get('lag_ts', 0.),
+                'n_transaction': kwargs.get('lag_n_transaction', 0)
+            },
+            'hit_prob': kwargs.get('hit_prob', 1.),  # affecting FoK
+            'slippery_rate': kwargs.get('slippery_rate', 0.0001)
+        }
 
     def __call__(self, **kwargs):
         order: TradeInstruction | None = kwargs.pop('order', None)
@@ -35,6 +46,7 @@ class SimMatch(object):
 
         if market_data is not None:
             self.timestamp = market_data.timestamp
+            self.last_price = market_data.market_price
 
             if isinstance(market_data, BarData):
                 self._check_bar_data(market_data=market_data)
@@ -69,17 +81,33 @@ class SimMatch(object):
             # raise ValueError(f'Invalid instruction {order}, instruction must have a LimitPrice')
 
         order.set_order_state(order_state=OrderState.Placed, timestamp=self.timestamp)
+        short_circuit = self._check_short_circuit(order=order)
 
-        if not self.instant_fill:
-            self.working[order.order_id] = order
+        if short_circuit:
+            self.on_order(order=order, **kwargs)
+            # in short circuit mode, the worst price will be applied.
+            self._match(order=order, match_price=self.worst_price(order.limit_price, self.last_price, side=order.side))
 
+        self.working[order.order_id] = order
         self.on_order(order=order, **kwargs)
 
-        if self.instant_fill:
-            if limit := order.limit_price:
-                self._match(order=order, match_price=limit)
-            else:
-                LOGGER.warning(f'No limit price provided for {order}, instant_fill mode not available.')
+    @classmethod
+    def best_price(cls, *price, side: TransactionSide | int):
+        if side > 0:
+            return min(_ for _ in price if _ is not None and np.isfinite(_))
+        elif side < 0:
+            return max(_ for _ in price if _ is not None and np.isfinite(_))
+
+        raise ValueError(f'Invalid side {side}!')
+
+    @classmethod
+    def worst_price(cls, *price, side: TransactionSide | int):
+        if side > 0:
+            return max(_ for _ in price if _ is not None and np.isfinite(_))
+        elif side < 0:
+            return min(_ for _ in price if _ is not None and np.isfinite(_))
+
+        raise ValueError(f'Invalid side {side}!')
 
     def cancel_order(self, order: TradeInstruction = None, order_id: str = None, **kwargs):
         if order is None and order_id is None:
@@ -103,6 +131,15 @@ class SimMatch(object):
 
         self.history[order_id] = order
         self.on_order(order=order, **kwargs)
+
+    def _check_short_circuit(self, order: TradeInstruction, **kwargs):
+        if order.limit_price is None and self.last_price is None:
+            return False
+
+        if self.matching_config['instant_fill'] and all(not _ for _ in self.matching_config['lag'].values()):
+            return True
+
+        return False
 
     def _check_bar_data(self, market_data: BarData):
         for order_id in list(self.working):
@@ -285,10 +322,11 @@ class SimMatch(object):
             self.cancel_order(order_id=order_id)
 
     def clear(self):
-        # self.fee_rate = 0.
         self.working.clear()
         self.history.clear()
+
         self.timestamp = 0.
+        self.last_price = None
 
     @property
     def market_time(self) -> datetime.datetime:
