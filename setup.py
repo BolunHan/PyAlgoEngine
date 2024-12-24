@@ -81,7 +81,7 @@ setuptools.setup(
         ],
     },
     ext_modules=ext_modules,
-    cmdclass={"build_ext": BuildExtWithFallback},
+    # cmdclass={"build_ext": BuildExtWithFallback},
     command_options={
         'nuitka': {
             # boolean option, e.g. if you cared for C compilation commands
