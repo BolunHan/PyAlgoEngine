@@ -2,6 +2,8 @@ import codecs
 import os
 
 import setuptools
+from setuptools import Extension
+from setuptools.command.build_ext import build_ext
 
 
 def read(rel_path):
@@ -20,6 +22,26 @@ def get_version(rel_path):
             return line.split(delim)[1]
     raise RuntimeError("Unable to find version string.")
 
+
+class BuildExtWithFallback(build_ext):
+    """Custom build_ext to handle Cython compilation with fallback."""
+
+    def run(self):
+        try:
+            print("Attempting to compile Cython modules...")
+            super().run()
+        except Exception as e:
+            print("Cython compilation failed:", e)
+            print("Falling back to pure Python implementation.")
+
+
+# Define Cython extension (use the .pyx file)
+ext_modules = [
+    Extension(
+        "algo_engine.base.market_utils_posix",
+        ["algo_engine/base/market_utils_posix.pyx"],
+    )
+]
 
 long_description = read("README.md")
 
@@ -58,6 +80,8 @@ setuptools.setup(
             "bokeh"
         ],
     },
+    ext_modules=ext_modules,
+    cmdclass={"build_ext": BuildExtWithFallback},
     command_options={
         'nuitka': {
             # boolean option, e.g. if you cared for C compilation commands
