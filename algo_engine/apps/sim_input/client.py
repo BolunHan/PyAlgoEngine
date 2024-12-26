@@ -25,7 +25,7 @@ class Action(object):
         self.name = name
         self.steps: list[Action.Step] = []
 
-    def append(self, name: str, action: Callable[[..., ...], None], args=None, kwargs=None, comments: str = None) -> None:
+    def append(self, name: str, action: Callable, args=None, kwargs=None, comments: str = None) -> None:
         step = Action.Step(name=name, procedure=action)
 
         if args is not None:
@@ -172,6 +172,9 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
             # Simulate delay between steps
 
         # Wait 3 seconds, then close the test ground and restore the client window
+        input_history.insert("end", "-" * 50)
+        input_history.insert("active", f"Mocking {action.name} Completed! Exiting in {timeout} seconds...")
+
         time.sleep(timeout)
         testground.destroy()
         self.root.deiconify()
@@ -341,6 +344,7 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
                 self.root.deiconify()
 
         testground.bind("<Escape>", exit_record)
+
 
 class ExampleClient(AutoWorkClient):
     """An example implementation of the AutoWorkClient."""
