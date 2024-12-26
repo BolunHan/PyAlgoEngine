@@ -182,13 +182,27 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
     def toggle_auto_work(self):
         """Toggle the daemon thread to start or stop auto work."""
         if not self.running:
-            self.running = True
-            self.layout['button_takeover'].config(text="Release Control")
-            self.worker_thread = Thread(target=self.auto_work, daemon=True)
-            self.worker_thread.start()
+            self.takeover_control()
         else:
-            self.running = False
-            self.layout['button_takeover'].config(text="Takeover Input")
+            self.release_control()
+
+    def takeover_control(self):
+        if self.running:
+            LOGGER.info('Autoworker already running!')
+            return
+
+        self.running = True
+        self.layout['button_takeover'].config(text="Release Control")
+        self.worker_thread = Thread(target=self.auto_work, daemon=True)
+        self.worker_thread.start()
+
+    def release_control(self):
+        if not self.running:
+            LOGGER.info('Autoworker already stopped!')
+            return
+
+        self.running = False
+        self.layout['button_takeover'].config(text="Takeover Input")
 
     def toggle_mock(self):
         """Mock the action selected in the dropdown."""
