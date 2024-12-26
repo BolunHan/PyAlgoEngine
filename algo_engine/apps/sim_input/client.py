@@ -1,10 +1,10 @@
 __package__ = 'algo_engine.apps.sim_input'
 
 import abc
-from threading import Thread
 import time
 import tkinter
 from collections.abc import Callable, Iterable
+from threading import Thread
 from tkinter import ttk
 from typing import TypedDict, NotRequired, Any
 
@@ -73,6 +73,7 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
         # State variables
         self.worker_thread = None
         self.running = False
+        self.recording = False
 
         self.render_layout()
 
@@ -82,7 +83,11 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
 
         # Grid(0, 0): Create button
         button_takeover = self.layout['button_takeover'] = ttk.Button(self.root, text="Takeover Input", command=self.toggle_auto_work)
-        button_takeover.grid(row=0, column=0, columnspan=2, pady=10, sticky="ew")
+        button_takeover.grid(row=0, column=0, pady=10, sticky="ew")
+
+        # Grid(0, 1): Mock button
+        button_record = self.layout['button_record'] = ttk.Button(self.root, text="Record Action", command=self.record_action)
+        button_record.grid(row=0, column=1, pady=10, sticky="ew")
 
         # Grid(1, 0): Mock button
         button_mock = self.layout['button_mock'] = ttk.Button(self.root, text="Mock Action", command=self.toggle_mock)
@@ -169,6 +174,7 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
         # Wait 3 seconds, then close the test ground and restore the client window
         time.sleep(timeout)
         testground.destroy()
+        self.root.deiconify()
 
     def toggle_auto_work(self):
         """Toggle the daemon thread to start or stop auto work."""
@@ -292,6 +298,49 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
             )
             action_table.column(col, width=max_width * 10, minwidth=30, stretch=True)  # Scale width for readability
 
+    def record_action(self):
+        """Capture and log mouse and keyboard events in the test ground."""
+        self.root.iconify()
+
+        # Create a semi-transparent test ground window
+        testground = tkinter.Toplevel(self.root)
+        testground.attributes("-alpha", 0.5)  # Set transparency
+        testground.attributes("-fullscreen", True)
+        testground.attributes("-topmost", True)
+        testground.lift()
+        testground.focus_force()
+
+        # Listbox to display recorded events
+        event_log = tkinter.Listbox(testground, font=("Courier", 14), selectmode="none", state=tkinter.DISABLED)
+        # event_log.bindtags((event_log, self.root, "all"))
+        event_log.pack(fill="both", expand=True, padx=0, pady=0)
+
+        def log_event(event_type, event):
+            """Log the event details to the console and the event log."""
+            if event_type == "Key":
+                event_details = f"{event_type}: {event.keysym} (char: {event.char})"
+            else:
+                event_details = f"{event_type}: Button-{event.num} @ ({event.x}, {event.y})"
+            LOGGER.info(event_details)
+            event_log.configure(state=tkinter.NORMAL)
+            event_log.insert("end", event_details)
+            event_log.see("end")
+            event_log.configure(state=tkinter.DISABLED)
+
+        # Bind events for mouse clicks, double-clicks, and keyboard inputs
+        testground.bind("<Button-1>", lambda e: log_event("Click", e))
+        testground.bind("<Double-1>", lambda e: log_event("Double Click", e))
+        testground.bind("<Button-3>", lambda e: log_event("Right Click", e))
+        testground.bind("<Key>", lambda e: log_event("Key", e))
+
+        # Exit recording when the ESC key is pressed
+        def exit_record(event):
+            if event.keysym == "Escape":
+                LOGGER.info("Exiting recording mode.")
+                testground.destroy()
+                self.root.deiconify()
+
+        testground.bind("<Escape>", exit_record)
 
 class ExampleClient(AutoWorkClient):
     """An example implementation of the AutoWorkClient."""
