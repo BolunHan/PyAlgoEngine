@@ -1,7 +1,7 @@
 __package__ = 'algo_engine.apps.sim_input'
 
 import abc
-import threading
+from threading import Thread
 import time
 import tkinter
 from collections.abc import Callable, Iterable
@@ -63,53 +63,143 @@ class Action(object):
 
 
 class AutoWorkClient(object, metaclass=abc.ABCMeta):
-    def __init__(self, root=None):
+    def __init__(self, root=None, **kwargs):
         self.root = root if root is not None else tkinter.Tk()
-        self.root.title("Structured GUI Client")
-        self.root.geometry("600x500")
+        self.root.title(kwargs.get('title', "Structured GUI Client"))
+
+        self.actions: dict[int, list[Action]] = {}
+        self.layout = {}
 
         # State variables
         self.worker_thread = None
         self.running = False
 
-        # Create button
-        self.button = ttk.Button(root, text="Takeover Input", command=self.toggle_auto_work)
-        self.button.pack(pady=10)
+        self.render_layout()
 
-        # Create table
-        self.table = ttk.Treeview(
-            root,
-            columns=("Action", "Status", "Comments"),
-            show="tree headings",
-            height=20
-        )
-        self.table.heading("Action", text="Action")
-        self.table.heading("Status", text="Status")
-        self.table.heading("Comments", text="Comments")
-        self.table.pack(padx=10, pady=10, fill="both", expand=True)
+    def render_layout(self):
+        # No fixed geometry, letting it resize
+        # self.root.geometry("600x500")
 
-        self.actions: dict[int, list[Action]] = {}
+        # Grid(0, 0): Create button
+        button_takeover = self.layout['button_takeover'] = ttk.Button(self.root, text="Takeover Input", command=self.toggle_auto_work)
+        button_takeover.grid(row=0, column=0, columnspan=2, pady=10, sticky="ew")
+
+        # Grid(1, 0): Mock button
+        button_mock = self.layout['button_mock'] = ttk.Button(self.root, text="Mock Action", command=self.toggle_mock)
+        button_mock.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+
+        # Grid(1, 1): Dropdown for action selection
+        action_selected = self.layout['action_selected'] = tkinter.StringVar()
+        action_dropdown = self.layout['action_dropdown'] = ttk.Combobox(self.root, textvariable=action_selected, state="readonly")
+        action_dropdown.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
+
+        # Grid(2, 0): Create table
+        action_table = self.layout['action_table'] = ttk.Treeview(self.root, columns=("Action", "Status", "Comments"), show="tree headings")
+        action_table.heading("Action", text="Action")
+        action_table.heading("Status", text="Status")
+        action_table.heading("Comments", text="Comments")
+        action_table.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
+
+        # Make the window resize properly by configuring grid weights
+        self.root.grid_columnconfigure(0, weight=1, minsize=200)  # Adjust minsize for column 0
+        self.root.grid_columnconfigure(1, weight=1, minsize=200)  # Adjust minsize for column 1
+        self.root.grid_rowconfigure(2, weight=1)  # Make row 2 expand with the window
 
     @abc.abstractmethod
     def listen_signal(self) -> int:
         ...
 
     def register_action(self, action: Action, signal: int):
-        if signal in self.actions:
-            self.actions[signal].append(action)
-        else:
-            self.actions[signal] = [action]
+        self.actions.setdefault(signal, []).append(action)
+
+        # Update the dropdown with all registered actions.
+        all_actions = [f"Signal {signal} - {action.name}" for signal, actions in self.actions.items() for action in actions]
+        action_dropdown = self.layout['action_dropdown']
+        action_dropdown["values"] = all_actions
+
+    def mock_action(self, action: Action, timeout: float = 3.):
+        """Mock the execution of an action on a transparent test ground."""
+        self.root.iconify()
+
+        # Create a borderless, transparent test ground window
+        testground = tkinter.Toplevel(self.root)
+        # testground.overrideredirect(True)  # Remove all window borders and decorations
+
+        # Get screen dimensions and set the testground window to cover the entire screen
+        # screen_width = self.root.winfo_screenwidth()
+        # screen_height = self.root.winfo_screenheight()
+        # testground.geometry(f"{screen_width}x{screen_height}+0+0")
+
+        # Make the window semi-transparent and ensure it stays on top
+        testground.attributes("-alpha", 0.5)  # Set transparency to 50%
+        testground.attributes("-fullscreen", True)
+        testground.attributes("-topmost", True)  # Ensure it stays above other windows
+
+        # Force the window manager to render the window completely
+        testground.lift()  # Bring it to the front
+        testground.focus_force()  # Force focus to this window
+
+        # Add a label to display input history
+        input_history = tkinter.Listbox(testground, font=("Courier", 14))
+        input_history.pack(fill="both", expand=True, padx=20, pady=20)
+        input_history.insert("active", f"Mocking {action.name}")
+        testground.update_idletasks()
+
+        # Simulate action execution
+        for step in action.steps:
+            # Display the step name in the input history
+            input_history.insert("end", f"Executing Step: {step['name']}")
+            input_history.insert("end", f"Comments: {step.get('comments', 'No comments')}")
+            input_history.insert("end", "-" * 50)
+            input_history.see("end")
+            testground.update_idletasks()
+
+            # Simulate mouse and keyboard inputs
+            procedure = step['procedure']
+            args = step.get('args', [])
+            kwargs = step.get('kwargs', {})
+            try:
+                procedure(*args, **kwargs)
+            except Exception as e:
+                input_history.insert("end", f"Error: {str(e)}")
+                input_history.see("end")
+
+            # Simulate delay between steps
+
+        # Wait 3 seconds, then close the test ground and restore the client window
+        time.sleep(timeout)
+        testground.destroy()
 
     def toggle_auto_work(self):
         """Toggle the daemon thread to start or stop auto work."""
         if not self.running:
             self.running = True
-            self.button.config(text="Release Control")
-            self.worker_thread = threading.Thread(target=self.auto_work, daemon=True)
+            self.layout['button_takeover'].config(text="Release Control")
+            self.worker_thread = Thread(target=self.auto_work, daemon=True)
             self.worker_thread.start()
         else:
             self.running = False
-            self.button.config(text="Takeover Input")
+            self.layout['button_takeover'].config(text="Takeover Input")
+
+    def toggle_mock(self):
+        """Mock the action selected in the dropdown."""
+        selected_name = self.layout['action_selected'].get()
+        if not selected_name:
+            LOGGER.warning("No action selected to mock!")
+            return
+
+        selected_action = None
+        for signal, actions in self.actions.items():
+            for action in actions:
+                if f"Signal {signal} - {action.name}" == selected_name:
+                    selected_action = action
+                    break
+
+        if selected_action is None:
+            LOGGER.warning(f"Action '{selected_name}' not found!")
+            return
+
+        self.mock_action(action=selected_action)
 
     def auto_work(self):
         """Generate data for the table in a loop."""
@@ -150,19 +240,20 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
 
     def update_table(self, actions: list[Action]):
         """Render the table based on the provided actions."""
-        self.table.delete(*self.table.get_children())  # Clear existing rows
+        action_table = self.layout['action_table']
+        action_table.delete(*action_table.get_children())  # Clear existing rows
 
         for action_idx, action in enumerate(actions):
             prefix = chr(0x250C)
             # Insert the parent row
-            parent_id = self.table.insert(
+            parent_id = action_table.insert(
                 "", "end", iid=action_idx, values=(f"{prefix} {action.name}", "Pending", "")
             )
 
             # Insert child rows for steps
             for step_idx, step in enumerate(action.steps):
                 prefix = f'{chr(0x251C) if step_idx < len(action.steps) - 1 else chr(0x2514)}{chr(0x2500)}'
-                self.table.insert(
+                action_table.insert(
                     parent_id,
                     "end",
                     iid=f"{action_idx}-{step_idx}",
@@ -171,7 +262,7 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
                 )
 
             # Expand parent row by default
-            self.table.item(parent_id, open=True)
+            action_table.item(parent_id, open=True)
 
         # Auto-adjust column widths
         self.adjust_column_widths()
@@ -179,26 +270,27 @@ class AutoWorkClient(object, metaclass=abc.ABCMeta):
     def update_status(self, parent_id: int, child_id: int = None, status: str = "Pending"):
         """Update the status of the specified row."""
         row_id = f"{parent_id}" if child_id is None else f"{parent_id}-{child_id}"
-        values = self.table.item(row_id, "values")
+        action_table = self.layout['action_table']
+        values = action_table.item(row_id, "values")
 
         # Select the row if the status is "Executing"
         match status:
             case "Executing":
-                self.table.selection_set(row_id)
-                self.table.see(row_id)  # Ensure the row is visible
+                action_table.selection_set(row_id)
+                action_table.see(row_id)  # Ensure the row is visible
 
-        self.table.item(row_id, values=(values[0], status, values[2]))
+        action_table.item(row_id, values=(values[0], status, values[2]))
 
     def adjust_column_widths(self):
         """Automatically adjust column widths based on content."""
+        action_table = self.layout['action_table']
+        action_table.column("#0", width=30, minwidth=30, stretch=False)
 
-        self.table.column("#0", width=30, minwidth=30, stretch=False)
-
-        for col in self.table["columns"]:
+        for col in action_table["columns"]:
             max_width = max(
-                [len(str(self.table.set(item, col))) for item in self.table.get_children()] + [len(col)]
+                [len(str(action_table.set(item, col))) for item in action_table.get_children()] + [len(col)]
             )
-            self.table.column(col, width=max_width * 10, minwidth=30, stretch=True)  # Scale width for readability
+            action_table.column(col, width=max_width * 10, minwidth=30, stretch=True)  # Scale width for readability
 
 
 class ExampleClient(AutoWorkClient):
@@ -249,5 +341,5 @@ def main():
 
 
 if __name__ == "__main__":
-    t = threading.Thread(target=main, daemon=False)
+    t = Thread(target=main, daemon=False)
     t.start()
