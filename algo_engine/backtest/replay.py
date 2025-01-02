@@ -107,6 +107,7 @@ class ProgressiveReplay(Replay):
             **kwargs
     ):
         self.loader = loader
+        self.market_date: datetime.date | None = kwargs.pop('market_date', None)
         self.start_date: datetime.date | None = kwargs.pop('start_date', None)
         self.end_date: datetime.date | None = kwargs.pop('end_date', None)
         self.calendar: list[datetime.date] | None = kwargs.pop('calendar', None)
@@ -117,6 +118,7 @@ class ProgressiveReplay(Replay):
         self.replay_subscription = {}
         self.replay_calendar = []
         self.replay_task = []
+        self.replay_status = {}
 
         self.date_progress = 0
         self.task_progress = 0
@@ -182,8 +184,16 @@ class ProgressiveReplay(Replay):
         else:
             self.replay_calendar = self.calendar
 
+        if self.market_date is None:
+            self.market_date = self.replay_calendar[0] if self.replay_calendar else self.start_date
+        else:
+            date_to_replay = [_ for _ in self.replay_calendar if _ >= self.market_date]
+            self.market_date = date_to_replay[0] if date_to_replay else self.end_date
+
+        self.replay_status = {market_date: 'skipped' if market_date < self.market_date else 'idle' for market_date in self.replay_calendar}
+
         self.task_progress = 0
-        self.date_progress = sum([1 for _ in self.replay_calendar if _ < self.start_date])
+        self.date_progress = sum([1 for _ in self.replay_calendar if _ < self.market_date])
         self.progress.reset()
 
         if self.date_progress:
@@ -191,7 +201,8 @@ class ProgressiveReplay(Replay):
 
     def next_trade_day(self):
         if self.date_progress < len(self.replay_calendar):
-            market_date = self.replay_calendar[self.date_progress]
+            market_date = self.market_date = self.replay_calendar[self.date_progress]
+            self.replay_status[market_date] = 'started'
             self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self.date_progress + 1} / {len(self.replay_calendar)}):'
             for topic in self.replay_subscription:
                 ticker, dtype = self.replay_subscription[topic]
@@ -214,8 +225,9 @@ class ProgressiveReplay(Replay):
             data = self.replay_task[self.task_progress]
             self.task_progress += 1
         else:
-            if self.eod is not None and self.date_progress and (self.date_progress >= len(self.replay_calendar) or self.replay_calendar[self.date_progress] > self.start_date):
-                self.eod(market_date=self.replay_calendar[self.date_progress - 1], replay=self)
+            if self.eod is not None and self.replay_status[self.market_date] == 'started':
+                self.eod(market_date=self.market_date, replay=self)
+                self.replay_status[self.market_date] = 'done'
 
             self.replay_task.clear()
             self.task_progress = 0
@@ -223,6 +235,7 @@ class ProgressiveReplay(Replay):
             if self.bod is not None and self.date_progress < len(self.replay_calendar):
                 self.bod(market_date=self.replay_calendar[self.date_progress], replay=self)
 
+            # this is by designed, to load the new data after the bod is done.
             self.next_trade_day()
 
             #  the bod process should be moved here!
