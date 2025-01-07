@@ -2,6 +2,7 @@ import abc
 import ctypes
 import datetime
 import enum
+import inspect
 import json
 import math
 import re
@@ -159,7 +160,12 @@ class TransactionSide(enum.IntEnum):
         elif self.value == 0:
             return 0
         else:
-            LOGGER.warning(f'Requesting .sign of {self.name} is not recommended, use .order_sign instead')
+            frame = inspect.currentframe()
+            caller = inspect.getframeinfo(frame.f_back)
+            LOGGER.warning(
+                f"Requesting .sign of {self.name} is not recommended, use .order_sign instead. "
+                f"Called from {caller.filename}, line {caller.lineno}."
+            )
             return self.order_sign
 
     @property
