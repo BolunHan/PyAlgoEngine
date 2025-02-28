@@ -1955,7 +1955,7 @@ class DailyBar(BarData):
             datetime.date: The market date of the bar.
         """
 
-        int_date = self._buffer.timestamp
+        int_date = int(self._buffer.timestamp)
         y, _m = divmod(int_date, 10000)
         m, d = divmod(_m, 100)
 
