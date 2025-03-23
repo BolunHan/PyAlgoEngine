@@ -2,25 +2,26 @@
 from libc.stdio cimport printf
 from libc.string cimport strcmp, memcpy, memset
 from libc.stdint cimport uint8_t, int32_t, uint32_t, int64_t, uint64_t
-from libc.stdlib cimport atoi
+from libc.stddef cimport size_t
+from libc.stdlib cimport qsort
 from cpython.buffer cimport PyBuffer_FillInfo
 from cpython.object cimport PyObject
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from libc.math cimport fabs, isnan, INFINITY, NAN
+
 
 # Define compile-time constants
-cdef extern from *:
-    """
-    #define TICKER_SIZE 32
-    #define BOOK_SIZE 10
-    #define ID_SIZE 16
-    """
+cdef extern from "market_data_external.c":
+    int compare_entries_bid(const void* a, const void* b) nogil
+    int compare_entries_ask(const void* a, const void* b) nogil
     const int TICKER_SIZE
     const int BOOK_SIZE
     const int ID_SIZE
 
 # Enum definitions
 cdef public enum TransactionSide:
+    ASK_ORDER = -4
     ShortOrder = -3
     ShortOpen = -2
     ShortFilled = -1
@@ -30,7 +31,7 @@ cdef public enum TransactionSide:
     LongOpen = 1
     ShortClose = 2
     LongOrder = 3
-    BidOrder = 3
+    BID_ORDER = 4
 
 cdef public enum OrderType:
     UnknownOrder = -20
@@ -45,12 +46,18 @@ cdef public enum OrderType:
 
 # Data type mapping
 cdef public enum DataType:
-    UNKNOWN_TYPE = 0
-    MARKET_DATA = 1
+    DTYPE_UNKNOWN = 0
+    DTYPE_MARKET_DATA = 10
+    DTYPE_TRANSACTION = 20
+    DTYPE_BOOK = 21
+    DTYPE_ORDER = 30
+    DTYPE_TICK_LITE = 31
+    DTYPE_TICK = 32
+    DTYPE_BAR = 40
+
     ORDER_BOOK = 2
     BAR_DATA = 3
     TICK_DATA = 4
-    TRANSACTION_DATA = 5
     ORDER_DATA = 6
 
 # Helper class for TransactionSide
@@ -72,10 +79,10 @@ cdef class TransactionHelper:
             return LongClose
         elif side == LongClose:
             return ShortOpen
-        elif side == BidOrder:
-            return ShortOrder
-        elif side == ShortOrder:
-            return BidOrder
+        elif side == BID_ORDER:
+            return TransactionSide.ASK_ORDER
+        elif side == TransactionSide.ASK_ORDER:
+            return BID_ORDER
         printf("No valid registered opposite trade side for %d\n", side)
         return UNKNOWN
 
@@ -130,9 +137,9 @@ cdef class TransactionHelper:
             return "long"
         elif side == ShortOpen or side == LongClose:
             return "short"
-        elif side == ShortOrder:
+        elif side == TransactionSide.ASK_ORDER:
             return "ask"
-        elif side == BidOrder:
+        elif side == BID_ORDER:
             return "bid"
         return "Unknown"
 
@@ -145,8 +152,8 @@ cdef class TransactionHelper:
             return "open"
         elif side == LongClose or side == ShortClose:
             return "close"
-        elif side == ShortOrder or side == BidOrder:
-            return "ask" if side == ShortOrder else "bid"
+        elif side == ASK_ORDER or side == BID_ORDER:
+            return "ask" if side == ASK_ORDER else "bid"
         return "unknown"
 
 # ID Structures
@@ -169,17 +176,14 @@ cdef struct _MetaInfo:
     char ticker[TICKER_SIZE]
     double timestamp
 
-# OrderBook structure
+cdef struct _Entry:
+    double price
+    double volume
+    uint32_t n_orders
+
+# OrderBookBuffer structure
 cdef struct _OrderBookBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double bid_price[BOOK_SIZE]
-    double ask_price[BOOK_SIZE]
-    double bid_volume[BOOK_SIZE]
-    double ask_volume[BOOK_SIZE]
-    uint32_t bid_n_orders[BOOK_SIZE]
-    uint32_t ask_n_orders[BOOK_SIZE]
+    _Entry entries[BOOK_SIZE]
 
 # BarData structure
 cdef struct _CandlestickBuffer:
@@ -195,12 +199,11 @@ cdef struct _CandlestickBuffer:
     double notional
     uint32_t trade_count
 
-# TickData structure
-cdef struct _TickDataBuffer:
+# TickDataLite structure
+cdef struct _TickDataLiteBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
-    _OrderBookBuffer order_book
     double bid_price
     double bid_volume
     double ask_price
@@ -209,6 +212,11 @@ cdef struct _TickDataBuffer:
     double total_traded_volume
     double total_traded_notional
     uint32_t total_trade_count
+
+cdef struct _TickDataBuffer:
+    _TickDataLiteBuffer lite
+    _OrderBookBuffer bid_book
+    _OrderBookBuffer ask_book
 
 # TransactionData structure
 cdef struct _TransactionDataBuffer:
@@ -238,11 +246,11 @@ cdef struct _OrderDataBuffer:
 # Base MarketData structure as a union
 cdef union _MarketDataBuffer:
     _MetaInfo MetaInfo
-    _OrderBookBuffer OrderBook
-    _CandlestickBuffer BarData
-    _TickDataBuffer TickData
     _TransactionDataBuffer TransactionData
     _OrderDataBuffer OrderData
+    _CandlestickBuffer BarData
+    _TickDataLiteBuffer TickDataLite
+    _TickDataBuffer TickData
 
 # Base MarketData class
 cdef class MarketData:
@@ -284,7 +292,7 @@ cdef class MarketData:
         memcpy(&self._data.MetaInfo.ticker, <char*>ticker_bytes, ticker_len)
 
         self._data.MetaInfo.timestamp = timestamp
-        self._data.MetaInfo.dtype = DataType.MARKET_DATA
+        self._data.MetaInfo.dtype = DataType.DTYPE_MARKET_DATA
 
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
@@ -298,7 +306,7 @@ cdef class MarketData:
         # Create the appropriate class based on the data type
         cdef MarketData instance
 
-        if dtype == DataType.TRANSACTION_DATA:
+        if dtype == DataType.DTYPE_TRANSACTION:
             instance = TransactionData.__new__(TransactionData)
         elif dtype == DataType.BAR_DATA:
             instance = BarData.__new__(BarData)
@@ -339,7 +347,7 @@ cdef class MarketData:
         # Create the appropriate class based on the data type
         cdef MarketData instance
 
-        if dtype == DataType.TRANSACTION_DATA:
+        if dtype == DataType.DTYPE_TRANSACTION:
             instance = TransactionData.__new__(TransactionData)
             # Free any existing memory
             if instance._data is not NULL and instance._owner:
@@ -411,7 +419,7 @@ cdef class MarketData:
         cdef uint8_t dtype = self._data.MetaInfo.dtype
         cdef size_t size
 
-        if dtype == DataType.TRANSACTION_DATA:
+        if dtype == DataType.DTYPE_TRANSACTION:
             size = sizeof(_TransactionDataBuffer)
         elif dtype == DataType.BAR_DATA:
             size = sizeof(_CandlestickBuffer)
@@ -437,7 +445,7 @@ cdef class MarketData:
         cdef uint8_t dtype = self._data.MetaInfo.dtype
         cdef size_t size
 
-        if dtype == DataType.TRANSACTION_DATA:
+        if dtype == DataType.DTYPE_TRANSACTION:
             size = sizeof(_TransactionDataBuffer)
         elif dtype == DataType.BAR_DATA:
             size = sizeof(_CandlestickBuffer)
@@ -500,7 +508,7 @@ cdef class MarketData:
         cdef uint8_t dtype = self._data.MetaInfo.dtype
         cdef size_t size
 
-        if dtype == DataType.TRANSACTION_DATA:
+        if dtype == DataType.DTYPE_TRANSACTION:
             size = sizeof(_TransactionDataBuffer)
         elif dtype == DataType.BAR_DATA:
             size = sizeof(_CandlestickBuffer)
@@ -532,7 +540,7 @@ cdef class TransactionData(MarketData):
         """
         Allocate memory for the transaction data structure but don't initialize it.
         """
-        self._dtype = DataType.TRANSACTION_DATA
+        self._dtype = DataType.DTYPE_TRANSACTION
         self._owner = True
 
     def __init__(self, str ticker, double timestamp, double price, double volume, int side=0, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None):
@@ -549,7 +557,7 @@ cdef class TransactionData(MarketData):
         MarketData.__init__(self, ticker, timestamp)
 
         # Set data type for TransactionData
-        self._data.MetaInfo.dtype = DataType.TRANSACTION_DATA
+        self._data.MetaInfo.dtype = DataType.DTYPE_TRANSACTION
 
         # Initialize transaction-specific fields
         self._data.TransactionData.price = price
@@ -564,9 +572,9 @@ cdef class TransactionData(MarketData):
             self._data.TransactionData.notional = notional
 
         # Initialize IDs
-        self._set_id('transaction_id', transaction_id)
-        self._set_id('buy_id', buy_id)
-        self._set_id('sell_id', sell_id)
+        self._set_id(name='transaction_id', id_value=transaction_id)
+        self._set_id(name='buy_id', id_value=buy_id)
+        self._set_id(name='sell_id', id_value=sell_id)
 
     cdef void _set_id(self, str name, object id_value):
         """
@@ -590,7 +598,7 @@ cdef class TransactionData(MarketData):
         elif isinstance(id_value, int):
             id_ptr.id_int.id_type = 1  # Int type
             # Convert int to string and store in data
-            id_bytes = str(id_value).encode('utf-8')
+            id_bytes = id_value.to_bytes((id_value.bit_length() + 7) // 8, byteorder='little', signed=True)
             id_len = min(len(id_bytes), ID_SIZE - 1)
             memset(id_ptr.id_int.data, 0, ID_SIZE)
             memcpy(id_ptr.id_int.data, <char*>id_bytes, id_len)
@@ -619,7 +627,7 @@ cdef class TransactionData(MarketData):
         if id_ptr.id_type == 0:
             return None
         elif id_ptr.id_type == 1:  # Int type
-            return int(id_ptr.id_int.data.decode('utf-8').rstrip('\0'))
+            return int.from_bytes(id_ptr.id_int.data[:ID_SIZE], byteorder='little', signed=True)
         elif id_ptr.id_type == 2:  # Str type
             return id_ptr.id_str.data.decode('utf-8').rstrip('\0')
 
@@ -800,7 +808,7 @@ cdef class BarData(MarketData):
         """
         Allocate memory for the bar data structure but don't initialize it.
         """
-        self._dtype = DataType.TRANSACTION_DATA
+        self._dtype = DataType.BAR_DATA
         self._owner = True
 
     def __init__(self, str ticker, double timestamp, double high_price, double low_price,
@@ -1001,703 +1009,253 @@ cdef class BarData(MarketData):
                 f"low={self.low_price}, close={self.close_price}, "
                 f"volume={self.volume})")
 
-
-cdef class Book:
+# TickDataLite class
+cdef class TickDataLite(MarketData):
     """
-    Class representing a side of the order book (either bid or ask).
+    Represents tick data for a specific ticker without the order_book field.
     """
-    cdef int side
-    cdef list _book
-    cdef dict _dict
-    cdef bint sorted_status
 
     def __cinit__(self):
         """
         Initialize the class but don't allocate memory.
         """
-        self.side = 0
-        self._book = []
-        self._dict = {}
-        self.sorted_status = False
-
-    def __init__(self, int side):
-        """
-        Initialize the order book for a specific side.
-
-        Args:
-            side (int): Side of the book; positive for bid, negative for ask.
-        """
-        self.side = side
-        self._book = []
-        self._dict = {}
-        self.sorted_status = False
-
-    def __iter__(self):
-        """
-        Iterate over the sorted order book.
-
-        Returns:
-            iterator: An iterator over the sorted book entries.
-        """
-        self.sort()
-        return iter(self._book)
-
-    def __contains__(self, float price):
-        """
-        Check if a price exists in the order book.
-
-        Args:
-            price (float): The price to check.
-
-        Returns:
-            bool: True if the price exists, False otherwise.
-        """
-        return price in self._dict
-
-    def __len__(self):
-        """
-        Get the number of entries in the order book.
-
-        Returns:
-            int: The number of entries.
-        """
-        return len(self._book)
-
-    def __repr__(self):
-        """
-        Get a string representation of the book.
-
-        Returns:
-            str: A string indicating whether the book is for bids or asks.
-        """
-        return f'<Book.{"Bid" if self.side > 0 else "Ask"}>'
-
-    def __bool__(self):
-        """
-        Check if the order book has any entries.
-
-        Returns:
-            bool: True if the book is not empty, False otherwise.
-        """
-        return bool(self._book)
-
-    def __sub__(self, Book other):
-        """
-        Subtract another order book from this one to find the differences in volumes at matching prices.
-
-        Args:
-            other (Book): The other book to compare against.
-
-        Returns:
-            dict: A dictionary of volume differences.
-
-        Raises:
-            TypeError: If the other object is not of type Book.
-            ValueError: If the sides of the books do not match.
-        """
-        if not isinstance(other, Book):
-            raise TypeError(f'Expect type Book, got {type(other)}')
-
-        if self.side != other.side:
-            raise ValueError(f'Expect side {self.side}, got {other.side}')
-
-        cdef dict diff = {}
-        cdef float price, volume, limit, limit_0, limit_1
-        cdef bint contain_limit
-        cdef tuple entry
-
-        if not other._dict:
-            return self._dict
-
-        if not self._dict:
-            return {p:-v for p,v in other._dict.items()}
-
-        # bid book
-        elif self.side > 0:
-            limit_0 = min(self._dict)
-            limit_1 = min(other._dict)
-            limit = max(limit_0, limit_1)
-            contain_limit = limit_0 == limit_1
-
-            for entry in self._book:
-                price = entry[0]
-                volume = entry[1]
-
-                if price > limit or (price >= limit and contain_limit):
-                    diff[price] = volume
-
-            for entry in other._book:
-                price = entry[0]
-                volume = entry[1]
-
-                if price > limit or (price >= limit and contain_limit):
-                    diff[price] = diff.get(price, 0.0) - volume
-        # ask book
-        else:
-            limit_0 = max(self._dict)
-            limit_1 = max(other._dict)
-            limit = min(limit_0, limit_1)
-            contain_limit = limit_0 == limit_1
-
-            for entry in self._book:
-                price = entry[0]
-                volume = entry[1]
-
-                if price < limit or (price <= limit and contain_limit):
-                    diff[price] = volume
-
-            for entry in other._book:
-                price = entry[0]
-                volume = entry[1]
-
-                if price < limit or (price <= limit and contain_limit):
-                    diff[price] = diff.get(price, 0.0) - volume
-
-        return diff
-
-    def pop(self, float price):
-        """
-        Remove and return an entry at the specified price.
-
-        Args:
-            price (float): The price of the entry to remove.
-
-        Returns:
-            tuple: The removed entry.
-
-        Raises:
-            KeyError: If the price does not exist in the book.
-        """
-        if price not in self._dict:
-            raise KeyError(f'Price {price} not in book')
-
-        entry = self._dict.pop(price)
-        self._book.remove(entry)
-        self.sorted_status = False
-        return entry
-
-    def sort(self):
-        """
-        Sort the book entries by price.
-        For bid book, sort in descending order.
-        For ask book, sort in ascending order.
-        """
-        if self.sorted_status:
-            return
-
-        if self.side > 0:
-            self._book.sort(key=lambda x: x[0], reverse=True)
-        else:
-            self._book.sort(key=lambda x: x[0])
-        self.sorted_status = True
-
-    def at_level(self, int level):
-        """
-        Get the entry at a specific level in the sorted book.
-
-        Args:
-            level (int): The level to retrieve (0-indexed).
-
-        Returns:
-            tuple: The entry at the specified level.
-
-        Raises:
-            IndexError: If the level is out of range.
-        """
-        self.sort()
-        return self._book[level]
-
-    def at_price(self, float price):
-        """
-        Get the entry at a specific price.
-
-        Args:
-            price (float): The price to retrieve.
-
-        Returns:
-            tuple: The entry at the specified price.
-
-        Raises:
-            KeyError: If the price does not exist in the book.
-        """
-        if price not in self._dict:
-            raise KeyError(f'Price {price} not in book')
-        return self._dict[price]
-
-    def update(self, float price, float volume, uint32_t n_orders = 0):
-        """
-        Update or add an entry in the book.
-
-        Args:
-            price (float): The price of the entry.
-            volume (float): The volume of the entry.
-            n_orders (int): The number of orders of the entry, default is 0, which means not available
-
-        Returns:
-            tuple: The updated or added entry.
-        """
-        entry = (price, volume, n_orders)
-        if price in self._dict:
-            for i, existing_entry in enumerate(self._book):
-                if existing_entry[0] == price:
-                    self._book.pop(i)
-                    break
-
-        self._dict[price] = entry
-        self._book.append(entry)
-        self.sorted_status = False
-        return entry
-
-    def clear(self):
-        """
-        Clear all entries from the book.
-        """
-        self._book.clear()
-        self._dict.clear()
-        self.sorted_status = True
-
-    @property
-    def is_sorted(self):
-        """
-        Check if the book is sorted.
-
-        Returns:
-            bool: True if the book is sorted, False otherwise.
-        """
-        return self.sorted_status
-
-    @property
-    def best_price(self):
-        """
-        Get the best price in the book.
-
-        Returns:
-            float: The best price, or NaN if the book is empty.
-        """
-        if not self._book:
-            return float('nan')
-        self.sort()
-        return self._book[0][0]
-
-    @property
-    def best_volume(self):
-        """
-        Get the volume at the best price.
-
-        Returns:
-            float: The volume at the best price, or NaN if the book is empty.
-        """
-        if not self._book:
-            return float('nan')
-        self.sort()
-        return self._book[0][1]
-
-    @property
-    def prices(self):
-        """
-        Get all prices in the book.
-
-        Returns:
-            list: A list of all prices in the book.
-        """
-        return list(self._dict.keys())
-
-    @property
-    def volumes(self):
-        """
-        Get all volumes in the book.
-
-        Returns:
-            list: A list of all volumes in the book.
-        """
-        return [entry[1] for entry in self._book]
-
-    @property
-    def n_orders(self):
-        """
-        Get all volumes in the book.
-
-        Returns:
-            list: A list of all volumes in the book.
-        """
-        return [entry[2] for entry in self._book]
-
-
-cdef class OrderBook(MarketData):
-    """
-    Class representing an order book, which tracks bid and ask orders for a financial instrument.
-    """
-    cdef Book _bid
-    cdef Book _ask
-
-    def __cinit__(self):
-        """
-        Initialize the class but don't allocate memory.
-        """
-        self._dtype = DataType.ORDER_BOOK
+        self._dtype = DataType.DTYPE_TICK_LITE
         self._owner = True
-        self._bid = None
-        self._ask = None
 
-    def __init__(self, str ticker, double timestamp, list bid=None, list ask=None, **kwargs):
+    def __init__(self, str ticker, double timestamp, double last_price,
+                 double bid_price=NAN, double bid_volume=NAN,
+                 double ask_price=NAN, double ask_volume=NAN,
+                 double total_traded_volume=0.0, double total_traded_notional=0.0,
+                 uint32_t total_trade_count=0):
         """
-        Initialize the order book with values.
-
-        Args:
-            ticker (str): The ticker symbol for the market data.
-            timestamp (double): The timestamp of the order book.
-            bid (list, optional): List of bid entries [price, volume, n_orders].
-            ask (list, optional): List of ask entries [price, volume, n_orders].
+        Initialize the tick data with values.
         """
         if not self._owner:
             raise MemoryError(f"Can not initialize a view of {self.__class__.__name__}.")
 
-        self._data = <_MarketDataBuffer*>PyMem_Malloc(sizeof(_OrderBookBuffer))
-        memset(self._data, 0, sizeof(_OrderBookBuffer))
+        self._data = <_MarketDataBuffer*>PyMem_Malloc(sizeof(_TickDataLiteBuffer))
+        memset(self._data, 0, sizeof(_TickDataLiteBuffer))
 
         # Initialize base class fields
         MarketData.__init__(self, ticker, timestamp)
 
-        # Set data type for OrderBook
-        self._data.MetaInfo.dtype = DataType.ORDER_BOOK
+        # Set data type for TickDataLite
+        self._data.MetaInfo.dtype = DataType.DTYPE_TICK_LITE
 
-        # Initialize book sides
-        self._bid = Book(1)  # positive for bid
-        self._ask = Book(-1)  # negative for ask
+        # Set other fields
+        self._data.TickDataLite.last_price = last_price
+        self._data.TickDataLite.bid_price = bid_price
+        self._data.TickDataLite.bid_volume = bid_volume
+        self._data.TickDataLite.ask_price = ask_price
+        self._data.TickDataLite.ask_volume = ask_volume
+        self._data.TickDataLite.total_traded_volume = total_traded_volume
+        self._data.TickDataLite.total_traded_notional = total_traded_notional
+        self._data.TickDataLite.total_trade_count = total_trade_count
 
-        # Initialize with kwargs if available
-        if kwargs:
-            for name, value in kwargs.items():
-                self.parse(name=name, value=value)
-            self._update_books_from_buffer()
-        # Initialize with provided data if available
-        else:
-            if bid is not None:
-                self.update_bid(bid)
-            if ask is not None:
-                self.update_ask(ask)
+    @classmethod
+    def from_buffer(cls, const unsigned char[:] buffer):
+        cdef TickDataLite instance = cls.__new__(cls)
 
-    def _parse_entry_name(cls, str name, bint validate=False) -> tuple[str, str, int]:
-        """
-        Parse an entry name like bid_price_X into its components.
-        """
-        cdef str side, key
-        cdef int level
-
-        parts = name.split('_')
-        if len(parts) != 3:
-            raise ValueError(f'Cannot parse kwargs {name}.')
-
-        side, key, level_str = parts
-
-        if validate:
-            if side not in {"bid", "ask"} or key not in {"price", "volume"}:
-                raise ValueError(f'Invalid entry name {name}.')
-            if not level_str.isdigit():
-                raise ValueError(f'Invalid level {level_str} in {name}.')
-
-        level = atoi(level_str)
-        return side, key, level
-
-    def parse(self, str name, float value):
-        cdef int level
-
-        level = atoi(name.split('_')[-1])
-
-        if name.startswith('bid_price_'):
-            self._data.OrderBook.bid_price[level] = value
-        elif name.startswith('bid_volume_'):
-            self._data.OrderBook.bid_volume[level] = value
-        # elif name.startswith('bid_order_'):
-        #     self._data.OrderBook.bid_n_orders[level] = value
-        elif name.startswith('ask_price_'):
-            self._data.OrderBook.ask_price[level] = value
-        elif name.startswith('ask_volume_'):
-            self._data.OrderBook.ask_volume[level] = value
-        # elif name.startswith('ask_order_'):
-        #     self._data.OrderBook.ask_n_orders[level] = value
-
-    def __getbuffer__(self, Py_buffer* buffer, int flags):
-        """
-        Implement the buffer protocol for read-only access.
-        """
-        if self._data == NULL:
-            raise ValueError("Cannot get buffer from uninitialized data")
-        PyBuffer_FillInfo(buffer, self, <_OrderBookBuffer*>self._data, sizeof(_OrderBookBuffer), 1, flags)
-
-    def update_bid(self, list bid_data):
-        """
-        Update the bid side of the order book.
-
-        Args:
-            bid_data (list): List of bid entries [price, volume, n_orders].
-        """
-        cdef double price, volume
-        cdef uint32_t n_orders
-        cdef int i = 0
-
-        # Clear existing bid data
-        self._bid.clear()
-
-        # Update the Cython buffer
-        for i in range(min(len(bid_data), BOOK_SIZE)):
-            entry = bid_data[i]
-            if len(entry) == 2:
-                price, volume = entry
-                n_orders = 0
-                self._data.OrderBook.bid_price[i] = price
-                self._data.OrderBook.bid_volume[i] = volume
-            elif len(entry) == 3:
-                price, volume, n_orders = entry
-                self._data.OrderBook.bid_price[i] = price
-                self._data.OrderBook.bid_volume[i] = volume
-                self._data.OrderBook.bid_n_orders[i] = n_orders
-            else:
-                raise ValueError(f'Bid entry {entry} having too many dimensions.')
-
-            # Update the Book object
-            self._bid.update(price=price, volume=volume, n_orders=n_orders)
-
-    def update_ask(self, list ask_data):
-        """
-        Update the ask side of the order book.
-
-        Args:
-            ask_data (list): List of ask entries [price, volume, n_orders].
-        """
-        cdef double price, volume
-        cdef uint32_t n_orders
-        cdef int i = 0
-
-        # Clear existing ask data
-        self._ask.clear()
-
-        # Update the Cython buffer
-        for i in range(min(len(ask_data), BOOK_SIZE)):
-            entry = ask_data[i]
-            if len(entry) == 2:
-                price, volume = entry
-                n_orders = 0
-                self._data.OrderBook.ask_price[i] = price
-                self._data.OrderBook.ask_volume[i] = volume
-            elif len(entry) == 3:
-                price, volume, n_orders = entry
-                self._data.OrderBook.ask_price[i] = price
-                self._data.OrderBook.ask_volume[i] = volume
-                self._data.OrderBook.ask_n_orders[i] = n_orders
-            else:
-                raise ValueError(f'Ask entry {entry} having too many dimensions.')
-
-            # Update the Book object
-            self._ask.update(price=price, volume=volume, n_orders=n_orders)
-
-    @staticmethod
-    def from_buffer(const unsigned char[:] buffer):
-        """
-        Create an OrderBook instance from a buffer.
-
-        Args:
-            buffer (memoryview): Buffer containing OrderBook data.
-
-        Returns:
-            OrderBook: New OrderBook instance.
-        """
-        cdef OrderBook instance = OrderBook.__new__(OrderBook)
-
-        # Set up the instance
-        instance._owner = True
-        instance._data = <_MarketDataBuffer*>PyMem_Malloc(sizeof(_OrderBookBuffer))
-
-        # Copy data from buffer
-        memcpy(instance._data, &buffer[0], sizeof(_OrderBookBuffer))
-
-        # Initialize book sides
-        instance._bid = Book(1)  # positive for bid
-        instance._ask = Book(-1)  # negative for ask
-
-        # Populate the book sides from the buffer
-        instance._update_books_from_buffer()
+        # Point to the buffer data
+        instance._data = <_MarketDataBuffer*>&buffer[0]
+        instance._owner = False
 
         return instance
 
     def to_bytes(self):
         """
-        Convert the order book to bytes.
-
-        Returns:
-            bytes: Serialized order book data.
+        Convert the instance to bytes.
         """
-        if self._data == NULL:
-            raise ValueError("Cannot convert uninitialized data to bytes")
+        if self._data is NULL:
+            raise ValueError("No data available")
 
-        # Update the buffer from the Book objects
-        self._update_buffer_from_books()
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_OrderBookBuffer))
+        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_TickDataLiteBuffer))
 
     @classmethod
     def from_bytes(cls, bytes data):
-        """
-        Update the order book from bytes.
-
-        Args:
-            data (bytes): Serialized order book data.
-
-        Returns:
-            OrderBook: Self for method chaining.
-        """
-        cdef OrderBook instance = cls.__new__(cls)
+        cdef TickDataLite instance = cls.__new__(cls)
         cdef const char * data_ptr = <const char *> data
 
         instance._owner = True
-        instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_OrderBookBuffer))
+        instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
 
         if instance._data == NULL:
             raise MemoryError("Failed to allocate memory for BarData")
 
-        memcpy(instance._data, data_ptr, sizeof(_OrderBookBuffer))
-
-        # Recreate book sides
-        instance._bid = Book(1)
-        instance._ask = Book(-1)
-
-        # Populate the book sides from the buffer
-        instance._update_books_from_buffer()
+        memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
 
         return instance
 
-    cdef void _update_books_from_buffer(self):
-        cdef int i
+    @property
+    def last_price(self):
+        """Get the last price."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.last_price
 
-        self._bid.clear()
-        self._ask.clear()
+    @property
+    def bid_price(self):
+        """Get the bid price."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.bid_price
 
+    @property
+    def bid_volume(self):
+        """Get the bid volume."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.bid_volume
+
+    @property
+    def ask_price(self):
+        """Get the ask price."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.ask_price
+
+    @property
+    def ask_volume(self):
+        """Get the ask volume."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.ask_volume
+
+    @property
+    def total_traded_volume(self):
+        """Get the total traded volume."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.total_traded_volume
+
+    @property
+    def total_traded_notional(self):
+        """Get the total traded notional."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.total_traded_notional
+
+    @property
+    def total_trade_count(self):
+        """Get the total trade count."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return self._data.TickDataLite.total_trade_count
+
+    @property
+    def mid_price(self):
+        """Get the mid price."""
+        if self._data is NULL:
+            raise ValueError("No data available")
+        return (self._data.TickDataLite.bid_price + self._data.TickDataLite.ask_price) / 2.0
+
+    @property
+    def market_price(self):
+        """Get the market price (alias for last_price)."""
+        return self.last_price
+
+cdef class OrderBook:
+    cdef _OrderBookBuffer * _data
+    cdef public TransactionSide side
+    cdef public bint sorted
+    cdef bint _owner  # Flag to indicate ownership of the buffer
+
+    # Constructor to initialize the object (without allocating memory)
+    def __cinit__(self):
+        self._data = NULL
+        self.sorted = False
+        self._owner = False
+        self.side = TransactionSide.UNKNOWN
+
+    # Initialization function with memory allocation and population
+    def __init__(self, side: TransactionSide, price=None, volume=None, n_orders=None, is_sorted = False):
+        self.sorted = is_sorted
+        self._owner = True
+        self.side = side
+
+        # Allocate memory for _data
+        self._data = <_OrderBookBuffer*> PyMem_Malloc(sizeof(_OrderBookBuffer))
+        memset(self._data, 0, sizeof(_OrderBookBuffer))
+
+        # If prices, volumes, or n_orders are provided, populate them
+        if price is None and self.volume is None:
+            return
+
+        n_entries = len(price)
+        assert n_entries  == len(volume)
+
+        if n_orders is None:
+            for i in range(min(n_entries, BOOK_SIZE)):
+                self._data.entries[i].price = price[i]
+                self._data.entries[i].volume = volume[i]
+                self._data.entries[i].n_orders = 1
+        else:
+            assert n_entries == len(n_orders)
+            for i in range(min(n_entries, BOOK_SIZE)):
+                self._data.entries[i].price = price[i]
+                self._data.entries[i].volume = volume[i]
+                self._data.entries[i].n_orders = n_orders[i]
+
+        self.sort()
+
+    def __dealloc__(self):
+        """
+        Free allocated memory if this instance owns it.
+        """
+        if self._data is not NULL and self._owner:
+            PyMem_Free(self._data)
+            self._data = NULL
+
+    # Method to get price, volume, and n_orders at a specific level
+    def at_price(self, price: float) -> tuple[float, float, float]:
         for i in range(BOOK_SIZE):
-            if self._data.OrderBook.bid_price[i]:
-                self._bid.update(
-                    price=self._data.OrderBook.bid_price[i],
-                    volume=self._data.OrderBook.bid_volume[i],
-                    n_orders=self._data.OrderBook.bid_n_orders[i]
-                )
+            if self._data.entries[i].price == price and self._data.entries[i].n_orders > 0:
+                return self._data.entries[i].price, self._data.entries[i].volume, self._data.entries[i].n_orders
 
-            if self._data.OrderBook.ask_price[i]:
-                self._ask.update(
-                    price=self._data.OrderBook.ask_price[i],
-                    volume=self._data.OrderBook.ask_volume[i],
-                    n_orders=self._data.OrderBook.ask_n_orders[i]
-                )
+        raise IndexError(f'price {price} not found!')
 
+    def at_level(self, index: int) -> tuple[float, float, float]:
+        self.sort()
 
-    cdef void _update_buffer_from_books(self):
-        """
-        Update the internal buffer from the Book objects.
-        """
-        cdef int i
+        if 0 <= index < BOOK_SIZE and self._data.entries[index].n_orders > 0:
+            return self._data.entries[index].price, self._data.entries[index].volume, self._data.entries[index].n_orders
 
-        # Update bid side
-        self._bid.sort()
-        valid_idx = min(len(self._bid), BOOK_SIZE)
-        for i in range(valid_idx):
-            entry = self._bid._book[i]
-            self._data.OrderBook.bid_price[i] = entry[0]
-            self._data.OrderBook.bid_volume[i] = entry[1]
-            self._data.OrderBook.bid_n_orders[i] = entry[2]
+        raise IndexError(f'level {index} not found!')
 
-        for i in range(valid_idx, BOOK_SIZE):
-            self._data.OrderBook.bid_price[i] = 0
-            self._data.OrderBook.bid_volume[i] = 0
-            self._data.OrderBook.bid_n_orders[i] = 0
+    # Method to create OrderBook instance from an existing buffer (without owning the data)
+    @classmethod
+    def from_buffer(cls, buffer):
+        cdef OrderBook instance = cls.__new__(cls)
+        instance._data = <_OrderBookBuffer*> buffer
+        instance._owner = False
+        return instance
 
-        # Update ask side
-        self._ask.sort()
-        valid_idx = min(len(self._ask), BOOK_SIZE)
-        for i in range(valid_idx):
-            entry = self._ask._book[i]
-            self._data.OrderBook.ask_price[i] = entry[0]
-            self._data.OrderBook.ask_volume[i] = entry[1]
-            self._data.OrderBook.ask_n_orders[i] = entry[2]
-
-        for i in range(valid_idx, BOOK_SIZE):
-            self._data.OrderBook.ask_price[i] = 0
-            self._data.OrderBook.ask_volume[i] = 0
-            self._data.OrderBook.ask_n_orders[i] = 0
+    # Numpy conversion
+    def to_numpy(self):
+        import numpy as np
+        return np.array([[self._data.entries[i].price, self._data.entries[i].volume, self._data.entries[i].n_orders] for i in range(BOOK_SIZE)])
 
     @property
-    def bid(self):
-        """
-        Get the bid side of the order book.
-
-        Returns:
-            Book: The bid side.
-        """
-        return self._bid
+    def price(self):
+        return [self._data.entries[i].price for i in range(BOOK_SIZE) if self._data.entries[i].n_orders > 0]
 
     @property
-    def ask(self):
-        """
-        Get the ask side of the order book.
-
-        Returns:
-            Book: The ask side.
-        """
-        return self._ask
+    def volume(self):
+        return [self._data.entries[i].volume for i in range(BOOK_SIZE) if self._data.entries[i].n_orders > 0]
 
     @property
-    def best_bid_price(self):
-        """
-        Get the best bid price in the order book.
+    def n_orders(self):
+        return [self._data.entries[i].n_orders for i in range(BOOK_SIZE) if self._data.entries[i].n_orders > 0]
 
-        Returns:
-            float: The best bid price, or NaN if not available.
-        """
-        if self._bid:
-            return self._bid.best_price
-        return float('nan')
+    # Sort method based on side using qsort
+    def sort(self):
+        if self.sorted:
+            return  # Skip sorting if already sorted
+        if self.side == TransactionSide.BID_ORDER:
+            qsort(self._data.entries, BOOK_SIZE, sizeof(_Entry), compare_entries_bid)
+        elif self.side == TransactionSide.ASK_ORDER:
+            qsort(self._data.entries, BOOK_SIZE, sizeof(_Entry), compare_entries_ask)
+        else:
+            raise ValueError(f'Invalid TransactionSide {self.side}.')
 
-    @property
-    def best_ask_price(self):
-        """
-        Get the best ask price in the order book.
-
-        Returns:
-            float: The best ask price, or NaN if not available.
-        """
-        if self._ask:
-            return self._ask.best_price
-        return float('nan')
-
-    @property
-    def best_bid_volume(self):
-        """
-        Get the best bid volume in the order book.
-
-        Returns:
-            float: The best bid volume, or NaN if not available.
-        """
-        if self._bid:
-            return self._bid.best_volume
-        return float('nan')
-
-    @property
-    def best_ask_volume(self):
-        """
-        Get the best ask volume in the order book.
-
-        Returns:
-            float: The best ask volume, or NaN if not available.
-        """
-        if self._ask:
-            return self._ask.best_volume
-        return float('nan')
-
-    @property
-    def spread(self) -> float:
-        if not (self._bid and self._ask):
-            return float('nan')
-        return self._ask.best_volume - self._bid.best_volume
-
-    @property
-    def mid_price(self) -> float:
-        if not (self.bid and self.ask):
-            return float('nan')
-        return (self._ask.best_volume + self._bid.best_volume) / 2
+        self.sorted = True

@@ -471,31 +471,56 @@ class DailyBar(market_data_cython.BarData):
             raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {super().bar_span}.')
 
 
-class OrderBook(market_data_cython.OrderBook, MarketData):
+
+class TickDataLite(market_data_cython.TickDataLite, MarketData):
     """
-    Python wrapper for OrderBook Cython class.
-    Provides pickle serialization support and additional functionality.
+    Python wrapper for TickDataLite Cython class.
+    Represents tick data for a specific ticker without the order_book field.
     """
 
     def __init__(
             self,
             ticker: str,
             timestamp: float,
-            bid: list[list[float | int]] = None,
-            ask: list[list[float | int]] = None,
+            last_price: float,
+            bid_price: float = float('nan'),
+            bid_volume: float = float('nan'),
+            ask_price: float = float('nan'),
+            ask_volume: float = float('nan'),
+            total_traded_volume: float = 0.0,
+            total_traded_notional: float = 0.0,
+            total_trade_count: int = 0,
             **kwargs
     ):
         """
-        Initialize the order book with values.
+        Initialize a new instance of TickDataLite.
 
         Args:
             ticker (str): The ticker symbol for the market data.
-            timestamp (float): The timestamp of the order book.
-            bid (list, optional): List of bid entries [price, volume, n_orders].
-            ask (list, optional): List of ask entries [price, volume, n_orders].
+            timestamp (float): The timestamp of the tick data.
+            last_price (float): The last traded price.
+            bid_price (float, optional): The bid price. Defaults to None.
+            bid_volume (float, optional): The bid volume. Defaults to None.
+            ask_price (float, optional): The ask price. Defaults to None.
+            ask_volume (float, optional): The ask volume. Defaults to None.
+            total_traded_volume (float, optional): The total traded volume. Defaults to 0.0.
+            total_traded_notional (float, optional): The total traded notional value. Defaults to 0.0.
+            total_trade_count (int, optional): The total number of trades. Defaults to 0.
             **kwargs: Additional keyword arguments.
         """
-        super().__init__(ticker=ticker, timestamp=timestamp, bid=bid, ask=ask)
+        # Create the Cython object
+        super().__init__(
+            ticker=ticker,
+            timestamp=timestamp,
+            last_price=last_price,
+            bid_price=bid_price,
+            bid_volume=bid_volume,
+            ask_price=ask_price,
+            ask_volume=ask_volume,
+            total_traded_volume=total_traded_volume,
+            total_traded_notional=total_traded_notional,
+            total_trade_count=total_trade_count
+        )
         self.__dict__.update(kwargs)
 
     def __reduce__(self):
@@ -506,19 +531,17 @@ class OrderBook(market_data_cython.OrderBook, MarketData):
         """Restore state from pickle"""
         self.__dict__.update(state)
 
-    def update(self, bid=None, ask=None):
+    def __repr__(self) -> str:
         """
-        Update the order book with new bid and ask data.
-
-        Args:
-            bid (list, optional): List of bid entries [price, volume, n_orders].
-            ask (list, optional): List of ask entries [price, volume, n_orders].
+        Returns a string representation of the TickDataLite instance.
 
         Returns:
-            OrderBook: Self for method chaining.
+            str: A string representation of the TickDataLite instance.
         """
-        if bid is not None:
-            self.update_bid(bid)
-        if ask is not None:
-            self.update_ask(ask)
+        return f'<TickDataLite>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
+
+    @classmethod
+    def from_buffer(cls, buffer, **kwargs):
+        self = super().from_buffer(buffer)
+        self.__dict__.update(kwargs)
         return self
