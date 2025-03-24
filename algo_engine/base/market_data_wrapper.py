@@ -1,81 +1,67 @@
 import abc
 import datetime
 import enum
-import inspect
-from typing import TypeVar, Any, Self, Literal
 import logging
+from typing import Self, Literal
+
+import candlestick as candlestick_cython
 import market_data as market_data_cython
+import transaction as transaction_cython
 
 LOGGER = logging.getLogger(__name__)
 from algo_engine.profile import PROFILE
 
 
+class Direction(enum.IntEnum):
+    DIRECTION_UNKNOWN = 1
+    DIRECTION_SHORT = 0
+    DIRECTION_LONG = 2
+
+
+class Offset(enum.IntEnum):
+    OFFSET_CANCEL = 0
+    OFFSET_ORDER = 4
+    OFFSET_OPEN = 8
+    OFFSET_CLOSE = 16
+
+
 class TransactionSide(enum.IntEnum):
-    ShortOrder = AskOrder = Offer_to_Short = -3
-    ShortOpen = Sell_to_Short = -2
-    ShortFilled = LongClose = Sell_to_Unwind = ask = -1
-    UNKNOWN = CANCEL = 0
-    LongFilled = LongOpen = Buy_to_Long = bid = 1
-    ShortClose = Buy_to_Cover = 2
-    LongOrder = BidOrder = Bid_to_Long = 3
+    # Long Side
+    SIDE_LONG_OPEN = Direction.DIRECTION_LONG + Offset.OFFSET_OPEN  # 2 + 8 = 10
+    SIDE_LONG_CLOSE = Direction.DIRECTION_LONG + Offset.OFFSET_CLOSE  # 2 + 16 = 18
+    SIDE_LONG_CANCEL = Direction.DIRECTION_LONG + Offset.OFFSET_CANCEL  # 2 + 0 = 2
+
+    # Short Side
+    SIDE_SHORT_OPEN = Direction.DIRECTION_SHORT + Offset.OFFSET_OPEN  # 0 + 8 = 8
+    SIDE_SHORT_CLOSE = Direction.DIRECTION_SHORT + Offset.OFFSET_CLOSE  # 0 + 16 = 16
+    SIDE_SHORT_CANCEL = Direction.DIRECTION_SHORT + Offset.OFFSET_CANCEL  # 0 + 0 = 0
+
+    # Order
+    SIDE_BID = Direction.DIRECTION_LONG + Offset.OFFSET_ORDER  # 2 + 4 = 6
+    SIDE_ASK = Direction.DIRECTION_SHORT + Offset.OFFSET_ORDER  # 0 + 4 = 4
+
+    # Generic Cancel
+    SIDE_CANCEL = Direction.DIRECTION_UNKNOWN + Offset.OFFSET_CANCEL  # 1 + 0 = 1
+
+    # Alias
+    SIDE_UNKNOWN = SIDE_CANCEL  # 1
+    SIDE_LONG = SIDE_LONG_OPEN  # 10
+    SIDE_SHORT = SIDE_SHORT_OPEN  # 8
+
+    # Backward compatibility
+    ShortOrder = AskOrder = Ask = SIDE_ASK
+    LongOrder = BidOrder = Bid = SIDE_BID
+
+    ShortFilled = Unwind = Sell = SIDE_SHORT_CLOSE
+    LongFilled = LongOpen = Buy = SIDE_LONG_OPEN
+
+    ShortOpen = Short = SIDE_SHORT_OPEN
+    Cover = SIDE_LONG_CLOSE
+
+    UNKNOWN = CANCEL = SIDE_CANCEL
 
     def __neg__(self) -> Self:
-        """
-        Get the opposite transaction side.
-
-        Returns:
-            TransactionSide: The opposite transaction side.
-        """
-        if self is self.LongOpen:
-            return self.LongClose
-        elif self is self.LongClose:
-            return self.LongOpen
-        elif self is self.ShortOpen:
-            return self.ShortClose
-        elif self is self.ShortClose:
-            return self.ShortOpen
-        elif self is self.BidOrder:
-            return self.AskOrder
-        elif self is self.AskOrder:
-            return self.BidOrder
-        else:
-            LOGGER.warning('No valid registered opposite trade side for {}'.format(self))
-            return self.UNKNOWN
-
-    @classmethod
-    def from_offset(cls, direction: str, offset: str) -> Self:
-        """
-        Determine the transaction side from direction and offset.
-
-        Args:
-            direction (str): The trade direction (e.g., 'buy', 'sell').
-            offset (str): The trade offset (e.g., 'open', 'close').
-
-        Returns:
-            TransactionSide: The corresponding transaction side.
-
-        Raises:
-            ValueError: If the direction or offset is not recognized.
-        """
-        direction = direction.lower()
-        offset = offset.lower()
-
-        if direction in ['buy', 'long', 'b']:
-            if offset in ['open', 'wind']:
-                return cls.LongOpen
-            elif offset in ['close', 'cover', 'unwind']:
-                return cls.ShortOpen
-            else:
-                raise ValueError(f'Not recognized {direction} {offset}')
-        elif direction in ['sell', 'short', 's']:
-            if offset in ['open', 'wind']:
-                return cls.ShortOpen
-            elif offset in ['close', 'cover', 'unwind']:
-                return cls.LongClose
-            else:
-                raise ValueError(f'Not recognized {direction} {offset}')
-        else:
-            raise ValueError(f'Not recognized {direction} {offset}')
+        return self.__class__([market_data_cython.TransactionHelper.pyget_opposite(self.value)])
 
     @classmethod
     def _missing_(cls, value: str | int):
@@ -92,110 +78,61 @@ class TransactionSide(enum.IntEnum):
 
         match side_str:
             case 'long' | 'buy' | 'b':
-                trade_side = cls.LongOpen
+                trade_side = cls.SIDE_LONG_OPEN
             case 'short' | 'sell' | 's':
-                trade_side = cls.LongClose
+                trade_side = cls.SIDE_SHORT_CLOSE
             case 'short' | 'ss':
-                trade_side = cls.ShortOpen
+                trade_side = cls.SIDE_SHORT_OPEN
             case 'cover' | 'bc':
-                trade_side = cls.ShortClose
+                trade_side = cls.SIDE_LONG_CLOSE
             case 'ask':
-                trade_side = cls.AskOrder
+                trade_side = cls.SIDE_ASK
             case 'bid':
-                trade_side = cls.BidOrder
+                trade_side = cls.SIDE_BID
             case _:
                 try:
                     trade_side = cls.__getitem__(value)
                 except Exception as _:
-                    trade_side = cls.UNKNOWN
+                    trade_side = cls.SIDE_UNKNOWN
                     LOGGER.warning('{} is not recognized, return TransactionSide.UNKNOWN'.format(value))
 
         return trade_side
 
     @property
     def sign(self) -> int:
-        """
-        Get the sign of the transaction side.
-
-        Returns:
-            int: 1 for buy/long, -1 for sell/short, 0 for unknown.
-        """
-        if self.value == self.Buy_to_Long.value or self.value == self.Buy_to_Cover.value:
-            return 1
-        elif self.value == self.Sell_to_Unwind.value or self.value == self.Sell_to_Short.value:
-            return -1
-        elif self.value == 0:
-            return 0
-        else:
-            frame = inspect.currentframe()
-            caller = inspect.getframeinfo(frame.f_back)
-            LOGGER.warning(f"Requesting .sign of {self.name} is not recommended, use .order_sign instead.\nCalled from {caller.filename}, line {caller.lineno}.")
-            return self.order_sign
+        return market_data_cython.TransactionHelper.pyget_sign(self.value)
 
     @property
-    def order_sign(self) -> int:
-        """
-        Get the order sign of the transaction side.
-
-        Returns:
-            int: 1 for long orders, -1 for short orders, 0 for unknown.
-        """
-        if self.value == self.LongOrder.value:
-            return 1
-        elif self.value == self.ShortOrder.value:
-            return -1
-        elif self.value == 0:
-            return 0
-        else:
-            LOGGER.warning(f'Requesting .order_sign of {self.name} is not recommended, use .sign instead')
-            return self.sign
-
-    @property
-    def offset(self) -> int:
+    def offset(self) -> Offset:
         """
         Get the offset of the transaction side.
 
         Returns:
             int: The offset value, equivalent to the sign.
         """
-        return self.sign
+        return Offset(market_data_cython.TransactionHelper.pyget_offset(self.value))
+
+    @property
+    def direction(self) -> Direction:
+        """
+        Get the offset of the transaction side.
+
+        Returns:
+            int: The offset value, equivalent to the sign.
+        """
+        return Direction(market_data_cython.TransactionHelper.pyget_direction(self.value))
 
     @property
     def side_name(self) -> str:
-        """
-        Get the name of the transaction side.
-
-        Returns:
-            str: 'Long', 'Short', 'ask', 'bid', or 'Unknown'.
-        """
-        if self.value == self.Buy_to_Long.value or self.value == self.Buy_to_Cover.value:
-            return 'Long'
-        elif self.value == self.Sell_to_Unwind.value or self.value == self.Sell_to_Short.value:
-            return 'Short'
-        elif self.value == self.Offer_to_Short.value:
-            return 'ask'
-        elif self.value == self.Bid_to_Long.value:
-            return 'bid'
-        else:
-            return 'Unknown'
+        return market_data_cython.TransactionHelper.pyget_side_name(self.value)
 
     @property
     def offset_name(self) -> str:
-        """
-        Get the offset name of the transaction side.
+        return market_data_cython.TransactionHelper.pyget_offset_name(self.value)
 
-        Returns:
-            str: 'Open', 'Close', 'ask', 'bid', or 'Unknown'.
-        """
-        if self.value == self.Buy_to_Long.value or self.value == self.Sell_to_Short.value:
-            return 'Open'
-        elif self.value == self.Buy_to_Cover.value or self.value == self.Sell_to_Unwind.value:
-            return 'Close'
-        elif self.value == self.Offer_to_Short.value or self.value == self.Bid_to_Long.value:
-            LOGGER.warning(f'Requesting offset of {self.name} is not supported, returns {self.side_name}')
-            return self.side_name
-        else:
-            return 'Unknown'
+    @property
+    def direction_name(self) -> str:
+        return market_data_cython.TransactionHelper.pyget_direction_name(self.value)
 
 
 class OrderType(enum.IntEnum):
@@ -238,7 +175,7 @@ class MarketData(market_data_cython.MarketData, metaclass=abc.ABCMeta):
         return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
 
 
-class TransactionData(market_data_cython.TransactionData, MarketData):
+class TransactionData(transaction_cython.TransactionData, MarketData):
     def __init__(
             self,
             ticker: str,
@@ -273,7 +210,7 @@ class TransactionData(market_data_cython.TransactionData, MarketData):
         return TransactionSide(super().side)
 
 
-class BarData(market_data_cython.BarData, MarketData):
+class BarData(candlestick_cython.BarData, MarketData):
     def __init__(
             self,
             ticker: str,
@@ -357,7 +294,7 @@ class BarData(market_data_cython.BarData, MarketData):
         return datetime.timedelta(seconds=super().bar_span)
 
 
-class DailyBar(market_data_cython.BarData):
+class DailyBar(candlestick_cython.BarData):
     def __init__(
             self,
             ticker: str,
@@ -380,7 +317,7 @@ class DailyBar(market_data_cython.BarData):
                 bar_span = (market_date - start_date).days
         else:
             if isinstance(bar_span, datetime.timedelta):
-                bar_span = bar_span.days()
+                bar_span = bar_span.days
             else:
                 bar_span = float(bar_span)
 
@@ -469,7 +406,6 @@ class DailyBar(market_data_cython.BarData):
             return 'Daily-Plus'
         else:
             raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {super().bar_span}.')
-
 
 
 class TickDataLite(market_data_cython.TickDataLite, MarketData):

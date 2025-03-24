@@ -44,12 +44,26 @@ typedef enum {
 typedef struct {
     double price;
     double volume;
-    unsigned int n_orders;
+    uint64_t n_orders;
 } Entry;
 
 int compare_entries_bid(const void* a, const void* b) {
     Entry* entry_a = (Entry*) a;
     Entry* entry_b = (Entry*) b;
+
+    // If both have n_orders == 0, they are equal
+    if (entry_a->n_orders == 0 && entry_b->n_orders == 0) {
+        return 0;
+    }
+    // If only entry_b has n_orders == 0, entry_a should be considered larger
+    if (entry_b->n_orders == 0) {
+        return -1;
+    }
+    // If only entry_a has n_orders == 0, entry_b should be considered larger
+    if (entry_a->n_orders == 0) {
+        return 1;
+    }
+
     if (entry_a->price < entry_b->price) {
         return 1;
     } else if (entry_a->price > entry_b->price) {
@@ -61,6 +75,20 @@ int compare_entries_bid(const void* a, const void* b) {
 int compare_entries_ask(const void* a, const void* b) {
     Entry* entry_a = (Entry*) a;
     Entry* entry_b = (Entry*) b;
+
+    // If both have n_orders == 0, they are equal
+    if (entry_a->n_orders == 0 && entry_b->n_orders == 0) {
+        return 0;
+    }
+    // If only entry_b has n_orders == 0, entry_a should be considered larger
+    if (entry_b->n_orders == 0) {
+        return -1;
+    }
+    // If only entry_a has n_orders == 0, entry_b should be considered larger
+    if (entry_a->n_orders == 0) {
+        return 1;
+    }
+
     if (entry_a->price < entry_b->price) {
         return -1;
     } else if (entry_a->price > entry_b->price) {

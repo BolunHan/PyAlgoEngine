@@ -76,14 +76,14 @@ cdef struct _MetaInfo:
     double timestamp
 
 # OrderBookEntry structure
-cdef struct _Entry:
+cdef struct _OrderBookEntry:
     double price
     double volume
     uint64_t n_orders
 
 # OrderBookBuffer structure
 cdef struct _OrderBookBuffer:
-    _Entry entries[BOOK_SIZE]
+    _OrderBookEntry entries[BOOK_SIZE]
 
 # BarData structure
 cdef struct _CandlestickBuffer:
@@ -151,7 +151,7 @@ cdef union _MarketDataBuffer:
     _OrderDataBuffer OrderData
     _CandlestickBuffer BarData
     _TickDataLiteBuffer TickDataLite
-    _TickDataBuffer TickData
+    _TickDataBuffer TickDataFull
 
 # Declare MarketData class
 cdef class MarketData:
