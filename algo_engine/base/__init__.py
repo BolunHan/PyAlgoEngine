@@ -40,10 +40,9 @@ if check_cython_module():
     from .transaction import TransactionDirection, TransactionOffset, TransactionSide, OrderType, TransactionData, TradeData, OrderData
     from .tick import TickDataLite, TickData
     from .candlestick import BarData, DailyBar
-elif os.name == 'nt':
-    from .market_utils_nt import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer
 else:
-    from .market_utils_posix import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer
+    import_cmd = f'from .market_utils_{os.name} import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer'
+    eval(import_cmd)
 
 from .technical_analysis import TechnicalAnalysis
 from .trade_utils import OrderState, TradeInstruction, TradeReport
@@ -52,7 +51,7 @@ from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalS
 __all__ = [
     'PROFILE',
     'FinancialDecimal',
-    'TransactionSide', 'OrderType', 'MarketData', 'BarData', 'DailyBar', 'TickDataLite', 'TickData', 'TransactionData', 'TradeData', 'OrderData',
+    'TransactionDirection', 'TransactionOffset', 'TransactionSide', 'OrderType', 'MarketData', 'BarData', 'DailyBar', 'TickDataLite', 'TickData', 'TransactionData', 'TradeData', 'OrderData',
     # 'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer',
     # 'MarketDataPointer', 'OrderBookPointer', 'BarDataPointer', 'TickDataPointer', 'TransactionDataPointer',
     'TechnicalAnalysis',
