@@ -1,9 +1,14 @@
 # cython: language_level=3
-from libc.stdint cimport uint8_t
-from libc.string cimport memcpy, memset
+from abc import abstractmethod
+
 from cpython.buffer cimport PyBuffer_FillInfo
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from cpython.datetime cimport datetime, date
 from cpython.mem cimport PyMem_Free
+from libc.stdint cimport uint8_t
+from libc.string cimport memcpy, memset
+
+from ..profile import PROFILE
 
 # Helper class for TransactionSide
 cdef class TransactionHelper:
@@ -76,7 +81,33 @@ cdef class TransactionHelper:
         elif side == Side.SIDE_CANCEL:
             return "cancel"
         else:
+            return f"unknown({side})"
+
+    @staticmethod
+    cdef const char* get_order_type_name(int order_type):
+        """
+        Get the string representation of the order type.
+        """
+        if order_type == OrderType.ORDER_UNKNOWN:
             return "unknown"
+        elif order_type == OrderType.ORDER_CANCEL:
+            return "cancel"
+        elif order_type == OrderType.ORDER_GENERIC:
+            return "generic"
+        elif order_type == OrderType.ORDER_LIMIT:
+            return "limit"
+        elif order_type == OrderType.ORDER_LIMIT_MAKER:
+            return "limit_maker"
+        elif order_type == OrderType.ORDER_MARKET:
+            return "market"
+        elif order_type == OrderType.ORDER_FOK:
+            return "fok"
+        elif order_type == OrderType.ORDER_FAK:
+            return "fak"
+        elif order_type == OrderType.ORDER_IOC:
+            return "ioc"
+        else:
+            return f"unknown({order_type})"
 
     @staticmethod
     cdef const char* get_direction_name(int side):
@@ -147,7 +178,30 @@ cdef class TransactionHelper:
         elif side == Side.SIDE_CANCEL:
             return "cancel"
         else:
+            return f"unknown({side})"
+
+    @classmethod
+    def pyget_order_type_name(cls, int order_type) -> str:
+        if order_type == OrderType.ORDER_UNKNOWN:
             return "unknown"
+        elif order_type == OrderType.ORDER_CANCEL:
+            return "cancel"
+        elif order_type == OrderType.ORDER_GENERIC:
+            return "generic"
+        elif order_type == OrderType.ORDER_LIMIT:
+            return "limit"
+        elif order_type == OrderType.ORDER_LIMIT_MAKER:
+            return "limit_maker"
+        elif order_type == OrderType.ORDER_MARKET:
+            return "market"
+        elif order_type == OrderType.ORDER_FOK:
+            return "fok"
+        elif order_type == OrderType.ORDER_FAK:
+            return "fak"
+        elif order_type == OrderType.ORDER_IOC:
+            return "ioc"
+        else:
+            return f"unknown({order_type})"
 
     @classmethod
     def pyget_direction_name(cls, int side) -> str:
@@ -200,7 +254,7 @@ cdef class MarketData:
             PyMem_Free(self._data)
             self._data = NULL
 
-    def __init__(self, str ticker, double timestamp):
+    def __init__(self, str ticker, double timestamp, **kwargs):
         """
         Initialize the market data with values.
         This method should only be called after memory has been allocated by a child class.
@@ -216,6 +270,31 @@ cdef class MarketData:
 
         self._data.MetaInfo.timestamp = timestamp
         self._data.MetaInfo.dtype = DataType.DTYPE_MARKET_DATA
+
+        if kwargs:
+            self._additional = kwargs.copy()
+
+    def __reduce__(self):
+        """Support for pickle serialization"""
+        return self.__class__.from_bytes, (self.to_bytes(),), self._additional
+
+    def __setstate__(self, state):
+        """Restore state from pickle"""
+        if state:
+            self._additional = state.copy()
+
+    def __copy__(self):
+        return self.__class__.from_bytes(self.to_bytes())
+
+    @classmethod
+    @abstractmethod
+    def from_buffer(cls, const unsigned char[:] buffer):
+        ...
+
+    @classmethod
+    @abstractmethod
+    def from_bytes(cls, bytes data):
+        ...
 
     def to_bytes(self):
         """
@@ -302,3 +381,11 @@ cdef class MarketData:
         if self._data == NULL:
             raise ValueError("Data not initialized")
         return self._data.MetaInfo.dtype
+
+    @property
+    def topic(self) -> str:
+        return f'{self.ticker}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) -> datetime | date:
+        return datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)

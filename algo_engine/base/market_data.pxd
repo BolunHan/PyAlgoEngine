@@ -9,18 +9,18 @@ cdef extern from "market_data_external.c":
     const int BOOK_SIZE
     const int ID_SIZE
 
-    cdef enum Direction:
+    ctypedef enum Direction:
         DIRECTION_UNKNOWN
         DIRECTION_SHORT
         DIRECTION_LONG
 
-    cdef enum Offset:
+    ctypedef enum Offset:
         OFFSET_CANCEL
         OFFSET_ORDER
         OFFSET_OPEN
         OFFSET_CLOSE
 
-    cdef enum Side:
+    ctypedef enum Side:
         SIDE_LONG_OPEN
         SIDE_LONG_CLOSE
         SIDE_LONG_CANCEL
@@ -55,19 +55,9 @@ cdef public enum DataType:
     DTYPE_TICK = 32
     DTYPE_BAR = 40
 
-# ID Structures
-cdef struct IntID:
+cdef struct _ID:
     uint8_t id_type
     char data[ID_SIZE]
-
-cdef struct StrID:
-    uint8_t id_type
-    char data[ID_SIZE]
-
-cdef union UnionID:
-    uint8_t id_type
-    IntID id_int
-    StrID id_str
 
 # Meta info structure
 cdef struct _MetaInfo:
@@ -129,9 +119,9 @@ cdef struct _TransactionDataBuffer:
     int32_t side
     double multiplier
     double notional
-    UnionID transaction_id
-    UnionID buy_id
-    UnionID sell_id
+    _ID transaction_id
+    _ID buy_id
+    _ID sell_id
 
 # OrderData structure
 cdef struct _OrderDataBuffer:
@@ -141,7 +131,7 @@ cdef struct _OrderDataBuffer:
     double price
     double volume
     int32_t side
-    UnionID order_id
+    _ID order_id
     int32_t order_type
 
 # Base MarketData structure as a union
@@ -158,10 +148,12 @@ cdef class MarketData:
     cdef _MarketDataBuffer * _data
     cdef bint _owner
     cdef int _dtype
+    cdef public dict _additional
 
     # the property of MarketData
     cdef str ticker
     cdef float timestamp
+    cdef float market_price
     cdef int dtype
 
 # Declare TransactionHelper class
@@ -180,6 +172,9 @@ cdef class TransactionHelper:
 
     @staticmethod
     cdef const char* get_side_name(int side)
+
+    @staticmethod
+    cdef const char* get_order_type_name(int order_type)
 
     @staticmethod
     cdef const char* get_direction_name(int side)

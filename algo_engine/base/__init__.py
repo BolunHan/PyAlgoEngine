@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 
 from .telemetrics import LOGGER
 from ..profile import PROFILE
@@ -19,26 +20,42 @@ def set_logger(logger: logging.Logger):
     console_utils.LOGGER = logger.getChild('Console')
 
 
+def check_cython_module() -> bool:
+    for name in ['market_data', 'transaction', 'tick', 'candlestick']:
+        cython_ext = '.pyd' if os.name == 'nt' else '.so'
+        for file in pathlib.Path(__file__).parent.glob(f'*{cython_ext}'):
+            if file.name.startswith(name):
+                break
+        else:
+            LOGGER.warning(f'Cython module {name} not found!')
+            return False
+
+    return True
+
+
 from .finance_decimal import FinancialDecimal
 
-if os.name == 'nt':
+if check_cython_module():
+    from .market_data import MarketData
+    from .transaction import TransactionDirection, TransactionOffset, TransactionSide, OrderType, TransactionData, TradeData, OrderData
+    from .tick import TickDataLite, TickData
+    from .candlestick import BarData, DailyBar
+elif os.name == 'nt':
     from .market_utils_nt import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer
 else:
     from .market_utils_posix import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer
-
-    # from .market_utils_posix import OrderType
-    # from .market_utils import TransactionSide, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData
-    # from .market_buffer import MarketDataPointer, MarketDataMemoryBuffer, OrderBookPointer, OrderBookBuffer, BarDataPointer, BarDataBuffer, TickDataPointer, TickDataBuffer, TransactionDataPointer, TransactionDataBuffer
 
 from .technical_analysis import TechnicalAnalysis
 from .trade_utils import OrderState, TradeInstruction, TradeReport
 from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalStyle, InteractiveShell, ShellTransfer
 
-__all__ = ['PROFILE',
-           'FinancialDecimal',
-           'TransactionSide', 'OrderType', 'MarketData', 'OrderBook', 'BarData', 'DailyBar', 'CandleStick', 'TickData', 'TransactionData', 'TradeData', 'OrderData', 'MarketDataBuffer', 'MarketDataRingBuffer',
-           # 'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer',
-           # 'MarketDataPointer', 'OrderBookPointer', 'BarDataPointer', 'TickDataPointer', 'TransactionDataPointer',
-           'TechnicalAnalysis',
-           'OrderState', 'TradeInstruction', 'TradeReport',
-           'Progress', 'GetInput', 'GetArgs', 'count_ordinal', 'TerminalStyle', 'InteractiveShell', 'ShellTransfer']
+__all__ = [
+    'PROFILE',
+    'FinancialDecimal',
+    'TransactionSide', 'OrderType', 'MarketData', 'BarData', 'DailyBar', 'TickDataLite', 'TickData', 'TransactionData', 'TradeData', 'OrderData',
+    # 'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer',
+    # 'MarketDataPointer', 'OrderBookPointer', 'BarDataPointer', 'TickDataPointer', 'TransactionDataPointer',
+    'TechnicalAnalysis',
+    'OrderState', 'TradeInstruction', 'TradeReport',
+    'Progress', 'GetInput', 'GetArgs', 'count_ordinal', 'TerminalStyle', 'InteractiveShell', 'ShellTransfer'
+]

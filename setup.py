@@ -41,13 +41,45 @@ if os.getenv('GITHUB_ACTIONS') == 'true':
     ext_modules = []
 else:
     # Define Cython extension (use the .pyx file)
-    ext_modules = [
+    from Cython.Build import cythonize
+
+    cython_ext = [
         Extension(
-            "algo_engine.base.market_utils_posix",
-            ["algo_engine/base/market_utils_posix.pyx"],
+            name="algo_engine.base.market_data",
+            sources=["algo_engine/base/market_data.pyx"],
+            extra_compile_args=['-O3', '-flto'],
+            extra_link_args=['-flto', '-s']
+        ),
+        Extension(
+            name="algo_engine.base.transaction",
+            sources=["algo_engine/base/transaction.pyx"],
+            extra_compile_args=['-O3', '-flto'],
+            extra_link_args=['-flto', '-s']
+        ),
+        Extension(
+            name="algo_engine.base.candlestick",
+            sources=["algo_engine/base/candlestick.pyx"],
+            extra_compile_args=['-O3', '-flto'],
+            extra_link_args=['-flto', '-s']
+        ),
+        Extension(
+            name="algo_engine.base.tick",
+            sources=["algo_engine/base/tick.pyx"],
+            extra_compile_args=['-O3', '-flto'],
+            extra_link_args=['-flto', '-s']
         )
     ]
 
+    ext_modules = cythonize(
+        cython_ext,
+        compiler_directives={
+            'language_level': "3",
+            'optimize.use_switch': True,
+            'optimize.unpack_method_calls': True,
+            'binding': False
+        },
+        annotate=False
+    )
 
 long_description = read("README.md")
 

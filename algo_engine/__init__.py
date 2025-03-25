@@ -1,4 +1,4 @@
-__version__ = "0.8.0.alpha2"
+__version__ = "0.8.0.alpha3"
 
 import logging
 import os

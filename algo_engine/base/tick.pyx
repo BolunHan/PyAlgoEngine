@@ -1,8 +1,7 @@
-# tick.pyx
 # cython: language_level=3
 from collections.abc import Sequence
 
-from market_data cimport MarketData, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
+from .market_data cimport MarketData, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
@@ -28,13 +27,14 @@ cdef class TickDataLite(MarketData):
             str ticker,
             double timestamp,
             double last_price,
-            double bid_price=NAN,
-            double bid_volume=NAN,
-            double ask_price=NAN,
-            double ask_volume=NAN,
+            double bid_price,
+            double bid_volume,
+            double ask_price,
+            double ask_volume,
             double total_traded_volume=0.0,
             double total_traded_notional=0.0,
-            uint32_t total_trade_count=0
+            uint32_t total_trade_count=0,
+            **kwargs
     ):
         """
         Initialize the tick data with values.
@@ -46,7 +46,7 @@ cdef class TickDataLite(MarketData):
         memset(self._data, 0, sizeof(_TickDataLiteBuffer))
 
         # Initialize base class fields
-        MarketData.__init__(self, ticker, timestamp)
+        MarketData.__init__(self, ticker=ticker, timestamp=timestamp, **kwargs)
 
         # Set data type for TickDataLite
         self._data.MetaInfo.dtype = DataType.DTYPE_TICK_LITE
@@ -408,7 +408,7 @@ cdef class TickData(TickDataLite):
         memset(self._data, 0, sizeof(_TickDataBuffer))
 
         # Initialize MarketData base
-        MarketData.__init__(self, ticker, timestamp)
+        MarketData.__init__(self, ticker=ticker, timestamp=timestamp)
 
         # Set data type for TickData
         self._data.MetaInfo.dtype = DataType.DTYPE_TICK
@@ -430,11 +430,17 @@ cdef class TickData(TickDataLite):
 
         self._ask_book = OrderBook.__new__(OrderBook)
         self._ask_book._data = &self._data.TickDataFull.ask
-        self._bid_book.side = Side.SIDE_ASK
+        self._ask_book.side = Side.SIDE_ASK
 
         # Parse kwargs to initialize the order books
         if kwargs:
             self.parse(kwargs)
+
+    cdef void _set_additional(self, str name, object value):
+        if self._additional is None:
+            self._additional = {name: value}
+        else:
+            self._additional[name] = value
 
     cpdef void parse(self, dict kwargs):
         """
@@ -448,43 +454,59 @@ cdef class TickData(TickDataLite):
         cdef int level
         cdef str key_type, book_type
         cdef object value
-        cdef bint[BOOK_SIZE] bid_init, ask_init
+        cdef bint[BOOK_SIZE] bid_init
+        cdef bint[BOOK_SIZE] ask_init
+
+        memset(&bid_init[0], 0, BOOK_SIZE * sizeof(bint))
+        memset(&ask_init[0], 0, BOOK_SIZE * sizeof(bint))
 
         # Process each keyword argument
         for key, value in kwargs.items():
             parts = key.split('_')
             if len(parts) != 3:
+                self._set_additional(name=key, value=value)
                 continue
 
             book_type = parts[0]  # 'bid' or 'ask'
             key_type = parts[1]   # 'price', 'volume', or 'orders'
-            level = int(parts[2]) - 1  # Convert to 0-based index
 
             # Check if there's a level number
-            if len(parts) >= 3 and parts[2].isdigit():
+            if not parts[2].isdigit():
+                self._set_additional(name=key, value=value)
+                continue
 
-                # Skip if level is out of range
-                if level < 0 or level >= BOOK_SIZE:
+            level = int(parts[2]) - 1  # Convert to 0-based index
+
+            # Skip if level is out of range
+            if level < 0 or level >= BOOK_SIZE:
+                self._set_additional(name=key, value=value)
+                continue
+
+            # Store in appropriate book data dictionary
+            if book_type == 'bid':
+                if key_type == 'price':
+                    self._data.TickDataFull.bid.entries[level].price = value
+                elif key_type == 'volume':
+                    self._data.TickDataFull.bid.entries[level].volume = value
+                elif key_type == 'orders':
+                    self._data.TickDataFull.bid.entries[level].n_orders = int(value)
+                else:
+                    self._set_additional(name=key, value=value)
                     continue
-
-                # Store in appropriate book data dictionary
-                if book_type == 'bid':
-                    bid_init[level] = True
-                    if key_type == 'price':
-                        self._data.TickDataFull.bid.entries[level].price = value
-                    elif key_type == 'volume':
-                        self._data.TickDataFull.bid.entries[level].volume = value
-                    elif key_type == 'orders':
-                        self._data.TickDataFull.bid.entries[level].n_orders = int(value)
-
-                elif book_type == 'ask':
-                    ask_init[level] = True
-                    if key_type == 'price':
-                        self._data.TickDataFull.ask.entries[level].price = value
-                    elif key_type == 'volume':
-                        self._data.TickDataFull.ask.entries[level].volume = value
-                    elif key_type == 'orders':
-                        self._data.TickDataFull.ask.entries[level].n_orders = int(value)
+                bid_init[level] = True
+            elif book_type == 'ask':
+                if key_type == 'price':
+                    self._data.TickDataFull.ask.entries[level].price = value
+                elif key_type == 'volume':
+                    self._data.TickDataFull.ask.entries[level].volume = value
+                elif key_type == 'orders':
+                    self._data.TickDataFull.ask.entries[level].n_orders = int(value)
+                else:
+                    self._set_additional(name=key, value=value)
+                    continue
+                ask_init[level] = True
+            else:
+                self._set_additional(name=key, value=value)
 
         # Validate and fix the books
         for i in range(BOOK_SIZE):
@@ -495,8 +517,8 @@ cdef class TickData(TickDataLite):
                 self._data.TickDataFull.ask.entries[i].n_orders = 1
 
         # Sort the books
-        # self._bid_book.sort()
-        # self._ask_book.sort()
+        self._bid_book.sort()
+        self._ask_book.sort()
 
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):

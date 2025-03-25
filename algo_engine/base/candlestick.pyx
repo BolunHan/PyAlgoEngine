@@ -1,11 +1,17 @@
 # cython: language_level=3
-from market_data cimport MarketData, _MarketDataBuffer, _CandlestickBuffer, DataType
+from typing import Literal
 
-from libc.string cimport memcpy, memset
-from libc.stdint cimport uint32_t
+from .market_data cimport MarketData, _MarketDataBuffer, _CandlestickBuffer, DataType
+
 from cpython.buffer cimport PyBuffer_FillInfo
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from cpython.datetime cimport datetime, date, timedelta
 from cpython.mem cimport PyMem_Malloc
+from libc.math cimport NAN
+from libc.string cimport memcpy, memset
+from libc.stdint cimport uint32_t
+
+from ..profile import PROFILE
 
 cdef class BarData(MarketData):
     """
@@ -18,7 +24,7 @@ cdef class BarData(MarketData):
         self._dtype = DataType.DTYPE_BAR
         self._owner = True
 
-    def __init__(self, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, double bar_span=0.0):
+    def __init__(self, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
         """
         Initialize the bar data with values.
         """
@@ -29,10 +35,21 @@ cdef class BarData(MarketData):
         memset(self._data, 0, sizeof(_CandlestickBuffer))
 
         # Initialize base class fields
-        MarketData.__init__(self, ticker, timestamp)
+        MarketData.__init__(self, ticker=ticker, timestamp=timestamp, **kwargs)
 
         # Set data type for BarData
         self._data.MetaInfo.dtype = DataType.DTYPE_BAR
+
+        if bar_span is None:
+            if not start_timestamp:
+                raise ValueError('Must assign either start_timestamp or bar_span or both.')
+            else:
+                bar_span = timestamp - start_timestamp
+        else:
+            if isinstance(bar_span, timedelta):
+                bar_span = bar_span.total_seconds()
+            else:
+                bar_span = float(bar_span)
 
         # Initialize bar-specific fields
         self._data.BarData.high_price = high_price
@@ -184,13 +201,19 @@ cdef class BarData(MarketData):
         return self._data.BarData.timestamp - self._data.BarData.bar_span
 
     @property
-    def bar_span(self) -> float:
+    def bar_span_seconds(self) -> float:
         """
         Get the duration of the bar.
         """
         if self._data == NULL:
             raise ValueError("Data not initialized")
         return self._data.BarData.bar_span
+
+    @property
+    def bar_span(self) -> timedelta:
+        if self._data == NULL:
+            raise ValueError("Data not initialized")
+        return timedelta(seconds=self._data.BarData.bar_span)
 
     @property
     def vwap(self) -> float:
@@ -200,8 +223,55 @@ cdef class BarData(MarketData):
         if self._data == NULL:
             raise ValueError("Data not initialized")
         if self._data.BarData.volume <= 0:
-            return 0.0
+            return NAN
         return self._data.BarData.notional / self._data.BarData.volume
+
+    @property
+    def bar_type(self) -> Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']:
+        """
+        Determines the type of the bar based on its span.
+
+        Returns:
+            Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']: The type of the bar.
+        """
+        if self._data == NULL:
+            raise ValueError("Data not initialized")
+        bar_span = self._data.BarData.bar_span
+
+        if bar_span > 3600:
+            return 'Hourly-Plus'
+        elif bar_span == 3600:
+            return 'Hourly'
+        elif bar_span > 60:
+            return 'Minute-Plus'
+        elif bar_span == 60:
+            return 'Minute'
+        else:
+            return 'Sub-Minute'
+
+    @property
+    def bar_end_time(self) -> datetime | date:
+        """
+        The end time of the bar.
+
+        Returns:
+            datetime | date: The end time of the bar.
+        """
+        if self._data == NULL:
+            raise ValueError("Data not initialized")
+        return datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
+
+    @property
+    def bar_start_time(self) -> datetime:
+        """
+        The start time of the bar.
+
+        Returns:
+            datetime: The start time of the bar.
+        """
+        if self._data == NULL:
+            raise ValueError("Data not initialized")
+        return datetime.fromtimestamp(self.start_timestamp, tz=PROFILE.time_zone)
 
     def __repr__(self) -> str:
         """
@@ -210,3 +280,83 @@ cdef class BarData(MarketData):
         if self._data == NULL:
             return "BarData(uninitialized)"
         return f"BarData(ticker='{self.ticker}', timestamp={self.timestamp}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+
+
+class DailyBar(BarData):
+    def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):
+        timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
+
+        super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
+
+    def __repr__(self) -> str:
+        if (bar_span := super().bar_span_seconds) == 1:
+            return f"DailyBar(ticker='{self.ticker}', date={self.market_date}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+        else:
+            return f"DailyBar(ticker='{self.ticker}', date={self.market_date}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+
+    @property
+    def market_date(self) -> date:
+        """
+        The market date of the bar.
+
+        Returns:
+            date: The market date of the bar.
+        """
+
+        int_date = int(self.timestamp)
+        y, _m = divmod(int_date, 10000)
+        m, d = divmod(_m, 100)
+
+        return date(year=y, month=m, day=d)
+
+    @property
+    def market_time(self) -> date:
+        """
+        The market date of the bar (same as `market_date`).
+
+        Returns:
+            date: The market date of the bar.
+        """
+        return self.market_date
+
+    @property
+    def bar_start_time(self) -> date:
+        """
+        The start date of the bar period.
+
+        Returns:
+            date: The start date of the bar.
+        """
+        return self.market_date - self.bar_span
+
+    @property
+    def bar_end_time(self) -> date:
+        """
+        The end date of the bar period.
+
+        Returns:
+            date: The end date of the bar.
+        """
+        return self.market_date
+
+    @property
+    def bar_span(self) -> timedelta:
+        return timedelta(days=super().bar_span_seconds)
+
+    @property
+    def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
+        """
+        Determines the type of the bar based on its span.
+
+        Returns:
+            Literal['Daily', 'Daily-Plus']: The type of the bar.
+
+        Raises:
+            ValueError: If `bar_span` is not valid for a daily bar.
+        """
+        if (bar_span := super().bar_span_seconds) == 1:
+            return 'Daily'
+        elif bar_span > 1:
+            return 'Daily-Plus'
+        else:
+            raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {super().bar_span}.')
