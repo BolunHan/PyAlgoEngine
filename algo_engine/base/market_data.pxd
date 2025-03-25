@@ -150,6 +150,8 @@ cdef class MarketData:
     cdef int _dtype
     cdef public dict _additional
 
+    cdef void _set_additional(self, str name, object value)
+
     # the property of MarketData
     cdef str ticker
     cdef float timestamp

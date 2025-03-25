@@ -284,6 +284,24 @@ cdef class MarketData:
     def __copy__(self):
         return self.__class__.from_bytes(self.to_bytes())
 
+    def __setattr__(self, key, value):
+        if hasattr(self, key):
+            raise AttributeError(f'{self.__class__.__name__} is readonly.')
+
+        self._set_additional(name=key, value=value)
+
+    def __getattr__(self, key):
+        if key in self._additional:
+            return self._additional[key]
+
+        raise AttributeError(f'Can not find attribute {key}.')
+
+    cdef void _set_additional(self, str name, object value):
+        if self._additional is None:
+            self._additional = {name: value}
+        else:
+            self._additional[name] = value
+
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         ...

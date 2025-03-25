@@ -231,7 +231,7 @@ cdef class TransactionData(MarketData):
         self._dtype = DataType.DTYPE_TRANSACTION
         self._owner = True
 
-    def __init__(self, str ticker, double timestamp, double price, double volume, int side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
+    def __init__(self, ticker: str, double timestamp, double price, double volume, int side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
         """
         Initialize the transaction data with values.
         """

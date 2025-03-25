@@ -436,12 +436,6 @@ cdef class TickData(TickDataLite):
         if kwargs:
             self.parse(kwargs)
 
-    cdef void _set_additional(self, str name, object value):
-        if self._additional is None:
-            self._additional = {name: value}
-        else:
-            self._additional[name] = value
-
     cpdef void parse(self, dict kwargs):
         """
         Parse keyword arguments to initialize bid and ask books.
