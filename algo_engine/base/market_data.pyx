@@ -1,6 +1,4 @@
 # cython: language_level=3
-from abc import abstractmethod
-
 from cpython.buffer cimport PyBuffer_FillInfo
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime, date
@@ -287,12 +285,10 @@ cdef class MarketData:
         return self.__class__.from_bytes(self.to_bytes())
 
     @classmethod
-    @abstractmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         ...
 
     @classmethod
-    @abstractmethod
     def from_bytes(cls, bytes data):
         ...
 
