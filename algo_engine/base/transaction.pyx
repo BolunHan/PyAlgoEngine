@@ -33,6 +33,31 @@ class TransactionDirection(enum.IntEnum):
     DIRECTION_SHORT = Direction.DIRECTION_SHORT  # 0
     DIRECTION_LONG = Direction.DIRECTION_LONG  # 2
 
+    def __or__(self, other: TransactionOffset):
+        """
+        Combine with TransactionOffset to get TransactionSide.
+
+        Args:
+            other (TransactionOffset): The offset to combine with
+
+        Returns:
+            TransactionSide: The combined transaction side
+        """
+        if not isinstance(other, TransactionOffset):
+            raise TypeError(f'{self.__class__.__name__} Can only merge with a TransactionOffset.')
+
+        combined_value = self.value + other.value
+        side = TransactionSide(combined_value)
+
+        if side is TransactionSide.FAULTY:
+            raise ValueError(f"Combination of {self.name} and {other.name} doesn't correspond to a valid TransactionSide")
+
+        return side
+
+    @property
+    def sign(self):
+        return self.value - 1
+
 
 # Python wrapper for Offset enum
 class TransactionOffset(enum.IntEnum):
@@ -43,6 +68,27 @@ class TransactionOffset(enum.IntEnum):
     OFFSET_ORDER = Offset.OFFSET_ORDER  # 4
     OFFSET_OPEN = Offset.OFFSET_OPEN  # 8
     OFFSET_CLOSE = Offset.OFFSET_CLOSE  # 16
+
+    def __or__(self, other: TransactionDirection):
+        """
+        Combine with TransactionDirection to get TransactionSide.
+
+        Args:
+            other (TransactionDirection): The direction to combine with
+
+        Returns:
+            TransactionSide: The combined transaction side
+        """
+        if not isinstance(other, TransactionDirection):
+            raise TypeError(f'{self.__class__.__name__} Can only merge with a TransactionDirection.')
+
+        combined_value = self.value + other.value
+        side = TransactionSide(combined_value)
+
+        if side is TransactionSide.FAULTY:
+            raise ValueError(f"Combination of {self.name} and {other.name} doesn't correspond to a valid TransactionSide")
+
+        return side
 
 
 # Python wrapper for TransactionSide enum
@@ -83,8 +129,9 @@ class TransactionSide(enum.IntEnum):
     Cover = SIDE_LONG_CLOSE
 
     UNKNOWN = CANCEL = SIDE_CANCEL
+    FAULTY = -1
 
-    def __neg__(self):
+    def __neg__(self) -> TransactionSide:
         """
         Get the opposite side.
         """
@@ -119,8 +166,8 @@ class TransactionSide(enum.IntEnum):
             try:
                 trade_side = cls.__getitem__(value)
             except Exception:
-                trade_side = cls.SIDE_UNKNOWN
-                print(f'WARNING: {value} is not recognized, return TransactionSide.UNKNOWN')
+                trade_side = cls.FAULTY
+                print(f'WARNING: {value} is not recognized, return TransactionSide.FAULTY')
 
         return trade_side
 
