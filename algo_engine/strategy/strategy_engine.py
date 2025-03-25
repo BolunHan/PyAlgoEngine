@@ -6,7 +6,7 @@ from functools import cached_property
 
 from . import LOGGER
 from ..backtest import SimMatch, ProgressiveReplay
-from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide
+from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset
 from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE
 
 LOGGER = LOGGER.getChild('Strategy')
@@ -306,7 +306,7 @@ class StrategyEngine(StrategyEngineTemplate):
             return executed, remains
 
         # then it must be
-        side = TransactionSide.Sell_to_Unwind if exposure > 0 else TransactionSide.Buy_to_Cover
+        side = (Direction.DIRECTION_SHORT if exposure > 0 else Direction.DIRECTION_LONG) | Offset.OFFSET_CLOSE
 
         if side.sign > 0:  # short position, buy action
             working_open = working_short
@@ -359,8 +359,8 @@ class StrategyEngine(StrategyEngineTemplate):
             return
 
         if side is None:
-            trade_side = TransactionSide.Buy_to_Long if volume > 0 else TransactionSide.Sell_to_Short
-            LOGGER.warning(f'Trade side of open instruction not specified! Presumed to be {trade_side} by the sign of volume!')
+            side = (Direction.DIRECTION_SHORT if volume > 0 else Direction.DIRECTION_LONG) | Offset.OFFSET_OPEN
+            LOGGER.warning(f'Trade side of open instruction not specified! Presumed to be {side} by the sign of volume!')
 
         algo = self.position_tracker.open(
             ticker=ticker,

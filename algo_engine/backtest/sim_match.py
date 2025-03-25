@@ -37,9 +37,9 @@ class SimMatch(object):
         market_data: MarketData | None = kwargs.pop('market_data', None)
 
         if order is not None:
-            if order.order_type == OrderType.LimitOrder:
+            if order.order_type == OrderType.ORDER_LIMIT:
                 self.launch_order(order=order)
-            elif order.order_type == OrderType.CancelOrder:
+            elif order.order_type == OrderType.ORDER_CANCEL:
                 self.cancel_order(order=order)
             else:
                 raise ValueError(f'Invalid order {order}')

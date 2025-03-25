@@ -18,7 +18,7 @@ import pandas as pd
 from . import LOGGER
 from .algo_engine import ALGO_ENGINE, AlgoTemplate
 from .market_engine import MarketDataService, Singleton
-from ..base import TransactionSide, TradeInstruction, MarketData, OrderState, TradeReport
+from ..base import TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset, TradeInstruction, MarketData, OrderState, TradeReport
 
 LOGGER = LOGGER.getChild('TradeEngine')
 __all__ = ['DirectMarketAccess', 'PositionManagementService', 'Balance', 'Inventory', 'RiskProfile']
@@ -328,7 +328,7 @@ class PositionManagementService(object):
             return
 
         to_unwind = abs(exposure)
-        side = TransactionSide.Sell_to_Unwind if exposure > 0 else TransactionSide.Buy_to_Cover
+        side = (Direction.DIRECTION_SHORT if exposure > 0 else Direction.DIRECTION_LONG) | Offset.OFFSET_CLOSE
         self.open(ticker=ticker, target_volume=to_unwind, trade_side=side)
 
     def add_exposure(self, ticker: str, volume: float, notional: float, side: TransactionSide, timestamp: float):
@@ -1144,7 +1144,7 @@ class Inventory(object, metaclass=Singleton):
             self.multiplier = multiplier
 
     class Entry(object):
-        def __init__(self, ticker: str, volume: float, price: float, security_type: Inventory.SecurityType, direction: TransactionSide, **kwargs):
+        def __init__(self, ticker: str, volume: float, price: float, security_type: Inventory.SecurityType, direction: Direction, **kwargs):
             if volume < 0:
                 LOGGER.warning('volume of Inventory.Entry normally should be positive!')
 
@@ -1159,7 +1159,7 @@ class Inventory(object, metaclass=Singleton):
             self.recalled = kwargs.pop('recalled', 0.)
 
         def __repr__(self):
-            return f'<Inventory.Entry>(ticker={self.ticker}, side={self.direction.side_name}, volume={self.volume:,}, fee={self.fee:.2f})'
+            return f'<Inventory.Entry>(ticker={self.ticker}, side={self.direction.name}, volume={self.volume:,}, fee={self.fee:.2f})'
 
         def __add__(self, other):
             if isinstance(other, self.__class__):
@@ -1225,8 +1225,8 @@ class Inventory(object, metaclass=Singleton):
                 ticker=self.ticker,
                 volume=self.volume,
                 price=self.price,
-                security_type=self.security_type.name,
-                direction=self.direction.side_name,
+                security_type=self.security_type.value,
+                direction=self.direction.value,
                 notional=self.notional,
                 fee=self.fee,
                 recalled=self.recalled
@@ -1250,8 +1250,8 @@ class Inventory(object, metaclass=Singleton):
                 ticker=json_dict['ticker'],
                 volume=json_dict['volume'],
                 price=json_dict['price'],
-                security_type=Inventory.SecurityType[json_dict['security_type']],
-                direction=TransactionSide(json_dict['direction']),
+                security_type=Inventory.SecurityType(json_dict['security_type']),
+                direction=Direction(json_dict['direction']),
                 notional=json_dict['notional'],
                 fee=json_dict.get('fee', 0.),
                 recalled=json_dict.get('recalled', 0.),
@@ -1273,12 +1273,12 @@ class Inventory(object, metaclass=Singleton):
 
     def __call__(self, ticker: str):
         return dict(
-            Long=self.available_volume(ticker=ticker, direction=TransactionSide.LongOpen),
-            Short=self.available_volume(ticker=ticker, direction=TransactionSide.ShortOpen)
+            Long=self.available_volume(ticker=ticker, direction=Direction.DIRECTION_LONG),
+            Short=self.available_volume(ticker=ticker, direction=Direction.DIRECTION_SHORT)
         )
 
-    def recall(self, ticker: str, volume: float, direction: TransactionSide = TransactionSide.LongOpen):
-        key = f'{ticker}.{direction.side_name}'
+    def recall(self, ticker: str, volume: float, direction: Direction = Direction.DIRECTION_LONG):
+        key = f'{ticker}.{direction.name}'
         _ = self._inv.get(key, [])
         to_recall = volume
 
@@ -1300,15 +1300,15 @@ class Inventory(object, metaclass=Singleton):
 
     def add_inv(self, entry: Entry):
         self._tickers.add(entry.ticker)
-        key = f'{entry.ticker}.{entry.direction.side_name}'
+        key = f'{entry.ticker}.{entry.direction.name}'
         _ = self._inv.get(key, [])
 
         _.append(entry)
 
         self._inv[key] = _
 
-    def get_inv(self, ticker: str, direction: TransactionSide = TransactionSide.LongOpen) -> Entry | None:
-        key = f'{ticker}.{direction.side_name}'
+    def get_inv(self, ticker: str, direction: Direction = Direction.DIRECTION_LONG) -> Entry | None:
+        key = f'{ticker}.{direction.name}'
         _ = self._inv.get(key, [])
 
         merged_entry = None
@@ -1320,12 +1320,12 @@ class Inventory(object, metaclass=Singleton):
 
         return merged_entry
 
-    def use_inv(self, ticker: str, volume: float, direction: TransactionSide = TransactionSide.LongOpen):
-        key = f'{ticker}.{direction.side_name}'
+    def use_inv(self, ticker: str, volume: float, direction: Direction = Direction.DIRECTION_LONG):
+        key = f'{ticker}.{direction.name}'
 
         self._traded[key] = self._traded.get(key, 0.) + volume
 
-    def available_volume(self, ticker: str, direction: TransactionSide = TransactionSide.LongOpen) -> float:
+    def available_volume(self, ticker: str, direction: Direction = Direction.DIRECTION_LONG) -> float:
         inv = self.get_inv(ticker=ticker, direction=direction)
 
         if inv is None:
@@ -1393,10 +1393,10 @@ class Inventory(object, metaclass=Singleton):
         inv_dict = {'inv_l': {}, 'inv_s': {}}
 
         for ticker in self._inv:
-            if (long_inv := self.get_inv(ticker=ticker, direction=TransactionSide.LongOpen)) is not None:
+            if (long_inv := self.get_inv(ticker=ticker, direction=Direction.DIRECTION_LONG)) is not None:
                 inv_dict['inv_l'][ticker] = long_inv.volume
 
-            if (short_inv := self.get_inv(ticker=ticker, direction=TransactionSide.ShortOpen)) is not None:
+            if (short_inv := self.get_inv(ticker=ticker, direction=Direction.DIRECTION_SHORT)) is not None:
                 inv_dict['inv_s'][ticker] = short_inv.volume
 
         inv_df = pd.DataFrame(inv_dict)
@@ -1422,8 +1422,8 @@ class Inventory(object, metaclass=Singleton):
         info_dict = {'inv_l': {}, 'inv_s': {}}
 
         for ticker in self.tickers:
-            inv_l = self.get_inv(ticker, TransactionSide.LongOpen)
-            inv_s = self.get_inv(ticker, TransactionSide.ShortOpen)
+            inv_l = self.get_inv(ticker=ticker, direction=Direction.DIRECTION_LONG)
+            inv_s = self.get_inv(ticker=ticker, direction=Direction.DIRECTION_SHORT)
 
             if inv_l is not None:
                 info_dict['inv_l'][ticker] = inv_l.volume

@@ -371,7 +371,7 @@ class TradeInstruction(TradeBaseClass):
             side: int | float | str | TransactionSide,
             volume: float,
             timestamp: float,
-            order_type: int | float | str | OrderType = OrderType.Generic,
+            order_type: int | float | str | OrderType = OrderType.ORDER_GENERIC,
             limit_price: float = None,
             order_id: str = None,
             multiplier: float = None,
@@ -413,7 +413,7 @@ class TradeInstruction(TradeBaseClass):
         return True
 
     def __str__(self):
-        if self.limit_price is None or self.order_type == OrderType.MarketOrder:
+        if self.limit_price is None or self.order_type == OrderType.ORDER_MARKET:
             return f'<TradeInstruction id={self.order_id}>({self.ticker} {self.order_type.name} {self.side.name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.name})'
         else:
             return f'<TradeInstruction id={self.order_id}>({self.ticker} {self.order_type.name} {self.side.name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.name})'

@@ -511,7 +511,7 @@ class Passive(AlgoTemplate):
             limit_adjust_level=limit_adjust_level,
             mode=limit_mode
         )
-        order_type = OrderType.LimitOrder
+        order_type = OrderType.ORDER_LIMIT
         volume = self.target_volume - self.filled_volume - self.working_volume
 
         LOGGER.info(f'{self} launching {order_type} {self.ticker} {self.side.name} {volume}')
