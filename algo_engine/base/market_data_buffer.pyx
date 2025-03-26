@@ -9,7 +9,7 @@ from libc.stdint cimport uint8_t, uint32_t, uint64_t
 from .market_data cimport compare_md_ptr, MarketData, DataType, _MetaInfo, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE
 from .transaction cimport TransactionData, OrderData
 from .tick cimport TickData, TickDataLite
-from .candlestick import BarData
+from .candlestick cimport BarData
 
 
 cdef class MarketDataBuffer:
