@@ -21,7 +21,7 @@ def set_logger(logger: logging.Logger):
 
 
 def check_cython_module() -> bool:
-    for name in ['market_data', 'transaction', 'tick', 'candlestick']:
+    for name in ['market_data', 'transaction', 'tick', 'candlestick', 'market_data_buffer']:
         cython_ext = '.pyd' if os.name == 'nt' else '.so'
         for file in pathlib.Path(__file__).parent.glob(f'*{cython_ext}'):
             if file.name.startswith(name):

@@ -169,10 +169,6 @@ cdef class TickDataLite(MarketData):
         return self.last_price
 
 cdef class OrderBook:
-    cdef _OrderBookBuffer* _data
-    cdef public int side
-    cdef public bint sorted
-    cdef bint _owner
 
     # Constructor to initialize the object (without allocating memory)
     def __cinit__(self):
@@ -311,7 +307,7 @@ cdef class OrderBook:
 
         return instance
 
-    def to_bytes(self):
+    cpdef bytes to_bytes(self):
         """
         Convert the transaction data to bytes.
         """
@@ -340,7 +336,7 @@ cdef class OrderBook:
         return [self._data.entries[i].n_orders for i in range(BOOK_SIZE) if self._data.entries[i].n_orders]
 
     # Sort method based on side using qsort
-    def sort(self):
+    cpdef void sort(self):
         if self.sorted:
             return  # Skip sorting if already sorted
 
@@ -360,10 +356,6 @@ cdef class TickData(TickDataLite):
     """
     Represents tick data for a specific ticker with order book data.
     """
-
-    cdef OrderBook _bid_book
-    cdef OrderBook _ask_book
-
     def __cinit__(self):
         """
         Initialize the class but don't allocate memory.

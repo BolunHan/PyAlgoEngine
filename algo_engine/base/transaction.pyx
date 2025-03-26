@@ -33,24 +33,24 @@ class TransactionDirection(enum.IntEnum):
     DIRECTION_SHORT = Direction.DIRECTION_SHORT  # 0
     DIRECTION_LONG = Direction.DIRECTION_LONG  # 2
 
-    def __or__(self, other: TransactionOffset):
+    def __or__(self, offset):
         """
         Combine with TransactionOffset to get TransactionSide.
 
         Args:
-            other (TransactionOffset): The offset to combine with
+            offset (TransactionOffset): The offset to combine with
 
         Returns:
             TransactionSide: The combined transaction side
         """
-        if not isinstance(other, TransactionOffset):
+        if not isinstance(offset, TransactionOffset):
             raise TypeError(f'{self.__class__.__name__} Can only merge with a TransactionOffset.')
 
-        combined_value = self.value + other.value
+        combined_value = self.value + offset.value
         side = TransactionSide(combined_value)
 
         if side is TransactionSide.FAULTY:
-            raise ValueError(f"Combination of {self.name} and {other.name} doesn't correspond to a valid TransactionSide")
+            raise ValueError(f"Combination of {self.name} and {offset.name} doesn't correspond to a valid TransactionSide")
 
         return side
 
@@ -69,24 +69,24 @@ class TransactionOffset(enum.IntEnum):
     OFFSET_OPEN = Offset.OFFSET_OPEN  # 8
     OFFSET_CLOSE = Offset.OFFSET_CLOSE  # 16
 
-    def __or__(self, other: TransactionDirection):
+    def __or__(self, direction):
         """
         Combine with TransactionDirection to get TransactionSide.
 
         Args:
-            other (TransactionDirection): The direction to combine with
+            direction (TransactionDirection): The direction to combine with
 
         Returns:
             TransactionSide: The combined transaction side
         """
-        if not isinstance(other, TransactionDirection):
+        if not isinstance(direction, TransactionDirection):
             raise TypeError(f'{self.__class__.__name__} Can only merge with a TransactionDirection.')
 
-        combined_value = self.value + other.value
+        combined_value = self.value + direction.value
         side = TransactionSide(combined_value)
 
         if side is TransactionSide.FAULTY:
-            raise ValueError(f"Combination of {self.name} and {other.name} doesn't correspond to a valid TransactionSide")
+            raise ValueError(f"Combination of {self.name} and {direction.name} doesn't correspond to a valid TransactionSide")
 
         return side
 

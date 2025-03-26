@@ -1,25 +1,16 @@
 # cython: language_level=3
 from cpython.buffer cimport PyBUF_SIMPLE, PyObject_GetBuffer, PyBuffer_Release
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from libc.math cimport NAN
 from libc.stdlib cimport malloc, free, qsort
 from libc.string cimport memcpy, memset
 from libc.stdint cimport uint8_t, uint32_t, uint64_t
 
 from .market_data cimport compare_md_ptr, MarketData, DataType, _MetaInfo, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE
+from .transaction cimport TransactionData, OrderData
+from .tick cimport TickData, TickDataLite
+from .candlestick import BarData
 
-
-# Define buffer header structure
-cdef struct _BufferHeader:
-    uint8_t dtype  # Data type (0 for mixed)
-    bint sorted  # Sorted flag
-    uint32_t count  # Number of entries
-    uint32_t current_index  # Current index for iteration
-    uint64_t pointer_offset  # Offset to pointer array
-    uint64_t max_entries  # Maximum number of pointers that can be stored
-    uint64_t data_offset  # Offset to data section
-    uint64_t tail_offset  # Current offset at the end of used data
-    uint64_t max_offset  # Maximum offset (size of data section)
-    double current_timestamp  # Current maximum timestamp
 
 cdef class MarketDataBuffer:
     """
@@ -31,12 +22,6 @@ cdef class MarketDataBuffer:
     - Pointer array section: Stores relative pointers (offsets) to market data entries
     - Data section: Stores the actual market data entries
     """
-    cdef char * _buffer  # Pointer to the buffer
-    cdef Py_buffer _view  # Buffer view
-    cdef bint _view_obtained  # Flag to track if buffer view was obtained
-    cdef _BufferHeader * _header  # Pointer to the header section
-    cdef uint64_t * _pointers  # Pointer to the pointer array section
-    cdef char * _data  # Pointer to the data section
 
     def __cinit__(self):
         """
@@ -221,7 +206,7 @@ cdef class MarketDataBuffer:
 
         return instance
 
-    cpdef push(self, MarketData market_data):
+    cpdef void push(self, MarketData market_data):
         """
         Add market data to the buffer.
 
@@ -279,6 +264,8 @@ cdef class MarketDataBuffer:
         # Validate dtype if specified for the buffer
         if self._header.dtype != 0 and dtype != self._header.dtype:
             raise TypeError(f"Expected dtype {self._header.dtype}, but found {dtype}")
+        elif dtype == DataType.DTYPE_TICK:
+            return self.push(market_data=TickData(**kwargs))
 
         # Get size based on dtype
         cdef size_t entry_size = MarketData.get_size(dtype)
@@ -327,136 +314,106 @@ cdef class MarketDataBuffer:
         # Set common fields (MetaInfo)
         cdef bytes ticker_bytes = kwargs['ticker'].encode('utf-8')
         cdef int ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-        memcpy(&(<_MetaInfo *> buffer).ticker, <char *> ticker_bytes, ticker_len)
 
-        if 'timestamp' in kwargs:
-            (<_MetaInfo *> buffer).timestamp = kwargs['timestamp']
+        memcpy(&(<_MetaInfo *> buffer).ticker, <char *> ticker_bytes, ticker_len)
+        (<_MetaInfo *> buffer).timestamp = kwargs['timestamp']
 
         # Set specific fields based on dtype
         if dtype == DataType.DTYPE_TRANSACTION:
-            self._set_transaction_fields(buffer, kwargs)
+            MarketDataBuffer._set_transaction_fields(buffer, kwargs)
         elif dtype == DataType.DTYPE_ORDER:
-            self._set_order_fields(buffer, kwargs)
+            MarketDataBuffer._set_order_fields(buffer, kwargs)
         elif dtype == DataType.DTYPE_TICK_LITE:
-            self._set_tick_lite_fields(buffer, kwargs)
+            MarketDataBuffer._set_tick_lite_fields(buffer, kwargs)
         elif dtype == DataType.DTYPE_TICK:
-            self._set_tick_fields(buffer, kwargs)
+            MarketDataBuffer._set_tick_fields(buffer, kwargs)
         elif dtype == DataType.DTYPE_BAR:
-            self._set_bar_fields(buffer, kwargs)
+            MarketDataBuffer._set_bar_fields(buffer, kwargs)
 
-    cdef void _set_transaction_fields(self, char * buffer, dict kwargs):
+    @staticmethod
+    cdef void _set_transaction_fields(char * buffer, dict kwargs):
         """
         Set fields for TransactionData.
         """
         cdef _TransactionDataBuffer * data = <_TransactionDataBuffer *> buffer
 
-        if 'price' in kwargs:
-            data.price = kwargs['price']
+        # the optional fields
+        data.price = price = kwargs['price']
+        data.volume = volume = kwargs['volume']
+        data.side = kwargs['side']
+        data.multiplier = multiplier = kwargs.get('multiplier', 1.)
+        data.notional = kwargs.get('notional', price * volume * multiplier)
+        TransactionData._set_id(&data.transaction_id, kwargs.get('transaction_id'))
+        TransactionData._set_id(&data.buy_id, kwargs.get('buy_id'))
+        TransactionData._set_id(&data.sell_id, kwargs.get('sell_id'))
 
-        if 'volume' in kwargs:
-            data.volume = kwargs['volume']
-
-        if 'side' in kwargs:
-            data.side = kwargs['side']
-
-        if 'multiplier' in kwargs:
-            data.multiplier = kwargs['multiplier']
-
-        if 'notional' in kwargs:
-            data.notional = kwargs['notional']
-
-        # Note: transaction_id, buy_id, sell_id are not set here
-        # as they require more complex handling
-
-    cdef void _set_order_fields(self, char * buffer, dict kwargs):
+    @staticmethod
+    cdef void _set_order_fields(char * buffer, dict kwargs):
         """
         Set fields for OrderData.
         """
         cdef _OrderDataBuffer * data = <_OrderDataBuffer *> buffer
 
-        if 'price' in kwargs:
-            data.price = kwargs['price']
+        data.price = kwargs['price']
+        data.volume = kwargs['volume']
+        data.side = kwargs['side']
+        data.order_type = kwargs.get('order_type', 0)
+        TransactionData._set_id(&data.order_id, kwargs.get('order_id'))
 
-        if 'volume' in kwargs:
-            data.volume = kwargs['volume']
-
-        if 'side' in kwargs:
-            data.side = kwargs['side']
-
-        if 'order_type' in kwargs:
-            data.order_type = kwargs['order_type']
-
-        # Note: order_id is not set here as it requires more complex handling
-
-    cdef void _set_tick_lite_fields(self, char * buffer, dict kwargs):
+    @staticmethod
+    cdef void _set_tick_lite_fields(char * buffer, dict kwargs):
         """
         Set fields for TickDataLite.
         """
         cdef _TickDataLiteBuffer * data = <_TickDataLiteBuffer *> buffer
 
-        if 'bid_price' in kwargs:
-            data.bid_price = kwargs['bid_price']
+        data.last_price = kwargs['last_price']
+        data.bid_price = kwargs['bid_price']
+        data.bid_volume = kwargs['bid_volume']
+        data.ask_price = kwargs['ask_price']
+        data.ask_volume = kwargs['ask_volume']
 
-        if 'bid_volume' in kwargs:
-            data.bid_volume = kwargs['bid_volume']
+        data.total_traded_volume = kwargs.get('total_traded_volume', 0.)
+        data.total_traded_volume = kwargs.get('total_traded_notional', 0.)
+        data.total_traded_volume = kwargs.get('total_trade_count', 0)
 
-        if 'ask_price' in kwargs:
-            data.ask_price = kwargs['ask_price']
-
-        if 'ask_volume' in kwargs:
-            data.ask_volume = kwargs['ask_volume']
-
-        if 'last_price' in kwargs:
-            data.last_price = kwargs['last_price']
-
-        if 'total_traded_volume' in kwargs:
-            data.total_traded_volume = kwargs['total_traded_volume']
-
-        if 'total_traded_notional' in kwargs:
-            data.total_traded_notional = kwargs['total_traded_notional']
-
-        if 'total_trade_count' in kwargs:
-            data.total_trade_count = kwargs['total_trade_count']
-
-    cdef void _set_tick_fields(self, char * buffer, dict kwargs):
+    @staticmethod
+    cdef void _set_tick_fields(char * buffer, dict kwargs):
         """
         Set fields for TickData.
         """
         # First set the TickDataLite fields (which are part of TickData)
-        self._set_tick_lite_fields(buffer, kwargs)
+        cdef _TickDataBuffer * data = <_TickDataBuffer *> buffer
 
-        # TickData also has bid and ask order books, but these are complex structures
-        # and would require more detailed handling which is beyond the scope of this implementation
+        data.lite.last_price = kwargs['last_price']
+        data.lite.bid_price = kwargs.get('bid_price_1', NAN)
+        data.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
+        data.lite.ask_price = kwargs.get('ask_price_1', NAN)
+        data.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
+        data.lite.total_traded_volume = kwargs.get('total_traded_volume', 0.)
+        data.lite.total_traded_notional = kwargs.get('total_traded_notional', 0.)
+        data.lite.total_trade_count = kwargs.get('total_trade_count', 0)
 
-    cdef void _set_bar_fields(self, char * buffer, dict kwargs):
+        tick_data = TickData.from_buffer(buffer)
+        tick_data._owner = True
+        tick_data.parse(kwargs)
+
+    @staticmethod
+    cdef void _set_bar_fields(char * buffer, dict kwargs):
         """
         Set fields for BarData (CandlestickBuffer).
         """
         cdef _CandlestickBuffer * data = <_CandlestickBuffer *> buffer
 
-        if 'bar_span' in kwargs:
-            data.bar_span = kwargs['bar_span']
+        data.high_price = kwargs['high_price']
+        data.low_price = kwargs['low_price']
+        data.open_price = kwargs['open_price']
+        data.close_price = kwargs['close_price']
+        data.bar_span = kwargs['bar_span']  # during update mode, the bar_span is now required
 
-        if 'high_price' in kwargs:
-            data.high_price = kwargs['high_price']
-
-        if 'low_price' in kwargs:
-            data.low_price = kwargs['low_price']
-
-        if 'open_price' in kwargs:
-            data.open_price = kwargs['open_price']
-
-        if 'close_price' in kwargs:
-            data.close_price = kwargs['close_price']
-
-        if 'volume' in kwargs:
-            data.volume = kwargs['volume']
-
-        if 'notional' in kwargs:
-            data.notional = kwargs['notional']
-
-        if 'trade_count' in kwargs:
-            data.trade_count = kwargs['trade_count']
+        data.volume = kwargs.get('volume', 0.)
+        data.notional = kwargs.get('notional', 0.)
+        data.trade_count = kwargs.get('trade_count', 0)
 
     cpdef void sort(self, bint inplace=True):
         """
@@ -566,22 +523,17 @@ cdef class MarketDataBuffer:
         # Increment current index
         self._header.current_index += 1
 
-        # Import here to avoid circular imports
-        from transaction import TransactionData as PyTransactionData, OrderData as PyOrderData
-        from tick import TickDataLite as PyTickDataLite, TickData as PyTickData
-        from candlestick import BarData as PyBarData
-
         # Create appropriate object based on dtype
         if dtype == DataType.DTYPE_TRANSACTION:
-            return PyTransactionData.from_bytes(data)
+            return TransactionData.from_bytes(data)
         elif dtype == DataType.DTYPE_ORDER:
-            return PyOrderData.from_bytes(data)
+            return OrderData.from_bytes(data)
         elif dtype == DataType.DTYPE_TICK_LITE:
-            return PyTickDataLite.from_bytes(data)
+            return TickDataLite.from_bytes(data)
         elif dtype == DataType.DTYPE_TICK:
-            return PyTickData.from_bytes(data)
+            return TickData.from_bytes(data)
         elif dtype == DataType.DTYPE_BAR:
-            return PyBarData.from_bytes(data)
+            return BarData.from_bytes(data)
         else:
             return MarketData.from_bytes(data)
 
@@ -591,7 +543,7 @@ cdef class MarketDataBuffer:
         """
         return self._header.count
 
-    def to_bytes(self):
+    cpdef bytes to_bytes(self):
         """
         Convert the buffer to bytes.
         """
