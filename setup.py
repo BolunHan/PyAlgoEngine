@@ -67,6 +67,12 @@ else:
             sources=["algo_engine/base/tick.pyx"],
             extra_compile_args=['-O3', '-flto'],
             extra_link_args=['-flto', '-s']
+        ),
+        Extension(
+            name="algo_engine.base.market_data_buffer",
+            sources=["algo_engine/base/market_data_buffer.pyx"],
+            extra_compile_args=['-O3', '-flto'],
+            extra_link_args=['-flto', '-s']
         )
     ]
 
