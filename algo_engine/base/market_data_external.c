@@ -42,10 +42,40 @@ typedef enum {
 } Side;
 
 typedef struct {
+    uint8_t dtype;
+    char ticker[TICKER_SIZE];
+    double timestamp;
+} MetaInfo;
+
+typedef struct {
     double price;
     double volume;
     uint64_t n_orders;
 } Entry;
+
+// Compare function for sorting market data by timestamp
+int compare_md(const void* a, const void* b) {
+    // The input is a pointer to a pointer to MetaInfo
+    const MetaInfo* data_a = *((const MetaInfo**)a);
+    const MetaInfo* data_b = *((const MetaInfo**)b);
+
+    if (data_a->timestamp < data_b->timestamp) {
+        return -1;
+    } else if (data_a->timestamp > data_b->timestamp) {
+        return 1;
+    }
+    return 0;
+}
+
+// Compare function for sorting market data pointers by timestamp
+int compare_md_ptr(const void *a, const void *b) {
+    const MetaInfo *md_a = *(const MetaInfo **)a;
+    const MetaInfo *md_b = *(const MetaInfo **)b;
+
+    if (md_a->timestamp < md_b->timestamp) return -1;
+    if (md_a->timestamp > md_b->timestamp) return 1;
+    return 0;
+}
 
 int compare_entries_bid(const void* a, const void* b) {
     Entry* entry_a = (Entry*) a;

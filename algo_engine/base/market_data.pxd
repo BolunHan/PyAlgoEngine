@@ -3,6 +3,8 @@ from libc.stdint cimport uint8_t, int32_t, uint32_t, uint64_t
 
 # Declare external constants
 cdef extern from "market_data_external.c":
+    int compare_md(const void* a, const void* b) nogil
+    int compare_md_ptr(const void* a, const void* b) nogil
     int compare_entries_bid(const void * a, const void * b) nogil
     int compare_entries_ask(const void * a, const void * b) nogil
     const int TICKER_SIZE
@@ -152,11 +154,17 @@ cdef class MarketData:
 
     cdef void _set_additional(self, str name, object value)
 
+    @staticmethod
+    cdef size_t get_size(uint8_t dtype)
+
+    cpdef bytes to_bytes(self)
+
     # the property of MarketData
-    cdef str ticker
-    cdef float timestamp
-    cdef float market_price
-    cdef int dtype
+    # cdef str ticker
+    # cdef datetime market_time
+    # cdef float timestamp
+    # cdef float market_price
+    # cdef int dtype
 
 # Declare TransactionHelper class
 cdef class TransactionHelper:

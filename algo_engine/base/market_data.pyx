@@ -6,7 +6,7 @@ from cpython.mem cimport PyMem_Free
 from libc.stdint cimport uint8_t
 from libc.string cimport memcpy, memset
 
-from ..profile import PROFILE
+from algo_engine.profile import PROFILE
 
 # Helper class for TransactionSide
 cdef class TransactionHelper:
@@ -79,7 +79,7 @@ cdef class TransactionHelper:
         elif side == Side.SIDE_CANCEL:
             return "cancel"
         else:
-            return f"unknown({side})"
+            return f"unknown({side})".encode('utf-8')
 
     @staticmethod
     cdef const char* get_order_type_name(int order_type):
@@ -105,7 +105,7 @@ cdef class TransactionHelper:
         elif order_type == OrderType.ORDER_IOC:
             return "ioc"
         else:
-            return f"unknown({order_type})"
+            return f"unknown({order_type})".encode('utf-8')
 
     @staticmethod
     cdef const char* get_direction_name(int side):
@@ -232,9 +232,6 @@ cdef class MarketData:
     """
     Base class for all market data types.
     """
-    # cdef _MarketDataBuffer* _data
-    # cdef bint _owner
-    # cdef int _dtype
 
     def __cinit__(self):
         """
@@ -302,6 +299,25 @@ cdef class MarketData:
         else:
             self._additional[name] = value
 
+    @staticmethod
+    cdef size_t get_size(uint8_t dtype):
+        """
+        Get the size of an entry based on its dtype.
+        """
+        if dtype == DataType.DTYPE_TRANSACTION:
+            return sizeof(_TransactionDataBuffer)
+        elif dtype == DataType.DTYPE_ORDER:
+            return sizeof(_OrderDataBuffer)
+        elif dtype == DataType.DTYPE_TICK_LITE:
+            return sizeof(_TickDataLiteBuffer)
+        elif dtype == DataType.DTYPE_TICK:
+            return sizeof(_TickDataBuffer)
+        elif dtype == DataType.DTYPE_BAR:
+            return sizeof(_CandlestickBuffer)
+        else:
+            # Default to MarketData
+            return sizeof(_MarketDataBuffer)
+
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         ...
@@ -310,7 +326,7 @@ cdef class MarketData:
     def from_bytes(cls, bytes data):
         ...
 
-    def to_bytes(self):
+    cpdef bytes to_bytes(self):
         """
         Convert the market data to bytes.
         Uses the meta info to determine the data type and size.
@@ -319,22 +335,7 @@ cdef class MarketData:
             raise ValueError("Cannot convert uninitialized data to bytes")
 
         cdef uint8_t dtype = self._data.MetaInfo.dtype
-        cdef size_t size
-
-        if dtype == DataType.DTYPE_TRANSACTION:
-            size = sizeof(_TransactionDataBuffer)
-        elif dtype == DataType.DTYPE_ORDER:
-            size = sizeof(_OrderDataBuffer)
-        elif dtype == DataType.DTYPE_TICK_LITE:
-            size = sizeof(_TickDataLiteBuffer)
-        elif dtype == DataType.DTYPE_TICK:
-            size = sizeof(_TickDataBuffer)
-        elif dtype == DataType.DTYPE_BAR:
-            size = sizeof(_CandlestickBuffer)
-        else:
-            # Default to MarketData
-            size = sizeof(_MarketDataBuffer)
-
+        cdef size_t size = MarketData.get_size(dtype)
         return PyBytes_FromStringAndSize(<char*>self._data, size)
 
     def __getbuffer__(self, Py_buffer* buffer, int flags):
@@ -345,22 +346,7 @@ cdef class MarketData:
             raise ValueError("Cannot get buffer from uninitialized data")
 
         cdef uint8_t dtype = self._data.MetaInfo.dtype
-        cdef size_t size
-
-        if dtype == DataType.DTYPE_TRANSACTION:
-            size = sizeof(_TransactionDataBuffer)
-        elif dtype == DataType.DTYPE_ORDER:
-            size = sizeof(_OrderDataBuffer)
-        elif dtype == DataType.DTYPE_TICK_LITE:
-            size = sizeof(_TickDataLiteBuffer)
-        elif dtype == DataType.DTYPE_TICK:
-            size = sizeof(_TickDataBuffer)
-        elif dtype == DataType.DTYPE_BAR:
-            size = sizeof(_CandlestickBuffer)
-        else:
-            # Default to MarketData
-            size = sizeof(_MarketDataBuffer)
-
+        cdef size_t size = MarketData.get_size(dtype)
         PyBuffer_FillInfo(buffer, self, <void*>self._data, size, 1, flags)
 
     def __releasebuffer__(self, Py_buffer* buffer):
@@ -398,8 +384,13 @@ cdef class MarketData:
 
     @property
     def topic(self) -> str:
-        return f'{self.ticker}.{self.__class__.__name__}'
+        if self._data == NULL:
+            raise ValueError("Data not initialized")
+        ticker_str = self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
+        return f'{ticker_str}.{self.__class__.__name__}'
 
     @property
-    def market_time(self) -> datetime | date:
-        return datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
+    def market_time(self) -> datetime:
+        if self._data == NULL:
+            raise ValueError("Data not initialized")
+        return datetime.fromtimestamp(self._data.MetaInfo.timestamp, tz=PROFILE.time_zone)

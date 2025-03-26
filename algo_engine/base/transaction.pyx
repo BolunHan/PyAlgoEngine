@@ -2,14 +2,14 @@
 import enum
 import uuid
 
-from .market_data cimport MarketData, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _ID, TransactionHelper, DataType, ID_SIZE, Direction, Offset, Side, OrderType as OrderTypeCython
-
 from cpython cimport PyList_Size, PyList_GET_ITEM
 from cpython.buffer cimport PyBuffer_FillInfo
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.mem cimport PyMem_Malloc
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset
+
+from .market_data cimport MarketData, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _ID, TransactionHelper, DataType, ID_SIZE, Direction, Offset, Side, OrderType as OrderTypeCython
 
 
 class OrderType(enum.IntEnum):
@@ -264,6 +264,16 @@ cdef class TransactionData(MarketData):
         TransactionData._set_id(id_ptr=&self._data.TransactionData.buy_id, id_value=buy_id)
         TransactionData._set_id(id_ptr=&self._data.TransactionData.sell_id, id_value=sell_id)
 
+    def __repr__(self) -> str:
+        """
+        String representation of the order data.
+        """
+        if self._data == NULL:
+            return "TransactionData(uninitialized)"
+        side_name = TransactionHelper.get_side_name(self._data.TransactionData.side).decode('utf-8')
+
+        return f"<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name})"
+
     @staticmethod
     cdef void _set_id(_ID* id_ptr, object id_value):
         """
@@ -415,15 +425,6 @@ cdef class TransactionData(MarketData):
 
         return instance
 
-    def to_bytes(self):
-        """
-        Convert the transaction data to bytes.
-        """
-        if self._data == NULL:
-            raise ValueError("Cannot convert uninitialized data to bytes")
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_TransactionDataBuffer))
-
     def __getbuffer__(self, Py_buffer* buffer, int flags):
         """
         Implement the buffer protocol for read-only access.
@@ -553,15 +554,6 @@ cdef class TransactionData(MarketData):
         cdef int sign = TransactionHelper.get_sign(self._data.TransactionData.side)
         return sign * self._data.TransactionData.volume
 
-    def __repr__(self) -> str:
-        """
-        String representation of the transaction data.
-        """
-        if self._data == NULL:
-            return "TransactionData(uninitialized)"
-        side_name = TransactionHelper.get_side_name(self._data.TransactionData.side).decode('utf-8')
-        return f"TransactionData(ticker='{super().ticker}', timestamp={super().timestamp}, price={self.price}, volume={self.volume}, side={side_name})"
-
 
 cdef class OrderData(MarketData):
     """
@@ -599,6 +591,18 @@ cdef class OrderData(MarketData):
         # Initialize order_id
         TransactionData._set_id(id_ptr=&self._data.OrderData.order_id, id_value=order_id)
 
+    def __repr__(self) -> str:
+        """
+        String representation of the order data.
+        """
+        if self._data == NULL:
+            return "<OrderData>(uninitialized)"
+
+        side_name = TransactionHelper.get_side_name(self._data.OrderData.side).decode('utf-8')
+        order_type_name = TransactionHelper.get_order_type_name(self._data.OrderData.order_type).decode('utf-8')
+
+        return f"<OrderData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name}, order_type={order_type_name})"
+
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         """
@@ -630,15 +634,6 @@ cdef class OrderData(MarketData):
         memcpy(instance._data, data_ptr, sizeof(_OrderDataBuffer))
 
         return instance
-
-    def to_bytes(self):
-        """
-        Convert the order data to bytes.
-        """
-        if self._data == NULL:
-            raise ValueError("Cannot convert uninitialized data to bytes")
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_OrderDataBuffer))
 
     def __getbuffer__(self, Py_buffer* buffer, int flags):
         """
@@ -734,18 +729,6 @@ cdef class OrderData(MarketData):
             raise ValueError("Data not initialized")
         cdef int sign = TransactionHelper.get_sign(self._data.OrderData.side)
         return sign * self._data.OrderData.volume
-
-    def __repr__(self) -> str:
-        """
-        String representation of the order data.
-        """
-        if self._data == NULL:
-            return "OrderData(uninitialized)"
-
-        side_name = TransactionHelper.get_side_name(self._data.OrderData.side).decode('utf-8')
-        order_type_name = TransactionHelper.get_order_type_name(self._data.OrderData.order_type).decode('utf-8')
-
-        return f"OrderData(ticker='{self.ticker}', timestamp={self.timestamp}, price={self.price}, volume={self.volume}, side={side_name}, order_type={order_type_name})"
 
 cdef class TradeData(TransactionData):
     """

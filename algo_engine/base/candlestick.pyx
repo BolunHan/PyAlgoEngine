@@ -1,16 +1,14 @@
 # cython: language_level=3
 from typing import Literal
 
-from .market_data cimport MarketData, _MarketDataBuffer, _CandlestickBuffer, DataType
-
 from cpython.buffer cimport PyBuffer_FillInfo
-from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime, date, timedelta
 from cpython.mem cimport PyMem_Malloc
 from libc.math cimport NAN
 from libc.string cimport memcpy, memset
 from libc.stdint cimport uint32_t
 
+from .market_data cimport MarketData, _MarketDataBuffer, _CandlestickBuffer, DataType
 from ..profile import PROFILE
 
 cdef class BarData(MarketData):
@@ -61,6 +59,14 @@ cdef class BarData(MarketData):
         self._data.BarData.trade_count = trade_count
         self._data.BarData.bar_span = bar_span
 
+    def __repr__(self) -> str:
+        """
+        String representation of the bar data.
+        """
+        if self._data == NULL:
+            return "<BarData>(uninitialized)"
+        return f"<BarData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         """
@@ -92,15 +98,6 @@ cdef class BarData(MarketData):
         memcpy(instance._data, data_ptr, sizeof(_CandlestickBuffer))
 
         return instance
-
-    def to_bytes(self):
-        """
-        Convert the bar data to bytes.
-        """
-        if self._data == NULL:
-            raise ValueError("Cannot convert uninitialized data to bytes")
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_CandlestickBuffer))
 
     def __getbuffer__(self, Py_buffer* buffer, int flags):
         """
@@ -273,14 +270,6 @@ cdef class BarData(MarketData):
             raise ValueError("Data not initialized")
         return datetime.fromtimestamp(self.start_timestamp, tz=PROFILE.time_zone)
 
-    def __repr__(self) -> str:
-        """
-        String representation of the bar data.
-        """
-        if self._data == NULL:
-            return "BarData(uninitialized)"
-        return f"BarData(ticker='{self.ticker}', timestamp={self.timestamp}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
-
 
 class DailyBar(BarData):
     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):
@@ -290,9 +279,9 @@ class DailyBar(BarData):
 
     def __repr__(self) -> str:
         if (bar_span := super().bar_span_seconds) == 1:
-            return f"DailyBar(ticker='{self.ticker}', date={self.market_date}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+            return f"<DailyBar>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
         else:
-            return f"DailyBar(ticker='{self.ticker}', date={self.market_date}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+            return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
 
     @property
     def market_date(self) -> date:

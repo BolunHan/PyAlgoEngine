@@ -1,14 +1,15 @@
 # cython: language_level=3
 from collections.abc import Sequence
 
-from .market_data cimport MarketData, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
-
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.math cimport NAN
 from libc.stdint cimport uint32_t
 from libc.stdlib cimport qsort
 from libc.string cimport memcpy, memset
+
+from .market_data cimport MarketData, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
+
 
 cdef class TickDataLite(MarketData):
     """
@@ -61,6 +62,12 @@ cdef class TickDataLite(MarketData):
         self._data.TickDataLite.total_traded_notional = total_traded_notional
         self._data.TickDataLite.total_trade_count = total_trade_count
 
+    def __repr__(self):
+        if self._data == NULL:
+            return "<TickData>(uninitialized)"
+
+        return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
+
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         cdef TickDataLite instance = cls.__new__(cls)
@@ -70,15 +77,6 @@ cdef class TickDataLite(MarketData):
         instance._owner = False
 
         return instance
-
-    def to_bytes(self):
-        """
-        Convert the instance to bytes.
-        """
-        if self._data is NULL:
-            raise ValueError("No data available")
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_TickDataLiteBuffer))
 
     @classmethod
     def from_bytes(cls, bytes data):
@@ -532,15 +530,6 @@ cdef class TickData(TickDataLite):
         instance._bid_book.side = Side.SIDE_ASK
 
         return instance
-
-    def to_bytes(self):
-        """
-        Convert the instance to bytes.
-        """
-        if self._data is NULL:
-            raise ValueError("No data available")
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_TickDataBuffer))
 
     @classmethod
     def from_bytes(cls, bytes data):
