@@ -15,11 +15,12 @@ cdef class BarData(MarketData):
     """
     Represents a single bar of market data for a specific ticker within a given time frame.
     """
+    _dtype = DataType.DTYPE_BAR
+
     def __cinit__(self):
         """
         Allocate memory for the bar data structure but don't initialize it.
         """
-        self._dtype = DataType.DTYPE_BAR
         self._owner = True
 
     def __init__(self, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
@@ -36,7 +37,7 @@ cdef class BarData(MarketData):
         MarketData.__init__(self, ticker=ticker, timestamp=timestamp, **kwargs)
 
         # Set data type for BarData
-        self._data.MetaInfo.dtype = DataType.DTYPE_BAR
+        # self._data.MetaInfo.dtype = DataType.DTYPE_BAR
 
         if bar_span is None:
             if not start_timestamp:

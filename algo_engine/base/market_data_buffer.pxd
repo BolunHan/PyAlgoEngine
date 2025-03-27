@@ -1,19 +1,26 @@
+# cython: language_level=3
 from libc.stdint cimport uint8_t, uint32_t, uint64_t
 
 from .market_data cimport MarketData
 
 # Define buffer header structure
 cdef struct _BufferHeader:
-    uint8_t dtype           # Data type (0 for mixed)
-    bint sorted          # Sorted flag
-    uint32_t count          # Number of entries
-    uint32_t current_index  # Current index for iteration
-    uint64_t pointer_offset # Offset to pointer array
-    uint64_t max_entries   # Maximum number of pointers that can be stored
-    uint64_t data_offset    # Offset to data section
-    uint64_t tail_offset    # Current offset at the end of used data
-    uint64_t max_offset     # Maximum offset (size of data section)
-    double current_timestamp # Current maximum timestamp
+    uint8_t dtype                # Data type (0 for mixed)
+    bint sorted                  # Sorted flag
+    uint32_t count               # Number of entries
+    uint32_t current_index       # Current index for iteration
+    uint64_t pointer_offset      # Offset to pointer array
+    uint64_t capacity            # Maximum number of pointers that can be stored
+    uint64_t data_offset         # Offset to data section
+    uint64_t tail_offset         # Current offset at the end of used data
+    uint64_t max_offset          # Maximum offset (size of data section)
+    double current_timestamp     # Current maximum timestamp
+
+
+cdef packed struct _RingBufferHeader:
+    _BufferHeader buffer_header  # Base header
+    uint64_t head                # Index of oldest element
+    uint64_t tail                # Index where next element will be added
 
 
 cdef class MarketDataBuffer:
@@ -21,7 +28,7 @@ cdef class MarketDataBuffer:
     cdef Py_buffer _view  # Buffer view
     cdef bint _view_obtained  # Flag to track if buffer view was obtained
     cdef _BufferHeader * _header  # Pointer to the header section
-    cdef uint64_t * _pointers  # Pointer to the pointer array section
+    cdef uint64_t * _offsets  # Pointer to the pointer array section
     cdef char * _data  # Pointer to the data section
 
     cpdef void push(self, MarketData market_data)
@@ -46,3 +53,30 @@ cdef class MarketDataBuffer:
 
     @staticmethod
     cdef void _set_bar_fields(char * buffer, dict kwargs)
+
+
+cdef class MarketDataRingBuffer:
+    cdef char * _buffer  # Pointer to the buffer
+    cdef Py_buffer _view  # Buffer view
+    cdef bint _view_obtained  # Flag to track if buffer view was obtained
+    cdef _RingBufferHeader * _header  # Pointer to the header section
+    cdef uint64_t * _offsets  # Pointer to the pointer array section
+    cdef char * _data  # Pointer to the data section
+
+    cdef uint64_t data_head(self)
+
+    cdef uint64_t data_tail(self)
+
+    cpdef bint is_empty(self)
+
+    cpdef bint is_full(self)
+
+    cdef bytes read(self, uint64_t offset, size_t size)
+
+    cdef void write(self, uint64_t offset, char * src, size_t size)
+
+    cpdef void put(self, MarketData market_data)
+
+    cpdef MarketData get(self)
+
+    cpdef MarketData _get(self, uint64_t idx)

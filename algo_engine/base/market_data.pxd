@@ -147,15 +147,21 @@ cdef union _MarketDataBuffer:
 
 # Declare MarketData class
 cdef class MarketData:
+
     cdef _MarketDataBuffer * _data
     cdef bint _owner
-    cdef int _dtype
     cdef public dict _additional
 
     cdef void _set_additional(self, str name, object value)
 
     @staticmethod
     cdef size_t get_size(uint8_t dtype)
+
+    @staticmethod
+    cdef size_t min_size()
+
+    @staticmethod
+    cdef size_t max_size()
 
     cpdef bytes to_bytes(self)
 
@@ -165,29 +171,3 @@ cdef class MarketData:
     # cdef float timestamp
     # cdef float market_price
     # cdef int dtype
-
-# Declare TransactionHelper class
-cdef class TransactionHelper:
-    @staticmethod
-    cdef int get_opposite(int side)
-
-    @staticmethod
-    cdef int get_sign(int side)
-
-    @staticmethod
-    cdef int get_direction(int side)
-
-    @staticmethod
-    cdef int get_offset(int side)
-
-    @staticmethod
-    cdef const char* get_side_name(int side)
-
-    @staticmethod
-    cdef const char* get_order_type_name(int order_type)
-
-    @staticmethod
-    cdef const char* get_direction_name(int side)
-
-    @staticmethod
-    cdef const char* get_offset_name(int side)

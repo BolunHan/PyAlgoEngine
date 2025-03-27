@@ -30,10 +30,10 @@ cdef class MarketDataBuffer:
         self._buffer = NULL
         self._view_obtained = False
         self._header = NULL
-        self._pointers = NULL
+        self._offsets = NULL
         self._data = NULL
 
-    def __init__(self, buffer, uint8_t dtype=0, uint64_t max_size=0):
+    def __init__(self, buffer, uint8_t dtype=0, uint64_t capacity=0):
         """
         Initialize the MarketDataBuffer with a memory buffer.
 
@@ -43,56 +43,42 @@ cdef class MarketDataBuffer:
             A Python object supporting the buffer protocol (e.g., memoryview, bytearray, RawArray)
         dtype : uint8_t, optional
             Data type for validation. If 0, mixed data types are allowed.
-        max_size : uint64_t, optional
-            Maximum size for data section. If 0, calculated based on buffer size.
+        capacity : uint64_t, optional
+            Maximum number of entries (calculated from buffer size if 0)
         """
         # Get buffer view
         cdef Py_buffer view
-
-        # Determine pointer array size based on dtype and buffer size
-        cdef uint64_t estimated_entry_size
-        cdef uint64_t max_entries
-
-        cdef uint64_t pointer_size
-
-        # Calculate offsets
-        cdef uint64_t pointer_offset
-        cdef uint64_t data_offset
-
         PyObject_GetBuffer(buffer, &view, PyBUF_SIMPLE)
 
-        # Calculate sizes and offsets
+        cdef uint64_t estimated_entry_size
+        cdef uint64_t pointer_size
+        cdef uint64_t pointer_offset
+        cdef uint64_t data_offset
         cdef uint64_t total_size = view.len
         cdef uint64_t header_size = sizeof(_BufferHeader)
 
         self._view = view
         self._view_obtained = True
-
-        # Set buffer pointer
         self._buffer = <char *> view.buf
 
-        if max_size > 0:
-            # Use provided max_size
-            max_entries = max_size
-        else:
+        if capacity <= 0:
             # Estimate max entries (accounting for header and pointer array)
             # Each pointer is an uint64_t (8 bytes)
-            # Formula: max_entries = (total_size - header_size) / (8 + estimated_entry_size)
+            # Formula: capacity = (total_size - header_size) / (8 + estimated_entry_size)
             if dtype == 0:
                 # For mixed types, use the smallest possible entry size to estimate max entries
-                estimated_entry_size = min(MarketData.get_size(DataType.DTYPE_TICK_LITE), MarketData.get_size(DataType.DTYPE_ORDER), MarketData.get_size(DataType.DTYPE_BAR))
+                estimated_entry_size = MarketData.min_size()
             else:
                 # For specific dtype, use the exact entry size
                 estimated_entry_size = MarketData.get_size(dtype)
             # Calculate based on buffer size
-            max_entries = (total_size - header_size) // (sizeof(uint64_t) + estimated_entry_size)
+            capacity = (total_size - header_size) // (sizeof(uint64_t) + estimated_entry_size)
 
-        # Ensure at least some entries can be stored
-        if max_entries <= 0:
-            raise ValueError(f"Buffer size {total_size} is too small to store any entries")
+            if capacity <= 0:
+                raise ValueError("Buffer too small to store any entries")
 
         # Calculate pointer array size (in bytes)
-        pointer_size = max_entries * sizeof(uint64_t)
+        pointer_size = capacity * sizeof(uint64_t)
 
         # Calculate offsets
         pointer_offset = header_size
@@ -105,15 +91,17 @@ cdef class MarketDataBuffer:
         self._header.count = 0  # No entries yet
         self._header.current_index = 0
         self._header.pointer_offset = pointer_offset
-        self._header.max_entries = max_entries  # Maximum number of pointers
+        self._header.capacity = capacity  # Maximum number of pointers
         self._header.data_offset = data_offset
         self._header.tail_offset = 0  # No data yet
         self._header.max_offset = total_size - data_offset  # Maximum data size
         self._header.current_timestamp = 0.0  # No timestamp yet
 
         # Set pointers to sections
-        self._pointers = <uint64_t *> (self._buffer + pointer_offset)
+        self._offsets = <uint64_t *> (self._buffer + pointer_offset)
         self._data = self._buffer + data_offset
+
+        memset(self._offsets, 0, capacity * sizeof(uint64_t))
 
     def __dealloc__(self):
         """
@@ -158,7 +146,7 @@ cdef class MarketDataBuffer:
             raise ValueError("Buffer is too small to contain a valid header")
 
         # Set pointers to sections based on header info
-        instance._pointers = <uint64_t *> (instance._buffer + instance._header.pointer_offset)
+        instance._offsets = <uint64_t *> (instance._buffer + instance._header.pointer_offset)
         instance._data = instance._buffer + instance._header.data_offset
 
         return instance
@@ -201,7 +189,7 @@ cdef class MarketDataBuffer:
         instance._header = <_BufferHeader *> instance._buffer
 
         # Set pointers to sections based on header info
-        instance._pointers = <uint64_t *> (instance._buffer + instance._header.pointer_offset)
+        instance._offsets = <uint64_t *> (instance._buffer + instance._header.pointer_offset)
         instance._data = instance._buffer + instance._header.data_offset
 
         return instance
@@ -230,14 +218,14 @@ cdef class MarketDataBuffer:
             raise MemoryError("Not enough space in buffer for new entry")
 
         # Check if we have enough space in the pointer array
-        if self._header.count >= self._header.max_entries:
+        if self._header.count >= self._header.capacity:
             raise MemoryError("Not enough space in pointer array for new entry")
 
         # Copy data directly from market_data._data to our buffer at the current tail offset
         memcpy(self._data + self._header.tail_offset, data_ptr, entry_size)
 
         # Add pointer (offset) to the new entry
-        self._pointers[self._header.count] = self._header.tail_offset
+        self._offsets[self._header.count] = self._header.tail_offset
 
         # Update count and tail offset
         self._header.count += 1
@@ -275,7 +263,7 @@ cdef class MarketDataBuffer:
             raise MemoryError("Not enough space in buffer for new entry")
 
         # Check if we have enough space in the pointer array
-        if self._header.count >= self._header.max_entries:
+        if self._header.count >= self._header.capacity:
             raise MemoryError("Not enough space in pointer array for new entry")
 
         # Get pointer to the location where we'll store the new entry
@@ -294,7 +282,7 @@ cdef class MarketDataBuffer:
         cdef double entry_timestamp = (<_MetaInfo *> entry_ptr).timestamp
 
         # Add pointer (offset) to the new entry
-        self._pointers[self._header.count] = self._header.tail_offset
+        self._offsets[self._header.count] = self._header.tail_offset
 
         # Update count and tail offset
         self._header.count += 1
@@ -442,14 +430,14 @@ cdef class MarketDataBuffer:
 
             # 2. Convert offsets to actual pointers
             for i in range(self._header.count):
-                actual_ptrs[i] = <_MetaInfo *> (self._data + self._pointers[i])
+                actual_ptrs[i] = <_MetaInfo *> (self._data + self._offsets[i])
 
             # 3. Sort the actual pointers using qsort with compare_md_ptr
             qsort(actual_ptrs, self._header.count, sizeof(_MetaInfo *), compare_md_ptr)
 
             # 4. Convert back to offsets
             for i in range(self._header.count):
-                self._pointers[i] = <uint64_t> (<char *> actual_ptrs[i] - self._data)
+                self._offsets[i] = <uint64_t> (<char *> actual_ptrs[i] - self._data)
 
             # 5. Free the temporary array
             free(actual_ptrs)
@@ -461,7 +449,7 @@ cdef class MarketDataBuffer:
                 raise MemoryError("Failed to allocate memory for pointer array copy")
 
             # 2. Copy the pointer array
-            memcpy(ptr_array, self._pointers, self._header.count * sizeof(uint64_t))
+            memcpy(ptr_array, self._offsets, self._header.count * sizeof(uint64_t))
 
             # 3. Allocate memory for actual pointers
             actual_ptrs = <_MetaInfo **> malloc(self._header.count * sizeof(_MetaInfo *))
@@ -481,7 +469,7 @@ cdef class MarketDataBuffer:
                 ptr_array[i] = <uint64_t> (<char *> actual_ptrs[i] - self._data)
 
             # 7. Copy the sorted pointer array back
-            memcpy(self._pointers, ptr_array, self._header.count * sizeof(uint64_t))
+            memcpy(self._offsets, ptr_array, self._header.count * sizeof(uint64_t))
 
             # 8. Free the temporary arrays
             free(actual_ptrs)
@@ -506,7 +494,7 @@ cdef class MarketDataBuffer:
             raise StopIteration
 
         # Get offset for current index
-        cdef uint64_t offset = self._pointers[self._header.current_index]
+        cdef uint64_t offset = self._offsets[self._header.current_index]
 
         # Get pointer to entry
         cdef _MetaInfo * ptr = <_MetaInfo *> (self._data + offset)
@@ -555,3 +543,315 @@ cdef class MarketDataBuffer:
 
         # Return the buffer up to the used size
         return PyBytes_FromStringAndSize(self._buffer, total_size)
+
+
+cdef class MarketDataRingBuffer:
+    """
+    A ring buffer implementation for MarketData with variable-sized entries.
+    Provides FIFO operations and full/empty state checks.
+    """
+
+    def __cinit__(self):
+        self._buffer = NULL
+        self._view_obtained = False
+        self._header = NULL
+        self._offsets = NULL
+        self._data = NULL
+
+    def __init__(self, buffer, uint8_t dtype=0, uint64_t capacity=0):
+        """
+        Initialize the MarketDataRingBuffer with a memory buffer.
+
+        Parameters:
+        -----------
+        buffer : object
+            A Python object supporting the buffer protocol
+        dtype : uint8_t, optional
+            Data type for validation (0 for mixed types)
+        capacity : uint64_t, optional
+            Maximum number of entries (calculated from buffer size if 0)
+        """
+        cdef Py_buffer view
+        PyObject_GetBuffer(buffer, &view, PyBUF_SIMPLE)
+
+        cdef uint64_t estimated_entry_size
+        cdef uint64_t pointer_size
+        cdef uint64_t pointer_offset
+        cdef uint64_t data_offset
+        cdef uint64_t total_size = view.len
+        cdef uint64_t header_size = sizeof(_RingBufferHeader)
+
+        self._view = view
+        self._view_obtained = True
+        self._buffer = <char *> view.buf
+
+        if capacity <= 0:
+            if dtype == 0:
+                estimated_entry_size = MarketData.min_size()
+            else:
+                estimated_entry_size = MarketData.get_size(dtype)
+
+            # Calculate maximum possible capacity
+            capacity = (total_size - header_size) // (sizeof(uint64_t) + estimated_entry_size)
+
+            if capacity <= 0:
+                raise ValueError("Buffer too small to store any entries")
+
+        # Calculate pointer array size (in bytes)
+        pointer_size = capacity * sizeof(uint64_t)
+
+        # Calculate offsets
+        pointer_offset = header_size
+        data_offset = pointer_offset + pointer_size
+
+        self._header = <_RingBufferHeader*> self._buffer
+        memset(self._header, 0, sizeof(_RingBufferHeader))
+
+        self._header.buffer_header.dtype = dtype
+        self._header.buffer_header.sorted = 1
+        self._header.buffer_header.count = 0
+        self._header.buffer_header.current_index = 0
+        self._header.buffer_header.pointer_offset = pointer_offset
+        self._header.buffer_header.capacity = capacity
+        self._header.buffer_header.data_offset = header_size + (capacity * sizeof(uint64_t))
+        self._header.buffer_header.tail_offset = 0
+        self._header.buffer_header.max_offset = total_size - data_offset  # Maximum data size
+        self._header.buffer_header.current_timestamp = 0.0
+
+        # Initialize ring buffer specific fields
+        self._header.head = 0
+        self._header.tail = 0
+
+        # Set section pointers
+        self._offsets = <uint64_t *> (self._buffer + pointer_offset)
+        self._data = self._buffer + data_offset
+
+        # Initialize all pointers to 0
+        memset(self._offsets, 0, capacity * sizeof(uint64_t))
+
+    def __len__(self) -> int:
+        return self._header.tail - self._header.head
+
+    def __dealloc__(self):
+        if self._view_obtained:
+            PyBuffer_Release(&self._view)
+            self._view_obtained = False
+
+    cdef uint64_t data_head(self):
+        """
+        Get the current head position in the data section.
+
+        Returns:
+        --------
+        uint64_t
+            The offset from start of data section of the oldest entry
+        """
+        cdef uint64_t head_idx = self._header.head % self._header.buffer_header.capacity
+        return self._offsets[head_idx]
+
+    cdef uint64_t data_tail(self):
+        """
+        Get the end position of the most recently added entry in the data section.
+        Returns 0 if buffer is empty.
+        """
+        # reset the ring buffer
+        if self.is_empty():
+            return 0
+
+        cdef uint64_t tail_idx = (self._header.tail - 1) % self._header.buffer_header.capacity
+        cdef uint64_t offset = self._offsets[tail_idx]
+        cdef _MetaInfo* ptr = <_MetaInfo*> (self._data + offset)
+        cdef size_t entry_size = MarketData.get_size(ptr.dtype)
+        cdef uint64_t end_pos = offset + entry_size
+
+        if end_pos > self._header.buffer_header.max_offset:
+            end_pos = entry_size - (self._header.buffer_header.max_offset - offset)
+
+        return end_pos
+
+    cpdef bint is_empty(self):
+        """Return True if the buffer is empty."""
+        return self._header.head == self._header.tail
+
+    cpdef bint is_full(self):
+        """Return True if buffer cannot accept any new entries."""
+        # 1. First check if pointer array is full
+        if self._header.tail - self._header.head >= self._header.buffer_header.capacity:
+            return True
+
+        # 2. Check data section space (treat as true ring buffer)
+        cdef uint64_t data_head_pos = self.data_head()
+        # cdef uint64_t data_tail_pos = self.data_tail()
+        # since the tail_offset is well managed, can use this value for fast locating
+        cdef uint64_t data_tail_pos = self._header.buffer_header.tail_offset
+        cdef uint64_t max_offset = self._header.buffer_header.max_offset
+        cdef uint64_t free_space = data_head_pos - data_tail_pos
+
+        if self.is_empty():
+            # Case 3: Empty buffer - all space available
+            return False
+        elif data_tail_pos >= data_head_pos:
+            # Case 1: Normal case - free space at end and beginning
+            # Calculate contiguous space at end plus space at beginning
+            return free_space + max_offset < MarketData.max_size()
+        else:
+            # Case 2: Wrapped case - free space between tail and head
+            return free_space < MarketData.max_size()
+
+    cdef bytes read(self, uint64_t offset, size_t size):
+        """
+        Read data from buffer, handling wrap-around if needed.
+
+        Parameters:
+        -----------
+        offset : uint64_t
+            Starting offset in data section
+        size : size_t
+            Number of bytes to read
+
+        Returns:
+        --------
+        bytes
+            The read data
+        """
+        cdef char * temp_buf = <char *> malloc(size)
+        cdef size_t first_part = self._header.buffer_header.max_offset - offset
+
+        if temp_buf == NULL:
+            raise MemoryError("Failed to allocate temporary buffer")
+
+        try:
+            if size <= first_part:
+                # Contiguous read
+                memcpy(temp_buf, self._data + offset, size)
+            else:
+                # Wrapped read
+                memcpy(temp_buf, self._data + offset, first_part)
+                memcpy(temp_buf + first_part, self._data, size - first_part)
+
+            return PyBytes_FromStringAndSize(temp_buf, size)
+        finally:
+            free(temp_buf)
+
+    cdef void write(self, uint64_t offset, char * src, size_t size):
+        """
+        Write data to buffer, handling wrap-around if needed.
+
+        Parameters:
+        -----------
+        offset : uint64_t
+            Starting offset in data section
+        src : char *
+            Source data to write
+        size : size_t
+            Number of bytes to write
+        """
+        cdef size_t first_part = self._header.buffer_header.max_offset - offset
+
+        if  size <= first_part:
+            # Contiguous write
+            memcpy(self._data + offset, src, size)
+        else:
+            # Wrapped write
+            memcpy(self._data + offset, src, first_part)
+            memcpy(self._data, src + first_part, size - first_part)
+
+    cpdef void put(self, MarketData market_data):
+        """
+        Add market data to the buffer.
+        """
+        if self.is_full():
+            raise MemoryError("Buffer is full")
+
+        # Get data pointer and dtype directly from market_data
+        cdef _MarketDataBuffer * data_ptr = market_data._data
+        cdef uint8_t entry_dtype = data_ptr.MetaInfo.dtype
+        cdef size_t entry_size = MarketData.get_size(entry_dtype)
+
+        # Validate dtype if specified
+        if self._header.buffer_header.dtype != 0 and entry_dtype != self._header.buffer_header.dtype:
+            raise TypeError(f"Expected dtype {self._header.buffer_header.dtype}, but found {entry_dtype}")
+
+        # Check if write would exceed buffer capacity
+        if entry_size > self._header.buffer_header.max_offset:
+            raise MemoryError("Market data too large for buffer.")
+
+        # Check available space
+        cdef uint64_t write_offset = self._header.buffer_header.tail_offset
+
+        # Write the data
+        self.write(write_offset, <char*> data_ptr, entry_size)
+
+        # Store the offset
+        self._offsets[self._header.tail % self._header.buffer_header.capacity] = write_offset
+
+        # Update tail position (no modulo here)
+        self._header.tail += 1
+        self._header.buffer_header.tail_offset += entry_size
+        if self._header.buffer_header.tail_offset >= self._header.buffer_header.max_offset:
+            self._header.buffer_header.tail_offset -= self._header.buffer_header.max_offset
+
+        # Update count
+        self._header.buffer_header.count += 1
+
+        # Update current_timestamp if needed
+        if data_ptr.MetaInfo.timestamp > self._header.buffer_header.current_timestamp:
+            self._header.buffer_header.current_timestamp = data_ptr.MetaInfo.timestamp
+
+    cpdef MarketData _get(self, uint64_t idx):
+        cdef uint64_t offset = self._offsets[idx % self._header.buffer_header.capacity]
+        cdef char * data_ptr = self._data + offset
+        cdef uint8_t dtype = data_ptr[0]
+        cdef size_t entry_size = MarketData.get_size(dtype)
+        cdef bytes data = self.read(offset, entry_size)
+
+        # print(f'getting buffer, '
+        #       f'ttl={self._header.buffer_header.count}, '
+        #       f'max_size={self._header.buffer_header.capacity}, '
+        #       f'current_size {self.tail - self.head}, '
+        #       f'head={self.head}, '
+        #       f'tail={self.tail=}, '
+        #       f'idx={idx} '
+        #       f'offset={offset} '
+        #       f'max_offset={self._header.buffer_header.max_offset} '
+        #       f'data_head={self.data_head()}, '
+        #       f'data_tail={self.data_tail()}.')
+
+        # Create appropriate MarketData object
+        if dtype == DataType.DTYPE_TRANSACTION:
+            return TransactionData.from_bytes(data)
+        elif dtype == DataType.DTYPE_ORDER:
+            return OrderData.from_bytes(data)
+        elif dtype == DataType.DTYPE_TICK_LITE:
+            return TickDataLite.from_bytes(data)
+        elif dtype == DataType.DTYPE_TICK:
+            return TickData.from_bytes(data)
+        elif dtype == DataType.DTYPE_BAR:
+            return BarData.from_bytes(data)
+        else:
+            return MarketData.from_bytes(data)
+
+    cpdef MarketData get(self):
+        """
+        Get the oldest MarketData from the buffer (FIFO order).
+        """
+        if self.is_empty():
+            raise IndexError("Buffer is empty")
+
+        md = self._get(idx=self.head)
+
+        self._header.head += 1
+
+        return md
+
+    @property
+    def head(self) -> int:
+        return self._header.head
+
+    @property
+    def tail(self) -> int:
+        return self._header.tail
+
+    @property
+    def count(self) -> int:
+        return self._header.buffer_header.count

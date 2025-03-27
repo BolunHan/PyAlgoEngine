@@ -9,7 +9,7 @@ from cpython.mem cimport PyMem_Malloc
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset
 
-from .market_data cimport MarketData, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _ID, TransactionHelper, DataType, ID_SIZE, Direction, Offset, Side, OrderType as OrderTypeCython
+from .market_data cimport MarketData, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _ID, DataType, ID_SIZE, Direction, Offset, Side, OrderType as OrderTypeCython
 
 
 class OrderType(enum.IntEnum):
@@ -220,15 +220,236 @@ class TransactionSide(enum.IntEnum):
         return TransactionHelper.get_direction_name(self.value).decode('utf-8')
 
 
+# Helper class for TransactionSide
+cdef class TransactionHelper:
+    """
+    Helper class to manage TransactionSide behaviors.
+    """
+
+    @staticmethod
+    cdef int get_opposite(int side):
+        """
+        Get the opposite side by flipping the direction (long -> short, short -> long).
+        The offset remains unchanged.
+        """
+        cdef int direction = side & 0x03  # Extract the direction bits (0x03 = 00000011)
+        cdef int offset = side & 0xFC     # Extract the offset bits (0xFC = 11111100)
+
+        # Flip the direction: long -> short, short -> long
+        if direction == Direction.DIRECTION_LONG:
+            direction = Direction.DIRECTION_SHORT
+        elif direction == Direction.DIRECTION_SHORT:
+            direction = Direction.DIRECTION_LONG
+        # If direction is unknown, leave it unchanged
+
+        # Combine the new direction with the original offset
+        return direction | offset
+
+    @staticmethod
+    cdef int get_sign(int side):
+        """
+        Get the sign of the transaction side.
+        """
+        cdef int direction = side & 0x03
+        return direction - 1
+
+    @staticmethod
+    cdef int get_offset(int side):
+        """
+        Returns the offset of the given side.
+        """
+        return side & 0xFC  # Mask to get the offset bits (0xFC = 11111100)
+
+    @staticmethod
+    cdef int get_direction(int side):
+        """
+        Returns the direction of the given side.
+        """
+        return side & 0x03  # Mask to get the direction bits (0x03 = 00000011)
+
+    @staticmethod
+    cdef const char* get_side_name(int side):
+        """
+        Returns the name of the given side.
+        """
+        if side == Side.SIDE_LONG_OPEN:
+            return "buy"
+        elif side == Side.SIDE_LONG_CLOSE:
+            return "cover"
+        elif side == Side.SIDE_LONG_CANCEL:
+            return "cancel bid"
+        elif side == Side.SIDE_SHORT_OPEN:
+            return "short"
+        elif side == Side.SIDE_SHORT_CLOSE:
+            return "sell"
+        elif side == Side.SIDE_SHORT_CANCEL:
+            return "cancel ask"
+        elif side == Side.SIDE_BID:
+            return "bid"
+        elif side == Side.SIDE_ASK:
+            return "ask"
+        elif side == Side.SIDE_CANCEL:
+            return "cancel"
+        else:
+            return f"unknown({side})".encode('utf-8')
+
+    @staticmethod
+    cdef const char* get_order_type_name(int order_type):
+        """
+        Get the string representation of the order type.
+        """
+        if order_type == OrderType.ORDER_UNKNOWN:
+            return "unknown"
+        elif order_type == OrderType.ORDER_CANCEL:
+            return "cancel"
+        elif order_type == OrderType.ORDER_GENERIC:
+            return "generic"
+        elif order_type == OrderType.ORDER_LIMIT:
+            return "limit"
+        elif order_type == OrderType.ORDER_LIMIT_MAKER:
+            return "limit_maker"
+        elif order_type == OrderType.ORDER_MARKET:
+            return "market"
+        elif order_type == OrderType.ORDER_FOK:
+            return "fok"
+        elif order_type == OrderType.ORDER_FAK:
+            return "fak"
+        elif order_type == OrderType.ORDER_IOC:
+            return "ioc"
+        else:
+            return f"unknown({order_type})".encode('utf-8')
+
+    @staticmethod
+    cdef const char* get_direction_name(int side):
+        """
+        Returns the name of the direction of the given side.
+        """
+        cdef int direction = TransactionHelper.get_direction(side)
+
+        if direction == Direction.DIRECTION_SHORT:
+            return "short"
+        elif direction == Direction.DIRECTION_LONG:
+            return "long"
+        else:
+            return "unknown"
+
+    @staticmethod
+    cdef const char* get_offset_name(int side):
+        """
+        Returns the name of the offset of the given side.
+        """
+        cdef int offset = TransactionHelper.get_offset(side)
+
+        if offset == Offset.OFFSET_CANCEL:
+            return "cancel"
+        elif offset == Offset.OFFSET_ORDER:
+            return "order"
+        elif offset == Offset.OFFSET_OPEN:
+            return "open"
+        elif offset == Offset.OFFSET_CLOSE:
+            return "close"
+        else:
+            return "unknown"
+
+    @classmethod
+    def pyget_opposite(cls, int side) -> int:
+        return TransactionHelper.get_opposite(side=side)
+
+    @classmethod
+    def pyget_sign(cls, int side) -> int:
+        return TransactionHelper.get_sign(side=side)
+
+    @classmethod
+    def pyget_direction(cls, int side) -> int:
+        return TransactionHelper.get_direction(side=side)
+
+    @classmethod
+    def pyget_offset(cls, int side) -> int:
+        return TransactionHelper.get_offset(side=side)
+
+    @classmethod
+    def pyget_side_name(cls, int side) -> str:
+        if side == Side.SIDE_LONG_OPEN:
+            return "buy"
+        elif side == Side.SIDE_LONG_CLOSE:
+            return "cover"
+        elif side == Side.SIDE_LONG_CANCEL:
+            return "cancel bid"
+        elif side == Side.SIDE_SHORT_OPEN:
+            return "short"
+        elif side == Side.SIDE_SHORT_CLOSE:
+            return "sell"
+        elif side == Side.SIDE_SHORT_CANCEL:
+            return "cancel ask"
+        elif side == Side.SIDE_BID:
+            return "bid"
+        elif side == Side.SIDE_ASK:
+            return "ask"
+        elif side == Side.SIDE_CANCEL:
+            return "cancel"
+        else:
+            return f"unknown({side})"
+
+    @classmethod
+    def pyget_order_type_name(cls, int order_type) -> str:
+        if order_type == OrderType.ORDER_UNKNOWN:
+            return "unknown"
+        elif order_type == OrderType.ORDER_CANCEL:
+            return "cancel"
+        elif order_type == OrderType.ORDER_GENERIC:
+            return "generic"
+        elif order_type == OrderType.ORDER_LIMIT:
+            return "limit"
+        elif order_type == OrderType.ORDER_LIMIT_MAKER:
+            return "limit_maker"
+        elif order_type == OrderType.ORDER_MARKET:
+            return "market"
+        elif order_type == OrderType.ORDER_FOK:
+            return "fok"
+        elif order_type == OrderType.ORDER_FAK:
+            return "fak"
+        elif order_type == OrderType.ORDER_IOC:
+            return "ioc"
+        else:
+            return f"unknown({order_type})"
+
+    @classmethod
+    def pyget_direction_name(cls, int side) -> str:
+        cdef int direction = TransactionHelper.get_direction(side)
+
+        if direction == Direction.DIRECTION_SHORT:
+            return "short"
+        elif direction == Direction.DIRECTION_LONG:
+            return "long"
+        else:
+            return "unknown"
+
+    @classmethod
+    def pyget_offset_name(cls, int side) -> str:
+        cdef int offset = TransactionHelper.get_offset(side)
+
+        if offset == Offset.OFFSET_CANCEL:
+            return "cancel"
+        elif offset == Offset.OFFSET_ORDER:
+            return "order"
+        elif offset == Offset.OFFSET_OPEN:
+            return "open"
+        elif offset == Offset.OFFSET_CLOSE:
+            return "close"
+        else:
+            return "unknown"
+
+
 cdef class TransactionData(MarketData):
     """
     Represents transaction data for a specific market.
     """
+    _dtype = DataType.DTYPE_TRANSACTION
+
     def __cinit__(self):
         """
         Allocate memory for the transaction data structure but don't initialize it.
         """
-        self._dtype = DataType.DTYPE_TRANSACTION
         self._owner = True
 
     def __init__(self, ticker: str, double timestamp, double price, double volume, int side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
@@ -245,7 +466,7 @@ cdef class TransactionData(MarketData):
         MarketData.__init__(self, ticker=ticker, timestamp=timestamp, **kwargs)
 
         # Set data type for TransactionData
-        self._data.MetaInfo.dtype = DataType.DTYPE_TRANSACTION
+        # self._data.MetaInfo.dtype = DataType.DTYPE_TRANSACTION
 
         # Initialize transaction-specific fields
         self._data.TransactionData.price = price
@@ -559,11 +780,12 @@ cdef class OrderData(MarketData):
     """
     Represents order data for a specific market.
     """
+    _dtype = DataType.DTYPE_ORDER
+
     def __cinit__(self):
         """
         Allocate memory for the order data structure but don't initialize it.
         """
-        self._dtype = DataType.DTYPE_ORDER
         self._owner = True
 
     def __init__(self, str ticker, double timestamp, double price, double volume, int side, object order_id=None, int order_type=0, **kwargs):
@@ -580,7 +802,7 @@ cdef class OrderData(MarketData):
         MarketData.__init__(self, ticker=ticker, timestamp=timestamp, **kwargs)
 
         # Set data type for OrderData
-        self._data.MetaInfo.dtype = DataType.DTYPE_ORDER
+        # self._data.MetaInfo.dtype = DataType.DTYPE_ORDER
 
         # Initialize order-specific fields
         self._data.OrderData.price = price

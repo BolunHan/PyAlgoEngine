@@ -15,12 +15,12 @@ cdef class TickDataLite(MarketData):
     """
     Represents tick data for a specific ticker without the order_book field.
     """
+    _dtype = DataType.DTYPE_TICK_LITE
 
     def __cinit__(self):
         """
         Initialize the class but don't allocate memory.
         """
-        self._dtype = DataType.DTYPE_TICK_LITE
         self._owner = True
 
     def __init__(
@@ -50,7 +50,7 @@ cdef class TickDataLite(MarketData):
         MarketData.__init__(self, ticker=ticker, timestamp=timestamp, **kwargs)
 
         # Set data type for TickDataLite
-        self._data.MetaInfo.dtype = DataType.DTYPE_TICK_LITE
+        # self._data.MetaInfo.dtype = DataType.DTYPE_TICK_LITE
 
         # Set other fields
         self._data.TickDataLite.last_price = last_price
@@ -356,11 +356,12 @@ cdef class TickData(TickDataLite):
     """
     Represents tick data for a specific ticker with order book data.
     """
+    _dtype = DataType.DTYPE_TICK
+
     def __cinit__(self):
         """
         Initialize the class but don't allocate memory.
         """
-        self._dtype = DataType.DTYPE_TICK
         self._owner = True
         self._bid_book = None
         self._ask_book = None
@@ -401,7 +402,7 @@ cdef class TickData(TickDataLite):
         MarketData.__init__(self, ticker=ticker, timestamp=timestamp)
 
         # Set data type for TickData
-        self._data.MetaInfo.dtype = DataType.DTYPE_TICK
+        # self._data.MetaInfo.dtype = DataType.DTYPE_TICK
 
         # Set TickDataLite fields
         self._data.TickDataFull.lite.last_price = last_price
