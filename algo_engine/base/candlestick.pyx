@@ -248,7 +248,7 @@ cdef class BarData(MarketData):
             return 'Sub-Minute'
 
     @property
-    def bar_end_time(self) -> datetime | date:
+    def bar_end_time(self) -> datetime:
         """
         The end time of the bar.
 

@@ -3,6 +3,13 @@
 #define TICKER_SIZE 32
 #define BOOK_SIZE 10
 #define ID_SIZE 16
+#define MAX_WORKERS 128
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 typedef enum {
     DIRECTION_SHORT = 0,
@@ -52,6 +59,14 @@ typedef struct {
     double volume;
     uint64_t n_orders;
 } Entry;
+
+static inline void platform_usleep(unsigned int usec) {
+    #if defined(_WIN32) || defined(_WIN64)
+    Sleep(usec / 1000);  // Windows Sleep uses milliseconds
+    #else
+    usleep(usec);         // POSIX usleep uses microseconds
+    #endif
+}
 
 // Compare function for sorting market data by timestamp
 int compare_md(const void* a, const void* b) {

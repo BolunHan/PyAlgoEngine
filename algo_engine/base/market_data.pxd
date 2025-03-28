@@ -7,9 +7,12 @@ cdef extern from "market_data_external.c":
     int compare_md_ptr(const void* a, const void* b) nogil
     int compare_entries_bid(const void * a, const void * b) nogil
     int compare_entries_ask(const void * a, const void * b) nogil
+    void platform_usleep(unsigned int usec) nogil
+
     const int TICKER_SIZE
     const int BOOK_SIZE
     const int ID_SIZE
+    const int MAX_WORKERS
 
     ctypedef enum Direction:
         DIRECTION_UNKNOWN
@@ -37,8 +40,8 @@ cdef extern from "market_data_external.c":
         SIDE_SHORT
 
 cdef public enum OrderType:
-    ORDER_UNKNOWN = -20
-    ORDER_CANCEL = -10
+    ORDER_UNKNOWN = 2
+    ORDER_CANCEL = 1
     ORDER_GENERIC = 0
     ORDER_LIMIT = 10
     ORDER_LIMIT_MAKER = 11
@@ -46,6 +49,20 @@ cdef public enum OrderType:
     ORDER_FOK = 21
     ORDER_FAK = 22
     ORDER_IOC = 23
+
+
+cdef public enum OrderState:
+    STATE_UNKNOWN = 0
+    STATE_REJECTED = 1  # order rejected
+    STATE_INVALID = 2  # invalid order
+    STATE_PENDING = 3  # order not sent. CAUTION pending order is not working nor done!
+    STATE_SENT = 4  # order sent (to exchange)
+    STATE_PLACED = 5  # order placed in exchange
+    STATE_PARTFILLED = 6  # order partial filled
+    STATE_FILLED = 7  # order fully filled
+    STATE_CANCELING = 8  # order canceling
+    STATE_CANCELED = 9  # order stopped and canceled
+
 
 # Data type mapping
 cdef public enum DataType:
@@ -56,6 +73,9 @@ cdef public enum DataType:
     DTYPE_TICK_LITE = 31
     DTYPE_TICK = 32
     DTYPE_BAR = 40
+
+    DTYPE_REPORT = 50
+    DTYPE_INSTRUCTION = 51
 
 cdef struct _ID:
     uint8_t id_type
@@ -118,7 +138,7 @@ cdef struct _TransactionDataBuffer:
     double timestamp
     double price
     double volume
-    int32_t side
+    uint8_t side
     double multiplier
     double notional
     _ID transaction_id
@@ -132,9 +152,44 @@ cdef struct _OrderDataBuffer:
     double timestamp
     double price
     double volume
-    int32_t side
+    uint8_t side
+    _ID order_id
+    uint8_t order_type
+
+# TradeReport structure
+cdef struct _TradeReportBuffer:
+    uint8_t dtype
+    char ticker[TICKER_SIZE]
+    double timestamp
+    double price
+    double volume
+    uint8_t side
+    double multiplier
+    double notional
+    double fee
+    _ID order_id
+    _ID trade_id
+
+
+# TradeInstruction structure
+cdef struct _TradeInstructionBuffer:
+    uint8_t dtype
+    char ticker[TICKER_SIZE]
+    double timestamp
+    double limit_price
+    double volume
+    uint8_t side
     _ID order_id
     int32_t order_type
+    double multiplier
+    uint8_t order_state
+    double filled_volume
+    double filled_notional
+    double fee
+    double ts_placed
+    double ts_canceled
+    double ts_finished
+
 
 # Base MarketData structure as a union
 cdef union _MarketDataBuffer:
@@ -144,6 +199,10 @@ cdef union _MarketDataBuffer:
     _CandlestickBuffer BarData
     _TickDataLiteBuffer TickDataLite
     _TickDataBuffer TickDataFull
+
+    _TradeReportBuffer TradeReport
+    _TradeInstructionBuffer TradeInstruction
+
 
 # Declare MarketData class
 cdef class MarketData:

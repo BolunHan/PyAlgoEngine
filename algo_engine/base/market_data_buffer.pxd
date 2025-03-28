@@ -1,7 +1,7 @@
 # cython: language_level=3
 from libc.stdint cimport uint8_t, uint32_t, uint64_t
 
-from .market_data cimport MarketData
+from .market_data cimport MarketData, MAX_WORKERS
 
 # Define buffer header structure
 cdef struct _BufferHeader:
@@ -21,6 +21,13 @@ cdef packed struct _RingBufferHeader:
     _BufferHeader buffer_header  # Base header
     uint64_t head                # Index of oldest element
     uint64_t tail                # Index where next element will be added
+
+
+cdef packed struct _ConcurrentBufferHeader:
+    _BufferHeader buffer_header  # Base header
+    uint64_t heads[MAX_WORKERS]  # Array of head indices (one per worker)
+    uint64_t tail                # Index where next element will be added
+    uint8_t n_workers           # Actual number of workers
 
 
 cdef class MarketDataBuffer:
@@ -59,7 +66,7 @@ cdef class MarketDataRingBuffer:
     cdef char * _buffer  # Pointer to the buffer
     cdef Py_buffer _view  # Buffer view
     cdef bint _view_obtained  # Flag to track if buffer view was obtained
-    cdef _RingBufferHeader * _header  # Pointer to the header section
+    cdef _RingBufferHeader* _header  # Pointer to the header section
     cdef uint64_t * _offsets  # Pointer to the pointer array section
     cdef char * _data  # Pointer to the data section
 
@@ -71,12 +78,40 @@ cdef class MarketDataRingBuffer:
 
     cpdef bint is_full(self)
 
-    cdef bytes read(self, uint64_t offset, size_t size)
+    @staticmethod
+    cdef bytes read(char* data, uint64_t offset, size_t size, uint64_t max_offset)
 
-    cdef void write(self, uint64_t offset, char * src, size_t size)
+    @staticmethod
+    cdef void write(char* data, uint64_t offset, char* src, size_t size, uint64_t max_offset)
 
     cpdef void put(self, MarketData market_data)
 
-    cpdef MarketData get(self)
+    cpdef MarketData get(self, uint64_t idx)
 
-    cpdef MarketData _get(self, uint64_t idx)
+    cpdef MarketData listen(self)
+
+
+cdef class MarketDataConcurrentBuffer:
+    cdef char * _buffer  # Pointer to the buffer
+    cdef Py_buffer _view  # Buffer view
+    cdef bint _view_obtained  # Flag to track if buffer view was obtained
+    cdef _ConcurrentBufferHeader* _header  # Pointer to the header section
+    cdef uint64_t * _offsets  # Pointer to the pointer array section
+    cdef char * _data  # Pointer to the data section
+
+    cdef uint64_t data_head(self)
+    cdef uint64_t data_tail(self)
+
+    cpdef uint64_t min_head(self)
+
+    cpdef bint is_empty(self, uint32_t worker_id)
+
+    cpdef bint is_empty_all(self)
+
+    cpdef bint is_full(self)
+
+    cpdef void put(self, MarketData market_data)
+
+    cpdef MarketData get(self, uint64_t idx)
+
+    cpdef MarketData listen(self, uint32_t worker_id, double timeout=?)

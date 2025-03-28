@@ -20,6 +20,9 @@ class PyDataType(enum.IntEnum):
     DTYPE_TICK = DataType.DTYPE_TICK
     DTYPE_BAR = DataType.DTYPE_BAR
 
+    DTYPE_REPORT = DataType.DTYPE_REPORT
+    DTYPE_INSTRUCTION = DataType.DTYPE_INSTRUCTION
+
 
 # Base MarketData class
 cdef class MarketData:
@@ -83,6 +86,9 @@ cdef class MarketData:
         self._set_additional(name=key, value=value)
 
     def __getattr__(self, key):
+        if self._additional is None:
+            raise AttributeError(f'Can not find attribute {key}.')
+
         if key in self._additional:
             return self._additional[key]
 

@@ -6,8 +6,9 @@ from cpython cimport PyList_Size, PyList_GET_ITEM
 from cpython.buffer cimport PyBuffer_FillInfo
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.mem cimport PyMem_Malloc
+from libc.stdint cimport uint8_t, int8_t
 from libc.math cimport INFINITY, NAN, copysign, fabs
-from libc.string cimport memcpy, memset
+from libc.string cimport memcpy, memset, memcmp
 
 from .market_data cimport MarketData, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _ID, DataType, ID_SIZE, Direction, Offset, Side, OrderType as OrderTypeCython
 
@@ -227,13 +228,13 @@ cdef class TransactionHelper:
     """
 
     @staticmethod
-    cdef int get_opposite(int side):
+    cdef uint8_t get_opposite(uint8_t side):
         """
         Get the opposite side by flipping the direction (long -> short, short -> long).
         The offset remains unchanged.
         """
-        cdef int direction = side & 0x03  # Extract the direction bits (0x03 = 00000011)
-        cdef int offset = side & 0xFC     # Extract the offset bits (0xFC = 11111100)
+        cdef uint8_t direction = side & 0x03  # Extract the direction bits (0x03 = 00000011)
+        cdef uint8_t offset = side & 0xFC     # Extract the offset bits (0xFC = 11111100)
 
         # Flip the direction: long -> short, short -> long
         if direction == Direction.DIRECTION_LONG:
@@ -246,7 +247,7 @@ cdef class TransactionHelper:
         return direction | offset
 
     @staticmethod
-    cdef int get_sign(int side):
+    cdef int8_t get_sign(uint8_t side):
         """
         Get the sign of the transaction side.
         """
@@ -254,21 +255,21 @@ cdef class TransactionHelper:
         return direction - 1
 
     @staticmethod
-    cdef int get_offset(int side):
+    cdef uint8_t get_offset(uint8_t side):
         """
         Returns the offset of the given side.
         """
         return side & 0xFC  # Mask to get the offset bits (0xFC = 11111100)
 
     @staticmethod
-    cdef int get_direction(int side):
+    cdef uint8_t get_direction(uint8_t side):
         """
         Returns the direction of the given side.
         """
         return side & 0x03  # Mask to get the direction bits (0x03 = 00000011)
 
     @staticmethod
-    cdef const char* get_side_name(int side):
+    cdef const char* get_side_name(uint8_t side):
         """
         Returns the name of the given side.
         """
@@ -294,7 +295,7 @@ cdef class TransactionHelper:
             return f"unknown({side})".encode('utf-8')
 
     @staticmethod
-    cdef const char* get_order_type_name(int order_type):
+    cdef const char* get_order_type_name(uint8_t order_type):
         """
         Get the string representation of the order type.
         """
@@ -320,11 +321,11 @@ cdef class TransactionHelper:
             return f"unknown({order_type})".encode('utf-8')
 
     @staticmethod
-    cdef const char* get_direction_name(int side):
+    cdef const char* get_direction_name(uint8_t side):
         """
         Returns the name of the direction of the given side.
         """
-        cdef int direction = TransactionHelper.get_direction(side)
+        cdef uint8_t direction = TransactionHelper.get_direction(side)
 
         if direction == Direction.DIRECTION_SHORT:
             return "short"
@@ -334,7 +335,7 @@ cdef class TransactionHelper:
             return "unknown"
 
     @staticmethod
-    cdef const char* get_offset_name(int side):
+    cdef const char* get_offset_name(uint8_t side):
         """
         Returns the name of the offset of the given side.
         """
@@ -544,6 +545,11 @@ cdef class TransactionData(MarketData):
             return uuid.UUID(bytes_le=id_ptr.data[:16])
 
         raise ValueError(f'Can not decode the id buffer with type {id_ptr.id_type}.')
+
+    @staticmethod
+    cdef bint _id_equal(const _ID* id1, const _ID* id2):
+        """Ultra-efficient ID comparison using single memcmp of entire struct"""
+        return memcmp(id1, id2, ID_SIZE + 1) == 0
 
     @classmethod
     def merge(cls, list data_list not None):
@@ -788,7 +794,7 @@ cdef class OrderData(MarketData):
         """
         self._owner = True
 
-    def __init__(self, str ticker, double timestamp, double price, double volume, int side, object order_id=None, int order_type=0, **kwargs):
+    def __init__(self, str ticker, double timestamp, double price, double volume, uint8_t side, object order_id=None, uint8_t order_type=0, **kwargs):
         """
         Initialize the order data with values.
         """

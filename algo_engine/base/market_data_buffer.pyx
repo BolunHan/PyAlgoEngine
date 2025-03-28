@@ -5,8 +5,9 @@ from libc.math cimport NAN
 from libc.stdlib cimport malloc, free, qsort
 from libc.string cimport memcpy, memset
 from libc.stdint cimport uint8_t, uint32_t, uint64_t
+from libc.time cimport time, time_t, difftime
 
-from .market_data cimport compare_md_ptr, MarketData, DataType, _MetaInfo, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE
+from .market_data cimport compare_md_ptr, MarketData, DataType, _MetaInfo, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE, MAX_WORKERS, platform_usleep
 from .transaction cimport TransactionData, OrderData
 from .tick cimport TickData, TickDataLite
 from .candlestick cimport BarData
@@ -698,7 +699,8 @@ cdef class MarketDataRingBuffer:
             # Case 2: Wrapped case - free space between tail and head
             return free_space < MarketData.max_size()
 
-    cdef bytes read(self, uint64_t offset, size_t size):
+    @staticmethod
+    cdef bytes read(char* data, uint64_t offset, size_t size, uint64_t max_offset):
         """
         Read data from buffer, handling wrap-around if needed.
 
@@ -715,7 +717,7 @@ cdef class MarketDataRingBuffer:
             The read data
         """
         cdef char * temp_buf = <char *> malloc(size)
-        cdef size_t first_part = self._header.buffer_header.max_offset - offset
+        cdef size_t first_part = max_offset - offset
 
         if temp_buf == NULL:
             raise MemoryError("Failed to allocate temporary buffer")
@@ -723,17 +725,18 @@ cdef class MarketDataRingBuffer:
         try:
             if size <= first_part:
                 # Contiguous read
-                memcpy(temp_buf, self._data + offset, size)
+                memcpy(temp_buf, data + offset, size)
             else:
                 # Wrapped read
-                memcpy(temp_buf, self._data + offset, first_part)
-                memcpy(temp_buf + first_part, self._data, size - first_part)
+                memcpy(temp_buf, data + offset, first_part)
+                memcpy(temp_buf + first_part, data, size - first_part)
 
             return PyBytes_FromStringAndSize(temp_buf, size)
         finally:
             free(temp_buf)
 
-    cdef void write(self, uint64_t offset, char * src, size_t size):
+    @staticmethod
+    cdef void write(char* data, uint64_t offset, char* src, size_t size, uint64_t max_offset):
         """
         Write data to buffer, handling wrap-around if needed.
 
@@ -746,15 +749,15 @@ cdef class MarketDataRingBuffer:
         size : size_t
             Number of bytes to write
         """
-        cdef size_t first_part = self._header.buffer_header.max_offset - offset
+        cdef size_t first_part = max_offset - offset
 
         if  size <= first_part:
             # Contiguous write
-            memcpy(self._data + offset, src, size)
+            memcpy(data + offset, src, size)
         else:
             # Wrapped write
-            memcpy(self._data + offset, src, first_part)
-            memcpy(self._data, src + first_part, size - first_part)
+            memcpy(data + offset, src, first_part)
+            memcpy(data, src + first_part, size - first_part)
 
     cpdef void put(self, MarketData market_data):
         """
@@ -780,7 +783,7 @@ cdef class MarketDataRingBuffer:
         cdef uint64_t write_offset = self._header.buffer_header.tail_offset
 
         # Write the data
-        self.write(write_offset, <char*> data_ptr, entry_size)
+        MarketDataRingBuffer.write(data=self._data, offset=write_offset, src=<char*> data_ptr, size=entry_size, max_offset=self._header.buffer_header.max_offset)
 
         # Store the offset
         self._offsets[self._header.tail % self._header.buffer_header.capacity] = write_offset
@@ -798,12 +801,12 @@ cdef class MarketDataRingBuffer:
         if data_ptr.MetaInfo.timestamp > self._header.buffer_header.current_timestamp:
             self._header.buffer_header.current_timestamp = data_ptr.MetaInfo.timestamp
 
-    cpdef MarketData _get(self, uint64_t idx):
+    cpdef MarketData get(self, uint64_t idx):
         cdef uint64_t offset = self._offsets[idx % self._header.buffer_header.capacity]
         cdef char * data_ptr = self._data + offset
         cdef uint8_t dtype = data_ptr[0]
         cdef size_t entry_size = MarketData.get_size(dtype)
-        cdef bytes data = self.read(offset, entry_size)
+        cdef bytes data = MarketDataRingBuffer.read(data=self._data, offset=offset, size=entry_size, max_offset=self._header.buffer_header.max_offset)
 
         # print(f'getting buffer, '
         #       f'ttl={self._header.buffer_header.count}, '
@@ -831,14 +834,14 @@ cdef class MarketDataRingBuffer:
         else:
             return MarketData.from_bytes(data)
 
-    cpdef MarketData get(self):
+    cpdef MarketData listen(self):
         """
         Get the oldest MarketData from the buffer (FIFO order).
         """
         if self.is_empty():
             raise IndexError("Buffer is empty")
 
-        md = self._get(idx=self.head)
+        md = self.get(idx=self.head)
 
         self._header.head += 1
 
@@ -855,3 +858,285 @@ cdef class MarketDataRingBuffer:
     @property
     def count(self) -> int:
         return self._header.buffer_header.count
+
+
+cdef class MarketDataConcurrentBuffer:
+    def __cinit__(self):
+        self._buffer = NULL
+        self._view_obtained = False
+        self._header = NULL
+        self._offsets = NULL
+        self._data = NULL
+
+    def __init__(self, buffer, uint32_t n_workers, uint8_t dtype=0, uint64_t capacity=0):
+        """
+        Initialize the MarketDataConcurrentBuffer with a memory buffer.
+
+        Parameters:
+        -----------
+        buffer : object
+            A Python object supporting the buffer protocol
+        n_workers : uint32_t
+            Number of worker threads that will access this buffer
+        dtype : uint8_t, optional
+            Data type for validation (0 for mixed types)
+        capacity : uint64_t, optional
+            Maximum number of entries (calculated from buffer size if 0)
+        """
+        if n_workers > 128:
+            raise ValueError("Maximum number of workers is 128")
+
+        cdef Py_buffer view
+        PyObject_GetBuffer(buffer, &view, PyBUF_SIMPLE)
+
+        cdef uint64_t estimated_entry_size
+        cdef uint64_t pointer_size
+        cdef uint64_t pointer_offset
+        cdef uint64_t data_offset
+        cdef uint64_t total_size = view.len
+        cdef uint64_t header_size = sizeof(_ConcurrentBufferHeader)
+
+        self._view = view
+        self._view_obtained = True
+        self._buffer = <char *> view.buf
+
+        if capacity <= 0:
+            if dtype == 0:
+                estimated_entry_size = MarketData.min_size()
+            else:
+                estimated_entry_size = MarketData.get_size(dtype)
+
+            # Calculate maximum possible capacity
+            capacity = (total_size - header_size) // (sizeof(uint64_t) + estimated_entry_size)
+
+            if capacity <= 0:
+                print('Buffer too small to store any entries')
+                PyBuffer_Release(&view)
+                raise ValueError("Buffer too small to store any entries")
+
+        # Calculate pointer array size (in bytes)
+        pointer_size = capacity * sizeof(uint64_t)
+
+        # Calculate offsets
+        pointer_offset = header_size
+        data_offset = pointer_offset + pointer_size
+
+        self._header = <_ConcurrentBufferHeader *> self._buffer
+        memset(self._header, 0, sizeof(_ConcurrentBufferHeader))
+
+        # Initialize base header
+        self._header.buffer_header.dtype = dtype
+        self._header.buffer_header.sorted = 1
+        self._header.buffer_header.count = 0
+        self._header.buffer_header.current_index = 0
+        self._header.buffer_header.pointer_offset = pointer_offset
+        self._header.buffer_header.capacity = capacity
+        self._header.buffer_header.data_offset = data_offset
+        self._header.buffer_header.tail_offset = 0
+        self._header.buffer_header.max_offset = total_size - data_offset
+        self._header.buffer_header.current_timestamp = 0.0
+
+        # Initialize concurrent buffer specific fields
+        self._header.n_workers = n_workers
+        self._header.tail = 0
+        memset(self._header.heads, 0, MAX_WORKERS * sizeof(uint64_t))
+        # memset(self._header.notify, 0, 128 * sizeof(uint8_t))
+
+        # Set section pointers
+        self._offsets = <uint64_t *> (self._buffer + pointer_offset)
+        self._data = self._buffer + data_offset
+
+        # Initialize all pointers to 0
+        memset(self._offsets, 0, capacity * sizeof(uint64_t))
+
+    def __len__(self) -> int:
+        return self._header.tail - self.min_head()
+
+    def __dealloc__(self):
+        if self._view_obtained:
+            PyBuffer_Release(&self._view)
+            self._view_obtained = False
+
+    cpdef uint64_t min_head(self):
+        """Get the minimum head position across all workers."""
+        cdef uint64_t min_head = self._header.heads[0]
+        cdef uint32_t i
+
+        for i in range(1, self._header.n_workers):
+            if self._header.heads[i] < min_head:
+                min_head = self._header.heads[i]
+        return min_head
+
+    cdef uint64_t data_head(self):
+        """Get the current head position in the data section."""
+        cdef uint64_t min_head = self.min_head()
+        cdef uint64_t head_idx = min_head % self._header.buffer_header.capacity
+        return self._offsets[head_idx]
+
+    cdef uint64_t data_tail(self):
+        """
+        Get the end position of the most recently added entry in the data section.
+        Returns 0 if buffer is empty.
+        """
+        # reset the ring buffer
+        if self.is_empty_all():
+            return 0
+
+        cdef uint64_t tail_idx = (self._header.tail - 1) % self._header.buffer_header.capacity
+        cdef uint64_t offset = self._offsets[tail_idx]
+        cdef _MetaInfo* ptr = <_MetaInfo*> (self._data + offset)
+        cdef size_t entry_size = MarketData.get_size(ptr.dtype)
+        cdef uint64_t end_pos = offset + entry_size
+
+        if end_pos > self._header.buffer_header.max_offset:
+            end_pos = entry_size - (self._header.buffer_header.max_offset - offset)
+
+        return end_pos
+
+    cpdef bint is_empty(self, uint32_t worker_id):
+        """Return True if the buffer is empty for the given worker."""
+        if worker_id >= self._header.n_workers:
+            raise IndexError("worker_id exceeds number of workers")
+        return self._header.heads[worker_id] == self._header.tail
+
+    cpdef bint is_empty_all(self):
+        """Return True if the buffer is empty for the given worker."""
+        cdef uint32_t i
+
+        for i in range(self._header.n_workers):
+            if not self.is_empty(worker_id=i):
+                return False
+        return True
+
+    cpdef bint is_full(self):
+        """Return True if buffer cannot accept any new entries."""
+        # Same logic as parent class
+        if self._header.tail - self.min_head() >= self._header.buffer_header.capacity:
+            return True
+
+        cdef uint64_t data_head_pos = self.data_head()
+        cdef uint64_t data_tail_pos = self._header.buffer_header.tail_offset
+        cdef uint64_t max_offset = self._header.buffer_header.max_offset
+        cdef uint64_t free_space = data_head_pos - data_tail_pos
+
+        if self.min_head() == self._header.tail:
+            return False
+        elif data_tail_pos >= data_head_pos:
+            return free_space + max_offset < MarketData.max_size()
+        else:
+            return free_space < MarketData.max_size()
+
+
+    cpdef void put(self, MarketData market_data):
+        if self.is_full():
+            raise MemoryError("Buffer is full")
+
+        # Get data pointer and dtype directly from market_data
+        cdef _MarketDataBuffer * data_ptr = market_data._data
+        cdef uint8_t entry_dtype = data_ptr.MetaInfo.dtype
+        cdef size_t entry_size = MarketData.get_size(entry_dtype)
+
+        # Validate dtype if specified
+        if self._header.buffer_header.dtype != 0 and entry_dtype != self._header.buffer_header.dtype:
+            raise TypeError(f"Expected dtype {self._header.buffer_header.dtype}, but found {entry_dtype}")
+
+        # Check if write would exceed buffer capacity
+        if entry_size > self._header.buffer_header.max_offset:
+            raise MemoryError("Market data too large for buffer.")
+
+        # Check available space
+        cdef uint64_t write_offset = self._header.buffer_header.tail_offset
+
+        # Write the data
+        MarketDataRingBuffer.write(data=self._data, offset=write_offset, src=<char *> data_ptr, size=entry_size, max_offset=self._header.buffer_header.max_offset)
+
+        # Store the offset
+        self._offsets[self._header.tail % self._header.buffer_header.capacity] = write_offset
+
+        # Update tail position (no modulo here)
+        self._header.tail += 1
+        self._header.buffer_header.tail_offset += entry_size
+        if self._header.buffer_header.tail_offset >= self._header.buffer_header.max_offset:
+            self._header.buffer_header.tail_offset -= self._header.buffer_header.max_offset
+
+        # Update count
+        self._header.buffer_header.count += 1
+
+        # Update current_timestamp if needed
+        if data_ptr.MetaInfo.timestamp > self._header.buffer_header.current_timestamp:
+            self._header.buffer_header.current_timestamp = data_ptr.MetaInfo.timestamp
+
+    cpdef MarketData get(self, uint64_t idx):
+        cdef uint64_t offset = self._offsets[idx % self._header.buffer_header.capacity]
+        cdef char * data_ptr = self._data + offset
+        cdef uint8_t dtype = data_ptr[0]
+        cdef size_t entry_size = MarketData.get_size(dtype)
+        cdef bytes data = MarketDataRingBuffer.read(data=self._data, offset=offset, size=entry_size, max_offset=self._header.buffer_header.max_offset)
+
+        # Create appropriate MarketData object
+        if dtype == DataType.DTYPE_TRANSACTION:
+            return TransactionData.from_bytes(data)
+        elif dtype == DataType.DTYPE_ORDER:
+            return OrderData.from_bytes(data)
+        elif dtype == DataType.DTYPE_TICK_LITE:
+            return TickDataLite.from_bytes(data)
+        elif dtype == DataType.DTYPE_TICK:
+            return TickData.from_bytes(data)
+        elif dtype == DataType.DTYPE_BAR:
+            return BarData.from_bytes(data)
+        else:
+            return MarketData.from_bytes(data)
+
+    cpdef MarketData listen(self, uint32_t worker_id, double timeout=-1.0):
+        """
+        Ultra-low-latency wait with progressive backoff strategy.
+        """
+        cdef time_t start_time = 0
+        cdef time_t current_time
+        cdef double elapsed = 0.0
+        cdef uint32_t spin_count = 0
+        cdef uint32_t sleep_us = 0
+        cdef bint use_timeout = timeout >= 0
+        cdef _ConcurrentBufferHeader* header = self._header  # Local pointer for direct access
+        cdef uint64_t idx = self._header.heads[worker_id]
+        if worker_id >= self._header.n_workers:
+            raise IndexError("worker_id exceeds number of workers")
+
+        if use_timeout:
+            time(&start_time)
+        elif self.is_empty(worker_id):
+            raise IndexError("Buffer is empty for this worker")
+
+        while True:
+            # Check for data - direct struct field access
+            if idx != header.tail:
+                self._header.heads[worker_id] += 1
+                return self.get(idx=idx)
+
+            # Timeout check
+            if use_timeout:
+                time(&current_time)
+                elapsed = difftime(current_time, start_time)
+                if elapsed >= timeout:
+                    raise TimeoutError("Timeout while waiting for data")
+
+            # Progressive backoff strategy
+            if spin_count < 10000:
+                # Phase 1: Pure spin (0 sleep)
+                pass
+            elif spin_count < 20000:
+                # Phase 2: 1us sleep
+                sleep_us = 1
+            elif spin_count < 30000:
+                # Phase 3: 10us sleep
+                sleep_us = 10
+            elif spin_count < 40000:
+                # Phase 4: 100us sleep
+                sleep_us = 100
+            else:
+                # Phase 5: 1ms sleep
+                sleep_us = 1000
+
+            if sleep_us > 0:
+                platform_usleep(sleep_us)
+            spin_count += 1
