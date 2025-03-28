@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import uuid
-from typing import Any
+from typing import Any, Literal
 
 from .market_data import MarketData
 
@@ -19,13 +19,74 @@ class OrderType(enum.IntEnum):
     ORDER_IOC: int
 
 
-class TransactionDirection(enum.IntEnum): ...
+class TransactionDirection(enum.IntEnum):
+    DIRECTION_UNKNOWN: int
+    DIRECTION_SHORT: int
+    DIRECTION_LONG: int
 
 
-class TransactionOffset(enum.IntEnum): ...
+class TransactionOffset(enum.IntEnum):
+    OFFSET_CANCEL: int
+    OFFSET_ORDER: int
+    OFFSET_OPEN: int
+    OFFSET_CLOSE: int
 
 
-class TransactionSide(enum.IntEnum): ...
+class TransactionSide(enum.IntEnum):
+    SIDE_LONG_OPEN: int
+    SIDE_LONG_CLOSE: int
+    SIDE_LONG_CANCEL: int
+    SIDE_SHORT_OPEN: int
+    SIDE_SHORT_CLOSE: int
+    SIDE_SHORT_CANCEL: int
+    SIDE_BID: int
+    SIDE_ASK: int
+    SIDE_CANCEL: int
+    SIDE_UNKNOWN: int
+    SIDE_LONG : int
+    SIDE_SHORT: int
+    ShortOrder : int
+    AskOrder: int
+    Ask : int
+    LongOrder: int
+    BidOrder: int
+    Bid: int
+    ShortFilled : int
+    Unwind : int
+    Sell : int
+    LongFilled : int
+    LongOpen : int
+    Buy : int
+    ShortOpen : int
+    Short : int
+    Cover : int
+    UNKNOWN : int
+    CANCEL : int
+    FAULTY : int
+
+    @property
+    def sign(self) -> Literal[-1, 0, 1]:
+        ...
+
+    @property
+    def offset(self) -> TransactionOffset:
+        ...
+
+    @property
+    def direction(self) -> TransactionDirection:
+        ...
+
+    @property
+    def side_name(self) -> str:
+        ...
+
+    @property
+    def offset_name(self) -> str:
+        ...
+
+    @property
+    def direction_name(self) -> str:
+        ...
 
 
 class TransactionData(MarketData):

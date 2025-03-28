@@ -42,3 +42,6 @@ class MarketData:
 
     @property
     def market_time(self) -> datetime: ...
+
+    @property
+    def market_price(self) -> float: ...

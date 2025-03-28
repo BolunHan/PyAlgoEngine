@@ -4,11 +4,32 @@ import enum
 import uuid
 from datetime import datetime
 
+from .market_data import MarketData
 from .transaction import OrderType, TransactionSide, TransactionData
 
 
 class OrderState(enum.IntEnum):
-    ...
+    STATE_UNKNOWN: int
+    STATE_REJECTED: int
+    STATE_INVALID: int
+    STATE_PENDING: int
+    STATE_SENT: int
+    STATE_PLACED: int
+    STATE_PARTFILLED: int
+    STATE_FILLED: int
+    STATE_CANCELING: int
+    STATE_CANCELED: int
+
+    UNKNOWN: int
+    Rejected: int
+    Invalid: int
+    Pending: int
+    Sent: int
+    Placed: int
+    PartFilled: int
+    Filled: int
+    Canceling: int
+    Canceled: int
 
     def __hash__(self) -> int: ...
 
@@ -19,7 +40,7 @@ class OrderState(enum.IntEnum):
     def is_done(self) -> bool: ...
 
 
-class TradeReport:
+class TradeReport(MarketData):
     def __init__(
             self,
             ticker: str,
@@ -93,7 +114,7 @@ class TradeReport:
     def trade_time(self) -> datetime: ...
 
 
-class TradeInstruction:
+class TradeInstruction(MarketData):
     _dtype: int
     trades: dict[str | int | bytes | uuid.UUID, TradeReport]
 

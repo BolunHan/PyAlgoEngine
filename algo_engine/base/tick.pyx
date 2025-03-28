@@ -256,6 +256,18 @@ cdef class OrderBook:
             PyMem_Free(view.strides)
             view.strides = NULL
 
+    def __iter__(self):  # Returns self
+        self._iter_index = 0
+        return self
+
+    def __next__(self) -> tuple[float, float, int]:
+        while self._iter_index < BOOK_SIZE:
+            entry = self._data.entries[self._iter_index]
+            self._iter_index += 1
+            if entry.n_orders:
+                return entry.price, entry.volume, entry.n_orders
+        raise StopIteration
+
     def at_price(self, price: float) -> tuple[float, float, float]:
         for i in range(BOOK_SIZE):
             if self._data.entries[i].price == price and self._data.entries[i].n_orders:
