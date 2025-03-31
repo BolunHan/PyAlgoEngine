@@ -37,13 +37,13 @@ if check_cython_module(['market_data', 'transaction', 'tick', 'candlestick', 'ma
     from .market_data_buffer import MarketDataBuffer, MarketDataRingBuffer, MarketDataConcurrentBuffer
 else:
     import_cmd = f'from .market_utils_{os.name} import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer'
-    eval(import_cmd)
+    exec(import_cmd)
 
 if check_cython_module(['trade_utils']):
     from .trade_utils import OrderState, TradeInstruction, TradeReport
 else:
     import_cmd = f'from .trade_utils_native import OrderState, TradeInstruction, TradeReport'
-    eval(import_cmd)
+    exec(import_cmd)
 
 from .technical_analysis import TechnicalAnalysis
 from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalStyle, InteractiveShell, ShellTransfer
