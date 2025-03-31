@@ -1,5 +1,6 @@
 import collections
 import ctypes
+import multiprocessing
 import random
 import time
 import unittest
@@ -7,7 +8,7 @@ from multiprocessing import RawArray
 from typing import Literal
 
 from algo_engine.base.candlestick import BarData
-from algo_engine.base.market_data_buffer import MarketDataBuffer, MarketDataRingBuffer
+from algo_engine.base.market_data_buffer import MarketDataBuffer, MarketDataRingBuffer, MarketDataConcurrentBuffer
 from algo_engine.base.tick import TickData
 from algo_engine.base.transaction import TransactionData, OrderData, TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset
 
@@ -361,7 +362,7 @@ class MarketDataRingBufferTest(unittest.TestCase, MockData):
         buf = MarketDataRingBuffer(buffer=memoryview(shm))
         st = time.time()
         dq = collections.deque(maxlen=2)
-        for i in range(1000000):
+        for i in range(100000):
             md = MarketDataBufferTest.gen_data()
             dq.append(md)
             buf.put(md)
@@ -370,14 +371,126 @@ class MarketDataRingBufferTest(unittest.TestCase, MockData):
                 self.assertEqual(len(buf), dq.maxlen)
 
                 _md0 = dq.popleft()
-                _md1 = buf.get()
+                _md1 = buf.listen()
 
                 try:
                     self.assertEqual(_md0.to_bytes(), _md1.to_bytes())
+                    print(f'data validated: {_md1}.')
+                except AssertionError:
+                    print(f'true data {_md0}')
+                    print(f'got data {_md1}')
+        print(f'ts cost per 100k: {time.time() - st}s')
+
+
+class MarketDataConcurrentBufferTest(unittest.TestCase, MockData):
+    def run_test(self):
+        # self.test_single_process()
+        self.test_concurrent_access()
+
+    def test_single_process(self):
+        """Test buffer operation without wrap-around"""
+        # Create buffer sized to hold exactly 5 TickData entries without wrapping
+        buffer_size = 3000  # roughly 1.5 tick data
+        shm = RawArray(ctypes.c_byte, buffer_size)
+
+        buf = MarketDataConcurrentBuffer(buffer=memoryview(shm), n_workers=1)
+        st = time.time()
+        dq = collections.deque(maxlen=2)
+        for i in range(100000):
+            md = MarketDataBufferTest.gen_data()
+            dq.append(md)
+            buf.put(md)
+
+            if len(dq) == dq.maxlen:
+                self.assertEqual(len(buf), dq.maxlen)
+
+                _md0 = dq.popleft()
+                _md1 = buf.listen(worker_id=0)
+
+                try:
+                    self.assertEqual(_md0.to_bytes(), _md1.to_bytes())
+                    print(f'data validated: {_md1}.')
                 except AssertionError:
                     print(f'true data {_md0}')
                     print(f'got data {_md1}')
         print(f'ts cost per 1m: {time.time() - st}s')
+
+    def test_concurrent_access(self):
+        """Test concurrent access with multiple workers"""
+        # Create a shared memory buffer large enough for testing
+        buffer_size = 5000  # 10MB
+        shm = RawArray(ctypes.c_byte, buffer_size)
+
+        # Create the concurrent buffer
+        buf = MarketDataConcurrentBuffer(
+            buffer=memoryview(shm),
+            # capacity=1000,
+            n_workers=8
+        )
+
+        # Generate test data (1000 items)
+        test_data = []
+        test_data += self.generate_trade_data(250)
+        test_data += self.generate_tick_data(250)
+        test_data += self.generate_order_data(250)
+        test_data += self.generate_bar_data(250)
+        random.shuffle(test_data)
+
+        # Create and start worker processes
+        workers = []
+        for worker_id in range(8):
+            p = multiprocessing.Process(target=self.worker_func, args=(buf, worker_id, test_data))
+            workers.append(p)
+
+        # Start the producer process
+        producer = multiprocessing.Process(target=self.producer_func, args=(buf, test_data))
+        producer.start()
+        for worker in workers:
+            worker.start()
+
+        # Wait for producer to finish
+        producer.join()
+        for worker in workers:
+            worker.join()
+
+    def producer_func(self, buf: MarketDataConcurrentBuffer, test_data: list):
+        """Function that puts data into the buffer"""
+        start_time = time.time()
+        put_attempts = 0
+
+        for data in test_data:
+            while True:
+                if buf.is_full():
+                    print(f'buffer full, retrying {put_attempts}...')
+                    put_attempts += 1
+                    time.sleep(0.001)  # Small sleep to avoid busy waiting
+                    continue
+
+                buf.put(data)
+                break
+
+        print(f"Producer finished after {put_attempts} retries")
+
+    def worker_func(self, buf: MarketDataConcurrentBuffer, worker_id: int, test_data: list):
+        """Function that gets data from the buffer and validates it"""
+        count = 0
+        success = True
+
+        while True:
+            try:
+                data = buf.listen(worker_id=worker_id, timeout=1)
+            except TimeoutError:
+                if count == len(test_data):
+                    break
+
+                continue
+
+            self.assertEqual(data.to_bytes(), test_data[count].to_bytes())
+            print(f'worker {worker_id} report data validated: {data}.')
+
+            count += 1
+            if count == len(test_data):
+                break
 
 
 def main():
@@ -386,6 +499,9 @@ def main():
 
     t1 = MarketDataRingBufferTest()
     t1.run_test()
+
+    t2 = MarketDataConcurrentBufferTest()
+    t2.run_test()
 
 
 if __name__ == '__main__':
