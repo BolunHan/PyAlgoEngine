@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 
 from . import LOGGER
-from ..base import OrderType, MarketData, BarData, TradeData, TickData, OrderState, OrderBook, TradeReport, TradeInstruction, TransactionSide
+from ..base import OrderType, MarketData, BarData, TransactionData, TradeData, TickData, OrderState, OrderData, TradeReport, TradeInstruction, TransactionSide, TickDataLite
 from ..engine.event_engine import TOPIC, EVENT_ENGINE
 from ..profile import PROFILE
 
@@ -52,10 +52,10 @@ class SimMatch(object):
                 self._check_bar_data(market_data=market_data)
             elif isinstance(market_data, TickData):
                 self._check_tick_data(market_data=market_data)
-            elif isinstance(market_data, TradeData):
+            elif isinstance(market_data, (TransactionData, TradeData)):
                 self._check_trade_data(market_data=market_data)
-            elif isinstance(market_data, OrderBook):
-                self._check_order_book(market_data=market_data)
+            elif isinstance(market_data, OrderData):
+                self._check_order_data(market_data=market_data)
 
     def register(self, topic_set=None, event_engine=None):
         if topic_set is not None:
@@ -145,56 +145,55 @@ class SimMatch(object):
         for order_id in list(self.working):
             order = self.working.get(order_id)
             if order is None:
-                pass
-            elif order.order_state in [OrderState.Placed, OrderState.PartFilled]:
-                if order.side.sign > 0:
-                    # match order based on worst offer
-                    if order.limit_price is None:
-                        self._match(order=order, match_price=market_data.vwap)
-                    elif market_data.high_price < order.limit_price:
-                        self._match(order=order, match_price=market_data.high_price)
-                    # match order based on limit price
-                    elif market_data.low_price < order.limit_price:
-                        self._match(order=order, match_price=order.limit_price)
-                    # no match
-                    else:
-                        pass
-                elif order.side.sign < 0:
-                    # match order based on worst offer
-                    if order.limit_price is None:
-                        self._match(order=order, match_price=market_data.vwap)
-                    elif market_data.low_price > order.limit_price:
-                        self._match(order=order, match_price=market_data.low_price)
-                    # match order based on limit price
-                    elif market_data.high_price > order.limit_price:
-                        self._match(order=order, match_price=order.limit_price)
-                    # no match
-                    else:
-                        pass
-            else:
                 continue
-                # raise ValueError(f'Invalid working order state {order}')
 
-    def _check_trade_data(self, market_data: TradeData):
+            if not order.is_working:
+                continue
+            if order.side.sign > 0:
+                # match order based on worst offer
+                if order.limit_price is None:
+                    self._match(order=order, match_price=market_data.vwap)
+                elif market_data.high_price < order.limit_price:
+                    self._match(order=order, match_price=market_data.high_price)
+                # match order based on limit price
+                elif market_data.low_price < order.limit_price:
+                    self._match(order=order, match_price=order.limit_price)
+                # no match
+                else:
+                    pass
+            elif order.side.sign < 0:
+                # match order based on worst offer
+                if order.limit_price is None:
+                    self._match(order=order, match_price=market_data.vwap)
+                elif market_data.low_price > order.limit_price:
+                    self._match(order=order, match_price=market_data.low_price)
+                # match order based on limit price
+                elif market_data.high_price > order.limit_price:
+                    self._match(order=order, match_price=order.limit_price)
+                # no match
+                else:
+                    pass
+
+    def _check_trade_data(self, market_data: TransactionData | TradeData):
         for order_id in list(self.working):
             order = self.working.get(order_id)
             if order is None:
-                pass
-            elif order.is_working:
-                if order.start_time > market_data.market_time:
-                    pass
-                elif order.limit_price is None:
-                    if order.side.sign * market_data.side.sign > 0:
-                        self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
-                elif order.side.sign > 0 and market_data.market_price < order.limit_price:
-                    self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
-                elif order.side.sign < 0 and market_data.market_price > order.limit_price:
-                    self._match(order=order, match_volume=market_data.volume, match_price=market_data.market_price)
-            else:
                 continue
-                # raise ValueError(f'Invalid working order state {order}')
 
-    def _check_order_book(self, market_data: OrderBook):
+            if not order.is_working:
+                continue
+
+            if order.start_time > market_data.market_time:
+                pass
+            elif order.limit_price is None:
+                if order.side.sign * market_data.side.sign > 0:
+                    self._match(order=order, match_volume=market_data.volume, match_price=market_data.price)
+            elif order.side.sign > 0 and market_data.market_price < order.limit_price:
+                self._match(order=order, match_volume=market_data.volume, match_price=market_data.price)
+            elif order.side.sign < 0 and market_data.market_price > order.limit_price:
+                self._match(order=order, match_volume=market_data.volume, match_price=market_data.price)
+
+    def _check_tick_data(self, market_data: TickData):
         for order_id in list(self.working):
             order = self.working.get(order_id)
 
@@ -250,7 +249,7 @@ class SimMatch(object):
                 continue
                 # raise ValueError(f'Invalid working order state {order}')
 
-    def _check_tick_data(self, market_data: TickData):
+    def _check_tick_data(self, market_data: TickDataLite):
         for order_id in list(self.working):
             order = self.working.get(order_id)
 
