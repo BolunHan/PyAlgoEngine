@@ -73,6 +73,12 @@ else:
             sources=["algo_engine/base/market_data_buffer.pyx"],
             extra_compile_args=['-O3', '-flto'],
             extra_link_args=['-flto', '-s']
+        ),
+        Extension(
+            name="algo_engine.base.trade_utils",
+            sources=["algo_engine/base/trade_utils.pyx"],
+            extra_compile_args=['-O3', '-flto'],
+            extra_link_args=['-flto', '-s']
         )
     ]
 
