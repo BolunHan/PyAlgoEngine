@@ -908,13 +908,17 @@ cdef class OrderData(MarketData):
         return self._data.OrderData.volume
 
     @property
-    def side(self) -> int:
+    def side_int(self) -> int:
         """
         Get the order side.
         """
         if self._data == NULL:
             raise ValueError("Data not initialized")
         return self._data.OrderData.side
+
+    @property
+    def side(self) -> TransactionSide:
+        return TransactionSide(self.side_int)
 
     @property
     def order_id(self) -> object:

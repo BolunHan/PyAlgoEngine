@@ -30,7 +30,7 @@ def check_cython_module(cython_module) -> bool:
 from .finance_decimal import FinancialDecimal
 
 if check_cython_module(['market_data', 'transaction', 'tick', 'candlestick', 'market_data_buffer']):
-    from .market_data import MarketData
+    from .market_data import MarketData, PyDataType as DataType
     from .transaction import TransactionDirection, TransactionOffset, TransactionSide, OrderType, TransactionData, TradeData, OrderData
     from .tick import TickDataLite, TickData
     from .candlestick import BarData, DailyBar
@@ -51,7 +51,7 @@ from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalS
 __all__ = [
     'PROFILE',
     'FinancialDecimal',
-    'TransactionDirection', 'TransactionOffset', 'TransactionSide', 'OrderType', 'MarketData', 'BarData', 'DailyBar', 'TickDataLite', 'TickData', 'TransactionData', 'TradeData', 'OrderData', 'MarketDataBuffer', 'MarketDataRingBuffer', 'MarketDataConcurrentBuffer',
+    'TransactionDirection', 'TransactionOffset', 'TransactionSide', 'OrderType', 'MarketData', 'DataType', 'BarData', 'DailyBar', 'TickDataLite', 'TickData', 'TransactionData', 'TradeData', 'OrderData', 'MarketDataBuffer', 'MarketDataRingBuffer', 'MarketDataConcurrentBuffer',
     # 'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer',
     # 'MarketDataPointer', 'OrderBookPointer', 'BarDataPointer', 'TickDataPointer', 'TransactionDataPointer',
     'TechnicalAnalysis',

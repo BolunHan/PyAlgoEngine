@@ -4,6 +4,8 @@ import enum
 import uuid
 from datetime import datetime
 
+from typing_extensions import deprecated
+
 from .market_data import MarketData
 from .transaction import OrderType, TransactionSide, TransactionData
 
@@ -20,16 +22,16 @@ class OrderState(enum.IntEnum):
     STATE_CANCELING: int
     STATE_CANCELED: int
 
-    UNKNOWN: int
-    Rejected: int
-    Invalid: int
-    Pending: int
-    Sent: int
-    Placed: int
-    PartFilled: int
-    Filled: int
-    Canceling: int
-    Canceled: int
+    UNKNOWN: deprecated('Use STATE_UNKNOWN instead')(int)
+    Rejected: deprecated('Use STATE_REJECTED instead')(int)
+    Invalid: deprecated('Use STATE_INVALID instead')(int)
+    Pending: deprecated('Use STATE_PENDING instead')(int)
+    Sent: deprecated('Use STATE_SENT instead')(int)
+    Placed: deprecated('Use STATE_PLACED instead')(int)
+    PartFilled: deprecated('Use STATE_PARTFILLED instead')(int)
+    Filled: deprecated('Use STATE_FILLED instead')(int)
+    Canceling: deprecated('Use STATE_CANCELING instead')(int)
+    Canceled: deprecated('Use STATE_CANCELED instead')(int)
 
     def __hash__(self) -> int: ...
 
@@ -38,6 +40,9 @@ class OrderState(enum.IntEnum):
 
     @property
     def is_done(self) -> bool: ...
+
+    @property
+    def state_name(self) -> str: ...
 
 
 class TradeReport(MarketData):

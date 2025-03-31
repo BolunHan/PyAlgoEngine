@@ -176,6 +176,7 @@ cdef class OrderBook:
         self.sorted = False
         self._owner = False
         self.side = Side.SIDE_UNKNOWN
+        self._iter_index = 0
 
     # Initialization function with memory allocation and population
     def __init__(self, side: int | object = None, price: Sequence[float] = None, volume: Sequence[float] = None, n_orders: Sequence[int] = None, is_sorted: bool = False):
@@ -256,7 +257,8 @@ cdef class OrderBook:
             PyMem_Free(view.strides)
             view.strides = NULL
 
-    def __iter__(self):  # Returns self
+    def __iter__(self):
+        self.sort()
         self._iter_index = 0
         return self
 
@@ -282,6 +284,20 @@ cdef class OrderBook:
             return self._data.entries[index].price, self._data.entries[index].volume, self._data.entries[index].n_orders
 
         raise IndexError(f'level {index} not found!')
+
+    cpdef double loc_volume(self, double p0, double p1):
+        self.sort()
+
+        cdef double volume = 0.
+
+        for i in range(BOOK_SIZE):
+            if not self._data.entries[i].n_orders:
+                break
+
+            if p0 <= self._data.entries[i].price < p1:
+                volume += self._data.entries[i].volume
+
+        return volume
 
     # Method to create OrderBook instance from an existing buffer (without owning the data)
     @classmethod
@@ -569,3 +585,34 @@ cdef class TickData(TickDataLite):
     def ask(self) -> OrderBook:
         """Get the ask book."""
         return self._ask_book
+
+    @property
+    def best_ask_price(self) -> float:
+        return self.ask.price[0]
+
+    @property
+    def best_bid_price(self) -> float:
+        return self.bid.price[0]
+
+    @property
+    def best_ask_volume(self) -> float:
+        return self.ask.volume[0]
+
+    @property
+    def best_bid_volume(self) -> float:
+        return self.bid.volume[0]
+
+    @property
+    def lite(self) -> TickDataLite:
+        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
+        cdef const char* data_ptr = <const char*> self.data
+
+        instance._owner = True
+        instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
+
+        if instance._data == NULL:
+            raise MemoryError("Failed to allocate memory for BarData")
+
+        memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
+
+        return instance

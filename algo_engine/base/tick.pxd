@@ -10,7 +10,10 @@ cdef class OrderBook:
     cdef _OrderBookBuffer* _data
     cdef public int side
     cdef public bint sorted
+    cdef int _iter_index
     cdef bint _owner
+
+    cpdef double loc_volume(self, double p0, double p1)
 
     cpdef bytes to_bytes(self)
 

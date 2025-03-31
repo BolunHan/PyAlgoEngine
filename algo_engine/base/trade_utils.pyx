@@ -53,6 +53,29 @@ class OrderState(enum.IntEnum):
     def is_done(self):
         return OrderStateHelper.is_done(self.value)
 
+    @property
+    def state_name(self) -> str:
+        if self.value == OrderStateCython.STATE_UNKNOWN:
+            return 'unknown'
+        elif self.value == OrderStateCython.STATE_REJECTED:
+            return 'rejected'
+        elif self.value == OrderStateCython.STATE_INVALID:
+            return 'invalid'
+        elif self.value == OrderStateCython.STATE_PENDING:
+            return 'pending'
+        elif self.value == OrderStateCython.STATE_SENT:
+            return 'sent'
+        elif self.value == OrderStateCython.STATE_PLACED:
+            return 'placed'
+        elif self.value == OrderStateCython.STATE_PARTFILLED:
+            return 'part-filled'
+        elif self.value == OrderStateCython.STATE_FILLED:
+            return 'filled'
+        elif self.value == OrderStateCython.STATE_CANCELING:
+            return 'canceling'
+        elif self.value == OrderStateCython.STATE_CANCELED:
+            return 'canceled'
+
 
 cdef class OrderStateHelper:
     @staticmethod
@@ -107,8 +130,14 @@ cdef class TradeReport(MarketData):
             self._data.TradeReport.notional = notional
 
         # Initialize IDs
-        TransactionData._set_id(id_ptr=&self._data.TradeReport.trade_id, id_value=trade_id)
-        TransactionData._set_id(id_ptr=&self._data.TradeReport.order_id, id_value=order_id)
+        if trade_id is None:
+            TransactionData._set_id(id_ptr=&self._data.TradeReport.trade_id, id_value=uuid.uuid4())
+        else:
+            TransactionData._set_id(id_ptr=&self._data.TradeReport.trade_id, id_value=trade_id)
+        if order_id is None:
+            raise ValueError('Must assign an order_id.')
+        else:
+            TransactionData._set_id(id_ptr=&self._data.TradeReport.order_id, id_value=order_id)
 
     def __eq__(self, other: TradeReport):
         assert isinstance(other, self.__class__), f'Can only compare with {self.__class__.__name__}'
@@ -335,7 +364,10 @@ cdef class TradeInstruction(MarketData):
         self._data.TradeInstruction.multiplier = multiplier
 
         # Initialize IDs
-        TransactionData._set_id(id_ptr=&self._data.TradeInstruction.order_id, id_value=order_id)
+        if order_id is None:
+            TransactionData._set_id(id_ptr=&self._data.TradeInstruction.order_id, id_value=uuid.uuid4())
+        else:
+            TransactionData._set_id(id_ptr=&self._data.TradeInstruction.order_id, id_value=order_id)
 
         self._data.TradeInstruction.order_state = OrderStateCython.STATE_PENDING
         self._data.TradeInstruction.filled_volume = 0.
@@ -364,9 +396,9 @@ cdef class TradeInstruction(MarketData):
         order_type_name = TransactionHelper.get_order_type_name(self._data.TradeInstruction.order_type).decode('utf-8')
 
         if self.limit_price is None or self.order_type_int == OrderTypeCython.ORDER_MARKET:
-            return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state})'
+            return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
         else:
-            return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state})'
+            return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
 
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):

@@ -4,6 +4,8 @@ import enum
 import uuid
 from typing import Any, Literal
 
+from typing_extensions import deprecated
+
 from .market_data import MarketData
 
 
@@ -24,12 +26,22 @@ class TransactionDirection(enum.IntEnum):
     DIRECTION_SHORT: int
     DIRECTION_LONG: int
 
+    def __or__(self, offset: TransactionOffset) -> TransactionSide:
+        ...
+
+    @property
+    def sign(self) -> Literal[-1, 0, 1]:
+        ...
+
 
 class TransactionOffset(enum.IntEnum):
     OFFSET_CANCEL: int
     OFFSET_ORDER: int
     OFFSET_OPEN: int
     OFFSET_CLOSE: int
+
+    def __or__(self, direction: TransactionDirection) -> TransactionSide:
+        ...
 
 
 class TransactionSide(enum.IntEnum):
@@ -43,26 +55,26 @@ class TransactionSide(enum.IntEnum):
     SIDE_ASK: int
     SIDE_CANCEL: int
     SIDE_UNKNOWN: int
-    SIDE_LONG : int
+    SIDE_LONG: int
     SIDE_SHORT: int
-    ShortOrder : int
-    AskOrder: int
-    Ask : int
-    LongOrder: int
-    BidOrder: int
-    Bid: int
-    ShortFilled : int
-    Unwind : int
-    Sell : int
-    LongFilled : int
-    LongOpen : int
-    Buy : int
-    ShortOpen : int
-    Short : int
-    Cover : int
-    UNKNOWN : int
-    CANCEL : int
-    FAULTY : int
+    ShortOrder: deprecated('Use SIDE_ASK instead')(int)
+    AskOrder: deprecated('Use SIDE_ASK instead')(int)
+    Ask: deprecated('Use SIDE_ASK instead')(int)
+    LongOrder: deprecated('Use SIDE_BID instead')(int)
+    BidOrder: deprecated('Use SIDE_BID instead')(int)
+    Bid: deprecated('Use SIDE_BID instead')(int)
+    ShortFilled: deprecated('Use SIDE_SHORT instead')(int)
+    Unwind: deprecated('Use SIDE_SHORT_CLOSE instead')(int)
+    Sell: deprecated('Use SIDE_SHORT_CLOSE instead')(int)
+    LongFilled: deprecated('Use SIDE_LONG_OPEN instead')(int)
+    LongOpen: deprecated('Use SIDE_LONG_OPEN instead')(int)
+    Buy: deprecated('Use SIDE_LONG_OPEN instead')(int)
+    ShortOpen: deprecated('Use SIDE_SHORT_OPEN instead')(int)
+    Short: deprecated('Use SIDE_SHORT_OPEN instead')(int)
+    Cover: deprecated('Use SIDE_LONG_CLOSE instead')(int)
+    UNKNOWN: deprecated('Use SIDE_UNKNOWN instead')(int)
+    CANCEL: deprecated('Use SIDE_CANCEL instead')(int)
+    FAULTY: int
 
     @property
     def sign(self) -> Literal[-1, 0, 1]:
@@ -173,7 +185,10 @@ class OrderData(MarketData):
     def volume(self) -> float: ...
 
     @property
-    def side(self) -> int: ...
+    def side_int(self) -> int: ...
+
+    @property
+    def side(self) -> TransactionSide: ...
 
     @property
     def order_id(self) -> str | int | bytes | uuid.UUID | None: ...

@@ -68,6 +68,42 @@ cdef class BarData(MarketData):
             return "<BarData>(uninitialized)"
         return f"<BarData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
 
+    def __setitem__(self, key: str, value: float | int):
+        if key == 'high_price':
+            self._data.BarData.high_price = value
+        elif key == 'low_price':
+            self._data.BarData.low_price = value
+        elif key == 'open_price':
+            self._data.BarData.open_price = value
+        elif key == 'close_price':
+            self._data.BarData.close_price = value
+        elif key == 'volume':
+            self._data.BarData.volume = value
+        elif key == 'notional':
+            self._data.BarData.notional = value
+        elif key == 'trade_count':
+            self._data.BarData.trade_count = value
+        else:
+            raise KeyError(f'Can not set {key} to the value {value}.')
+
+    def __getitem__(self, key: str) -> float | int:
+        if key == 'high_price':
+            return self._data.BarData.high_price
+        elif key == 'low_price':
+            return self._data.BarData.low_price
+        elif key == 'open_price':
+            return self._data.BarData.open_price
+        elif key == 'close_price':
+            return self._data.BarData.close_price
+        elif key == 'volume':
+            return self._data.BarData.volume
+        elif key == 'notional':
+            return self._data.BarData.notional
+        elif key == 'trade_count':
+            return self._data.BarData.trade_count
+        else:
+            raise KeyError(f'Can not get {key} value.')
+
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         """
