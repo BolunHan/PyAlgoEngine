@@ -2,10 +2,11 @@ import abc
 import datetime
 import inspect
 import operator
-from typing import Iterable
+from collections.abc import Mapping, Sequence, Iterator
+from typing import Iterable, Protocol
 
 from . import LOGGER
-from ..base import Progress, TickData, TransactionData, TradeData, OrderBook, MarketData
+from ..base import Progress, TickData, TransactionData, TradeData, OrderData, MarketData, MarketDataBuffer
 
 LOGGER = LOGGER.getChild('Replay')
 
@@ -86,6 +87,11 @@ class SimpleReplay(Replay):
         return self
 
 
+class DataLoader(Protocol):
+    def __call__(self, market_date: datetime.date, ticker: str, dtype: str) -> Mapping[float, MarketData] | Sequence[MarketData] | MarketDataBuffer:
+        ...
+
+
 class ProgressiveReplay(Replay):
     """
     progressively loading and replaying market data
@@ -103,7 +109,7 @@ class ProgressiveReplay(Replay):
 
     def __init__(
             self,
-            loader,
+            loader: DataLoader,
             **kwargs
     ):
         self.loader = loader
@@ -117,7 +123,8 @@ class ProgressiveReplay(Replay):
 
         self.replay_subscription = {}
         self.replay_calendar = []
-        self.replay_task = []
+        self.replay_task: Iterator | None = None
+        self.replay_task_length: int = 0
         self.replay_status = {}
 
         self.date_progress = 0
@@ -125,7 +132,7 @@ class ProgressiveReplay(Replay):
         self.progress = Progress(tasks=1, **kwargs)
 
         tickers: list[str] = kwargs.pop('ticker', kwargs.pop('tickers', []))
-        dtypes: list[str | type] = kwargs.pop('dtype', kwargs.pop('dtypes', [TradeData, TransactionData, OrderBook, TickData]))
+        dtypes: list[str | type] = kwargs.pop('dtype', kwargs.pop('dtypes', [TradeData, TransactionData, OrderData, TickData]))
 
         if not all([arg_name in inspect.getfullargspec(loader).args for arg_name in ['market_date', 'ticker', 'dtype']]):
             raise TypeError('loader function has 3 requires args, market_date, ticker and dtype.')
@@ -193,6 +200,8 @@ class ProgressiveReplay(Replay):
         self.replay_status = {market_date: 'skipped' if market_date < self.market_date else 'idle' for market_date in self.replay_calendar}
 
         self.task_progress = 0
+        self.replay_task_length = 0
+        self.replay_task = None
         self.date_progress = sum([1 for _ in self.replay_calendar if _ < self.market_date])
         self.progress.reset()
 
@@ -200,36 +209,45 @@ class ProgressiveReplay(Replay):
             self.progress.done_tasks = self.date_progress / len(self.replay_calendar)
 
     def next_trade_day(self):
-        if self.date_progress < len(self.replay_calendar):
-            market_date = self.market_date = self.replay_calendar[self.date_progress]
-            self.replay_status[market_date] = 'started'
-            self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self.date_progress + 1} / {len(self.replay_calendar)}):'
-            for topic in self.replay_subscription:
-                ticker, dtype = self.replay_subscription[topic]
-                LOGGER.info(f'{self} loading {market_date} {ticker} {dtype}')
-                data = self.loader(market_date=market_date, ticker=ticker, dtype=dtype)
-                if isinstance(data, dict):
-                    self.replay_task.extend(list(data.values()))
-                elif isinstance(data, (list, tuple)):
-                    self.replay_task.extend(data)
-
-            LOGGER.info(f'{market_date} data loaded! {len(self.replay_task):,} entries.')
-            self.date_progress += 1
-        else:
+        if self.date_progress >= len(self.replay_calendar):
             raise StopIteration()
 
-        self.replay_task.sort(key=operator.attrgetter('timestamp', 'ticker', '__class__.__name__'))
+        self.market_date = market_date = self.replay_calendar[self.date_progress]
+        self.replay_status[market_date] = 'started'
+        self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self.date_progress + 1} / {len(self.replay_calendar)}):'
+
+        for topic in self.replay_subscription:
+            ticker, dtype = self.replay_subscription[topic]
+            LOGGER.info(f'{self} loading {market_date} {ticker} {dtype}...')
+            data = self.loader(market_date=market_date, ticker=ticker, dtype=dtype)
+            if isinstance(data, Mapping):
+                data = [data[ts] for ts in sorted(data)]  # expect to be a mapping of ts and data
+                self.replay_task = iter(data)
+                self.replay_task_length = len(data)
+            elif isinstance(data, Sequence):
+                data = sorted(data, key=operator.attrgetter('timestamp', 'ticker', '__class__.__name__'))
+                self.replay_task = iter(data)
+                self.replay_task_length = len(data)
+            elif isinstance(data, MarketDataBuffer):
+                data.sort()
+                self.replay_task = iter(data)
+                self.replay_task_length = len(data)
+            else:
+                raise TypeError(f'Invalid return type of dataloader, expect list, tuple, dict or MarketDataBuffer, got {type(data)}.')
+
+        LOGGER.info(f'{market_date} data loaded! {self.replay_task_length:,} entries.')
+        self.date_progress += 1
 
     def next_task(self):
-        if self.task_progress < len(self.replay_task):
-            data = self.replay_task[self.task_progress]
+        try:
+            data = next(self.replay_task)
             self.task_progress += 1
-        else:
+        except StopIteration:
             if self.eod is not None and self.replay_status[self.market_date] == 'started':
                 self.eod(market_date=self.market_date, replay=self)
                 self.replay_status[self.market_date] = 'done'
 
-            self.replay_task.clear()
+            self.replay_task = None
             self.task_progress = 0
 
             if self.bod is not None and self.date_progress < len(self.replay_calendar):
@@ -242,8 +260,8 @@ class ProgressiveReplay(Replay):
 
             data = self.next_task()
 
-        if self.replay_task and self.replay_calendar:
-            current_progress = (self.date_progress - 1 + (self.task_progress / len(self.replay_task))) / len(self.replay_calendar)
+        if self.replay_task_length and self.replay_calendar:
+            current_progress = (self.date_progress - 1 + (self.task_progress / self.replay_task_length)) / len(self.replay_calendar)
             self.progress.done_tasks = current_progress
         else:
             self.progress.done_tasks = 1
