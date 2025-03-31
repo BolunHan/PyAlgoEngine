@@ -1,11 +1,32 @@
 import datetime
 import json
 import pickle
+from ctypes import Structure, c_double
 from multiprocessing import shared_memory
 from typing import Self
 
 from . import Monitor
-from ..base import TradeData, OrderBook, MarketData, BarData, TransactionData
+from ..base import TradeData, MarketData, OrderData, TransactionData, TransactionSide, TickData, TickDataLite, BarData
+
+
+class Entry(Structure):
+    _fields_ = [
+        ("price", c_double),  # Double precision floating point for price
+        ("volume", c_double),  # Double precision floating point for volume
+    ]
+
+    def __repr__(self):
+        return f"Entry(price={self.price}, volume={self.volume}, n_orders={self.n_orders})"
+
+
+class PyOrderBook(object):
+    def __init__(self, side: TransactionSide, data: dict[float, Entry] = None):
+        self.side = TransactionSide(side)
+        self.data: dict[float, Entry] = {}
+        self.timestamp: float = 0
+
+        if data:
+            self.data.update(data)
 
 
 class SyntheticOrderBookMonitor(Monitor):
@@ -17,32 +38,89 @@ class SyntheticOrderBookMonitor(Monitor):
             monitor_id=kwargs.pop('monitor_id', None)
         )
 
-        self.order_book: dict[str, OrderBook] = {}
+        self.bid: dict[str, PyOrderBook] = {}
+        self.ask: dict[str, PyOrderBook] = {}
+        self.tick_data: dict[str, TickData | TickDataLite] = {}
 
     def __call__(self, market_data: MarketData, **kwargs):
-        if isinstance(market_data, TradeData):
-            self.on_trade_data(trade_data=market_data)
+        if isinstance(market_data, (TickData, TickDataLite)):
+            self._on_tick_data(market_data)
+        if isinstance(market_data, (TransactionData, TradeData)):
+            self._on_trade_data(market_data)
 
-    def on_trade_data(self, trade_data: TradeData):
+    def _get_order_book(self, ticker: str) -> tuple[PyOrderBook, PyOrderBook]:
+        if ticker in self.bid:
+            bid = self.bid[ticker]
+        else:
+            bid = self.bid[ticker] = PyOrderBook(side=TransactionSide.SIDE_BID)
+
+        if ticker in self.ask:
+            ask = self.ask[ticker]
+        else:
+            ask = self.ask[ticker] = PyOrderBook(side=TransactionSide.SIDE_ASK)
+
+        return bid, ask
+
+    def _on_tick_data(self, tick_data: TickData):
+        if isinstance(tick_data, TickDataLite):
+            self.tick_data[tick_data.ticker] = tick_data
+        else:
+            self.tick_data[tick_data.ticker] = tick_data.lite
+
+    def _on_trade_data(self, trade_data: TransactionData | TradeData):
         ticker = trade_data.ticker
+        bid, ask = self._get_order_book(ticker)
+        price = trade_data.price
+        volume = trade_data.volume
+        sign = trade_data.side.sign
 
-        if order_book := self.order_book.get(ticker):
-            if order_book.market_time <= trade_data.market_time:
-                side = trade_data.side
-                price = trade_data.price
-                book = order_book.ask if side.sign > 0 else order_book.bid
-                listed_volume = book.at_price(price).volume if price in book else 0.
-                traded_volume = trade_data.volume
-                book.update(price=price, volume=max(0, listed_volume - traded_volume))
+        if sign == 1:
+            entry = ask.data.get(price)
 
-    def on_transaction_data(self, transaction_data: TransactionData):
-        pass
+            if entry is None:
+                return
+
+            entry.volume -= volume
+            if entry.volume <= 0:
+                ask.data.pop(price, None)
+        elif sign == -1:
+            entry = bid.data.get(price)
+
+            if entry is None:
+                return
+
+            entry.volume -= volume
+            if entry.volume <= 0:
+                bid.data.pop(price, None)
+
+    def on_order_data(self, order_data: OrderData):
+        ticker = order_data.ticker
+        bid, ask = self._get_order_book(ticker)
+        price = order_data.price
+        volume = order_data.volume
+        sign = order_data.side.sign
+
+        if sign == 1:
+            entry = ask.data.get(price)
+
+            if entry is None:
+                ask.data[price] = Entry(price=price, volume=volume)
+            else:
+                entry.volume += volume
+        elif sign == -1:
+            entry = bid.data.get(price)
+
+            if entry is None:
+                bid.data[price] = Entry(price=price, volume=volume)
+            else:
+                entry.volume += volume
 
     def to_json(self, fmt='str', **kwargs) -> str | dict:
         data_dict = dict(
             name=self.name,
             monitor_id=self.monitor_id,
-            order_book={k: v.to_json(fmt='dict') for k, v in self.order_book.items()},
+            bid={ticker: {price: order_book.data[price].volume for price in sorted(order_book.data)} for ticker, order_book in self.bid.items()},
+            ask={ticker: {price: order_book.data[price].volume for price in sorted(order_book.data)} for ticker, order_book in self.ask.items()},
         )
 
         if fmt == 'dict':
@@ -62,29 +140,46 @@ class SyntheticOrderBookMonitor(Monitor):
         self = cls(
             name=json_dict['name'],
             monitor_id=json_dict['monitor_id'],
-            keep_order_log=json_dict['keep_order_log']
         )
 
-        self.order_book = {k: MarketData.from_json(v) for k, v in json_dict['order_book'].items()}
+        self.bid = {ticker: (book := PyOrderBook(side=TransactionSide.SIDE_BID, data={price: Entry(price=price, volume=volume) for price, volume in order_book.items()})) for ticker, order_book in json_dict['bid'].items()}
+        self.bid = {ticker: (book := PyOrderBook(side=TransactionSide.SIDE_ASK, data={price: Entry(price=price, volume=volume) for price, volume in order_book.items()})) for ticker, order_book in json_dict['ask'].items()}
         return self
 
-    def from_shm(self, name: str = None) -> None:
-        if name is None:
-            name = f'{self.monitor_id}.json'
-
-        shm = shared_memory.SharedMemory(name=name)
-        json_dict = pickle.loads(bytes(shm.buf))
-
-        self.clear()
-
-        self.order_book.update({k: MarketData.from_json(v) for k, v in json_dict['order_book'].items()})
-
     def clear(self) -> None:
-        self.order_book.clear()
+        self.bid.clear()
+        self.ask.clear()
+        self.tick_data.clear()
 
     @property
-    def value(self) -> dict[str, OrderBook]:
-        return self.order_book
+    def value(self) -> dict[str, TickData]:
+        order_book = {}
+        for ticker, tick_lite in self.tick_data.items():
+            bid, ask = self._get_order_book(ticker)
+
+            bid_price, bid_volume, ask_price, ask_volume = {}, {}, {}, {}
+
+            for i, price in enumerate(sorted(bid.data, reverse=True), start=1):
+                bid_price[f'bid_price_{i}'] = price
+                bid_price[f'bid_volume_{i}'] = bid.data[price].volume
+
+            for i, price in enumerate(sorted(ask.data), start=1):
+                bid_price[f'ask_price_{i}'] = price
+                bid_price[f'ask_volume_{i}'] = ask.data[price].volume
+
+            data = TickData(
+                ticker=tick_lite.ticker,
+                timestamp=tick_lite.timestamp,
+                last_price=tick_lite.last_price,
+                total_traded_volume=tick_lite.total_traded_volume,
+                total_traded_notional=tick_lite.total_traded_notional,
+                total_trade_count=tick_lite.total_trade_count,
+                **bid_price, **bid_volume, **ask_price, **ask_volume
+            )
+
+            order_book[ticker] = data
+
+        return order_book
 
 
 class MinuteBarMonitor(Monitor):
@@ -190,8 +285,8 @@ class MinuteBarMonitor(Monitor):
             name=self.name,
             monitor_id=self.monitor_id,
             interval=self.interval,
-            minute_bar_data={k: v.to_json(fmt='dict') for k, v in self._minute_bar_data.items()},
-            last_bar_data={k: v.to_json(fmt='dict') for k, v in self._last_bar_data.items()},
+            minute_bar_data={k: v.to_bytes() for k, v in self._minute_bar_data.items()},
+            last_bar_data={k: v.to_bytes() for k, v in self._last_bar_data.items()},
         )
 
         if fmt == 'dict':
@@ -214,8 +309,8 @@ class MinuteBarMonitor(Monitor):
             interval=json_dict['interval'],
         )
 
-        self._minute_bar_data = {k: MarketData.from_json(v) for k, v in json_dict['minute_bar_data'].items()}
-        self._last_bar_data = {k: MarketData.from_json(v) for k, v in json_dict['last_bar_data'].items()}
+        self._minute_bar_data = {k: BarData.from_bytes(v) for k, v in json_dict['minute_bar_data'].items()}
+        self._last_bar_data = {k: BarData.from_bytes(v) for k, v in json_dict['last_bar_data'].items()}
         return self
 
     def from_shm(self, name: str = None) -> None:
@@ -227,8 +322,8 @@ class MinuteBarMonitor(Monitor):
 
         self.clear()
 
-        self._minute_bar_data.update({k: MarketData.from_json(v) for k, v in json_dict['minute_bar_data'].items()})
-        self._last_bar_data.update({k: MarketData.from_json(v) for k, v in json_dict['last_bar_data'].items()})
+        self._minute_bar_data.update({k: BarData.from_bytes(v) for k, v in json_dict['minute_bar_data'].items()})
+        self._last_bar_data.update({k: BarData.from_bytes(v) for k, v in json_dict['last_bar_data'].items()})
 
     def clear(self) -> None:
         self._minute_bar_data.clear()

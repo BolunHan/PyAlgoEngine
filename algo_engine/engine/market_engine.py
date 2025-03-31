@@ -3,11 +3,12 @@ import datetime
 import pickle
 import uuid
 from collections import defaultdict
+from math import inf, nan
 from multiprocessing import shared_memory
 from typing import Self
 
 from . import LOGGER
-from ..base import TickData, TradeData, OrderBook, MarketData, TransactionSide
+from ..base import MarketData, TickData, TransactionSide, TransactionDirection, DataType
 from ..profile import PROFILE, Profile
 
 LOGGER = LOGGER.getChild('MarketEngine')
@@ -173,9 +174,7 @@ class MarketDataService(object, metaclass=Singleton):
         self._market_time: datetime.datetime | None = None
         self._timestamp: float | None = None
 
-        self._order_book: dict[str, OrderBook] = {}
-        self._tick_data: dict[str, TickData] = {}
-        self._trade_data: dict[str, TradeData] = {}
+        self._market_data: dict[int, dict[str, MarketData]] = {}
         self._monitor: dict[str, MarketDataMonitor] = {}
         self._monitor_manager = MonitorManager()
 
@@ -209,31 +208,6 @@ class MarketDataService(object, metaclass=Singleton):
         self.monitor.pop(monitor_id)
         self.monitor_manager.pop_monitor(monitor_id)
 
-    def _on_trade_data(self, trade_data: TradeData):
-        ticker = trade_data.ticker
-
-        if ticker not in self._trade_data:
-            LOGGER.info(f'MDS confirmed {ticker} TradeData subscribed!')
-
-        self._trade_data[ticker] = trade_data
-
-    def _on_tick_data(self, tick_data: TickData):
-        ticker = tick_data.ticker
-
-        if ticker not in self._tick_data:
-            LOGGER.info(f'MDS confirmed {ticker} TickData subscribed!')
-
-        self._tick_data[ticker] = tick_data
-        # self._order_book[ticker] = tick_data.order_book
-
-    def _on_order_book(self, order_book):
-        ticker = order_book.ticker
-
-        if ticker not in self._order_book:
-            LOGGER.info(f'MDS confirmed {ticker} OrderBook subscribed!')
-
-        self._order_book[ticker] = order_book
-
     def on_market_data(self, market_data: MarketData):
         ticker = market_data.ticker
         market_time = market_data.market_time
@@ -247,43 +221,50 @@ class MarketDataService(object, metaclass=Singleton):
         if self.cache_history:
             self._market_history[ticker][market_time] = market_price
 
-        if isinstance(market_data, TradeData):
-            self._on_trade_data(trade_data=market_data)
-        elif isinstance(market_data, TickData):
-            self._on_tick_data(tick_data=market_data)
-        elif isinstance(market_data, OrderBook):
-            self._on_order_book(order_book=market_data)
+        ticker = market_data.ticker
+        dtype = market_data.dtype
+        if dtype in self._market_data:
+            snapshot = self._market_data[dtype]
+        else:
+            snapshot = self._market_data[dtype] = {}
+
+        if ticker not in snapshot:
+            LOGGER.info(f'MDS confirmed {ticker} {market_data.__class__.__name__} subscribed!')
+
+        snapshot[ticker] = market_data
 
         self.monitor_manager.__call__(market_data=market_data)
 
-    def get_order_book(self, ticker: str) -> OrderBook | None:
-        return self._order_book.get(ticker, None)
-
-    def get_queued_volume(self, ticker: str, side: TransactionSide | str | int, prior: float, posterior: float = None) -> float:
+    def get_queued_volume(self, ticker: str, side: TransactionSide | TransactionDirection, p_min: float, p_max: float = None) -> float:
         """
         get queued volume prior / posterior to given price, NOT COUNTING GIVEN PRICE!
         :param ticker: the given ticker
         :param side: the given trade side
-        :param prior: the given price
-        :param posterior: optional the given posterior price
-        :return: the summed queued volume, in float.
+        :param p_min: the given price
+        :param p_max: optional the given posterior price
+        :return: the summed queued volume, in float. 0 if not available.
         """
-        order_book = self.get_order_book(ticker=ticker)
+        tick_data: TickData = self._market_data[DataType.DTYPE_TICK.value].get(ticker)
 
-        if order_book is None:
-            queued_volume = float('nan')
+        if tick_data is None:
+            return 0.
+
+        sign = side.sign
+
+        if sign > 0:
+            book = tick_data.bid
+        elif sign < 0:
+            book = tick_data.ask
         else:
-            trade_side = TransactionSide(side)
+            raise ValueError(f'Invalid side {side}')
 
-            if trade_side.sign > 0:
-                book = order_book.bid
-            elif trade_side < 0:
-                book = order_book.ask
-            else:
-                raise ValueError(f'Invalid side {side}')
+        if p_min is None:
+            p_min = -inf
 
-            queued_volume = book.loc_volume(p0=prior, p1=posterior)
-        return queued_volume
+        if p_max is None:
+            p_max = inf
+
+        return book.loc_volume(p0=p_min, p1=p_max)
 
     def trade_time_between(self, start_time: datetime.datetime | float, end_time: datetime.datetime | float, **kwargs) -> datetime.timedelta:
         return self.profile.trade_time_between(start_time=start_time, end_time=end_time, **kwargs)
@@ -297,7 +278,7 @@ class MarketDataService(object, metaclass=Singleton):
         # self._timestamp = None
 
         self._market_history.clear()
-        self._order_book.clear()
+        self._market_data.clear()
         self.monitor.clear()
         self.monitor_manager.clear()
 
