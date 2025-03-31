@@ -541,9 +541,16 @@ cdef class MarketDataBuffer:
 
         # Calculate total size (header + pointer array + used data)
         cdef uint64_t total_size = self._header.data_offset + self._header.tail_offset
+        cdef uint64_t max_offset = self._header.max_offset
+
+        self._header.max_offset = self._header.tail_offset
 
         # Return the buffer up to the used size
-        return PyBytes_FromStringAndSize(self._buffer, total_size)
+        data = PyBytes_FromStringAndSize(self._buffer, total_size)
+
+        self._header.max_offset = max_offset
+
+        return data
 
 
 cdef class MarketDataRingBuffer:
