@@ -113,6 +113,19 @@ cdef class MarketDataBuffer:
             self._view_obtained = False
 
     @classmethod
+    def buffer_size(cls, n_transaction_data: int = 0, n_order_data: int = 0, n_tick_data_lite: int = 0, n_tick_data: int = 0, n_bar_data: int = 0) -> int:
+        header_size = sizeof(_BufferHeader)
+        capacity = n_transaction_data + n_order_data + n_tick_data_lite + n_tick_data + n_bar_data
+        offset_size = sizeof(uint64_t) * capacity
+        buffer_size = header_size + offset_size
+        buffer_size += n_transaction_data * sizeof(_TransactionDataBuffer)
+        buffer_size += n_order_data * sizeof(_OrderDataBuffer)
+        buffer_size += n_tick_data_lite * sizeof(_TickDataLiteBuffer)
+        buffer_size += n_tick_data * sizeof(_TickDataBuffer)
+        buffer_size += n_bar_data * sizeof(_CandlestickBuffer)
+        return buffer_size
+
+    @classmethod
     def from_buffer(cls, buffer):
         """
         Create a MarketDataBuffer from an existing buffer without reinitializing it.
