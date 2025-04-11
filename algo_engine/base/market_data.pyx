@@ -120,7 +120,7 @@ cdef class MarketData:
             return sizeof(_MarketDataBuffer)
 
     @classmethod
-    def buffer_size(cls):
+    def buffer_size(cls) -> int:
         return MarketData.get_size(cls._dtype)
 
     @staticmethod
