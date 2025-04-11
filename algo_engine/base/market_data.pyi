@@ -15,8 +15,12 @@ class PyDataType(enum.IntEnum):
 
 class MarketData:
     _additional: dict[str, Any]
+    _dtype: int
 
     def __init__(self, ticker: str, timestamp: float, **kwargs: Any) -> None: ...
+
+    @classmethod
+    def buffer_size(cls) -> int: ...
 
     @classmethod
     def from_buffer(cls, buffer: bytes) -> 'MarketData': ...

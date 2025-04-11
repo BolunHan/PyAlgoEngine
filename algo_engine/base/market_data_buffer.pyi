@@ -17,6 +17,9 @@ class MarketDataBuffer:
     ) -> None: ...
 
     @classmethod
+    def buffer_size(cls, n_transaction_data: int = 0, n_order_data: int = 0, n_tick_data_lite: int = 0, n_tick_data: int = 0, n_bar_data: int = 0) -> int: ...
+
+    @classmethod
     def from_buffer(cls, buffer: Any) -> MarketDataBuffer: ...
 
     @classmethod
@@ -37,7 +40,7 @@ class MarketDataBuffer:
     def __len__(self) -> int: ...
 
 
-class MarketDataRingBuffer(MarketDataBuffer):
+class MarketDataRingBuffer:
     def __init__(
             self,
             buffer: Any,
@@ -65,7 +68,7 @@ class MarketDataRingBuffer(MarketDataBuffer):
     def count(self) -> int: ...
 
 
-class MarketDataConcurrentBuffer(MarketDataBuffer):
+class MarketDataConcurrentBuffer:
     def __init__(
             self,
             buffer: Any,
