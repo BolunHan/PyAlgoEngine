@@ -779,7 +779,7 @@ cdef class TransactionData(MarketData):
         if self._data == NULL:
             raise ValueError("Data not initialized")
         cdef int sign = TransactionHelper.get_sign(self._data.TransactionData.side)
-        return sign * self._data.TransactionData.volume
+        return sign * self._data.TransactionData.notional
 
 
 cdef class OrderData(MarketData):
