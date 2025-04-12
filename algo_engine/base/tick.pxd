@@ -24,3 +24,5 @@ cdef class TickData(TickDataLite):
     cdef OrderBook _ask_book
 
     cpdef void parse(self, dict kwargs)
+
+    cpdef TickDataLite lite(self)

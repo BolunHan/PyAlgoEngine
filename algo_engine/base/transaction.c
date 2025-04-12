@@ -30101,7 +30101,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11transaction_15TransactionData_13
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         cdef int sign = TransactionHelper.get_sign(self._data.TransactionData.side)
- *         return sign * self._data.TransactionData.volume
+ *         return sign * self._data.TransactionData.notional
  */
     __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__16, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 780, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
@@ -30122,7 +30122,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11transaction_15TransactionData_13
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")
  *         cdef int sign = TransactionHelper.get_sign(self._data.TransactionData.side)             # <<<<<<<<<<<<<<
- *         return sign * self._data.TransactionData.volume
+ *         return sign * self._data.TransactionData.notional
  * 
  */
   __pyx_t_3 = __pyx_f_11algo_engine_4base_11transaction_17TransactionHelper_get_sign(__pyx_v_self->__pyx_base._data->TransactionData.side); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 781, __pyx_L1_error)
@@ -30131,12 +30131,12 @@ static PyObject *__pyx_pf_11algo_engine_4base_11transaction_15TransactionData_13
   /* "algo_engine/base/transaction.pyx":782
  *             raise ValueError("Data not initialized")
  *         cdef int sign = TransactionHelper.get_sign(self._data.TransactionData.side)
- *         return sign * self._data.TransactionData.volume             # <<<<<<<<<<<<<<
+ *         return sign * self._data.TransactionData.notional             # <<<<<<<<<<<<<<
  * 
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = PyFloat_FromDouble((__pyx_v_sign * __pyx_v_self->__pyx_base._data->TransactionData.volume)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 782, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble((__pyx_v_sign * __pyx_v_self->__pyx_base._data->TransactionData.notional)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 782, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;

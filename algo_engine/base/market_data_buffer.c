@@ -2214,6 +2214,7 @@ static struct __pyx_vtabstruct_11algo_engine_4base_4tick_OrderBook *__pyx_vtabpt
 struct __pyx_vtabstruct_11algo_engine_4base_4tick_TickData {
   struct __pyx_vtabstruct_11algo_engine_4base_4tick_TickDataLite __pyx_base;
   void (*parse)(struct __pyx_obj_11algo_engine_4base_4tick_TickData *, PyObject *, int __pyx_skip_dispatch);
+  struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *(*lite)(struct __pyx_obj_11algo_engine_4base_4tick_TickData *, int __pyx_skip_dispatch);
 };
 static struct __pyx_vtabstruct_11algo_engine_4base_4tick_TickData *__pyx_vtabptr_11algo_engine_4base_4tick_TickData;
 

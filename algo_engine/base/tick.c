@@ -2150,6 +2150,7 @@ static struct __pyx_vtabstruct_11algo_engine_4base_4tick_OrderBook *__pyx_vtabpt
 struct __pyx_vtabstruct_11algo_engine_4base_4tick_TickData {
   struct __pyx_vtabstruct_11algo_engine_4base_4tick_TickDataLite __pyx_base;
   void (*parse)(struct __pyx_obj_11algo_engine_4base_4tick_TickData *, PyObject *, int __pyx_skip_dispatch);
+  struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *(*lite)(struct __pyx_obj_11algo_engine_4base_4tick_TickData *, int __pyx_skip_dispatch);
 };
 static struct __pyx_vtabstruct_11algo_engine_4base_4tick_TickData *__pyx_vtabptr_11algo_engine_4base_4tick_TickData;
 
@@ -3144,6 +3145,7 @@ static double __pyx_f_11algo_engine_4base_4tick_9OrderBook_loc_volume(struct __p
 static PyObject *__pyx_f_11algo_engine_4base_4tick_9OrderBook_to_bytes(struct __pyx_obj_11algo_engine_4base_4tick_OrderBook *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
 static void __pyx_f_11algo_engine_4base_4tick_9OrderBook_sort(struct __pyx_obj_11algo_engine_4base_4tick_OrderBook *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
 static void __pyx_f_11algo_engine_4base_4tick_8TickData_parse(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, PyObject *__pyx_v_kwargs, int __pyx_skip_dispatch); /* proto*/
+static struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *__pyx_f_11algo_engine_4base_4tick_8TickData_lite(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
 
 /* Module declarations from "libc.stdint" */
 
@@ -3260,6 +3262,7 @@ static const char __pyx_k_base[] = "base";
 static const char __pyx_k_data[] = "data";
 static const char __pyx_k_dict[] = "__dict__";
 static const char __pyx_k_init[] = "__init__";
+static const char __pyx_k_lite[] = "lite";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_mode[] = "mode";
 static const char __pyx_k_name[] = "name";
@@ -3502,15 +3505,15 @@ static int __pyx_pf_11algo_engine_4base_4tick_8TickData_2__init__(struct __pyx_o
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_4parse(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, PyObject *__pyx_v_kwargs); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_6from_buffer(PyTypeObject *__pyx_v_cls, __Pyx_memviewslice __pyx_v_buffer); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_8from_bytes(PyTypeObject *__pyx_v_cls, PyObject *__pyx_v_data); /* proto */
+static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_10lite(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3bid___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3ask___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_ask_price___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_bid_price___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_ask_volume___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_bid_volume___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_4lite___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_10__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_12__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_12__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_tp_new_11algo_engine_4base_4tick_TickDataLite(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_11algo_engine_4base_4tick_OrderBook(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_11algo_engine_4base_4tick_TickData(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -3706,6 +3709,7 @@ typedef struct {
   PyObject *__pyx_n_s_kwargs;
   PyObject *__pyx_n_s_last_price;
   PyObject *__pyx_kp_u_level;
+  PyObject *__pyx_n_s_lite;
   PyObject *__pyx_n_s_loc_volume;
   PyObject *__pyx_n_s_main;
   PyObject *__pyx_n_s_market_time;
@@ -3978,6 +3982,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_kwargs);
   Py_CLEAR(clear_module_state->__pyx_n_s_last_price);
   Py_CLEAR(clear_module_state->__pyx_kp_u_level);
+  Py_CLEAR(clear_module_state->__pyx_n_s_lite);
   Py_CLEAR(clear_module_state->__pyx_n_s_loc_volume);
   Py_CLEAR(clear_module_state->__pyx_n_s_main);
   Py_CLEAR(clear_module_state->__pyx_n_s_market_time);
@@ -4228,6 +4233,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_kwargs);
   Py_VISIT(traverse_module_state->__pyx_n_s_last_price);
   Py_VISIT(traverse_module_state->__pyx_kp_u_level);
+  Py_VISIT(traverse_module_state->__pyx_n_s_lite);
   Py_VISIT(traverse_module_state->__pyx_n_s_loc_volume);
   Py_VISIT(traverse_module_state->__pyx_n_s_main);
   Py_VISIT(traverse_module_state->__pyx_n_s_market_time);
@@ -4512,6 +4518,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_kwargs __pyx_mstate_global->__pyx_n_s_kwargs
 #define __pyx_n_s_last_price __pyx_mstate_global->__pyx_n_s_last_price
 #define __pyx_kp_u_level __pyx_mstate_global->__pyx_kp_u_level
+#define __pyx_n_s_lite __pyx_mstate_global->__pyx_n_s_lite
 #define __pyx_n_s_loc_volume __pyx_mstate_global->__pyx_n_s_loc_volume
 #define __pyx_n_s_main __pyx_mstate_global->__pyx_n_s_main
 #define __pyx_n_s_market_time __pyx_mstate_global->__pyx_n_s_market_time
@@ -26736,7 +26743,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_8from_bytes(PyType
  * 
  *         return instance             # <<<<<<<<<<<<<<
  * 
- *     @property
+ *     cpdef TickDataLite lite(self):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF((PyObject *)__pyx_v_instance);
@@ -26766,6 +26773,277 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_8from_bytes(PyType
 /* "algo_engine/base/tick.pyx":579
  *         return instance
  * 
+ *     cpdef TickDataLite lite(self):             # <<<<<<<<<<<<<<
+ *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
+ *         cdef const char* data_ptr = <const char*> self.data
+ */
+
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_11lite(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *__pyx_f_11algo_engine_4base_4tick_8TickData_lite(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, int __pyx_skip_dispatch) {
+  struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *__pyx_v_instance = 0;
+  char const *__pyx_v_data_ptr;
+  struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  unsigned int __pyx_t_5;
+  char const *__pyx_t_6;
+  int __pyx_t_7;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("lite", 1);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely((Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0) || __Pyx_PyType_HasFeature(Py_TYPE(((PyObject *)__pyx_v_self)), (Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_HEAPTYPE)))) {
+    #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    static PY_UINT64_T __pyx_tp_dict_version = __PYX_DICT_VERSION_INIT, __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+    if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
+      PY_UINT64_T __pyx_typedict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      #endif
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_lite); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 579, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      if (!__Pyx_IsSameCFunction(__pyx_t_1, (void*) __pyx_pw_11algo_engine_4base_4tick_8TickData_11lite)) {
+        __Pyx_XDECREF((PyObject *)__pyx_r);
+        __Pyx_INCREF(__pyx_t_1);
+        __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
+        __pyx_t_5 = 0;
+        #if CYTHON_UNPACK_METHODS
+        if (unlikely(PyMethod_Check(__pyx_t_3))) {
+          __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+          if (likely(__pyx_t_4)) {
+            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+            __Pyx_INCREF(__pyx_t_4);
+            __Pyx_INCREF(function);
+            __Pyx_DECREF_SET(__pyx_t_3, function);
+            __pyx_t_5 = 1;
+          }
+        }
+        #endif
+        {
+          PyObject *__pyx_callargs[2] = {__pyx_t_4, NULL};
+          __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_5, 0+__pyx_t_5);
+          __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+          if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 579, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        }
+        if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_ptype_11algo_engine_4base_4tick_TickDataLite))))) __PYX_ERR(0, 579, __pyx_L1_error)
+        __pyx_r = ((struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *)__pyx_t_2);
+        __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        goto __pyx_L0;
+      }
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+      __pyx_tp_dict_version = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      __pyx_obj_dict_version = __Pyx_get_object_dict_version(((PyObject *)__pyx_v_self));
+      if (unlikely(__pyx_typedict_guard != __pyx_tp_dict_version)) {
+        __pyx_tp_dict_version = __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+      }
+      #endif
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    }
+    #endif
+  }
+
+  /* "algo_engine/base/tick.pyx":580
+ * 
+ *     cpdef TickDataLite lite(self):
+ *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)             # <<<<<<<<<<<<<<
+ *         cdef const char* data_ptr = <const char*> self.data
+ * 
+ */
+  __pyx_t_1 = ((PyObject *)__pyx_tp_new_11algo_engine_4base_4tick_TickDataLite(((PyTypeObject *)__pyx_ptype_11algo_engine_4base_4tick_TickDataLite), __pyx_empty_tuple, NULL)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 580, __pyx_L1_error)
+  __Pyx_GOTREF((PyObject *)__pyx_t_1);
+  __pyx_v_instance = ((struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "algo_engine/base/tick.pyx":581
+ *     cpdef TickDataLite lite(self):
+ *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
+ *         cdef const char* data_ptr = <const char*> self.data             # <<<<<<<<<<<<<<
+ * 
+ *         instance._owner = True
+ */
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_data); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 581, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyObject_AsString(__pyx_t_1); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) __PYX_ERR(0, 581, __pyx_L1_error)
+  __pyx_v_data_ptr = ((char const *)__pyx_t_6);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "algo_engine/base/tick.pyx":583
+ *         cdef const char* data_ptr = <const char*> self.data
+ * 
+ *         instance._owner = True             # <<<<<<<<<<<<<<
+ *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
+ * 
+ */
+  __pyx_v_instance->__pyx_base._owner = 1;
+
+  /* "algo_engine/base/tick.pyx":584
+ * 
+ *         instance._owner = True
+ *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))             # <<<<<<<<<<<<<<
+ * 
+ *         if instance._data == NULL:
+ */
+  __pyx_v_instance->__pyx_base._data = ((union __pyx_t_11algo_engine_4base_11market_data__MarketDataBuffer *)PyMem_Malloc((sizeof(struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer))));
+
+  /* "algo_engine/base/tick.pyx":586
+ *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
+ * 
+ *         if instance._data == NULL:             # <<<<<<<<<<<<<<
+ *             raise MemoryError("Failed to allocate memory for BarData")
+ * 
+ */
+  __pyx_t_7 = (__pyx_v_instance->__pyx_base._data == NULL);
+  if (unlikely(__pyx_t_7)) {
+
+    /* "algo_engine/base/tick.pyx":587
+ * 
+ *         if instance._data == NULL:
+ *             raise MemoryError("Failed to allocate memory for BarData")             # <<<<<<<<<<<<<<
+ * 
+ *         memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
+ */
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 587, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_Raise(__pyx_t_1, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __PYX_ERR(0, 587, __pyx_L1_error)
+
+    /* "algo_engine/base/tick.pyx":586
+ *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
+ * 
+ *         if instance._data == NULL:             # <<<<<<<<<<<<<<
+ *             raise MemoryError("Failed to allocate memory for BarData")
+ * 
+ */
+  }
+
+  /* "algo_engine/base/tick.pyx":589
+ *             raise MemoryError("Failed to allocate memory for BarData")
+ * 
+ *         memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))             # <<<<<<<<<<<<<<
+ * 
+ *         return instance
+ */
+  (void)(memcpy(__pyx_v_instance->__pyx_base._data, __pyx_v_data_ptr, (sizeof(struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer))));
+
+  /* "algo_engine/base/tick.pyx":591
+ *         memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
+ * 
+ *         return instance             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF((PyObject *)__pyx_r);
+  __Pyx_INCREF((PyObject *)__pyx_v_instance);
+  __pyx_r = __pyx_v_instance;
+  goto __pyx_L0;
+
+  /* "algo_engine/base/tick.pyx":579
+ *         return instance
+ * 
+ *     cpdef TickDataLite lite(self):             # <<<<<<<<<<<<<<
+ *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
+ *         cdef const char* data_ptr = <const char*> self.data
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_AddTraceback("algo_engine.base.tick.TickData.lite", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XDECREF((PyObject *)__pyx_v_instance);
+  __Pyx_XGIVEREF((PyObject *)__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_11lite(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_11lite(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("lite (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_MACROS
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  if (unlikely(__pyx_nargs > 0)) {
+    __Pyx_RaiseArgtupleInvalid("lite", 1, 0, 0, __pyx_nargs); return NULL;}
+  if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "lite", 0))) return NULL;
+  __pyx_r = __pyx_pf_11algo_engine_4base_4tick_8TickData_10lite(((struct __pyx_obj_11algo_engine_4base_4tick_TickData *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_10lite(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("lite", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = ((PyObject *)__pyx_f_11algo_engine_4base_4tick_8TickData_lite(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 579, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("algo_engine.base.tick.TickData.lite", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "algo_engine/base/tick.pyx":593
+ *         return instance
+ * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bid(self) -> OrderBook:
  *         """Get the bid book."""
@@ -26791,7 +27069,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3bid___get__(struc
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/tick.pyx":582
+  /* "algo_engine/base/tick.pyx":596
  *     def bid(self) -> OrderBook:
  *         """Get the bid book."""
  *         return self._bid_book             # <<<<<<<<<<<<<<
@@ -26803,7 +27081,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3bid___get__(struc
   __pyx_r = ((PyObject *)__pyx_v_self->_bid_book);
   goto __pyx_L0;
 
-  /* "algo_engine/base/tick.pyx":579
+  /* "algo_engine/base/tick.pyx":593
  *         return instance
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26818,7 +27096,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3bid___get__(struc
   return __pyx_r;
 }
 
-/* "algo_engine/base/tick.pyx":584
+/* "algo_engine/base/tick.pyx":598
  *         return self._bid_book
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26846,7 +27124,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3ask___get__(struc
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/tick.pyx":587
+  /* "algo_engine/base/tick.pyx":601
  *     def ask(self) -> OrderBook:
  *         """Get the ask book."""
  *         return self._ask_book             # <<<<<<<<<<<<<<
@@ -26858,7 +27136,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3ask___get__(struc
   __pyx_r = ((PyObject *)__pyx_v_self->_ask_book);
   goto __pyx_L0;
 
-  /* "algo_engine/base/tick.pyx":584
+  /* "algo_engine/base/tick.pyx":598
  *         return self._bid_book
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26873,7 +27151,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_3ask___get__(struc
   return __pyx_r;
 }
 
-/* "algo_engine/base/tick.pyx":589
+/* "algo_engine/base/tick.pyx":603
  *         return self._ask_book
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26906,7 +27184,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_ask_price__
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/tick.pyx":591
+  /* "algo_engine/base/tick.pyx":605
  *     @property
  *     def best_ask_price(self) -> float:
  *         return self.ask.price[0]             # <<<<<<<<<<<<<<
@@ -26914,19 +27192,19 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_ask_price__
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ask_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 591, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ask_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 605, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 591, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 605, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 591, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 605, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/tick.pyx":589
+  /* "algo_engine/base/tick.pyx":603
  *         return self._ask_book
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26946,7 +27224,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_ask_price__
   return __pyx_r;
 }
 
-/* "algo_engine/base/tick.pyx":593
+/* "algo_engine/base/tick.pyx":607
  *         return self.ask.price[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26979,7 +27257,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_bid_price__
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/tick.pyx":595
+  /* "algo_engine/base/tick.pyx":609
  *     @property
  *     def best_bid_price(self) -> float:
  *         return self.bid.price[0]             # <<<<<<<<<<<<<<
@@ -26987,19 +27265,19 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_bid_price__
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_bid_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 595, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_bid_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 609, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 595, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 609, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 595, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 609, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/tick.pyx":593
+  /* "algo_engine/base/tick.pyx":607
  *         return self.ask.price[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -27019,7 +27297,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14best_bid_price__
   return __pyx_r;
 }
 
-/* "algo_engine/base/tick.pyx":597
+/* "algo_engine/base/tick.pyx":611
  *         return self.bid.price[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -27052,7 +27330,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_ask_volume_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/tick.pyx":599
+  /* "algo_engine/base/tick.pyx":613
  *     @property
  *     def best_ask_volume(self) -> float:
  *         return self.ask.volume[0]             # <<<<<<<<<<<<<<
@@ -27060,19 +27338,19 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_ask_volume_
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ask_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 599, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_ask_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 613, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_volume); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 599, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_volume); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 613, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 599, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 613, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/tick.pyx":597
+  /* "algo_engine/base/tick.pyx":611
  *         return self.bid.price[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -27092,7 +27370,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_ask_volume_
   return __pyx_r;
 }
 
-/* "algo_engine/base/tick.pyx":601
+/* "algo_engine/base/tick.pyx":615
  *         return self.ask.volume[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -27125,27 +27403,25 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_bid_volume_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/tick.pyx":603
+  /* "algo_engine/base/tick.pyx":617
  *     @property
  *     def best_bid_volume(self) -> float:
  *         return self.bid.volume[0]             # <<<<<<<<<<<<<<
- * 
- *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_bid_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 603, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_bid_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 617, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_volume); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 603, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_volume); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 617, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 603, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 617, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/tick.pyx":601
+  /* "algo_engine/base/tick.pyx":615
  *         return self.ask.volume[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -27165,156 +27441,6 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_15best_bid_volume_
   return __pyx_r;
 }
 
-/* "algo_engine/base/tick.pyx":605
- *         return self.bid.volume[0]
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def lite(self) -> TickDataLite:
- *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_4lite_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_4lite_1__get__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_11algo_engine_4base_4tick_8TickData_4lite___get__(((struct __pyx_obj_11algo_engine_4base_4tick_TickData *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_4lite___get__(struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self) {
-  struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *__pyx_v_instance = 0;
-  char const *__pyx_v_data_ptr;
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  char const *__pyx_t_2;
-  int __pyx_t_3;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "algo_engine/base/tick.pyx":607
- *     @property
- *     def lite(self) -> TickDataLite:
- *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)             # <<<<<<<<<<<<<<
- *         cdef const char* data_ptr = <const char*> self.data
- * 
- */
-  __pyx_t_1 = ((PyObject *)__pyx_tp_new_11algo_engine_4base_4tick_TickDataLite(((PyTypeObject *)__pyx_ptype_11algo_engine_4base_4tick_TickDataLite), __pyx_empty_tuple, NULL)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 607, __pyx_L1_error)
-  __Pyx_GOTREF((PyObject *)__pyx_t_1);
-  __pyx_v_instance = ((struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *)__pyx_t_1);
-  __pyx_t_1 = 0;
-
-  /* "algo_engine/base/tick.pyx":608
- *     def lite(self) -> TickDataLite:
- *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
- *         cdef const char* data_ptr = <const char*> self.data             # <<<<<<<<<<<<<<
- * 
- *         instance._owner = True
- */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_data); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 608, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_AsString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 608, __pyx_L1_error)
-  __pyx_v_data_ptr = ((char const *)__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "algo_engine/base/tick.pyx":610
- *         cdef const char* data_ptr = <const char*> self.data
- * 
- *         instance._owner = True             # <<<<<<<<<<<<<<
- *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
- * 
- */
-  __pyx_v_instance->__pyx_base._owner = 1;
-
-  /* "algo_engine/base/tick.pyx":611
- * 
- *         instance._owner = True
- *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))             # <<<<<<<<<<<<<<
- * 
- *         if instance._data == NULL:
- */
-  __pyx_v_instance->__pyx_base._data = ((union __pyx_t_11algo_engine_4base_11market_data__MarketDataBuffer *)PyMem_Malloc((sizeof(struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer))));
-
-  /* "algo_engine/base/tick.pyx":613
- *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
- * 
- *         if instance._data == NULL:             # <<<<<<<<<<<<<<
- *             raise MemoryError("Failed to allocate memory for BarData")
- * 
- */
-  __pyx_t_3 = (__pyx_v_instance->__pyx_base._data == NULL);
-  if (unlikely(__pyx_t_3)) {
-
-    /* "algo_engine/base/tick.pyx":614
- * 
- *         if instance._data == NULL:
- *             raise MemoryError("Failed to allocate memory for BarData")             # <<<<<<<<<<<<<<
- * 
- *         memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
- */
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 614, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_Raise(__pyx_t_1, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 614, __pyx_L1_error)
-
-    /* "algo_engine/base/tick.pyx":613
- *         instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
- * 
- *         if instance._data == NULL:             # <<<<<<<<<<<<<<
- *             raise MemoryError("Failed to allocate memory for BarData")
- * 
- */
-  }
-
-  /* "algo_engine/base/tick.pyx":616
- *             raise MemoryError("Failed to allocate memory for BarData")
- * 
- *         memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))             # <<<<<<<<<<<<<<
- * 
- *         return instance
- */
-  (void)(memcpy(__pyx_v_instance->__pyx_base._data, __pyx_v_data_ptr, (sizeof(struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer))));
-
-  /* "algo_engine/base/tick.pyx":618
- *         memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
- * 
- *         return instance             # <<<<<<<<<<<<<<
- */
-  __Pyx_XDECREF(__pyx_r);
-  __Pyx_INCREF((PyObject *)__pyx_v_instance);
-  __pyx_r = ((PyObject *)__pyx_v_instance);
-  goto __pyx_L0;
-
-  /* "algo_engine/base/tick.pyx":605
- *         return self.bid.volume[0]
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def lite(self) -> TickDataLite:
- *         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("algo_engine.base.tick.TickData.lite.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XDECREF((PyObject *)__pyx_v_instance);
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
 /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
@@ -27322,14 +27448,14 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_4lite___get__(stru
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_11__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_13__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_11__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_13__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -27354,14 +27480,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   if (unlikely(__pyx_nargs > 0)) {
     __Pyx_RaiseArgtupleInvalid("__reduce_cython__", 1, 0, 0, __pyx_nargs); return NULL;}
   if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__reduce_cython__", 0))) return NULL;
-  __pyx_r = __pyx_pf_11algo_engine_4base_4tick_8TickData_10__reduce_cython__(((struct __pyx_obj_11algo_engine_4base_4tick_TickData *)__pyx_v_self));
+  __pyx_r = __pyx_pf_11algo_engine_4base_4tick_8TickData_12__reduce_cython__(((struct __pyx_obj_11algo_engine_4base_4tick_TickData *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_10__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self) {
+static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_12__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -27401,14 +27527,14 @@ static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_10__reduce_cython_
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_13__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_15__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_13__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_11algo_engine_4base_4tick_8TickData_15__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -27482,7 +27608,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_11algo_engine_4base_4tick_8TickData_12__setstate_cython__(((struct __pyx_obj_11algo_engine_4base_4tick_TickData *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_11algo_engine_4base_4tick_8TickData_14__setstate_cython__(((struct __pyx_obj_11algo_engine_4base_4tick_TickData *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   {
@@ -27495,7 +27621,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_12__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_11algo_engine_4base_4tick_8TickData_14__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_4tick_TickData *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -28081,16 +28207,13 @@ static PyObject *__pyx_getprop_11algo_engine_4base_4tick_8TickData_best_bid_volu
   return __pyx_pw_11algo_engine_4base_4tick_8TickData_15best_bid_volume_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_11algo_engine_4base_4tick_8TickData_lite(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_11algo_engine_4base_4tick_8TickData_4lite_1__get__(o);
-}
-
 static PyMethodDef __pyx_methods_11algo_engine_4base_4tick_TickData[] = {
   {"parse", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_5parse, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_11algo_engine_4base_4tick_8TickData_4parse},
   {"from_buffer", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_7from_buffer, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {"from_bytes", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_9from_bytes, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_11__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_13__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"lite", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_11lite, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_13__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_11algo_engine_4base_4tick_8TickData_15__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -28101,7 +28224,6 @@ static struct PyGetSetDef __pyx_getsets_11algo_engine_4base_4tick_TickData[] = {
   {(char *)"best_bid_price", __pyx_getprop_11algo_engine_4base_4tick_8TickData_best_bid_price, 0, (char *)0, 0},
   {(char *)"best_ask_volume", __pyx_getprop_11algo_engine_4base_4tick_8TickData_best_ask_volume, 0, (char *)0, 0},
   {(char *)"best_bid_volume", __pyx_getprop_11algo_engine_4base_4tick_8TickData_best_bid_volume, 0, (char *)0, 0},
-  {(char *)"lite", __pyx_getprop_11algo_engine_4base_4tick_8TickData_lite, 0, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
@@ -29306,6 +29428,7 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_kwargs, __pyx_k_kwargs, sizeof(__pyx_k_kwargs), 0, 0, 1, 1},
     {&__pyx_n_s_last_price, __pyx_k_last_price, sizeof(__pyx_k_last_price), 0, 0, 1, 1},
     {&__pyx_kp_u_level, __pyx_k_level, sizeof(__pyx_k_level), 0, 1, 0, 0},
+    {&__pyx_n_s_lite, __pyx_k_lite, sizeof(__pyx_k_lite), 0, 0, 1, 1},
     {&__pyx_n_s_loc_volume, __pyx_k_loc_volume, sizeof(__pyx_k_loc_volume), 0, 0, 1, 1},
     {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
     {&__pyx_n_s_market_time, __pyx_k_market_time, sizeof(__pyx_k_market_time), 0, 0, 1, 1},
@@ -29780,6 +29903,7 @@ static int __Pyx_modinit_type_init_code(void) {
   __pyx_vtabptr_11algo_engine_4base_4tick_TickData = &__pyx_vtable_11algo_engine_4base_4tick_TickData;
   __pyx_vtable_11algo_engine_4base_4tick_TickData.__pyx_base = *__pyx_vtabptr_11algo_engine_4base_4tick_TickDataLite;
   __pyx_vtable_11algo_engine_4base_4tick_TickData.parse = (void (*)(struct __pyx_obj_11algo_engine_4base_4tick_TickData *, PyObject *, int __pyx_skip_dispatch))__pyx_f_11algo_engine_4base_4tick_8TickData_parse;
+  __pyx_vtable_11algo_engine_4base_4tick_TickData.lite = (struct __pyx_obj_11algo_engine_4base_4tick_TickDataLite *(*)(struct __pyx_obj_11algo_engine_4base_4tick_TickData *, int __pyx_skip_dispatch))__pyx_f_11algo_engine_4base_4tick_8TickData_lite;
   #if CYTHON_USE_TYPE_SPECS
   __pyx_t_2 = PyTuple_Pack(1, (PyObject *)__pyx_ptype_11algo_engine_4base_4tick_TickDataLite); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);

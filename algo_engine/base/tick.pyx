@@ -576,6 +576,20 @@ cdef class TickData(TickDataLite):
 
         return instance
 
+    cpdef TickDataLite lite(self):
+        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
+        cdef const char* data_ptr = <const char*> self.data
+
+        instance._owner = True
+        instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
+
+        if instance._data == NULL:
+            raise MemoryError("Failed to allocate memory for BarData")
+
+        memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
+
+        return instance
+
     @property
     def bid(self) -> OrderBook:
         """Get the bid book."""
@@ -601,18 +615,3 @@ cdef class TickData(TickDataLite):
     @property
     def best_bid_volume(self) -> float:
         return self.bid.volume[0]
-
-    @property
-    def lite(self) -> TickDataLite:
-        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        cdef const char* data_ptr = <const char*> self.data
-
-        instance._owner = True
-        instance._data = <_MarketDataBuffer *> PyMem_Malloc(sizeof(_TickDataLiteBuffer))
-
-        if instance._data == NULL:
-            raise MemoryError("Failed to allocate memory for BarData")
-
-        memcpy(instance._data, data_ptr, sizeof(_TickDataLiteBuffer))
-
-        return instance
