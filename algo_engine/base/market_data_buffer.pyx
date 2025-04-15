@@ -500,6 +500,31 @@ cdef class MarketDataBuffer:
         self._header.current_index = 0
         return self
 
+    def __getitem__(self, idx: int):
+        if idx >= self._header.count:
+            raise IndexError(f'{self.__class__.__name__} index out of range')
+
+        cdef uint64_t offset = self._offsets[idx]
+        cdef _MetaInfo* ptr = <_MetaInfo *> (self._data + offset)
+        cdef uint8_t dtype = ptr.dtype
+        cdef size_t entry_size = MarketData.get_size(dtype)
+        cdef bytes data = PyBytes_FromStringAndSize(<char*> ptr, entry_size)
+
+        # Create appropriate object based on dtype
+        if dtype == DataType.DTYPE_TRANSACTION:
+            return TransactionData.from_bytes(data)
+        elif dtype == DataType.DTYPE_ORDER:
+            return OrderData.from_bytes(data)
+        elif dtype == DataType.DTYPE_TICK_LITE:
+            return TickDataLite.from_bytes(data)
+        elif dtype == DataType.DTYPE_TICK:
+            return TickData.from_bytes(data)
+        elif dtype == DataType.DTYPE_BAR:
+            return BarData.from_bytes(data)
+        else:
+            return MarketData.from_bytes(data)
+
+
     def __next__(self):
         """
         Get the next market data entry.
