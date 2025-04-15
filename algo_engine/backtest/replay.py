@@ -1,92 +1,267 @@
 import abc
 import datetime
-import inspect
 import operator
-from typing import Iterable
+import warnings
+from collections.abc import Sequence, Mapping, Iterable
+from typing import Literal, Protocol, runtime_checkable
 
 from . import LOGGER
-from ..base import Progress, TickData, TransactionData, TradeData, OrderBook, MarketData
+from ..base import MarketData, DataType, MarketDataBuffer
 
 LOGGER = LOGGER.getChild('Replay')
+__all__ = ['MarketDateCallable', 'MarketDataLoader', 'MarketDataBulkLoader', 'Replay', 'SimpleReplay', 'ProgressReplay', 'ProgressiveReplay']
+
+
+@runtime_checkable
+class MarketDateCallable(Protocol):
+    def __call__(self, market_date: datetime.date) -> None:
+        ...
+
+
+@runtime_checkable
+class MarketDataLoader(Protocol):
+    def __call__(self, market_date: datetime.date, ticker: str, dtype: str | DataType) -> Sequence[MarketData] | Mapping[float, MarketData]:
+        pass
+
+
+@runtime_checkable
+class MarketDataBulkLoader(Protocol):
+    def __call__(self, market_date: datetime.date, tickers: Sequence[str], dtypes: Sequence[str | DataType]) -> Sequence[MarketData] | Mapping[float, MarketData] | MarketDataBuffer:
+        pass
 
 
 class Replay(object, metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def __next__(self): ...
+    # __slots__ = ('start_date', 'end_date', 'market_date', 'calendar', 'bod', 'eod', 'subscription', '_calendar', '_market_date', '_status', '_progress')
+
+    def __init__(self, start_date: datetime.date = None, end_date: datetime.date = None, market_date: datetime.date = None, calendar: Sequence[datetime.date] = None, bod: MarketDateCallable = None, eod: MarketDateCallable = None) -> None:
+        self.start_date = start_date or market_date or calendar[0]
+        self.end_date = end_date or calendar[-1]
+        self.market_date = market_date or start_date
+        self.calendar = calendar or []
+
+        self.bod = []
+        self.eod = []
+        self.subscription = {}
+
+        if bod is not None:
+            self.add_bod(bod)
+
+        if eod is not None:
+            self.add_eod(eod)
+
+    def add_bod(self, func: MarketDateCallable):
+        self.bod.append(func)
+
+    def add_eod(self, func: MarketDateCallable):
+        self.eod.append(func)
+
+    @classmethod
+    def get_dtype(cls, dtype: DataType | str) -> str | Literal['TickData', 'TickDataLite', 'OrderData', 'TransactionData']:
+        match dtype:
+            case 'TickData' | 'TickDataLite' | 'OrderData' | 'TransactionData':
+                return str(dtype)
+            case DataType.DTYPE_TICK | DataType.DTYPE_ORDER | DataType.DTYPE_TRANSACTION:
+                return DataType(dtype).name.removeprefix('DTYPE_').capitalize() + 'Data'
+            case DataType.DTYPE_TICK_LITE:
+                return 'Data'.join(_.capitalize() for _ in DataType(dtype).name.removeprefix('DTYPE_').split('_'))
+            case _:
+                raise ValueError(f'Invalid dtype {dtype}, expect str or int.')
+
+    def add_subscription(self, ticker: str, dtype: DataType | str):
+        dtype = self.get_dtype(dtype)
+        topic = f'{ticker}.{dtype}'
+
+        self.subscription[topic] = (ticker, dtype)
+
+    def remove_subscription(self, ticker: str, dtype: DataType | str):
+        dtype = self.get_dtype(dtype)
+        topic = f'{ticker}.{dtype}'
+
+        try:
+            self.subscription.pop(topic)
+        except KeyError as _:
+            LOGGER.info(f'{topic} not in {self.subscription}')
 
     @abc.abstractmethod
-    def __iter__(self): ...
+    def __next__(self):
+        ...
+
+    @abc.abstractmethod
+    def __iter__(self):
+        ...
 
 
 class SimpleReplay(Replay):
-    def __init__(self, **kwargs):
-        self.eod = kwargs.pop('eod', None)
-        self.bod = kwargs.pop('bod', None)
-
-        self.replay_task = []
-        self.task_progress = 0
-        self.task_date = None
-        self.progress = Progress(tasks=1, **kwargs)
-
-    def load(self, data):
-        if isinstance(data, dict):
-            self.replay_task.extend(list(data.values()))
-        else:
-            self.replay_task.extend(data)
-
-    def reset(self):
-        self.replay_task.clear()
-        self.task_progress = 0
-        self.task_date = None
-        self.progress.reset()
-
-    def next_task(self):
-        if self.task_progress < len(self.replay_task):
-            market_data = self.replay_task[self.task_progress]
-            market_time = market_data.market_time
-
-            if isinstance(market_time, datetime.datetime):
-                market_date = market_time.date()
-            else:
-                market_date = market_time
-
-            if market_date != self.task_date:
-                if callable(self.eod) and self.task_date:
-                    self.eod(self.task_date)
-
-                self.task_date = market_date
-                self.progress.prompt = f'Replay {market_date:%Y-%m-%d}:'
-
-                if callable(self.bod):
-                    self.bod(market_date)
-
-            self.progress.done_tasks = self.task_progress / len(self.replay_task)
-
-            if (not self.progress.tick_size) or self.progress.progress >= self.progress.tick_size + self.progress.last_output:
-                self.progress.output()
-
-            self.task_progress += 1
-        else:
-            raise StopIteration()
-
-        return market_data
-
-    def __next__(self):
-        try:
-            return self.next_task()
-        except StopIteration:
-            if not self.progress.is_done:
-                self.progress.done_tasks = 1
-                self.progress.output()
-
-            self.reset()
-            raise StopIteration()
+    def __init__(
+            self,
+            loader: MarketDataBulkLoader | MarketDataLoader = None,
+            market_date: datetime.date = None,
+            start_date: datetime.date = None,
+            end_date: datetime.date = None,
+            calendar: Sequence[datetime.date] = None,
+            bod: MarketDateCallable = None,
+            eod: MarketDateCallable = None
+    ):
+        super().__init__(market_date=market_date, start_date=start_date, end_date=end_date, calendar=calendar, bod=bod, eod=eod)
+        self.loader = loader
 
     def __iter__(self):
+        self._calendar = self.calendar or [self.start_date + datetime.timedelta(days=i) for i in range((self.end_date - self.start_date).days + 1)]
+        self._market_date = self.market_date or sorted(_ for _ in self._calendar if _ >= self.market_date)[0]
+        self._status = {market_date: 'skipped' if market_date < self.market_date else 'idle' for market_date in self._calendar}
+        self._idx_buffer = 0
+        self._idx_date = sum([1 for _ in self._calendar if _ < self.market_date])
+
+        for func in self.bod:
+            func(self._market_date)
+
+        if self.loader is None:
+            assert hasattr(self, '_buffer') and isinstance(self._buffer, Iterable), f'Without assigning a data loader, the _buffer of {self.__class__.__name__} should be set in bod process.'
+        elif isinstance(self.loader, MarketDataLoader):
+            md_list = []
+            for topic, (_ticker, _dtype) in self.subscription.items():
+                LOGGER.info(f'{self} loading {self._market_date} {_ticker} {_dtype}')
+                data = self.loader(market_date=self._market_date, ticker=_ticker, dtype=_dtype)
+                if isinstance(data, Mapping):
+                    md_list.extend(list(data.values()))
+                elif isinstance(data, Sequence):
+                    md_list.extend(data)
+                else:
+                    raise TypeError(f'The loader {self.loader} returned {type(data)}. Expect a sequence or mapping of MarketData')
+            md_list.sort(key=operator.attrgetter('timestamp', 'ticker', '_dtype'))
+            self._buffer = iter(md_list)
+            self._buffer_size = len(md_list)
+        elif isinstance(self.loader, MarketDataBulkLoader):
+            self._buffer = self.loader(market_date=self._market_date, tickers=self.tickers, dtypes=self.dtypes)
+            self._buffer_size = len(self._buffer)
+        else:
+            raise NotImplementedError()
+
         return self
 
+    def __next__(self) -> MarketData:
+        if self._idx_buffer < self._buffer_size:
+            self._idx_buffer += 1
+            return next(self._buffer)
 
-class ProgressiveReplay(Replay):
+        for func in self.eod:
+            func(self._market_date)
+
+        self._idx_buffer = 0
+        self._idx_date += 1
+
+        if self._idx_date >= len(self._calendar):
+            self._calendar.clear()
+            del self._calendar
+            del self._market_date
+            del self._status
+            del self._idx_buffer
+            del self._idx_date
+            del self._buffer
+            del self._buffer_size
+            raise StopIteration()
+
+        self._market_date = self._calendar[self._idx_date]
+
+        for func in self.bod:
+            func(self._market_date)
+
+        self._buffer = self.loader(market_date=self._market_date, tickers=self.tickers, dtypes=self.dtypes)
+        return self.__next__()
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}{{id={id(self)}, from={self.start_date}, to={self.end_date}}}'
+
+    @property
+    def progress(self) -> float:
+        if not hasattr(self, '_buffer'):
+            raise RuntimeError(f'{self.__class__.__name__} not started yet.')
+
+        return (self._idx_date + (self._idx_buffer / self._buffer_size - 1)) / len(self._calendar)
+
+    @property
+    def tickers(self) -> list[str]:
+        tickers = set()
+        for _, (ticker, dtype) in self.subscription.items():
+            tickers.add(ticker)
+        return list(tickers)
+
+    @property
+    def dtypes(self) -> list[str]:
+        dtypes = set()
+        for _, (ticker, dtype) in self.subscription.items():
+            dtypes.add(dtype)
+        return list(dtypes)
+
+    @property
+    def status(self) -> dict[datetime.date, str]:
+        if not hasattr(self, '_status'):
+            raise RuntimeError(f'{self.__class__.__name__} not started yet.')
+
+        return self._status
+
+
+class ProgressReplay(SimpleReplay):
+    def __init__(
+            self,
+            loader: MarketDataBulkLoader | MarketDataLoader = None,
+            market_date: datetime.date = None,
+            start_date: datetime.date = None,
+            end_date: datetime.date = None,
+            calendar: Sequence[datetime.date] = None,
+            bod: MarketDateCallable = None,
+            eod: MarketDateCallable = None,
+            **tqdm_kwargs
+    ):
+        super().__init__(
+            loader=loader,
+            market_date=market_date,
+            start_date=start_date,
+            end_date=end_date,
+            calendar=calendar,
+            bod=bod,
+            eod=eod
+        )
+
+        self._tqdm_kwargs = {
+            'total': 1,
+            'unit_scale': True,
+            'unit': 'percent',
+            'mininterval': 0.1,
+            'miniters': 0.001,
+            **tqdm_kwargs
+        }
+        self.add_bod(self._update_progress_bar)
+
+    def __iter__(self):
+        from tqdm.auto import tqdm
+        self._pbar = tqdm(**self._tqdm_kwargs)
+        iterator = super().__iter__()
+
+        try:
+            while True:
+                try:
+                    result = next(iterator)
+                    if self._pbar:
+                        self._pbar.update(self.progress)
+                    yield result
+                except StopIteration:
+                    break
+        finally:
+            if self._pbar is not None:
+                self._pbar.close()
+                self._pbar = None
+
+    def __next__(self) -> MarketData:
+        raise RuntimeError("MarketDataBufferReplay should be used as an iterator context")
+
+    def _update_progress_bar(self, market_date: datetime.date):
+        if self._pbar:
+            self._pbar.set_description(f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)})')
+            self._pbar.refresh()
+
+
+class ProgressiveReplay(SimpleReplay):
     """
     progressively loading and replaying market data
 
@@ -103,31 +278,25 @@ class ProgressiveReplay(Replay):
 
     def __init__(
             self,
-            loader,
-            **kwargs
-    ):
+            loader: MarketDataLoader,
+            tickers: str | Sequence[str] = None,
+            dtypes: str | DataType | Sequence[str] | Sequence[DataType] = None,
+            market_date: datetime.date = None,
+            start_date: datetime.date = None,
+            end_date: datetime.date = None,
+            calendar: Sequence[datetime.date] = None,
+            bod: MarketDateCallable = None,
+            eod: MarketDateCallable = None,
+            **progress_config
+    ) -> None:
+        warnings.deprecated('User ProgressReplay instead!')
         self.loader = loader
-        self.market_date: datetime.date | None = kwargs.pop('market_date', None)
-        self.start_date: datetime.date | None = kwargs.pop('start_date', None)
-        self.end_date: datetime.date | None = kwargs.pop('end_date', None)
-        self.calendar: list[datetime.date] | None = kwargs.pop('calendar', None)
+        super().__init__(loader=loader, market_date=market_date, start_date=start_date, end_date=end_date, calendar=calendar, bod=bod, eod=eod)
 
-        self.eod = kwargs.pop('eod', None)
-        self.bod = kwargs.pop('bod', None)
+        tickers = tickers or []
+        dtypes = dtypes or ['TransactionData', 'TickData', 'OrderData']
 
-        self.replay_subscription = {}
-        self.replay_calendar = []
-        self.replay_task = []
-        self.replay_status = {}
-
-        self.date_progress = 0
-        self.task_progress = 0
-        self.progress = Progress(tasks=1, **kwargs)
-
-        tickers: list[str] = kwargs.pop('ticker', kwargs.pop('tickers', []))
-        dtypes: list[str | type] = kwargs.pop('dtype', kwargs.pop('dtypes', [TradeData, TransactionData, OrderBook, TickData]))
-
-        if not all([arg_name in inspect.getfullargspec(loader).args for arg_name in ['market_date', 'ticker', 'dtype']]):
+        if not isinstance(loader, MarketDataLoader):
             raise TypeError('loader function has 3 requires args, market_date, ticker and dtype.')
 
         if isinstance(tickers, str):
@@ -137,7 +306,7 @@ class ProgressiveReplay(Replay):
         else:
             raise TypeError(f'Invalid ticker {tickers}, expect str or list[str]')
 
-        if isinstance(dtypes, str) or inspect.isclass(dtypes):
+        if isinstance(dtypes, (str, int, DataType)):
             dtypes = [dtypes]
         elif isinstance(dtypes, Iterable):
             dtypes = list(dtypes)
@@ -148,127 +317,34 @@ class ProgressiveReplay(Replay):
             for dtype in dtypes:
                 self.add_subscription(ticker=ticker, dtype=dtype)
 
-        subscription = kwargs.pop('subscription', kwargs.pop('subscribe', []))
+        self.progress_config = dict(
+            tasks=1,
+            **progress_config
+        )
 
-        if isinstance(subscription, dict):
-            subscription = [subscription]
-
-        for sub in subscription:
-            self.add_subscription(**sub)
-
-        self.reset()
-
-    def add_subscription(self, ticker: str, dtype: type | str):
-        if isinstance(dtype, str):
-            pass
-        elif inspect.isclass(dtype):
-            dtype = dtype.__name__
-        else:
-            raise ValueError(f'Invalid dtype {dtype}, expect str or class.')
-
-        topic = f'{ticker}.{dtype}'
-        self.replay_subscription[topic] = (ticker, dtype)
-
-    def remove_subscription(self, ticker: str, dtype: type | str):
-        if isinstance(dtype, str):
-            pass
-        else:
-            dtype = dtype.__name__
-
-        topic = f'{ticker}.{dtype}'
-        self.replay_subscription.pop(topic, None)
-
-    def reset(self):
-        if self.calendar is None:
-            self.replay_calendar = [self.start_date + datetime.timedelta(days=i) for i in range((self.end_date - self.start_date).days + 1)]
-        else:
-            self.replay_calendar = self.calendar
-
-        if self.market_date is None:
-            self.market_date = self.replay_calendar[0] if self.replay_calendar else self.start_date
-        else:
-            date_to_replay = [_ for _ in self.replay_calendar if _ >= self.market_date]
-            self.market_date = date_to_replay[0] if date_to_replay else self.end_date
-
-        self.replay_status = {market_date: 'skipped' if market_date < self.market_date else 'idle' for market_date in self.replay_calendar}
-
-        self.task_progress = 0
-        self.date_progress = sum([1 for _ in self.replay_calendar if _ < self.market_date])
-        self.progress.reset()
-
-        if self.date_progress:
-            self.progress.done_tasks = self.date_progress / len(self.replay_calendar)
-
-    def next_trade_day(self):
-        if self.date_progress < len(self.replay_calendar):
-            market_date = self.market_date = self.replay_calendar[self.date_progress]
-            self.replay_status[market_date] = 'started'
-            self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self.date_progress + 1} / {len(self.replay_calendar)}):'
-            for topic in self.replay_subscription:
-                ticker, dtype = self.replay_subscription[topic]
-                LOGGER.info(f'{self} loading {market_date} {ticker} {dtype}')
-                data = self.loader(market_date=market_date, ticker=ticker, dtype=dtype)
-                if isinstance(data, dict):
-                    self.replay_task.extend(list(data.values()))
-                elif isinstance(data, (list, tuple)):
-                    self.replay_task.extend(data)
-
-            LOGGER.info(f'{market_date} data loaded! {len(self.replay_task):,} entries.')
-            self.date_progress += 1
-        else:
-            raise StopIteration()
-
-        self.replay_task.sort(key=operator.attrgetter('timestamp', 'ticker', '__class__.__name__'))
-
-    def next_task(self):
-        if self.task_progress < len(self.replay_task):
-            data = self.replay_task[self.task_progress]
-            self.task_progress += 1
-        else:
-            if self.eod is not None and self.replay_status[self.market_date] == 'started':
-                self.eod(market_date=self.market_date, replay=self)
-                self.replay_status[self.market_date] = 'done'
-
-            self.replay_task.clear()
-            self.task_progress = 0
-
-            if self.bod is not None and self.date_progress < len(self.replay_calendar):
-                self.bod(market_date=self.replay_calendar[self.date_progress], replay=self)
-
-            # this is by designed, to load the new data after the bod is done.
-            self.next_trade_day()
-
-            #  the bod process should be moved here!
-
-            data = self.next_task()
-
-        if self.replay_task and self.replay_calendar:
-            current_progress = (self.date_progress - 1 + (self.task_progress / len(self.replay_task))) / len(self.replay_calendar)
-            self.progress.done_tasks = current_progress
-        else:
-            self.progress.done_tasks = 1
-
-        if (not self.progress.tick_size) \
-                or self.progress.progress >= self.progress.tick_size + self.progress.last_output \
-                or self.progress.is_done:
-            self.progress.output()
-
-        return data
+    def __iter__(self):
+        from ..base import Progress
+        self._pbar = Progress(**self.progress_config)
+        return super().__iter__()
 
     def __next__(self) -> MarketData:
         try:
-            return self.next_task()
+            result = super().__next__()
+            self._pbar.done_tasks = self.progress
+
+            if (not self._pbar.tick_size) \
+                    or self._pbar.progress >= self._pbar.tick_size + self._pbar.last_output \
+                    or self._pbar.is_done:
+                self._pbar.output()
+
+            return result
         except StopIteration:
-            if not self.progress.is_done:
+            if not self._pbar.is_done:
                 self.progress.done_tasks = 1
-                self.progress.output()
+                self._pbar.output()
+            raise
 
-            self.reset()
-            raise StopIteration()
-
-    def __iter__(self):
-        self.reset()
-        return self
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}{{id={id(self)}, from={self.start_date}, to={self.end_date}}}'
+    def _update_progress_bar(self, market_date: datetime.date):
+        if self._pbar:
+            self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)}):'
+            self._pbar.output()
