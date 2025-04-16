@@ -1,9 +1,10 @@
 import abc
 import datetime
+import inspect
 import operator
 import warnings
-from collections.abc import Sequence, Mapping, Iterable
-from typing import Literal, Protocol, runtime_checkable
+from collections.abc import Sequence, Mapping, Iterable, Callable
+from typing import Literal, Protocol, runtime_checkable, get_type_hints
 
 from . import LOGGER
 from ..base import MarketData, DataType, MarketDataBuffer
@@ -28,6 +29,60 @@ class MarketDataLoader(Protocol):
 class MarketDataBulkLoader(Protocol):
     def __call__(self, market_date: datetime.date, tickers: Sequence[str], dtypes: Sequence[str | DataType]) -> Sequence[MarketData] | Mapping[float, MarketData] | MarketDataBuffer:
         pass
+
+
+def check_protocol_signature(func: Callable, protocol: type) -> bool:
+    if not callable(func):
+        raise TypeError(f"{func} is not callable")
+
+    proto_sig = inspect.signature(protocol.__call__)
+    func_sig = inspect.signature(func)
+
+    proto_params = list(proto_sig.parameters.values())[1:]  # Skip 'self'
+    func_params = list(func_sig.parameters.values())
+
+    # Check for *args (VAR_POSITIONAL) — not allowed
+    for p in func_params:
+        if p.kind == inspect.Parameter.VAR_POSITIONAL:
+            raise TypeError(f"{func.__name__} uses *args, which is not allowed")
+
+    # Check number of required positional args (not counting **kwargs)
+    proto_arg_names = [p.name for p in proto_params if p.kind in (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )]
+
+    func_arg_names = [p.name for p in func_params if p.kind in (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )]
+
+    if proto_arg_names != func_arg_names:
+        raise TypeError(f"{func.__name__} argument names {func_arg_names} do not match protocol {proto_arg_names}")
+
+    # Type hint comparison (warn if mismatched, but allow)
+    proto_hints = get_type_hints(protocol.__call__)
+    func_hints = get_type_hints(func)
+
+    for pname in proto_arg_names:
+        expected = proto_hints.get(pname)
+        actual = func_hints.get(pname)
+        if expected and actual and expected != actual:
+            warnings.warn(
+                f"Type hint mismatch for parameter '{pname}': expected {expected}, got {actual}",
+                stacklevel=2
+            )
+
+    # Optional: check return type
+    expected_ret = proto_hints.get("return")
+    actual_ret = func_hints.get("return")
+    if expected_ret and actual_ret and expected_ret != actual_ret:
+        warnings.warn(
+            f"Return type mismatch: expected {expected_ret}, got {actual_ret}",
+            stacklevel=2
+        )
+
+    return True
 
 
 class Replay(object, metaclass=abc.ABCMeta):
@@ -115,27 +170,7 @@ class SimpleReplay(Replay):
         for func in self.bod:
             func(self._market_date)
 
-        if self.loader is None:
-            assert hasattr(self, '_buffer') and isinstance(self._buffer, Iterable), f'Without assigning a data loader, the _buffer of {self.__class__.__name__} should be set in bod process.'
-        elif isinstance(self.loader, MarketDataLoader):
-            md_list = []
-            for topic, (_ticker, _dtype) in self.subscription.items():
-                LOGGER.info(f'{self} loading {self._market_date} {_ticker} {_dtype}')
-                data = self.loader(market_date=self._market_date, ticker=_ticker, dtype=_dtype)
-                if isinstance(data, Mapping):
-                    md_list.extend(list(data.values()))
-                elif isinstance(data, Sequence):
-                    md_list.extend(data)
-                else:
-                    raise TypeError(f'The loader {self.loader} returned {type(data)}. Expect a sequence or mapping of MarketData')
-            md_list.sort(key=operator.attrgetter('timestamp', 'ticker', '_dtype'))
-            self._buffer = iter(md_list)
-            self._buffer_size = len(md_list)
-        elif isinstance(self.loader, MarketDataBulkLoader):
-            self._buffer = self.loader(market_date=self._market_date, tickers=self.tickers, dtypes=self.dtypes)
-            self._buffer_size = len(self._buffer)
-        else:
-            raise NotImplementedError()
+        self._safe_load()
 
         return self
 
@@ -166,11 +201,65 @@ class SimpleReplay(Replay):
         for func in self.bod:
             func(self._market_date)
 
-        self._buffer = self.loader(market_date=self._market_date, tickers=self.tickers, dtypes=self.dtypes)
+        self._safe_load()
         return self.__next__()
 
     def __repr__(self):
         return f'{self.__class__.__name__}{{id={id(self)}, from={self.start_date}, to={self.end_date}}}'
+
+    def _bulk_load_protocol(self):
+        buffer = self.loader(market_date=self._market_date, tickers=self.tickers, dtypes=self.dtypes)
+        buffer.sort()
+
+        if isinstance(buffer, MarketDataBuffer):
+            self._buffer = buffer
+            self._buffer_size = len(self._buffer)
+        elif isinstance(buffer, Sequence):
+            self._buffer = iter(buffer)
+            self._buffer_size = len(buffer)
+        elif isinstance(buffer, Mapping):
+            self._buffer = iter(buffer.values())
+            self._buffer_size = len(buffer)
+
+    def _individual_load_protocol(self):
+        buffer = []
+        for topic, (_ticker, _dtype) in self.subscription.items():
+            LOGGER.info(f'{self} loading {self._market_date} {_ticker} {_dtype}')
+            data = self.loader(market_date=self._market_date, ticker=_ticker, dtype=_dtype)
+            if isinstance(data, Mapping):
+                buffer.extend(list(data.values()))
+            elif isinstance(data, Sequence):
+                buffer.extend(data)
+            else:
+                raise TypeError(f'The loader {self.loader} returned {type(data)}. Expect a sequence or mapping of MarketData')
+        buffer.sort(key=operator.attrgetter('timestamp', 'ticker', '_dtype'))
+        self._buffer = iter(buffer)
+        self._buffer_size = len(buffer)
+
+    def _safe_load(self):
+        if self.loader is None:
+            assert hasattr(self, '_buffer') and isinstance(self._buffer, Iterable), f'Without assigning a data loader, the _buffer of {self.__class__.__name__} should be set in bod process.'
+            return
+
+        is_bulk_loader = check_protocol_signature(self.loader, MarketDataBulkLoader)
+        is_individual_loader = check_protocol_signature(self.loader, MarketDataLoader)
+
+        if (is_bulk_loader and is_individual_loader) or (not is_bulk_loader and not is_individual_loader):
+            try:
+                return self._bulk_load_protocol()
+            except Exception as e:
+                LOGGER.info('Failed to load data using MarketDataBulkLoader protocol!')
+
+            try:
+                return self._individual_load_protocol()
+            except Exception as e:
+                LOGGER.info('Failed to load data using MarketDataLoader protocol!')
+                raise
+
+        if is_bulk_loader:
+            return self._bulk_load_protocol()
+
+        return self._individual_load_protocol()
 
     @property
     def progress(self) -> float:

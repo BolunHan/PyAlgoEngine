@@ -13,7 +13,7 @@ def set_logger(logger: logging.Logger):
     sim_match.LOGGER = LOGGER.getChild('SimMatch')
 
 
-from .replay import Replay, SimpleReplay, ProgressiveReplay
+from .replay import MarketDateCallable, MarketDataLoader, MarketDataBulkLoader, Replay, SimpleReplay, ProgressReplay, ProgressiveReplay
 from .sim_match import SimMatch
 
-__all__ = ['Replay', 'SimpleReplay', 'ProgressiveReplay', 'SimMatch']
+__all__ = ['MarketDateCallable', 'MarketDataLoader', 'MarketDataBulkLoader', 'Replay', 'SimpleReplay', 'ProgressReplay', 'ProgressiveReplay', 'SimMatch']
