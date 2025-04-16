@@ -374,10 +374,9 @@ cdef class MarketDataBuffer:
         data.bid_volume = kwargs['bid_volume']
         data.ask_price = kwargs['ask_price']
         data.ask_volume = kwargs['ask_volume']
-
         data.total_traded_volume = kwargs.get('total_traded_volume', 0.)
-        data.total_traded_volume = kwargs.get('total_traded_notional', 0.)
-        data.total_traded_volume = kwargs.get('total_trade_count', 0)
+        data.total_traded_notional = kwargs.get('total_traded_notional', 0.)
+        data.total_trade_count = kwargs.get('total_trade_count', 0)
 
     @staticmethod
     cdef void _set_tick_fields(char * buffer, dict kwargs):
@@ -523,7 +522,6 @@ cdef class MarketDataBuffer:
             return BarData.from_bytes(data)
         else:
             return MarketData.from_bytes(data)
-
 
     def __next__(self):
         """
