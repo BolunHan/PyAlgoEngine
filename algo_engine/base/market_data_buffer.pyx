@@ -141,9 +141,9 @@ cdef class MarketDataBuffer:
 
         # Get buffer view
         cdef Py_buffer view
+        PyObject_GetBuffer(buffer, &view, PyBUF_SIMPLE)
         cdef size_t view_size = view.len
 
-        PyObject_GetBuffer(buffer, &view, PyBUF_SIMPLE)
         instance._view = view
         instance._view_obtained = True
 
@@ -166,7 +166,7 @@ cdef class MarketDataBuffer:
         return instance
 
     @classmethod
-    def from_bytes(cls, bytes data, buffer):
+    def from_bytes(cls, bytes data, buffer=None):
         """
         Create a MarketDataBuffer from bytes data, storing it in the provided buffer.
 
@@ -180,10 +180,14 @@ cdef class MarketDataBuffer:
         # Create instance without initialization
         cdef MarketDataBuffer instance = cls.__new__(cls)
 
+        # Determine buffer source
+        if buffer is None:
+            buffer = bytearray(data)  # create mutable buffer from bytes
+
         # Get buffer view
         cdef Py_buffer view
-        cdef size_t view_size = view.len
         PyObject_GetBuffer(buffer, &view, PyBUF_SIMPLE)
+        cdef size_t view_size = view.len
         instance._view = view
         instance._view_obtained = True
 
