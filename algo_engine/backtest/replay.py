@@ -1,16 +1,96 @@
 import abc
 import datetime
+import enum
 import inspect
 import operator
 import warnings
 from collections.abc import Sequence, Mapping, Iterable, Callable
-from typing import Literal, Protocol, runtime_checkable, get_type_hints
+from typing import Literal, Protocol, runtime_checkable, get_type_hints, Self
 
 from . import LOGGER
 from ..base import MarketData, DataType, MarketDataBuffer
 
 LOGGER = LOGGER.getChild('Replay')
-__all__ = ['MarketDateCallable', 'MarketDataLoader', 'MarketDataBulkLoader', 'Replay', 'SimpleReplay', 'ProgressReplay', 'ProgressiveReplay']
+__all__ = ['PyDataScope', 'MarketDateCallable', 'MarketDataLoader', 'MarketDataBulkLoader', 'Replay', 'SimpleReplay', 'ProgressReplay', 'ProgressiveReplay']
+
+
+class PyDataScope(enum.Flag):
+    SCOPE_TRANSACTION = enum.auto()
+    SCOPE_ORDER = enum.auto()
+    SCOPE_TICK = enum.auto()
+    SCOPE_TICK_LITE = enum.auto()
+
+    SCOPE_ALL = SCOPE_TRANSACTION | SCOPE_ORDER | SCOPE_TICK
+
+    @classmethod
+    def _missing_(cls, value: Literal['TickData', 'TickDataLite', 'OrderData', 'TransactionData']):
+        if isinstance(value, int):
+            return super()._missing_(value)
+
+        if isinstance(value, str):
+            dtypes = value.split(',')
+        elif isinstance(value, Iterable):
+            dtypes = value
+        else:
+            raise TypeError(value)
+
+        _ = PyDataScope(0)
+        for dtype in dtypes:
+            _ = _.from_str(dtype)
+        return _
+
+    @classmethod
+    def get_dtype(cls, dtype: DataType | str) -> str | Literal['TickData', 'TickDataLite', 'OrderData', 'TransactionData']:
+        match dtype:
+            case 'TickData' | 'TickDataLite' | 'OrderData' | 'TransactionData':
+                return str(dtype)
+            case 'TradeData':  # handle the alias
+                return 'TransactionData'
+            case DataType.DTYPE_TICK | DataType.DTYPE_ORDER | DataType.DTYPE_TRANSACTION:
+                return DataType(dtype).name.removeprefix('DTYPE_').capitalize() + 'Data'
+            case DataType.DTYPE_TICK_LITE:
+                return 'Data'.join(_.capitalize() for _ in DataType(dtype).name.removeprefix('DTYPE_').split('_'))
+            case _:
+                raise ValueError(f'Invalid dtype {dtype}, expect str or int.')
+
+    def __iter__(self):
+        return iter(self.to_dtype())
+
+    def to_dtype(self) -> list[DataType]:
+        scope = list(super().__iter__())
+        scope_dtype = set()
+
+        for dtype in scope:
+
+            if dtype is PyDataScope.SCOPE_TRANSACTION:
+                scope_dtype.add(DataType.DTYPE_TRANSACTION)
+            elif dtype is PyDataScope.SCOPE_ORDER:
+                scope_dtype.add(DataType.DTYPE_ORDER)
+            elif dtype is PyDataScope.SCOPE_TICK_LITE:
+                scope_dtype.add(DataType.DTYPE_TICK_LITE)
+            elif dtype is PyDataScope.SCOPE_TICK:
+                scope_dtype.add(DataType.DTYPE_TICK)
+
+        return list(scope_dtype)
+
+    def to_int(self) -> list[int]:
+        return [int(_) for _ in self.to_dtype()]
+
+    def to_str(self) -> list[str]:
+        return [self.get_dtype(_) for _ in self.to_dtype()]
+
+    def from_str(self, dtype: Literal['TickData', 'TickDataLite', 'OrderData', 'TransactionData']) -> Self:
+        match dtype:
+            case 'TickData':
+                return self | self.SCOPE_TICK
+            case 'TickDataLite':
+                return self | self.SCOPE_TICK_LITE
+            case 'OrderData':
+                return self | self.SCOPE_ORDER
+            case 'TransactionData' | 'TradeData':
+                return self | self.SCOPE_TRANSACTION
+            case _:
+                raise ValueError(f'Invalid str {dtype}.')
 
 
 @runtime_checkable
@@ -27,7 +107,7 @@ class MarketDataLoader(Protocol):
 
 @runtime_checkable
 class MarketDataBulkLoader(Protocol):
-    def __call__(self, market_date: datetime.date, tickers: Sequence[str], dtypes: Sequence[str | DataType]) -> Sequence[MarketData] | Mapping[float, MarketData] | MarketDataBuffer:
+    def __call__(self, market_date: datetime.date, tickers: Sequence[str], dtypes: Sequence[str | DataType] | PyDataScope) -> Sequence[MarketData] | Mapping[float, MarketData] | MarketDataBuffer:
         pass
 
 
@@ -40,13 +120,16 @@ def check_protocol_signature(func: Callable, protocol: type) -> bool:
 
     proto_params = list(proto_sig.parameters.values())[1:]  # Skip 'self'
     func_params = list(func_sig.parameters.values())
+    enable_keywords = False
 
     # Check for *args (VAR_POSITIONAL) — not allowed
     for p in func_params:
         if p.kind == inspect.Parameter.VAR_POSITIONAL:
             raise TypeError(f"{func.__name__} uses *args, which is not allowed")
+        elif p.kind == inspect.Parameter.VAR_KEYWORD:
+            enable_keywords = True
 
-    # Check number of required positional args (not counting **kwargs)
+    # Extract positional args (POSITIONAL_ONLY or POSITIONAL_OR_KEYWORD)
     proto_arg_names = [p.name for p in proto_params if p.kind in (
         inspect.Parameter.POSITIONAL_ONLY,
         inspect.Parameter.POSITIONAL_OR_KEYWORD
@@ -57,8 +140,13 @@ def check_protocol_signature(func: Callable, protocol: type) -> bool:
         inspect.Parameter.POSITIONAL_OR_KEYWORD
     )]
 
-    if proto_arg_names != func_arg_names:
-        raise TypeError(f"{func.__name__} argument names {func_arg_names} do not match protocol {proto_arg_names}")
+    # Check if required positional args match (ignore **kwargs)
+    if not enable_keywords and sorted(proto_arg_names) != sorted(func_arg_names):
+        warnings.warn(
+            f"{func} argument names {func_arg_names} do not match protocol {proto_arg_names}",
+            stacklevel=2
+        )
+        return False
 
     # Type hint comparison (warn if mismatched, but allow)
     proto_hints = get_type_hints(protocol.__call__)
@@ -104,32 +192,26 @@ class Replay(object, metaclass=abc.ABCMeta):
         if eod is not None:
             self.add_eod(eod)
 
-    def add_bod(self, func: MarketDateCallable):
-        self.bod.append(func)
+    def add_bod(self, func: MarketDateCallable, priority: int = None) -> None:
+        if priority is None:
+            self.bod.append(func)
+        else:
+            self.bod.insert(priority, func)
 
-    def add_eod(self, func: MarketDateCallable):
-        self.eod.append(func)
-
-    @classmethod
-    def get_dtype(cls, dtype: DataType | str) -> str | Literal['TickData', 'TickDataLite', 'OrderData', 'TransactionData']:
-        match dtype:
-            case 'TickData' | 'TickDataLite' | 'OrderData' | 'TransactionData':
-                return str(dtype)
-            case DataType.DTYPE_TICK | DataType.DTYPE_ORDER | DataType.DTYPE_TRANSACTION:
-                return DataType(dtype).name.removeprefix('DTYPE_').capitalize() + 'Data'
-            case DataType.DTYPE_TICK_LITE:
-                return 'Data'.join(_.capitalize() for _ in DataType(dtype).name.removeprefix('DTYPE_').split('_'))
-            case _:
-                raise ValueError(f'Invalid dtype {dtype}, expect str or int.')
+    def add_eod(self, func: MarketDateCallable, priority: int = None):
+        if priority is None:
+            self.eod.append(func)
+        else:
+            self.eod.insert(priority, func)
 
     def add_subscription(self, ticker: str, dtype: DataType | str):
-        dtype = self.get_dtype(dtype)
+        dtype = PyDataScope.get_dtype(dtype)
         topic = f'{ticker}.{dtype}'
 
         self.subscription[topic] = (ticker, dtype)
 
     def remove_subscription(self, ticker: str, dtype: DataType | str):
-        dtype = self.get_dtype(dtype)
+        dtype = PyDataScope.get_dtype(dtype)
         topic = f'{ticker}.{dtype}'
 
         try:
@@ -208,7 +290,9 @@ class SimpleReplay(Replay):
         return f'{self.__class__.__name__}{{id={id(self)}, from={self.start_date}, to={self.end_date}}}'
 
     def _bulk_load_protocol(self):
+        LOGGER.info(f'{self} loading {self._market_date} {(', '.join(self.dtypes)) if self.dtypes else 'data'} for {len(self.tickers)} tickers...')
         buffer = self.loader(market_date=self._market_date, tickers=self.tickers, dtypes=self.dtypes)
+        LOGGER.info(f'{self} sorting {self._market_date} data...')
         buffer.sort()
 
         if isinstance(buffer, MarketDataBuffer):
@@ -220,11 +304,12 @@ class SimpleReplay(Replay):
         elif isinstance(buffer, Mapping):
             self._buffer = iter(buffer.values())
             self._buffer_size = len(buffer)
+        LOGGER.info(f'{self} {self._market_date} total {self._buffer_size:,} items loaded.')
 
     def _individual_load_protocol(self):
         buffer = []
         for topic, (_ticker, _dtype) in self.subscription.items():
-            LOGGER.info(f'{self} loading {self._market_date} {_ticker} {_dtype}')
+            LOGGER.info(f'{self} loading {self._market_date} {_ticker} {_dtype}...')
             data = self.loader(market_date=self._market_date, ticker=_ticker, dtype=_dtype)
             if isinstance(data, Mapping):
                 buffer.extend(list(data.values()))
@@ -232,14 +317,16 @@ class SimpleReplay(Replay):
                 buffer.extend(data)
             else:
                 raise TypeError(f'The loader {self.loader} returned {type(data)}. Expect a sequence or mapping of MarketData')
+        LOGGER.info(f'{self} sorting {self._market_date} data...')
         buffer.sort(key=operator.attrgetter('timestamp', 'ticker', '_dtype'))
         self._buffer = iter(buffer)
         self._buffer_size = len(buffer)
+        LOGGER.info(f'{self} {self._market_date} total {self._buffer_size:,} items loaded.')
 
     def _safe_load(self):
         if self.loader is None:
             assert hasattr(self, '_buffer') and isinstance(self._buffer, Iterable), f'Without assigning a data loader, the _buffer of {self.__class__.__name__} should be set in bod process.'
-            return
+            return None
 
         is_bulk_loader = check_protocol_signature(self.loader, MarketDataBulkLoader)
         is_individual_loader = check_protocol_signature(self.loader, MarketDataLoader)
@@ -320,29 +407,26 @@ class ProgressReplay(SimpleReplay):
             'miniters': 0.001,
             **tqdm_kwargs
         }
-        self.add_bod(self._update_progress_bar)
+        self._pbar = None
+        self.add_bod(self._update_progress_bar, priority=0)
 
     def __iter__(self):
         from tqdm.auto import tqdm
         self._pbar = tqdm(**self._tqdm_kwargs)
-        iterator = super().__iter__()
+        return super().__iter__()
 
+    def __next__(self) -> MarketData:
         try:
-            while True:
-                try:
-                    result = next(iterator)
-                    if self._pbar:
-                        self._pbar.update(self.progress)
-                    yield result
-                except StopIteration:
-                    break
-        finally:
+            result = super().__next__()
+            if self._pbar:
+                self._pbar.update(self.progress)
+                self._pbar.refresh()
+            return result
+        except StopIteration:
             if self._pbar is not None:
                 self._pbar.close()
                 self._pbar = None
-
-    def __next__(self) -> MarketData:
-        raise RuntimeError("MarketDataBufferReplay should be used as an iterator context")
+            raise
 
     def _update_progress_bar(self, market_date: datetime.date):
         if self._pbar:
@@ -378,7 +462,7 @@ class ProgressiveReplay(SimpleReplay):
             eod: MarketDateCallable = None,
             **progress_config
     ) -> None:
-        warnings.deprecated('User ProgressReplay instead!')
+        warnings.warn('User ProgressReplay instead!', DeprecationWarning, stacklevel=2)
         self.loader = loader
         super().__init__(loader=loader, market_date=market_date, start_date=start_date, end_date=end_date, calendar=calendar, bod=bod, eod=eod)
 
@@ -410,6 +494,8 @@ class ProgressiveReplay(SimpleReplay):
             tasks=1,
             **progress_config
         )
+        self._pbar = None
+        self.add_bod(self._update_progress_bar, priority=0)
 
     def __iter__(self):
         from ..base import Progress
@@ -419,16 +505,17 @@ class ProgressiveReplay(SimpleReplay):
     def __next__(self) -> MarketData:
         try:
             result = super().__next__()
-            self._pbar.done_tasks = self.progress
+            if self._pbar:
+                self._pbar.done_tasks = self.progress
 
-            if (not self._pbar.tick_size) \
-                    or self._pbar.progress >= self._pbar.tick_size + self._pbar.last_output \
-                    or self._pbar.is_done:
-                self._pbar.output()
+                if (not self._pbar.tick_size) \
+                        or self._pbar.progress >= self._pbar.tick_size + self._pbar.last_output \
+                        or self._pbar.is_done:
+                    self._pbar.output()
 
             return result
         except StopIteration:
-            if not self._pbar.is_done:
+            if self._pbar is not None and not self._pbar.is_done:
                 self.progress.done_tasks = 1
                 self._pbar.output()
             raise
