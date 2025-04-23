@@ -115,9 +115,14 @@ cdef class MarketData:
             return sizeof(_TickDataBuffer)
         elif dtype == DataType.DTYPE_BAR:
             return sizeof(_CandlestickBuffer)
-        else:
-            # Default to MarketData
+        elif dtype == DataType.DTYPE_REPORT:
+            return sizeof(_TradeReportBuffer)
+        elif dtype == DataType.DTYPE_TRANSACTION:
+            return sizeof(_TradeInstructionBuffer)
+        elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:
             return sizeof(_MarketDataBuffer)
+        else:
+            raise ValueError(f'Unknown data type {dtype}.')
 
     @classmethod
     def buffer_size(cls) -> int:

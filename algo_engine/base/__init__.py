@@ -5,6 +5,8 @@ import pathlib
 from .telemetrics import LOGGER
 from ..profile import PROFILE
 
+USE_CYTHON = True
+
 
 def set_logger(logger: logging.Logger):
     global LOGGER
@@ -15,6 +17,9 @@ def set_logger(logger: logging.Logger):
 
 
 def check_cython_module(cython_module) -> bool:
+    if not USE_CYTHON:
+        return False
+
     for name in cython_module:
         cython_ext = '.pyd' if os.name == 'nt' else '.so'
         for file in pathlib.Path(__file__).parent.glob(f'*{cython_ext}'):

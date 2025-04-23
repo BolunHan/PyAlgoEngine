@@ -52,13 +52,13 @@ typedef struct {
     uint8_t dtype;
     char ticker[TICKER_SIZE];
     double timestamp;
-} MetaInfo;
+} __attribute__((packed)) MetaInfo;
 
 typedef struct {
     double price;
     double volume;
     uint64_t n_orders;
-} Entry;
+} __attribute__((packed)) Entry;
 
 static inline void platform_usleep(unsigned int usec) {
     #if defined(_WIN32) || defined(_WIN64)

@@ -1571,6 +1571,13 @@ static const char *__pyx_f[] = {
 #define __Pyx_FastGIL_Forget()
 #define __Pyx_FastGilFuncInit()
 
+/* None.proto */
+#if defined(__GNUC__)
+#define __Pyx_PACKED __attribute__((__packed__))
+#else
+#define __Pyx_PACKED
+#endif
+
 /* BufferFormatStructs.proto */
 struct __Pyx_StructField_;
 #define __PYX_BUF_FLAGS_PACKED_STRUCT (1 << 0)
@@ -1797,48 +1804,83 @@ struct __pyx_t_11algo_engine_4base_11market_data__ID {
 /* "market_data.pxd":85
  * 
  * # Meta info structure
- * cdef struct _MetaInfo:             # <<<<<<<<<<<<<<
+ * cdef packed struct _MetaInfo:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__MetaInfo {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__MetaInfo {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":91
  * 
  * # OrderBookEntry structure
- * cdef struct _OrderBookEntry:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderBookEntry:             # <<<<<<<<<<<<<<
  *     double price
  *     double volume
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry {
   double price;
   double volume;
   uint64_t n_orders;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":97
  * 
  * # OrderBookBuffer structure
- * cdef struct _OrderBookBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderBookBuffer:             # <<<<<<<<<<<<<<
  *     _OrderBookEntry entries[BOOK_SIZE]
  * 
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry entries[BOOK_SIZE];
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":101
  * 
  * # BarData structure
- * cdef struct _CandlestickBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _CandlestickBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1851,15 +1893,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
   double notional;
   uint32_t trade_count;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":115
  * 
  * # TickDataLite structure
- * cdef struct _TickDataLiteBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TickDataLiteBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1872,28 +1924,48 @@ struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
   double total_traded_notional;
   uint32_t total_trade_count;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":129
  * 
  * # TickData structure
- * cdef struct _TickDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TickDataBuffer:             # <<<<<<<<<<<<<<
  *     _TickDataLiteBuffer lite
  *     _OrderBookBuffer bid
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TickDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TickDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer lite;
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer bid;
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer ask;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":135
  * 
  * # TransactionData structure
- * cdef struct _TransactionDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TransactionDataBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1906,15 +1978,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID buy_id;
   struct __pyx_t_11algo_engine_4base_11market_data__ID sell_id;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":149
  * 
  * # OrderData structure
- * cdef struct _OrderDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderDataBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1924,15 +2006,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID order_id;
   uint8_t order_type;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":160
  * 
  * # TradeReport structure
- * cdef struct _TradeReportBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TradeReportBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1945,15 +2037,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID order_id;
   struct __pyx_t_11algo_engine_4base_11market_data__ID trade_id;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":175
  * 
  * # TradeInstruction structure
- * cdef struct _TradeInstructionBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TradeInstructionBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1971,6 +2073,11 @@ struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
   double ts_canceled;
   double ts_finished;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":195
  * 
@@ -3869,6 +3976,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_4vwap___get
 static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_8bar_type___get__(struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_12bar_end_time___get__(struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_14bar_start_time___get__(struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_12market_price___get__(struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_18__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_20__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_ticker, PyDateTime_Date *__pyx_v_market_date, double __pyx_v_high_price, double __pyx_v_low_price, double __pyx_v_open_price, double __pyx_v_close_price, double __pyx_v_volume, double __pyx_v_notional, uint32_t __pyx_v_trade_count, int __pyx_v_bar_span, PyObject *__pyx_v_kwargs); /* proto */
@@ -24806,7 +24914,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_14bar_start
  *             raise ValueError("Data not initialized")
  *         return datetime.fromtimestamp(self.start_timestamp, tz=PROFILE.time_zone)             # <<<<<<<<<<<<<<
  * 
- * 
+ *     @property
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_ptype_7cpython_8datetime_datetime), __pyx_n_s_fromtimestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 308, __pyx_L1_error)
@@ -24852,6 +24960,71 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_14bar_start
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_AddTraceback("algo_engine.base.candlestick.BarData.bar_start_time.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "algo_engine/base/candlestick.pyx":310
+ *         return datetime.fromtimestamp(self.start_timestamp, tz=PROFILE.time_zone)
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def market_price(self) -> float:
+ *         return self.close_price
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_11algo_engine_4base_11candlestick_7BarData_12market_price_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_11algo_engine_4base_11candlestick_7BarData_12market_price_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_11algo_engine_4base_11candlestick_7BarData_12market_price___get__(((struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_12market_price___get__(struct __pyx_obj_11algo_engine_4base_11candlestick_BarData *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "algo_engine/base/candlestick.pyx":312
+ *     @property
+ *     def market_price(self) -> float:
+ *         return self.close_price             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_close_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "algo_engine/base/candlestick.pyx":310
+ *         return datetime.fromtimestamp(self.start_timestamp, tz=PROFILE.time_zone)
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def market_price(self) -> float:
+ *         return self.close_price
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("algo_engine.base.candlestick.BarData.market_price.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -25071,7 +25244,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_7BarData_20__setstat
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":312
+/* "algo_engine/base/candlestick.pyx":316
  * 
  * class DailyBar(BarData):
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):             # <<<<<<<<<<<<<<
@@ -25165,7 +25338,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -25173,9 +25346,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 1); __PYX_ERR(0, 312, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 1); __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -25183,9 +25356,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[2]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 2); __PYX_ERR(0, 312, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 2); __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
@@ -25193,9 +25366,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[3]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 3); __PYX_ERR(0, 312, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 3); __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
@@ -25203,9 +25376,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[4]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 4); __PYX_ERR(0, 312, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 4); __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
@@ -25213,9 +25386,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[5]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 5); __PYX_ERR(0, 312, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 5); __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  6:
@@ -25223,42 +25396,42 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[6]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 6); __PYX_ERR(0, 312, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, 6); __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  7:
         if (kw_args > 0) {
           PyObject* value = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_volume);
           if (value) { values[7] = __Pyx_Arg_NewRef_FASTCALL(value); kw_args--; }
-          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  8:
         if (kw_args > 0) {
           PyObject* value = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_notional);
           if (value) { values[8] = __Pyx_Arg_NewRef_FASTCALL(value); kw_args--; }
-          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  9:
         if (kw_args > 0) {
           PyObject* value = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_trade_count);
           if (value) { values[9] = __Pyx_Arg_NewRef_FASTCALL(value); kw_args--; }
-          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case 10:
         if (kw_args > 0) {
           PyObject* value = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_bar_span);
           if (value) { values[10] = __Pyx_Arg_NewRef_FASTCALL(value); kw_args--; }
-          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, __pyx_v_kwargs, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 312, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, __pyx_v_kwargs, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 316, __pyx_L3_error)
       }
     } else {
       switch (__pyx_nargs) {
@@ -25284,34 +25457,34 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     __pyx_v_self = values[0];
     __pyx_v_ticker = ((PyObject*)values[1]);
     __pyx_v_market_date = ((PyDateTime_Date *)values[2]);
-    __pyx_v_high_price = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_high_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
-    __pyx_v_low_price = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_low_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
-    __pyx_v_open_price = __pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_open_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
-    __pyx_v_close_price = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_close_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+    __pyx_v_high_price = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_high_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
+    __pyx_v_low_price = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_low_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
+    __pyx_v_open_price = __pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_open_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
+    __pyx_v_close_price = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_close_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
     if (values[7]) {
-      __pyx_v_volume = __pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_volume == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+      __pyx_v_volume = __pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_volume == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
     } else {
       __pyx_v_volume = ((double)((double)0.0));
     }
     if (values[8]) {
-      __pyx_v_notional = __pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_notional == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+      __pyx_v_notional = __pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_notional == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
     } else {
       __pyx_v_notional = ((double)((double)0.0));
     }
     if (values[9]) {
-      __pyx_v_trade_count = __Pyx_PyInt_As_uint32_t(values[9]); if (unlikely((__pyx_v_trade_count == ((uint32_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+      __pyx_v_trade_count = __Pyx_PyInt_As_uint32_t(values[9]); if (unlikely((__pyx_v_trade_count == ((uint32_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
     } else {
       __pyx_v_trade_count = ((uint32_t)((uint32_t)0));
     }
     if (values[10]) {
-      __pyx_v_bar_span = __Pyx_PyInt_As_int(values[10]); if (unlikely((__pyx_v_bar_span == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 312, __pyx_L3_error)
+      __pyx_v_bar_span = __Pyx_PyInt_As_int(values[10]); if (unlikely((__pyx_v_bar_span == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 316, __pyx_L3_error)
     } else {
       __pyx_v_bar_span = ((int)((int)1));
     }
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, __pyx_nargs); __PYX_ERR(0, 312, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 0, 7, 11, __pyx_nargs); __PYX_ERR(0, 316, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25326,8 +25499,8 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_ticker), (&PyUnicode_Type), 1, "ticker", 1))) __PYX_ERR(0, 312, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_market_date), __pyx_ptype_7cpython_8datetime_date, 1, "market_date", 0))) __PYX_ERR(0, 312, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_ticker), (&PyUnicode_Type), 1, "ticker", 1))) __PYX_ERR(0, 316, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_market_date), __pyx_ptype_7cpython_8datetime_date, 1, "market_date", 0))) __PYX_ERR(0, 316, __pyx_L1_error)
   __pyx_r = __pyx_pf_11algo_engine_4base_11candlestick_8DailyBar___init__(__pyx_self, __pyx_v_self, __pyx_v_ticker, __pyx_v_market_date, __pyx_v_high_price, __pyx_v_low_price, __pyx_v_open_price, __pyx_v_close_price, __pyx_v_volume, __pyx_v_notional, __pyx_v_trade_count, __pyx_v_bar_span, __pyx_v_kwargs);
 
   /* function exit code */
@@ -25359,7 +25532,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar___init__(C
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__init__", 1);
 
-  /* "algo_engine/base/candlestick.pyx":313
+  /* "algo_engine/base/candlestick.pyx":317
  * class DailyBar(BarData):
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):
  *         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day             # <<<<<<<<<<<<<<
@@ -25368,7 +25541,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar___init__(C
  */
   __pyx_v_timestamp = (((0x2710 * __pyx_f_7cpython_8datetime_4date_4year_year(__pyx_v_market_date)) + (0x64 * __pyx_f_7cpython_8datetime_4date_5month_month(__pyx_v_market_date))) + __pyx_f_7cpython_8datetime_4date_3day_day(__pyx_v_market_date));
 
-  /* "algo_engine/base/candlestick.pyx":315
+  /* "algo_engine/base/candlestick.pyx":319
  *         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
  * 
  *         super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)             # <<<<<<<<<<<<<<
@@ -25376,71 +25549,71 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar___init__(C
  *     def __repr__(self) -> str:
  */
   __pyx_t_1 = __Pyx_CyFunction_GetClassObj(__pyx_self);
-  if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 315, __pyx_L1_error) }
+  if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 319, __pyx_L1_error) }
   __Pyx_INCREF(__pyx_t_1);
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(0, 315, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error);
   __Pyx_INCREF(__pyx_v_self);
   __Pyx_GIVEREF(__pyx_v_self);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_self)) __PYX_ERR(0, 315, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_self)) __PYX_ERR(0, 319, __pyx_L1_error);
   __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_init); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_init); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = __Pyx_PyDict_NewPresized(10); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyDict_NewPresized(10); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_ticker, __pyx_v_ticker) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_PyInt_From_long(__pyx_v_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_ticker, __pyx_v_ticker) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_From_long(__pyx_v_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_timestamp, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_timestamp, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_high_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_high_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_high_price, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_high_price, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_low_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_low_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_low_price, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_low_price, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_open_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_open_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_open_price, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_open_price, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_close_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_close_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_close_price, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_close_price, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_volume); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_volume); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_volume, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_volume, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_notional); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_notional); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_notional, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_notional, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyInt_From_uint32_t(__pyx_v_trade_count); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_From_uint32_t(__pyx_v_trade_count); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_trade_count, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_trade_count, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_bar_span); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_bar_span); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_bar_span, __pyx_t_4) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_bar_span, __pyx_t_4) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_1 = __pyx_t_3;
   __pyx_t_3 = 0;
-  if (__Pyx_MergeKeywords(__pyx_t_1, __pyx_v_kwargs) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_empty_tuple, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 315, __pyx_L1_error)
+  if (__Pyx_MergeKeywords(__pyx_t_1, __pyx_v_kwargs) < 0) __PYX_ERR(0, 319, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_empty_tuple, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":312
+  /* "algo_engine/base/candlestick.pyx":316
  * 
  * class DailyBar(BarData):
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):             # <<<<<<<<<<<<<<
@@ -25464,7 +25637,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar___init__(C
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":317
+/* "algo_engine/base/candlestick.pyx":321
  *         super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
  * 
  *     def __repr__(self) -> str:             # <<<<<<<<<<<<<<
@@ -25525,12 +25698,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 317, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 321, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__repr__") < 0)) __PYX_ERR(0, 317, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__repr__") < 0)) __PYX_ERR(0, 321, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -25541,7 +25714,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__repr__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 317, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__repr__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 321, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25583,7 +25756,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__repr__", 1);
 
-  /* "algo_engine/base/candlestick.pyx":318
+  /* "algo_engine/base/candlestick.pyx":322
  * 
  *     def __repr__(self) -> str:
  *         if (bar_span := super().bar_span_seconds) == 1:             # <<<<<<<<<<<<<<
@@ -25591,29 +25764,29 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
  *         else:
  */
   __pyx_t_1 = __Pyx_CyFunction_GetClassObj(__pyx_self);
-  if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 318, __pyx_L1_error) }
+  if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 322, __pyx_L1_error) }
   __Pyx_INCREF(__pyx_t_1);
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 318, __pyx_L1_error)
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 322, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(0, 318, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(0, 322, __pyx_L1_error);
   __Pyx_INCREF(__pyx_v_self);
   __Pyx_GIVEREF(__pyx_v_self);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_self)) __PYX_ERR(0, 318, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_self)) __PYX_ERR(0, 322, __pyx_L1_error);
   __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 318, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 322, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_bar_span_seconds); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 318, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_bar_span_seconds); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 322, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_bar_span = __pyx_t_2;
   __Pyx_INCREF(__pyx_t_2);
-  __pyx_t_3 = (__Pyx_PyInt_BoolEqObjC(__pyx_t_2, __pyx_int_1, 1, 0)); if (unlikely((__pyx_t_3 < 0))) __PYX_ERR(0, 318, __pyx_L1_error)
+  __pyx_t_3 = (__Pyx_PyInt_BoolEqObjC(__pyx_t_2, __pyx_int_1, 1, 0)); if (unlikely((__pyx_t_3 < 0))) __PYX_ERR(0, 322, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (__pyx_t_3) {
 
-    /* "algo_engine/base/candlestick.pyx":319
+    /* "algo_engine/base/candlestick.pyx":323
  *     def __repr__(self) -> str:
  *         if (bar_span := super().bar_span_seconds) == 1:
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"             # <<<<<<<<<<<<<<
@@ -25621,7 +25794,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_2 = PyTuple_New(15); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_2 = PyTuple_New(15); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_4 = 0;
     __pyx_t_5 = 127;
@@ -25629,9 +25802,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 12;
     __Pyx_GIVEREF(__pyx_kp_u_DailyBar);
     PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_kp_u_DailyBar);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_5;
@@ -25643,9 +25816,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 2;
     __Pyx_GIVEREF(__pyx_kp_u__11);
     PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_kp_u__11);
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_ticker); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_ticker); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25657,9 +25830,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 7;
     __Pyx_GIVEREF(__pyx_kp_u_open);
     PyTuple_SET_ITEM(__pyx_t_2, 4, __pyx_kp_u_open);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_open_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_open_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_5;
@@ -25671,9 +25844,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 7;
     __Pyx_GIVEREF(__pyx_kp_u_high);
     PyTuple_SET_ITEM(__pyx_t_2, 6, __pyx_kp_u_high);
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_high_price); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_high_price); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25685,9 +25858,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 6;
     __Pyx_GIVEREF(__pyx_kp_u_low);
     PyTuple_SET_ITEM(__pyx_t_2, 8, __pyx_kp_u_low);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_low_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_low_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_5;
@@ -25699,9 +25872,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 8;
     __Pyx_GIVEREF(__pyx_kp_u_close);
     PyTuple_SET_ITEM(__pyx_t_2, 10, __pyx_kp_u_close);
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_close_price); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_close_price); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25713,9 +25886,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 9;
     __Pyx_GIVEREF(__pyx_kp_u_volume_2);
     PyTuple_SET_ITEM(__pyx_t_2, 12, __pyx_kp_u_volume_2);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_volume); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_volume); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_5;
@@ -25727,14 +25900,14 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 1;
     __Pyx_GIVEREF(__pyx_kp_u__7);
     PyTuple_SET_ITEM(__pyx_t_2, 14, __pyx_kp_u__7);
-    __pyx_t_6 = __Pyx_PyUnicode_Join(__pyx_t_2, 15, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 319, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyUnicode_Join(__pyx_t_2, 15, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_r = ((PyObject*)__pyx_t_6);
     __pyx_t_6 = 0;
     goto __pyx_L0;
 
-    /* "algo_engine/base/candlestick.pyx":318
+    /* "algo_engine/base/candlestick.pyx":322
  * 
  *     def __repr__(self) -> str:
  *         if (bar_span := super().bar_span_seconds) == 1:             # <<<<<<<<<<<<<<
@@ -25743,7 +25916,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
  */
   }
 
-  /* "algo_engine/base/candlestick.pyx":321
+  /* "algo_engine/base/candlestick.pyx":325
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  *         else:
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"             # <<<<<<<<<<<<<<
@@ -25752,7 +25925,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
  */
   /*else*/ {
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_6 = PyTuple_New(17); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_6 = PyTuple_New(17); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __pyx_t_4 = 0;
     __pyx_t_5 = 127;
@@ -25760,9 +25933,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 12;
     __Pyx_GIVEREF(__pyx_kp_u_DailyBar);
     PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_kp_u_DailyBar);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25774,9 +25947,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 2;
     __Pyx_GIVEREF(__pyx_kp_u__11);
     PyTuple_SET_ITEM(__pyx_t_6, 2, __pyx_kp_u__11);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_ticker); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_ticker); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) : __pyx_t_5;
@@ -25788,7 +25961,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 7;
     __Pyx_GIVEREF(__pyx_kp_u_span);
     PyTuple_SET_ITEM(__pyx_t_6, 4, __pyx_kp_u_span);
-    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_v_bar_span, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_v_bar_span, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) : __pyx_t_5;
     __pyx_t_4 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_2);
@@ -25799,9 +25972,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 8;
     __Pyx_GIVEREF(__pyx_kp_u_d_open);
     PyTuple_SET_ITEM(__pyx_t_6, 6, __pyx_kp_u_d_open);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_open_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_open_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25813,9 +25986,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 7;
     __Pyx_GIVEREF(__pyx_kp_u_high);
     PyTuple_SET_ITEM(__pyx_t_6, 8, __pyx_kp_u_high);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_high_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_high_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) : __pyx_t_5;
@@ -25827,9 +26000,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 6;
     __Pyx_GIVEREF(__pyx_kp_u_low);
     PyTuple_SET_ITEM(__pyx_t_6, 10, __pyx_kp_u_low);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_low_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_low_price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25841,9 +26014,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 8;
     __Pyx_GIVEREF(__pyx_kp_u_close);
     PyTuple_SET_ITEM(__pyx_t_6, 12, __pyx_kp_u_close);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_close_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_close_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_t_1, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) : __pyx_t_5;
@@ -25855,9 +26028,9 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 9;
     __Pyx_GIVEREF(__pyx_kp_u_volume_2);
     PyTuple_SET_ITEM(__pyx_t_6, 14, __pyx_kp_u_volume_2);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_volume); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_volume); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_2, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -25869,7 +26042,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     __pyx_t_4 += 1;
     __Pyx_GIVEREF(__pyx_kp_u__7);
     PyTuple_SET_ITEM(__pyx_t_6, 16, __pyx_kp_u__7);
-    __pyx_t_1 = __Pyx_PyUnicode_Join(__pyx_t_6, 17, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyUnicode_Join(__pyx_t_6, 17, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __pyx_r = ((PyObject*)__pyx_t_1);
@@ -25877,7 +26050,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
     goto __pyx_L0;
   }
 
-  /* "algo_engine/base/candlestick.pyx":317
+  /* "algo_engine/base/candlestick.pyx":321
  *         super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
  * 
  *     def __repr__(self) -> str:             # <<<<<<<<<<<<<<
@@ -25899,7 +26072,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_2__repr__(
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":323
+/* "algo_engine/base/candlestick.pyx":327
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -25961,12 +26134,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 323, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 327, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "market_date") < 0)) __PYX_ERR(0, 323, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "market_date") < 0)) __PYX_ERR(0, 327, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -25977,7 +26150,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("market_date", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 323, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("market_date", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 327, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26022,29 +26195,29 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("market_date", 1);
 
-  /* "algo_engine/base/candlestick.pyx":332
+  /* "algo_engine/base/candlestick.pyx":336
  *         """
  * 
  *         int_date = int(self.timestamp)             # <<<<<<<<<<<<<<
  *         y, _m = divmod(int_date, 10000)
  *         m, d = divmod(_m, 100)
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 332, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 336, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyNumber_Int(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 332, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyNumber_Int(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 336, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_int_date = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":333
+  /* "algo_engine/base/candlestick.pyx":337
  * 
  *         int_date = int(self.timestamp)
  *         y, _m = divmod(int_date, 10000)             # <<<<<<<<<<<<<<
  *         m, d = divmod(_m, 100)
  * 
  */
-  __pyx_t_2 = PyNumber_Divmod(__pyx_v_int_date, __pyx_int_10000); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 333, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Divmod(__pyx_v_int_date, __pyx_int_10000); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 337, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if ((likely(PyTuple_CheckExact(__pyx_t_2))) || (PyList_CheckExact(__pyx_t_2))) {
     PyObject* sequence = __pyx_t_2;
@@ -26052,7 +26225,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     if (unlikely(size != 2)) {
       if (size > 2) __Pyx_RaiseTooManyValuesError(2);
       else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
-      __PYX_ERR(0, 333, __pyx_L1_error)
+      __PYX_ERR(0, 337, __pyx_L1_error)
     }
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
     if (likely(PyTuple_CheckExact(sequence))) {
@@ -26065,15 +26238,15 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     __Pyx_INCREF(__pyx_t_1);
     __Pyx_INCREF(__pyx_t_3);
     #else
-    __pyx_t_1 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 333, __pyx_L1_error)
+    __pyx_t_1 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 337, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_3 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 333, __pyx_L1_error)
+    __pyx_t_3 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 337, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     #endif
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   } else {
     Py_ssize_t index = -1;
-    __pyx_t_4 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 333, __pyx_L1_error)
+    __pyx_t_4 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 337, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = __Pyx_PyObject_GetIterNextFunc(__pyx_t_4);
@@ -26081,7 +26254,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     __Pyx_GOTREF(__pyx_t_1);
     index = 1; __pyx_t_3 = __pyx_t_5(__pyx_t_4); if (unlikely(!__pyx_t_3)) goto __pyx_L3_unpacking_failed;
     __Pyx_GOTREF(__pyx_t_3);
-    if (__Pyx_IternextUnpackEndCheck(__pyx_t_5(__pyx_t_4), 2) < 0) __PYX_ERR(0, 333, __pyx_L1_error)
+    if (__Pyx_IternextUnpackEndCheck(__pyx_t_5(__pyx_t_4), 2) < 0) __PYX_ERR(0, 337, __pyx_L1_error)
     __pyx_t_5 = NULL;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     goto __pyx_L4_unpacking_done;
@@ -26089,7 +26262,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
     if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
-    __PYX_ERR(0, 333, __pyx_L1_error)
+    __PYX_ERR(0, 337, __pyx_L1_error)
     __pyx_L4_unpacking_done:;
   }
   __pyx_v_y = __pyx_t_1;
@@ -26097,14 +26270,14 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
   __pyx_v__m = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":334
+  /* "algo_engine/base/candlestick.pyx":338
  *         int_date = int(self.timestamp)
  *         y, _m = divmod(int_date, 10000)
  *         m, d = divmod(_m, 100)             # <<<<<<<<<<<<<<
  * 
  *         return date(year=y, month=m, day=d)
  */
-  __pyx_t_2 = PyNumber_Divmod(__pyx_v__m, __pyx_int_100); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 334, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Divmod(__pyx_v__m, __pyx_int_100); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 338, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if ((likely(PyTuple_CheckExact(__pyx_t_2))) || (PyList_CheckExact(__pyx_t_2))) {
     PyObject* sequence = __pyx_t_2;
@@ -26112,7 +26285,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     if (unlikely(size != 2)) {
       if (size > 2) __Pyx_RaiseTooManyValuesError(2);
       else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
-      __PYX_ERR(0, 334, __pyx_L1_error)
+      __PYX_ERR(0, 338, __pyx_L1_error)
     }
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
     if (likely(PyTuple_CheckExact(sequence))) {
@@ -26125,15 +26298,15 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     __Pyx_INCREF(__pyx_t_3);
     __Pyx_INCREF(__pyx_t_1);
     #else
-    __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 334, __pyx_L1_error)
+    __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 338, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_1 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 334, __pyx_L1_error)
+    __pyx_t_1 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 338, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     #endif
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   } else {
     Py_ssize_t index = -1;
-    __pyx_t_4 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 334, __pyx_L1_error)
+    __pyx_t_4 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 338, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = __Pyx_PyObject_GetIterNextFunc(__pyx_t_4);
@@ -26141,7 +26314,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     __Pyx_GOTREF(__pyx_t_3);
     index = 1; __pyx_t_1 = __pyx_t_5(__pyx_t_4); if (unlikely(!__pyx_t_1)) goto __pyx_L5_unpacking_failed;
     __Pyx_GOTREF(__pyx_t_1);
-    if (__Pyx_IternextUnpackEndCheck(__pyx_t_5(__pyx_t_4), 2) < 0) __PYX_ERR(0, 334, __pyx_L1_error)
+    if (__Pyx_IternextUnpackEndCheck(__pyx_t_5(__pyx_t_4), 2) < 0) __PYX_ERR(0, 338, __pyx_L1_error)
     __pyx_t_5 = NULL;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     goto __pyx_L6_unpacking_done;
@@ -26149,7 +26322,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
     if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
-    __PYX_ERR(0, 334, __pyx_L1_error)
+    __PYX_ERR(0, 338, __pyx_L1_error)
     __pyx_L6_unpacking_done:;
   }
   __pyx_v_m = __pyx_t_3;
@@ -26157,7 +26330,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
   __pyx_v_d = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":336
+  /* "algo_engine/base/candlestick.pyx":340
  *         m, d = divmod(_m, 100)
  * 
  *         return date(year=y, month=m, day=d)             # <<<<<<<<<<<<<<
@@ -26165,19 +26338,19 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
  *     @property
  */
   __Pyx_XDECREF((PyObject *)__pyx_r);
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 336, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 340, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_year, __pyx_v_y) < 0) __PYX_ERR(0, 336, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_month, __pyx_v_m) < 0) __PYX_ERR(0, 336, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_day, __pyx_v_d) < 0) __PYX_ERR(0, 336, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_8datetime_date), __pyx_empty_tuple, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 336, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_year, __pyx_v_y) < 0) __PYX_ERR(0, 340, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_month, __pyx_v_m) < 0) __PYX_ERR(0, 340, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_day, __pyx_v_d) < 0) __PYX_ERR(0, 340, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_8datetime_date), __pyx_empty_tuple, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 340, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = ((PyDateTime_Date *)__pyx_t_1);
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/candlestick.pyx":323
+  /* "algo_engine/base/candlestick.pyx":327
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26204,7 +26377,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_4ma
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":338
+/* "algo_engine/base/candlestick.pyx":342
  *         return date(year=y, month=m, day=d)
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26266,12 +26439,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 338, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 342, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "market_time") < 0)) __PYX_ERR(0, 338, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "market_time") < 0)) __PYX_ERR(0, 342, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -26282,7 +26455,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("market_time", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 338, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("market_time", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 342, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26318,7 +26491,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_6ma
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("market_time", 1);
 
-  /* "algo_engine/base/candlestick.pyx":346
+  /* "algo_engine/base/candlestick.pyx":350
  *             date: The market date of the bar.
  *         """
  *         return self.market_date             # <<<<<<<<<<<<<<
@@ -26326,14 +26499,14 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_6ma
  *     @property
  */
   __Pyx_XDECREF((PyObject *)__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 346, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 350, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_7cpython_8datetime_date))))) __PYX_ERR(0, 346, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_7cpython_8datetime_date))))) __PYX_ERR(0, 350, __pyx_L1_error)
   __pyx_r = ((PyDateTime_Date *)__pyx_t_1);
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/candlestick.pyx":338
+  /* "algo_engine/base/candlestick.pyx":342
  *         return date(year=y, month=m, day=d)
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26352,7 +26525,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_6ma
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":348
+/* "algo_engine/base/candlestick.pyx":352
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26414,12 +26587,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 348, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 352, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_start_time") < 0)) __PYX_ERR(0, 348, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_start_time") < 0)) __PYX_ERR(0, 352, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -26430,7 +26603,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("bar_start_time", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 348, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("bar_start_time", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 352, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26468,7 +26641,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_8ba
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("bar_start_time", 1);
 
-  /* "algo_engine/base/candlestick.pyx":356
+  /* "algo_engine/base/candlestick.pyx":360
  *             date: The start date of the bar.
  *         """
  *         return self.market_date - self.bar_span             # <<<<<<<<<<<<<<
@@ -26476,20 +26649,20 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_8ba
  *     @property
  */
   __Pyx_XDECREF((PyObject *)__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 356, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 360, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_bar_span); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 356, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_bar_span); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 360, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyNumber_Subtract(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 356, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Subtract(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 360, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_ptype_7cpython_8datetime_date))))) __PYX_ERR(0, 356, __pyx_L1_error)
+  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_ptype_7cpython_8datetime_date))))) __PYX_ERR(0, 360, __pyx_L1_error)
   __pyx_r = ((PyDateTime_Date *)__pyx_t_3);
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/candlestick.pyx":348
+  /* "algo_engine/base/candlestick.pyx":352
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26510,7 +26683,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_8ba
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":358
+/* "algo_engine/base/candlestick.pyx":362
  *         return self.market_date - self.bar_span
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26572,12 +26745,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 358, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 362, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_end_time") < 0)) __PYX_ERR(0, 358, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_end_time") < 0)) __PYX_ERR(0, 362, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -26588,7 +26761,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("bar_end_time", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 358, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("bar_end_time", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 362, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26624,7 +26797,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_10b
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("bar_end_time", 1);
 
-  /* "algo_engine/base/candlestick.pyx":366
+  /* "algo_engine/base/candlestick.pyx":370
  *             date: The end date of the bar.
  *         """
  *         return self.market_date             # <<<<<<<<<<<<<<
@@ -26632,14 +26805,14 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_10b
  *     @property
  */
   __Pyx_XDECREF((PyObject *)__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 366, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_market_date); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 370, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_7cpython_8datetime_date))))) __PYX_ERR(0, 366, __pyx_L1_error)
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_7cpython_8datetime_date))))) __PYX_ERR(0, 370, __pyx_L1_error)
   __pyx_r = ((PyDateTime_Date *)__pyx_t_1);
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/candlestick.pyx":358
+  /* "algo_engine/base/candlestick.pyx":362
  *         return self.market_date - self.bar_span
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26658,7 +26831,7 @@ static PyDateTime_Date *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_10b
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":368
+/* "algo_engine/base/candlestick.pyx":372
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26719,12 +26892,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 368, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 372, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_span") < 0)) __PYX_ERR(0, 368, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_span") < 0)) __PYX_ERR(0, 372, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -26735,7 +26908,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("bar_span", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 368, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("bar_span", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 372, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26773,7 +26946,7 @@ static PyDateTime_Delta *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_12
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("bar_span", 1);
 
-  /* "algo_engine/base/candlestick.pyx":370
+  /* "algo_engine/base/candlestick.pyx":374
  *     @property
  *     def bar_span(self) -> timedelta:
  *         return timedelta(days=super().bar_span_seconds)             # <<<<<<<<<<<<<<
@@ -26781,35 +26954,35 @@ static PyDateTime_Delta *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_12
  *     @property
  */
   __Pyx_XDECREF((PyObject *)__pyx_r);
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 370, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 374, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __Pyx_CyFunction_GetClassObj(__pyx_self);
-  if (!__pyx_t_2) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 370, __pyx_L1_error) }
+  if (!__pyx_t_2) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 374, __pyx_L1_error) }
   __Pyx_INCREF(__pyx_t_2);
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 370, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 374, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_GIVEREF(__pyx_t_2);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_2)) __PYX_ERR(0, 370, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_2)) __PYX_ERR(0, 374, __pyx_L1_error);
   __Pyx_INCREF(__pyx_v_self);
   __Pyx_GIVEREF(__pyx_v_self);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_v_self)) __PYX_ERR(0, 370, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_v_self)) __PYX_ERR(0, 374, __pyx_L1_error);
   __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_3, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 370, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_3, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 374, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_bar_span_seconds); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 370, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_bar_span_seconds); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 374, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_days, __pyx_t_3) < 0) __PYX_ERR(0, 370, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_days, __pyx_t_3) < 0) __PYX_ERR(0, 374, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_8datetime_timedelta), __pyx_empty_tuple, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 370, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_8datetime_timedelta), __pyx_empty_tuple, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 374, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = ((PyDateTime_Delta *)__pyx_t_3);
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/candlestick.pyx":368
+  /* "algo_engine/base/candlestick.pyx":372
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26830,7 +27003,7 @@ static PyDateTime_Delta *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_12
   return __pyx_r;
 }
 
-/* "algo_engine/base/candlestick.pyx":372
+/* "algo_engine/base/candlestick.pyx":376
  *         return timedelta(days=super().bar_span_seconds)
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -26892,12 +27065,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 372, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 376, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_type") < 0)) __PYX_ERR(0, 372, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "bar_type") < 0)) __PYX_ERR(0, 376, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -26908,7 +27081,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("bar_type", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 372, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("bar_type", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 376, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -26950,7 +27123,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("bar_type", 1);
 
-  /* "algo_engine/base/candlestick.pyx":383
+  /* "algo_engine/base/candlestick.pyx":387
  *             ValueError: If `bar_span` is not valid for a daily bar.
  *         """
  *         if (bar_span := super().bar_span_seconds) == 1:             # <<<<<<<<<<<<<<
@@ -26958,29 +27131,29 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
  *         elif bar_span > 1:
  */
   __pyx_t_1 = __Pyx_CyFunction_GetClassObj(__pyx_self);
-  if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 383, __pyx_L1_error) }
+  if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 387, __pyx_L1_error) }
   __Pyx_INCREF(__pyx_t_1);
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 387, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(0, 383, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(0, 387, __pyx_L1_error);
   __Pyx_INCREF(__pyx_v_self);
   __Pyx_GIVEREF(__pyx_v_self);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_self)) __PYX_ERR(0, 383, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_self)) __PYX_ERR(0, 387, __pyx_L1_error);
   __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 383, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 387, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_bar_span_seconds); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_bar_span_seconds); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 387, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_bar_span = __pyx_t_2;
   __Pyx_INCREF(__pyx_t_2);
-  __pyx_t_3 = (__Pyx_PyInt_BoolEqObjC(__pyx_t_2, __pyx_int_1, 1, 0)); if (unlikely((__pyx_t_3 < 0))) __PYX_ERR(0, 383, __pyx_L1_error)
+  __pyx_t_3 = (__Pyx_PyInt_BoolEqObjC(__pyx_t_2, __pyx_int_1, 1, 0)); if (unlikely((__pyx_t_3 < 0))) __PYX_ERR(0, 387, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (__pyx_t_3) {
 
-    /* "algo_engine/base/candlestick.pyx":384
+    /* "algo_engine/base/candlestick.pyx":388
  *         """
  *         if (bar_span := super().bar_span_seconds) == 1:
  *             return 'Daily'             # <<<<<<<<<<<<<<
@@ -26992,7 +27165,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
     __pyx_r = __pyx_n_u_Daily;
     goto __pyx_L0;
 
-    /* "algo_engine/base/candlestick.pyx":383
+    /* "algo_engine/base/candlestick.pyx":387
  *             ValueError: If `bar_span` is not valid for a daily bar.
  *         """
  *         if (bar_span := super().bar_span_seconds) == 1:             # <<<<<<<<<<<<<<
@@ -27001,19 +27174,19 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
  */
   }
 
-  /* "algo_engine/base/candlestick.pyx":385
+  /* "algo_engine/base/candlestick.pyx":389
  *         if (bar_span := super().bar_span_seconds) == 1:
  *             return 'Daily'
  *         elif bar_span > 1:             # <<<<<<<<<<<<<<
  *             return 'Daily-Plus'
  *         else:
  */
-  __pyx_t_2 = PyObject_RichCompare(__pyx_v_bar_span, __pyx_int_1, Py_GT); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 385, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_3 < 0))) __PYX_ERR(0, 385, __pyx_L1_error)
+  __pyx_t_2 = PyObject_RichCompare(__pyx_v_bar_span, __pyx_int_1, Py_GT); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 389, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_3 < 0))) __PYX_ERR(0, 389, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (likely(__pyx_t_3)) {
 
-    /* "algo_engine/base/candlestick.pyx":386
+    /* "algo_engine/base/candlestick.pyx":390
  *             return 'Daily'
  *         elif bar_span > 1:
  *             return 'Daily-Plus'             # <<<<<<<<<<<<<<
@@ -27025,7 +27198,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
     __pyx_r = __pyx_kp_u_Daily_Plus;
     goto __pyx_L0;
 
-    /* "algo_engine/base/candlestick.pyx":385
+    /* "algo_engine/base/candlestick.pyx":389
  *         if (bar_span := super().bar_span_seconds) == 1:
  *             return 'Daily'
  *         elif bar_span > 1:             # <<<<<<<<<<<<<<
@@ -27034,13 +27207,13 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
  */
   }
 
-  /* "algo_engine/base/candlestick.pyx":388
+  /* "algo_engine/base/candlestick.pyx":392
  *             return 'Daily-Plus'
  *         else:
  *             raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {super().bar_span}.')             # <<<<<<<<<<<<<<
  */
   /*else*/ {
-    __pyx_t_2 = PyTuple_New(5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_2 = PyTuple_New(5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_4 = 0;
     __pyx_t_5 = 127;
@@ -27048,12 +27221,12 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
     __pyx_t_4 += 21;
     __Pyx_GIVEREF(__pyx_kp_u_Invalid_bar_span_for);
     PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_kp_u_Invalid_bar_span_for);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_class); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_class); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_name_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_name_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -27066,23 +27239,23 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
     __Pyx_GIVEREF(__pyx_kp_u_Expect_an_int_greater_or_equal);
     PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_kp_u_Expect_an_int_greater_or_equal);
     __pyx_t_1 = __Pyx_CyFunction_GetClassObj(__pyx_self);
-    if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 388, __pyx_L1_error) }
+    if (!__pyx_t_1) { PyErr_SetString(PyExc_SystemError, "super(): empty __class__ cell"); __PYX_ERR(0, 392, __pyx_L1_error) }
     __Pyx_INCREF(__pyx_t_1);
-    __pyx_t_6 = PyTuple_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_6 = PyTuple_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_GIVEREF(__pyx_t_1);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_1)) __PYX_ERR(0, 388, __pyx_L1_error);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error);
     __Pyx_INCREF(__pyx_v_self);
     __Pyx_GIVEREF(__pyx_v_self);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_v_self)) __PYX_ERR(0, 388, __pyx_L1_error);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_v_self)) __PYX_ERR(0, 392, __pyx_L1_error);
     __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_bar_span); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_bar_span); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_FormatSimple(__pyx_t_6, __pyx_empty_unicode); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __pyx_t_5 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) > __pyx_t_5) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_1) : __pyx_t_5;
@@ -27094,18 +27267,18 @@ static PyObject *__pyx_pf_11algo_engine_4base_11candlestick_8DailyBar_14bar_type
     __pyx_t_4 += 1;
     __Pyx_GIVEREF(__pyx_kp_u__2);
     PyTuple_SET_ITEM(__pyx_t_2, 4, __pyx_kp_u__2);
-    __pyx_t_1 = __Pyx_PyUnicode_Join(__pyx_t_2, 5, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyUnicode_Join(__pyx_t_2, 5, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 388, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 392, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 388, __pyx_L1_error)
+    __PYX_ERR(0, 392, __pyx_L1_error)
   }
 
-  /* "algo_engine/base/candlestick.pyx":372
+  /* "algo_engine/base/candlestick.pyx":376
  *         return timedelta(days=super().bar_span_seconds)
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -27231,6 +27404,10 @@ static PyObject *__pyx_getprop_11algo_engine_4base_11candlestick_7BarData_bar_st
   return __pyx_pw_11algo_engine_4base_11candlestick_7BarData_14bar_start_time_1__get__(o);
 }
 
+static PyObject *__pyx_getprop_11algo_engine_4base_11candlestick_7BarData_market_price(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_11algo_engine_4base_11candlestick_7BarData_12market_price_1__get__(o);
+}
+
 static PyObject *__pyx_specialmethod___pyx_pw_11algo_engine_4base_11candlestick_7BarData_5__repr__(PyObject *self, CYTHON_UNUSED PyObject *arg) {
   return __pyx_pw_11algo_engine_4base_11candlestick_7BarData_5__repr__(self);
 }
@@ -27260,6 +27437,7 @@ static struct PyGetSetDef __pyx_getsets_11algo_engine_4base_11candlestick_BarDat
   {(char *)"bar_type", __pyx_getprop_11algo_engine_4base_11candlestick_7BarData_bar_type, 0, (char *)PyDoc_STR("\n        Determines the type of the bar based on its span.\n\n        Returns:\n            Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']: The type of the bar.\n        "), 0},
   {(char *)"bar_end_time", __pyx_getprop_11algo_engine_4base_11candlestick_7BarData_bar_end_time, 0, (char *)PyDoc_STR("\n        The end time of the bar.\n\n        Returns:\n            datetime | date: The end time of the bar.\n        "), 0},
   {(char *)"bar_start_time", __pyx_getprop_11algo_engine_4base_11candlestick_7BarData_bar_start_time, 0, (char *)PyDoc_STR("\n        The start time of the bar.\n\n        Returns:\n            datetime: The start time of the bar.\n        "), 0},
+  {(char *)"market_price", __pyx_getprop_11algo_engine_4base_11candlestick_7BarData_market_price, 0, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
@@ -28640,12 +28818,12 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
 }
 /* #### Code section: cached_builtins ### */
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_property = __Pyx_GetBuiltinName(__pyx_n_s_property); if (!__pyx_builtin_property) __PYX_ERR(0, 323, __pyx_L1_error)
+  __pyx_builtin_property = __Pyx_GetBuiltinName(__pyx_n_s_property); if (!__pyx_builtin_property) __PYX_ERR(0, 327, __pyx_L1_error)
   __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(0, 31, __pyx_L1_error)
   __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 44, __pyx_L1_error)
   __pyx_builtin_KeyError = __Pyx_GetBuiltinName(__pyx_n_s_KeyError); if (!__pyx_builtin_KeyError) __PYX_ERR(0, 87, __pyx_L1_error)
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(1, 2, __pyx_L1_error)
-  __pyx_builtin_super = __Pyx_GetBuiltinName(__pyx_n_s_super); if (!__pyx_builtin_super) __PYX_ERR(0, 315, __pyx_L1_error)
+  __pyx_builtin_super = __Pyx_GetBuiltinName(__pyx_n_s_super); if (!__pyx_builtin_super) __PYX_ERR(0, 319, __pyx_L1_error)
   __pyx_builtin___import__ = __Pyx_GetBuiltinName(__pyx_n_s_import); if (!__pyx_builtin___import__) __PYX_ERR(1, 100, __pyx_L1_error)
   __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(1, 159, __pyx_L1_error)
   __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(1, 261, __pyx_L1_error)
@@ -28878,89 +29056,89 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GIVEREF(__pyx_tuple__26);
   __pyx_codeobj__27 = (PyObject*)__Pyx_PyCode_New(3, 0, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__26, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__27)) __PYX_ERR(1, 1, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":312
+  /* "algo_engine/base/candlestick.pyx":316
  * 
  * class DailyBar(BarData):
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):             # <<<<<<<<<<<<<<
  *         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
  * 
  */
-  __pyx_tuple__28 = PyTuple_Pack(13, __pyx_n_s_self, __pyx_n_s_ticker, __pyx_n_s_market_date, __pyx_n_s_high_price, __pyx_n_s_low_price, __pyx_n_s_open_price, __pyx_n_s_close_price, __pyx_n_s_volume, __pyx_n_s_notional, __pyx_n_s_trade_count, __pyx_n_s_bar_span, __pyx_n_s_kwargs, __pyx_n_s_timestamp); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_tuple__28 = PyTuple_Pack(13, __pyx_n_s_self, __pyx_n_s_ticker, __pyx_n_s_market_date, __pyx_n_s_high_price, __pyx_n_s_low_price, __pyx_n_s_open_price, __pyx_n_s_close_price, __pyx_n_s_volume, __pyx_n_s_notional, __pyx_n_s_trade_count, __pyx_n_s_bar_span, __pyx_n_s_kwargs, __pyx_n_s_timestamp); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__28);
   __Pyx_GIVEREF(__pyx_tuple__28);
-  __pyx_codeobj__29 = (PyObject*)__Pyx_PyCode_New(11, 0, 0, 13, 0, CO_OPTIMIZED|CO_NEWLOCALS|CO_VARKEYWORDS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__28, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_init, 312, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__29)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_codeobj__29 = (PyObject*)__Pyx_PyCode_New(11, 0, 0, 13, 0, CO_OPTIMIZED|CO_NEWLOCALS|CO_VARKEYWORDS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__28, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_init, 316, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__29)) __PYX_ERR(0, 316, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":317
+  /* "algo_engine/base/candlestick.pyx":321
  *         super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
  * 
  *     def __repr__(self) -> str:             # <<<<<<<<<<<<<<
  *         if (bar_span := super().bar_span_seconds) == 1:
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  */
-  __pyx_tuple__30 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_bar_span); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(0, 317, __pyx_L1_error)
+  __pyx_tuple__30 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_bar_span); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(0, 321, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__30);
   __Pyx_GIVEREF(__pyx_tuple__30);
-  __pyx_codeobj__31 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__30, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_repr, 317, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__31)) __PYX_ERR(0, 317, __pyx_L1_error)
+  __pyx_codeobj__31 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__30, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_repr, 321, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__31)) __PYX_ERR(0, 321, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":323
+  /* "algo_engine/base/candlestick.pyx":327
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def market_date(self) -> date:
  *         """
  */
-  __pyx_tuple__32 = PyTuple_Pack(6, __pyx_n_s_self, __pyx_n_s_int_date, __pyx_n_s_y, __pyx_n_s_m, __pyx_n_s_m_2, __pyx_n_s_d); if (unlikely(!__pyx_tuple__32)) __PYX_ERR(0, 323, __pyx_L1_error)
+  __pyx_tuple__32 = PyTuple_Pack(6, __pyx_n_s_self, __pyx_n_s_int_date, __pyx_n_s_y, __pyx_n_s_m, __pyx_n_s_m_2, __pyx_n_s_d); if (unlikely(!__pyx_tuple__32)) __PYX_ERR(0, 327, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__32);
   __Pyx_GIVEREF(__pyx_tuple__32);
-  __pyx_codeobj__33 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__32, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_market_date, 323, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__33)) __PYX_ERR(0, 323, __pyx_L1_error)
+  __pyx_codeobj__33 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__32, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_market_date, 327, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__33)) __PYX_ERR(0, 327, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":338
+  /* "algo_engine/base/candlestick.pyx":342
  *         return date(year=y, month=m, day=d)
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def market_time(self) -> date:
  *         """
  */
-  __pyx_tuple__34 = PyTuple_Pack(1, __pyx_n_s_self); if (unlikely(!__pyx_tuple__34)) __PYX_ERR(0, 338, __pyx_L1_error)
+  __pyx_tuple__34 = PyTuple_Pack(1, __pyx_n_s_self); if (unlikely(!__pyx_tuple__34)) __PYX_ERR(0, 342, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__34);
   __Pyx_GIVEREF(__pyx_tuple__34);
-  __pyx_codeobj__35 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_market_time, 338, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__35)) __PYX_ERR(0, 338, __pyx_L1_error)
+  __pyx_codeobj__35 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_market_time, 342, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__35)) __PYX_ERR(0, 342, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":348
+  /* "algo_engine/base/candlestick.pyx":352
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_start_time(self) -> date:
  *         """
  */
-  __pyx_codeobj__36 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_start_time, 348, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__36)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_codeobj__36 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_start_time, 352, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__36)) __PYX_ERR(0, 352, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":358
+  /* "algo_engine/base/candlestick.pyx":362
  *         return self.market_date - self.bar_span
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_end_time(self) -> date:
  *         """
  */
-  __pyx_codeobj__37 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_end_time, 358, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__37)) __PYX_ERR(0, 358, __pyx_L1_error)
+  __pyx_codeobj__37 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_end_time, 362, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__37)) __PYX_ERR(0, 362, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":368
+  /* "algo_engine/base/candlestick.pyx":372
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_span(self) -> timedelta:
  *         return timedelta(days=super().bar_span_seconds)
  */
-  __pyx_codeobj__38 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_span, 368, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__38)) __PYX_ERR(0, 368, __pyx_L1_error)
+  __pyx_codeobj__38 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__34, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_span, 372, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__38)) __PYX_ERR(0, 372, __pyx_L1_error)
 
-  /* "algo_engine/base/candlestick.pyx":372
+  /* "algo_engine/base/candlestick.pyx":376
  *         return timedelta(days=super().bar_span_seconds)
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
  *         """
  */
-  __pyx_codeobj__39 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__30, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_type, 372, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__39)) __PYX_ERR(0, 372, __pyx_L1_error)
+  __pyx_codeobj__39 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__30, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_algo_engine_base_candlestick_pyx, __pyx_n_s_bar_type, 376, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__39)) __PYX_ERR(0, 376, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -30207,204 +30385,181 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   PyType_Modified(__pyx_ptype_11algo_engine_4base_11candlestick_BarData);
 
-  /* "algo_engine/base/candlestick.pyx":311
+  /* "algo_engine/base/candlestick.pyx":315
  * 
  * 
  * class DailyBar(BarData):             # <<<<<<<<<<<<<<
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):
  *         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
  */
-  __pyx_t_7 = PyTuple_New(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 311, __pyx_L1_error)
+  __pyx_t_7 = PyTuple_New(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_INCREF((PyObject *)__pyx_ptype_11algo_engine_4base_11candlestick_BarData);
   __Pyx_GIVEREF((PyObject *)__pyx_ptype_11algo_engine_4base_11candlestick_BarData);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, ((PyObject *)__pyx_ptype_11algo_engine_4base_11candlestick_BarData))) __PYX_ERR(0, 311, __pyx_L1_error);
-  __pyx_t_4 = __Pyx_PEP560_update_bases(__pyx_t_7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 311, __pyx_L1_error)
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, ((PyObject *)__pyx_ptype_11algo_engine_4base_11candlestick_BarData))) __PYX_ERR(0, 315, __pyx_L1_error);
+  __pyx_t_4 = __Pyx_PEP560_update_bases(__pyx_t_7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_CalculateMetaclass(NULL, __pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 311, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CalculateMetaclass(NULL, __pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_9 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_4, __pyx_n_s_DailyBar_2, __pyx_n_s_DailyBar_2, (PyObject *) NULL, __pyx_n_s_algo_engine_base_candlestick, (PyObject *) NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 311, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_4, __pyx_n_s_DailyBar_2, __pyx_n_s_DailyBar_2, (PyObject *) NULL, __pyx_n_s_algo_engine_base_candlestick, (PyObject *) NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   if (__pyx_t_4 != __pyx_t_7) {
-    if (unlikely((PyDict_SetItemString(__pyx_t_9, "__orig_bases__", __pyx_t_7) < 0))) __PYX_ERR(0, 311, __pyx_L1_error)
+    if (unlikely((PyDict_SetItemString(__pyx_t_9, "__orig_bases__", __pyx_t_7) < 0))) __PYX_ERR(0, 315, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_7 = PyList_New(0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 311, __pyx_L1_error)
+  __pyx_t_7 = PyList_New(0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
 
-  /* "algo_engine/base/candlestick.pyx":312
+  /* "algo_engine/base/candlestick.pyx":316
  * 
  * class DailyBar(BarData):
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):             # <<<<<<<<<<<<<<
  *         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
  * 
  */
-  __pyx_t_10 = PyFloat_FromDouble(((double)0.0)); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_t_10 = PyFloat_FromDouble(((double)0.0)); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_11 = PyFloat_FromDouble(((double)0.0)); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_t_11 = PyFloat_FromDouble(((double)0.0)); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyInt_From_uint32_t(((uint32_t)0)); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyInt_From_uint32_t(((uint32_t)0)); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
-  __pyx_t_13 = __Pyx_PyInt_From_int(((int)1)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_PyInt_From_int(((int)1)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
-  __pyx_t_14 = PyTuple_New(4); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(4); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_10);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_10)) __PYX_ERR(0, 312, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_10)) __PYX_ERR(0, 316, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_11);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_11)) __PYX_ERR(0, 312, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_11)) __PYX_ERR(0, 316, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_12);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 2, __pyx_t_12)) __PYX_ERR(0, 312, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 2, __pyx_t_12)) __PYX_ERR(0, 316, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_13);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 3, __pyx_t_13)) __PYX_ERR(0, 312, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 3, __pyx_t_13)) __PYX_ERR(0, 316, __pyx_L1_error);
   __pyx_t_10 = 0;
   __pyx_t_11 = 0;
   __pyx_t_12 = 0;
   __pyx_t_13 = 0;
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_1__init__, 0, __pyx_n_s_DailyBar___init, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__29)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 312, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_1__init__, 0, __pyx_n_s_DailyBar___init, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__29)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_INCREF(__pyx_t_13);
   PyList_Append(__pyx_t_7, __pyx_t_13);
   __Pyx_GIVEREF(__pyx_t_13);
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_13, __pyx_t_14);
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_init, __pyx_t_13) < 0) __PYX_ERR(0, 312, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_init, __pyx_t_13) < 0) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":317
+  /* "algo_engine/base/candlestick.pyx":321
  *         super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
  * 
  *     def __repr__(self) -> str:             # <<<<<<<<<<<<<<
  *         if (bar_span := super().bar_span_seconds) == 1:
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  */
-  __pyx_t_13 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 317, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 321, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
-  if (PyDict_SetItem(__pyx_t_13, __pyx_n_s_return, __pyx_n_s_str) < 0) __PYX_ERR(0, 317, __pyx_L1_error)
-  __pyx_t_14 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_3__repr__, 0, __pyx_n_s_DailyBar___repr, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__31)); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 317, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_13, __pyx_n_s_return, __pyx_n_s_str) < 0) __PYX_ERR(0, 321, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_3__repr__, 0, __pyx_n_s_DailyBar___repr, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__31)); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 321, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_INCREF(__pyx_t_14);
   PyList_Append(__pyx_t_7, __pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_14);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_14, __pyx_t_13);
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_repr, __pyx_t_14) < 0) __PYX_ERR(0, 317, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_repr, __pyx_t_14) < 0) __PYX_ERR(0, 321, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":323
+  /* "algo_engine/base/candlestick.pyx":327
  *             return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def market_date(self) -> date:
  *         """
  */
-  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 323, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 327, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 323, __pyx_L1_error)
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_5market_date, 0, __pyx_n_s_DailyBar_market_date, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__33)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 323, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 327, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_5market_date, 0, __pyx_n_s_DailyBar_market_date, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__33)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 327, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_13, __pyx_t_14);
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 323, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 327, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_market_date, __pyx_t_14) < 0) __PYX_ERR(0, 323, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_market_date, __pyx_t_14) < 0) __PYX_ERR(0, 327, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":338
+  /* "algo_engine/base/candlestick.pyx":342
  *         return date(year=y, month=m, day=d)
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def market_time(self) -> date:
  *         """
  */
-  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 338, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 342, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 338, __pyx_L1_error)
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_7market_time, 0, __pyx_n_s_DailyBar_market_time, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__35)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 338, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 342, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_7market_time, 0, __pyx_n_s_DailyBar_market_time, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__35)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 342, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_13, __pyx_t_14);
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 338, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 342, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_market_time, __pyx_t_14) < 0) __PYX_ERR(0, 338, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_market_time, __pyx_t_14) < 0) __PYX_ERR(0, 342, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":348
+  /* "algo_engine/base/candlestick.pyx":352
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_start_time(self) -> date:
  *         """
  */
-  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 352, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 348, __pyx_L1_error)
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_9bar_start_time, 0, __pyx_n_s_DailyBar_bar_start_time, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__36)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 348, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 352, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_9bar_start_time, 0, __pyx_n_s_DailyBar_bar_start_time, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__36)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 352, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_13, __pyx_t_14);
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 352, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_start_time, __pyx_t_14) < 0) __PYX_ERR(0, 348, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_start_time, __pyx_t_14) < 0) __PYX_ERR(0, 352, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":358
+  /* "algo_engine/base/candlestick.pyx":362
  *         return self.market_date - self.bar_span
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_end_time(self) -> date:
  *         """
  */
-  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 358, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 362, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 358, __pyx_L1_error)
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_11bar_end_time, 0, __pyx_n_s_DailyBar_bar_end_time, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__37)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 358, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_date) < 0) __PYX_ERR(0, 362, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_11bar_end_time, 0, __pyx_n_s_DailyBar_bar_end_time, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__37)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 362, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_13, __pyx_t_14);
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 358, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 362, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_end_time, __pyx_t_14) < 0) __PYX_ERR(0, 358, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_end_time, __pyx_t_14) < 0) __PYX_ERR(0, 362, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":368
+  /* "algo_engine/base/candlestick.pyx":372
  *         return self.market_date
  * 
  *     @property             # <<<<<<<<<<<<<<
  *     def bar_span(self) -> timedelta:
  *         return timedelta(days=super().bar_span_seconds)
  */
-  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 368, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_14);
-  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_timedelta) < 0) __PYX_ERR(0, 368, __pyx_L1_error)
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_13bar_span, 0, __pyx_n_s_DailyBar_bar_span, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__38)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 368, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_13);
-  __Pyx_INCREF(__pyx_t_13);
-  PyList_Append(__pyx_t_7, __pyx_t_13);
-  __Pyx_GIVEREF(__pyx_t_13);
-  __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_13, __pyx_t_14);
-  __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 368, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_14);
-  __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_span, __pyx_t_14) < 0) __PYX_ERR(0, 368, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-
-  /* "algo_engine/base/candlestick.pyx":372
- *         return timedelta(days=super().bar_span_seconds)
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
- *         """
- */
   __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 372, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_kp_s_Literal_Daily_Daily_Plus) < 0) __PYX_ERR(0, 372, __pyx_L1_error)
-  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_15bar_type, 0, __pyx_n_s_DailyBar_bar_type, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__39)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 372, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_n_s_timedelta) < 0) __PYX_ERR(0, 372, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_13bar_span, 0, __pyx_n_s_DailyBar_bar_span, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__38)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 372, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_INCREF(__pyx_t_13);
   PyList_Append(__pyx_t_7, __pyx_t_13);
@@ -30414,21 +30569,44 @@ if (!__Pyx_RefNanny) {
   __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 372, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_type, __pyx_t_14) < 0) __PYX_ERR(0, 372, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_span, __pyx_t_14) < 0) __PYX_ERR(0, 372, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "algo_engine/base/candlestick.pyx":311
+  /* "algo_engine/base/candlestick.pyx":376
+ *         return timedelta(days=super().bar_span_seconds)
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
+ *         """
+ */
+  __pyx_t_14 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 376, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_14);
+  if (PyDict_SetItem(__pyx_t_14, __pyx_n_s_return, __pyx_kp_s_Literal_Daily_Daily_Plus) < 0) __PYX_ERR(0, 376, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_CyFunction_New(&__pyx_mdef_11algo_engine_4base_11candlestick_8DailyBar_15bar_type, 0, __pyx_n_s_DailyBar_bar_type, NULL, __pyx_n_s_algo_engine_base_candlestick, __pyx_d, ((PyObject *)__pyx_codeobj__39)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 376, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_13);
+  __Pyx_INCREF(__pyx_t_13);
+  PyList_Append(__pyx_t_7, __pyx_t_13);
+  __Pyx_GIVEREF(__pyx_t_13);
+  __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_13, __pyx_t_14);
+  __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+  __pyx_t_14 = __Pyx_PyObject_CallOneArg(__pyx_builtin_property, __pyx_t_13); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 376, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_14);
+  __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+  if (__Pyx_SetNameInClass(__pyx_t_9, __pyx_n_s_bar_type, __pyx_t_14) < 0) __PYX_ERR(0, 376, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+
+  /* "algo_engine/base/candlestick.pyx":315
  * 
  * 
  * class DailyBar(BarData):             # <<<<<<<<<<<<<<
  *     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):
  *         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
  */
-  __pyx_t_14 = __Pyx_Py3ClassCreate(__pyx_t_5, __pyx_n_s_DailyBar_2, __pyx_t_4, __pyx_t_9, NULL, 0, 0); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 311, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_Py3ClassCreate(__pyx_t_5, __pyx_n_s_DailyBar_2, __pyx_t_4, __pyx_t_9, NULL, 0, 0); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  if (__Pyx_CyFunction_InitClassCell(__pyx_t_7, __pyx_t_14) < 0) __PYX_ERR(0, 311, __pyx_L1_error)
+  if (__Pyx_CyFunction_InitClassCell(__pyx_t_7, __pyx_t_14) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DailyBar_2, __pyx_t_14) < 0) __PYX_ERR(0, 311, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DailyBar_2, __pyx_t_14) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;

@@ -82,23 +82,23 @@ cdef struct _ID:
     char data[ID_SIZE]
 
 # Meta info structure
-cdef struct _MetaInfo:
+cdef packed struct _MetaInfo:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
 
 # OrderBookEntry structure
-cdef struct _OrderBookEntry:
+cdef packed struct _OrderBookEntry:
     double price
     double volume
     uint64_t n_orders
 
 # OrderBookBuffer structure
-cdef struct _OrderBookBuffer:
+cdef packed struct _OrderBookBuffer:
     _OrderBookEntry entries[BOOK_SIZE]
 
 # BarData structure
-cdef struct _CandlestickBuffer:
+cdef packed struct _CandlestickBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
@@ -112,7 +112,7 @@ cdef struct _CandlestickBuffer:
     uint32_t trade_count
 
 # TickDataLite structure
-cdef struct _TickDataLiteBuffer:
+cdef packed struct _TickDataLiteBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
@@ -126,13 +126,13 @@ cdef struct _TickDataLiteBuffer:
     uint32_t total_trade_count
 
 # TickData structure
-cdef struct _TickDataBuffer:
+cdef packed struct _TickDataBuffer:
     _TickDataLiteBuffer lite
     _OrderBookBuffer bid
     _OrderBookBuffer ask
 
 # TransactionData structure
-cdef struct _TransactionDataBuffer:
+cdef packed struct _TransactionDataBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
@@ -146,7 +146,7 @@ cdef struct _TransactionDataBuffer:
     _ID sell_id
 
 # OrderData structure
-cdef struct _OrderDataBuffer:
+cdef packed struct _OrderDataBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
@@ -157,7 +157,7 @@ cdef struct _OrderDataBuffer:
     uint8_t order_type
 
 # TradeReport structure
-cdef struct _TradeReportBuffer:
+cdef packed struct _TradeReportBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
@@ -172,7 +172,7 @@ cdef struct _TradeReportBuffer:
 
 
 # TradeInstruction structure
-cdef struct _TradeInstructionBuffer:
+cdef packed struct _TradeInstructionBuffer:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp

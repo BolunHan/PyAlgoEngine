@@ -114,4 +114,4 @@ cdef class MarketDataConcurrentBuffer:
 
     cpdef MarketData get(self, uint64_t idx)
 
-    cpdef MarketData listen(self, uint32_t worker_id, double timeout=?)
+    cpdef MarketData listen(self, uint32_t worker_id, bint block=?, double timeout=?)

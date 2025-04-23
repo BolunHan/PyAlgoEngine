@@ -1571,6 +1571,13 @@ static const char *__pyx_f[] = {
 #define __Pyx_FastGIL_Forget()
 #define __Pyx_FastGilFuncInit()
 
+/* None.proto */
+#if defined(__GNUC__)
+#define __Pyx_PACKED __attribute__((__packed__))
+#else
+#define __Pyx_PACKED
+#endif
+
 /* BufferFormatStructs.proto */
 struct __Pyx_StructField_;
 #define __PYX_BUF_FLAGS_PACKED_STRUCT (1 << 0)
@@ -1848,48 +1855,83 @@ struct __pyx_t_11algo_engine_4base_11market_data__ID {
 /* "algo_engine/base/market_data.pxd":85
  * 
  * # Meta info structure
- * cdef struct _MetaInfo:             # <<<<<<<<<<<<<<
+ * cdef packed struct _MetaInfo:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__MetaInfo {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__MetaInfo {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":91
  * 
  * # OrderBookEntry structure
- * cdef struct _OrderBookEntry:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderBookEntry:             # <<<<<<<<<<<<<<
  *     double price
  *     double volume
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry {
   double price;
   double volume;
   uint64_t n_orders;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":97
  * 
  * # OrderBookBuffer structure
- * cdef struct _OrderBookBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderBookBuffer:             # <<<<<<<<<<<<<<
  *     _OrderBookEntry entries[BOOK_SIZE]
  * 
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry entries[BOOK_SIZE];
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":101
  * 
  * # BarData structure
- * cdef struct _CandlestickBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _CandlestickBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1902,15 +1944,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
   double notional;
   uint32_t trade_count;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":115
  * 
  * # TickDataLite structure
- * cdef struct _TickDataLiteBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TickDataLiteBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1923,28 +1975,48 @@ struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
   double total_traded_notional;
   uint32_t total_trade_count;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":129
  * 
  * # TickData structure
- * cdef struct _TickDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TickDataBuffer:             # <<<<<<<<<<<<<<
  *     _TickDataLiteBuffer lite
  *     _OrderBookBuffer bid
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TickDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TickDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer lite;
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer bid;
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer ask;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":135
  * 
  * # TransactionData structure
- * cdef struct _TransactionDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TransactionDataBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1957,15 +2029,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID buy_id;
   struct __pyx_t_11algo_engine_4base_11market_data__ID sell_id;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":149
  * 
  * # OrderData structure
- * cdef struct _OrderDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderDataBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1975,15 +2057,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID order_id;
   uint8_t order_type;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":160
  * 
  * # TradeReport structure
- * cdef struct _TradeReportBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TradeReportBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1996,15 +2088,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID order_id;
   struct __pyx_t_11algo_engine_4base_11market_data__ID trade_id;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":175
  * 
  * # TradeInstruction structure
- * cdef struct _TradeInstructionBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TradeInstructionBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -2022,6 +2124,11 @@ struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
   double ts_canceled;
   double ts_finished;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "algo_engine/base/market_data.pxd":195
  * 
@@ -3375,6 +3482,7 @@ static const char __pyx_k_setstate_cython[] = "__setstate_cython__";
 static const char __pyx_k_DTYPE_INSTRUCTION[] = "DTYPE_INSTRUCTION";
 static const char __pyx_k_DTYPE_MARKET_DATA[] = "DTYPE_MARKET_DATA";
 static const char __pyx_k_DTYPE_TRANSACTION[] = "DTYPE_TRANSACTION";
+static const char __pyx_k_Unknown_data_type[] = "Unknown data type ";
 static const char __pyx_k_pyx_unpickle_Enum[] = "__pyx_unpickle_Enum";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_strided_and_direct[] = "<strided and direct>";
@@ -3603,6 +3711,7 @@ typedef struct {
   PyObject *__pyx_kp_u_Time_zones_are_not_available_fro;
   PyObject *__pyx_n_s_TypeError;
   PyObject *__pyx_kp_s_Unable_to_convert_item_to_object;
+  PyObject *__pyx_kp_u_Unknown_data_type;
   PyObject *__pyx_n_s_ValueError;
   PyObject *__pyx_n_s_View_MemoryView;
   PyObject *__pyx_kp_u__14;
@@ -3852,6 +3961,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_kp_u_Time_zones_are_not_available_fro);
   Py_CLEAR(clear_module_state->__pyx_n_s_TypeError);
   Py_CLEAR(clear_module_state->__pyx_kp_s_Unable_to_convert_item_to_object);
+  Py_CLEAR(clear_module_state->__pyx_kp_u_Unknown_data_type);
   Py_CLEAR(clear_module_state->__pyx_n_s_ValueError);
   Py_CLEAR(clear_module_state->__pyx_n_s_View_MemoryView);
   Py_CLEAR(clear_module_state->__pyx_kp_u__14);
@@ -4079,6 +4189,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_kp_u_Time_zones_are_not_available_fro);
   Py_VISIT(traverse_module_state->__pyx_n_s_TypeError);
   Py_VISIT(traverse_module_state->__pyx_kp_s_Unable_to_convert_item_to_object);
+  Py_VISIT(traverse_module_state->__pyx_kp_u_Unknown_data_type);
   Py_VISIT(traverse_module_state->__pyx_n_s_ValueError);
   Py_VISIT(traverse_module_state->__pyx_n_s_View_MemoryView);
   Py_VISIT(traverse_module_state->__pyx_kp_u__14);
@@ -4342,6 +4453,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_kp_u_Time_zones_are_not_available_fro __pyx_mstate_global->__pyx_kp_u_Time_zones_are_not_available_fro
 #define __pyx_n_s_TypeError __pyx_mstate_global->__pyx_n_s_TypeError
 #define __pyx_kp_s_Unable_to_convert_item_to_object __pyx_mstate_global->__pyx_kp_s_Unable_to_convert_item_to_object
+#define __pyx_kp_u_Unknown_data_type __pyx_mstate_global->__pyx_kp_u_Unknown_data_type
 #define __pyx_n_s_ValueError __pyx_mstate_global->__pyx_n_s_ValueError
 #define __pyx_n_s_View_MemoryView __pyx_mstate_global->__pyx_n_s_View_MemoryView
 #define __pyx_kp_u__14 __pyx_mstate_global->__pyx_kp_u__14
@@ -21488,6 +21600,17 @@ static void __pyx_f_11algo_engine_4base_11market_data_10MarketData__set_addition
 
 static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(uint8_t __pyx_v_dtype) {
   size_t __pyx_r;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  Py_ssize_t __pyx_t_3;
+  Py_UCS4 __pyx_t_4;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("get_size", 1);
 
   /* "algo_engine/base/market_data.pyx":108
  *         Get the size of an entry based on its dtype.
@@ -21496,8 +21619,8 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  *             return sizeof(_TransactionDataBuffer)
  *         elif dtype == DataType.DTYPE_ORDER:
  */
-  switch (__pyx_v_dtype) {
-    case DTYPE_TRANSACTION:
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_TRANSACTION);
+  if (__pyx_t_1) {
 
     /* "algo_engine/base/market_data.pyx":109
  *         """
@@ -21516,8 +21639,17 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  *             return sizeof(_TransactionDataBuffer)
  *         elif dtype == DataType.DTYPE_ORDER:
  */
-    break;
-    case DTYPE_ORDER:
+  }
+
+  /* "algo_engine/base/market_data.pyx":110
+ *         if dtype == DataType.DTYPE_TRANSACTION:
+ *             return sizeof(_TransactionDataBuffer)
+ *         elif dtype == DataType.DTYPE_ORDER:             # <<<<<<<<<<<<<<
+ *             return sizeof(_OrderDataBuffer)
+ *         elif dtype == DataType.DTYPE_TICK_LITE:
+ */
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_ORDER);
+  if (__pyx_t_1) {
 
     /* "algo_engine/base/market_data.pyx":111
  *             return sizeof(_TransactionDataBuffer)
@@ -21536,8 +21668,17 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  *             return sizeof(_OrderDataBuffer)
  *         elif dtype == DataType.DTYPE_TICK_LITE:
  */
-    break;
-    case DTYPE_TICK_LITE:
+  }
+
+  /* "algo_engine/base/market_data.pyx":112
+ *         elif dtype == DataType.DTYPE_ORDER:
+ *             return sizeof(_OrderDataBuffer)
+ *         elif dtype == DataType.DTYPE_TICK_LITE:             # <<<<<<<<<<<<<<
+ *             return sizeof(_TickDataLiteBuffer)
+ *         elif dtype == DataType.DTYPE_TICK:
+ */
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_TICK_LITE);
+  if (__pyx_t_1) {
 
     /* "algo_engine/base/market_data.pyx":113
  *             return sizeof(_OrderDataBuffer)
@@ -21556,8 +21697,17 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  *             return sizeof(_TickDataLiteBuffer)
  *         elif dtype == DataType.DTYPE_TICK:
  */
-    break;
-    case DTYPE_TICK:
+  }
+
+  /* "algo_engine/base/market_data.pyx":114
+ *         elif dtype == DataType.DTYPE_TICK_LITE:
+ *             return sizeof(_TickDataLiteBuffer)
+ *         elif dtype == DataType.DTYPE_TICK:             # <<<<<<<<<<<<<<
+ *             return sizeof(_TickDataBuffer)
+ *         elif dtype == DataType.DTYPE_BAR:
+ */
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_TICK);
+  if (__pyx_t_1) {
 
     /* "algo_engine/base/market_data.pyx":115
  *             return sizeof(_TickDataLiteBuffer)
@@ -21576,15 +21726,24 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  *             return sizeof(_TickDataBuffer)
  *         elif dtype == DataType.DTYPE_BAR:
  */
-    break;
-    case DTYPE_BAR:
+  }
+
+  /* "algo_engine/base/market_data.pyx":116
+ *         elif dtype == DataType.DTYPE_TICK:
+ *             return sizeof(_TickDataBuffer)
+ *         elif dtype == DataType.DTYPE_BAR:             # <<<<<<<<<<<<<<
+ *             return sizeof(_CandlestickBuffer)
+ *         elif dtype == DataType.DTYPE_REPORT:
+ */
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_BAR);
+  if (__pyx_t_1) {
 
     /* "algo_engine/base/market_data.pyx":117
  *             return sizeof(_TickDataBuffer)
  *         elif dtype == DataType.DTYPE_BAR:
  *             return sizeof(_CandlestickBuffer)             # <<<<<<<<<<<<<<
- *         else:
- *             # Default to MarketData
+ *         elif dtype == DataType.DTYPE_REPORT:
+ *             return sizeof(_TradeReportBuffer)
  */
     __pyx_r = (sizeof(struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer));
     goto __pyx_L0;
@@ -21594,21 +21753,144 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  *             return sizeof(_TickDataBuffer)
  *         elif dtype == DataType.DTYPE_BAR:             # <<<<<<<<<<<<<<
  *             return sizeof(_CandlestickBuffer)
- *         else:
+ *         elif dtype == DataType.DTYPE_REPORT:
  */
-    break;
-    default:
+  }
+
+  /* "algo_engine/base/market_data.pyx":118
+ *         elif dtype == DataType.DTYPE_BAR:
+ *             return sizeof(_CandlestickBuffer)
+ *         elif dtype == DataType.DTYPE_REPORT:             # <<<<<<<<<<<<<<
+ *             return sizeof(_TradeReportBuffer)
+ *         elif dtype == DataType.DTYPE_TRANSACTION:
+ */
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_REPORT);
+  if (__pyx_t_1) {
+
+    /* "algo_engine/base/market_data.pyx":119
+ *             return sizeof(_CandlestickBuffer)
+ *         elif dtype == DataType.DTYPE_REPORT:
+ *             return sizeof(_TradeReportBuffer)             # <<<<<<<<<<<<<<
+ *         elif dtype == DataType.DTYPE_TRANSACTION:
+ *             return sizeof(_TradeInstructionBuffer)
+ */
+    __pyx_r = (sizeof(struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer));
+    goto __pyx_L0;
+
+    /* "algo_engine/base/market_data.pyx":118
+ *         elif dtype == DataType.DTYPE_BAR:
+ *             return sizeof(_CandlestickBuffer)
+ *         elif dtype == DataType.DTYPE_REPORT:             # <<<<<<<<<<<<<<
+ *             return sizeof(_TradeReportBuffer)
+ *         elif dtype == DataType.DTYPE_TRANSACTION:
+ */
+  }
+
+  /* "algo_engine/base/market_data.pyx":120
+ *         elif dtype == DataType.DTYPE_REPORT:
+ *             return sizeof(_TradeReportBuffer)
+ *         elif dtype == DataType.DTYPE_TRANSACTION:             # <<<<<<<<<<<<<<
+ *             return sizeof(_TradeInstructionBuffer)
+ *         elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:
+ */
+  __pyx_t_1 = (__pyx_v_dtype == DTYPE_TRANSACTION);
+  if (__pyx_t_1) {
+
+    /* "algo_engine/base/market_data.pyx":121
+ *             return sizeof(_TradeReportBuffer)
+ *         elif dtype == DataType.DTYPE_TRANSACTION:
+ *             return sizeof(_TradeInstructionBuffer)             # <<<<<<<<<<<<<<
+ *         elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:
+ *             return sizeof(_MarketDataBuffer)
+ */
+    __pyx_r = (sizeof(struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer));
+    goto __pyx_L0;
 
     /* "algo_engine/base/market_data.pyx":120
+ *         elif dtype == DataType.DTYPE_REPORT:
+ *             return sizeof(_TradeReportBuffer)
+ *         elif dtype == DataType.DTYPE_TRANSACTION:             # <<<<<<<<<<<<<<
+ *             return sizeof(_TradeInstructionBuffer)
+ *         elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:
+ */
+  }
+
+  /* "algo_engine/base/market_data.pyx":122
+ *         elif dtype == DataType.DTYPE_TRANSACTION:
+ *             return sizeof(_TradeInstructionBuffer)
+ *         elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:             # <<<<<<<<<<<<<<
+ *             return sizeof(_MarketDataBuffer)
  *         else:
- *             # Default to MarketData
+ */
+  switch (__pyx_v_dtype) {
+    case DTYPE_MARKET_DATA:
+    case DTYPE_UNKNOWN:
+    __pyx_t_1 = 1;
+    break;
+    default:
+    __pyx_t_1 = 0;
+    break;
+  }
+  if (likely(__pyx_t_1)) {
+
+    /* "algo_engine/base/market_data.pyx":123
+ *             return sizeof(_TradeInstructionBuffer)
+ *         elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:
  *             return sizeof(_MarketDataBuffer)             # <<<<<<<<<<<<<<
- * 
- *     @classmethod
+ *         else:
+ *             raise ValueError(f'Unknown data type {dtype}.')
  */
     __pyx_r = (sizeof(union __pyx_t_11algo_engine_4base_11market_data__MarketDataBuffer));
     goto __pyx_L0;
-    break;
+
+    /* "algo_engine/base/market_data.pyx":122
+ *         elif dtype == DataType.DTYPE_TRANSACTION:
+ *             return sizeof(_TradeInstructionBuffer)
+ *         elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:             # <<<<<<<<<<<<<<
+ *             return sizeof(_MarketDataBuffer)
+ *         else:
+ */
+  }
+
+  /* "algo_engine/base/market_data.pyx":125
+ *             return sizeof(_MarketDataBuffer)
+ *         else:
+ *             raise ValueError(f'Unknown data type {dtype}.')             # <<<<<<<<<<<<<<
+ * 
+ *     @classmethod
+ */
+  /*else*/ {
+    __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 125, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_3 = 0;
+    __pyx_t_4 = 127;
+    __Pyx_INCREF(__pyx_kp_u_Unknown_data_type);
+    __pyx_t_3 += 18;
+    __Pyx_GIVEREF(__pyx_kp_u_Unknown_data_type);
+    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_kp_u_Unknown_data_type);
+    __pyx_t_5 = __Pyx_PyInt_From_uint8_t(__pyx_v_dtype); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 125, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 125, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_4 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_4) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_4;
+    __pyx_t_3 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_6);
+    __Pyx_GIVEREF(__pyx_t_6);
+    PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_6);
+    __pyx_t_6 = 0;
+    __Pyx_INCREF(__pyx_kp_u__2);
+    __pyx_t_3 += 1;
+    __Pyx_GIVEREF(__pyx_kp_u__2);
+    PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_kp_u__2);
+    __pyx_t_6 = __Pyx_PyUnicode_Join(__pyx_t_2, 3, __pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 125, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 125, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __PYX_ERR(0, 125, __pyx_L1_error)
   }
 
   /* "algo_engine/base/market_data.pyx":104
@@ -21620,12 +21902,19 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(ui
  */
 
   /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_AddTraceback("algo_engine.base.market_data.MarketData.get_size", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
   __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":122
- *             return sizeof(_MarketDataBuffer)
+/* "algo_engine/base/market_data.pyx":127
+ *             raise ValueError(f'Unknown data type {dtype}.')
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
  *     def buffer_size(cls) -> int:
@@ -21683,7 +21972,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_16buffe
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("buffer_size", 1);
 
-  /* "algo_engine/base/market_data.pyx":124
+  /* "algo_engine/base/market_data.pyx":129
  *     @classmethod
  *     def buffer_size(cls) -> int:
  *         return MarketData.get_size(cls._dtype)             # <<<<<<<<<<<<<<
@@ -21691,20 +21980,20 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_16buffe
  *     @staticmethod
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_cls), __pyx_n_s_dtype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_cls), __pyx_n_s_dtype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 129, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_As_uint8_t(__pyx_t_1); if (unlikely((__pyx_t_2 == ((uint8_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_As_uint8_t(__pyx_t_1); if (unlikely((__pyx_t_2 == ((uint8_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 129, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(__pyx_t_2); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_PyInt_FromSize_t(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_3 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(__pyx_t_2); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 129, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_FromSize_t(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 129, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (!(likely(__Pyx_Py3Int_CheckExact(__pyx_t_1)) || __Pyx_RaiseUnexpectedTypeError("int", __pyx_t_1))) __PYX_ERR(0, 124, __pyx_L1_error)
+  if (!(likely(__Pyx_Py3Int_CheckExact(__pyx_t_1)) || __Pyx_RaiseUnexpectedTypeError("int", __pyx_t_1))) __PYX_ERR(0, 129, __pyx_L1_error)
   __pyx_r = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":122
- *             return sizeof(_MarketDataBuffer)
+  /* "algo_engine/base/market_data.pyx":127
+ *             raise ValueError(f'Unknown data type {dtype}.')
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
  *     def buffer_size(cls) -> int:
@@ -21722,7 +22011,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_16buffe
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":127
+/* "algo_engine/base/market_data.pyx":132
  * 
  *     @staticmethod
  *     cdef size_t min_size():             # <<<<<<<<<<<<<<
@@ -21738,7 +22027,7 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_min_size(vo
   size_t __pyx_t_4;
   int __pyx_t_5;
 
-  /* "algo_engine/base/market_data.pyx":128
+  /* "algo_engine/base/market_data.pyx":133
  *     @staticmethod
  *     cdef size_t min_size():
  *         return min(sizeof(_OrderDataBuffer), sizeof(_TickDataLiteBuffer), sizeof(_CandlestickBuffer))             # <<<<<<<<<<<<<<
@@ -21764,7 +22053,7 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_min_size(vo
   __pyx_r = __pyx_t_4;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":127
+  /* "algo_engine/base/market_data.pyx":132
  * 
  *     @staticmethod
  *     cdef size_t min_size():             # <<<<<<<<<<<<<<
@@ -21777,7 +22066,7 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_min_size(vo
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":131
+/* "algo_engine/base/market_data.pyx":136
  * 
  *     @staticmethod
  *     cdef size_t max_size():             # <<<<<<<<<<<<<<
@@ -21788,7 +22077,7 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_min_size(vo
 static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_max_size(void) {
   size_t __pyx_r;
 
-  /* "algo_engine/base/market_data.pyx":132
+  /* "algo_engine/base/market_data.pyx":137
  *     @staticmethod
  *     cdef size_t max_size():
  *         return sizeof(_MarketDataBuffer)             # <<<<<<<<<<<<<<
@@ -21798,7 +22087,7 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_max_size(vo
   __pyx_r = (sizeof(union __pyx_t_11algo_engine_4base_11market_data__MarketDataBuffer));
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":131
+  /* "algo_engine/base/market_data.pyx":136
  * 
  *     @staticmethod
  *     cdef size_t max_size():             # <<<<<<<<<<<<<<
@@ -21811,7 +22100,7 @@ static size_t __pyx_f_11algo_engine_4base_11market_data_10MarketData_max_size(vo
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":134
+/* "algo_engine/base/market_data.pyx":139
  *         return sizeof(_MarketDataBuffer)
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
@@ -21871,23 +22160,23 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 134, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 139, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "from_buffer") < 0)) __PYX_ERR(0, 134, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "from_buffer") < 0)) __PYX_ERR(0, 139, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
     }
-    __pyx_v_buffer = __Pyx_PyObject_to_MemoryviewSlice_ds_unsigned_char__const__(values[0], 0); if (unlikely(!__pyx_v_buffer.memview)) __PYX_ERR(0, 135, __pyx_L3_error)
+    __pyx_v_buffer = __Pyx_PyObject_to_MemoryviewSlice_ds_unsigned_char__const__(values[0], 0); if (unlikely(!__pyx_v_buffer.memview)) __PYX_ERR(0, 140, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("from_buffer", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 134, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("from_buffer", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 139, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -21928,7 +22217,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_18from_
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":138
+/* "algo_engine/base/market_data.pyx":143
  *         ...
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
@@ -21988,12 +22277,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 138, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 143, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "from_bytes") < 0)) __PYX_ERR(0, 138, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "from_bytes") < 0)) __PYX_ERR(0, 143, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -22004,7 +22293,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("from_bytes", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 138, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("from_bytes", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 143, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -22018,7 +22307,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_data), (&PyBytes_Type), 1, "data", 1))) __PYX_ERR(0, 139, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_data), (&PyBytes_Type), 1, "data", 1))) __PYX_ERR(0, 144, __pyx_L1_error)
   __pyx_r = __pyx_pf_11algo_engine_4base_11market_data_10MarketData_20from_bytes(((PyTypeObject*)__pyx_v_cls), __pyx_v_data);
 
   /* function exit code */
@@ -22048,7 +22337,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_20from_
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":142
+/* "algo_engine/base/market_data.pyx":147
  *         ...
  * 
  *     cpdef bytes to_bytes(self):             # <<<<<<<<<<<<<<
@@ -22089,7 +22378,7 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_typedict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_to_bytes); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 142, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_to_bytes); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 147, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (!__Pyx_IsSameCFunction(__pyx_t_1, (void*) __pyx_pw_11algo_engine_4base_11market_data_10MarketData_23to_bytes)) {
         __Pyx_XDECREF(__pyx_r);
@@ -22112,11 +22401,11 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
           PyObject *__pyx_callargs[2] = {__pyx_t_4, NULL};
           __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_5, 0+__pyx_t_5);
           __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-          if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 142, __pyx_L1_error)
+          if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 147, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         }
-        if (!(likely(PyBytes_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None) || __Pyx_RaiseUnexpectedTypeError("bytes", __pyx_t_2))) __PYX_ERR(0, 142, __pyx_L1_error)
+        if (!(likely(PyBytes_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None) || __Pyx_RaiseUnexpectedTypeError("bytes", __pyx_t_2))) __PYX_ERR(0, 147, __pyx_L1_error)
         __pyx_r = ((PyObject*)__pyx_t_2);
         __pyx_t_2 = 0;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -22135,7 +22424,7 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
     #endif
   }
 
-  /* "algo_engine/base/market_data.pyx":147
+  /* "algo_engine/base/market_data.pyx":152
  *         Uses the meta info to determine the data type and size.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22145,20 +22434,20 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
   __pyx_t_6 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_6)) {
 
-    /* "algo_engine/base/market_data.pyx":148
+    /* "algo_engine/base/market_data.pyx":153
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Cannot convert uninitialized data to bytes")             # <<<<<<<<<<<<<<
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  */
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 148, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 153, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 148, __pyx_L1_error)
+    __PYX_ERR(0, 153, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":147
+    /* "algo_engine/base/market_data.pyx":152
  *         Uses the meta info to determine the data type and size.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22167,7 +22456,7 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":150
+  /* "algo_engine/base/market_data.pyx":155
  *             raise ValueError("Cannot convert uninitialized data to bytes")
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype             # <<<<<<<<<<<<<<
@@ -22177,17 +22466,17 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
   __pyx_t_7 = __pyx_v_self->_data->MetaInfo.dtype;
   __pyx_v_dtype = __pyx_t_7;
 
-  /* "algo_engine/base/market_data.pyx":151
+  /* "algo_engine/base/market_data.pyx":156
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  *         cdef size_t size = MarketData.get_size(dtype)             # <<<<<<<<<<<<<<
  *         return PyBytes_FromStringAndSize(<char*>self._data, size)
  * 
  */
-  __pyx_t_8 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(__pyx_v_dtype); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L1_error)
+  __pyx_t_8 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(__pyx_v_dtype); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 156, __pyx_L1_error)
   __pyx_v_size = __pyx_t_8;
 
-  /* "algo_engine/base/market_data.pyx":152
+  /* "algo_engine/base/market_data.pyx":157
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  *         cdef size_t size = MarketData.get_size(dtype)
  *         return PyBytes_FromStringAndSize(<char*>self._data, size)             # <<<<<<<<<<<<<<
@@ -22195,13 +22484,13 @@ static PyObject *__pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes
  *     def __getbuffer__(self, Py_buffer* buffer, int flags):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyBytes_FromStringAndSize(((char *)__pyx_v_self->_data), __pyx_v_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 152, __pyx_L1_error)
+  __pyx_t_1 = PyBytes_FromStringAndSize(((char *)__pyx_v_self->_data), __pyx_v_size); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 157, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":142
+  /* "algo_engine/base/market_data.pyx":147
  *         ...
  * 
  *     cpdef bytes to_bytes(self):             # <<<<<<<<<<<<<<
@@ -22273,7 +22562,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_22to_by
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("to_bytes", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes(__pyx_v_self, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_to_bytes(__pyx_v_self, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 147, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -22290,7 +22579,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_22to_by
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":154
+/* "algo_engine/base/market_data.pyx":159
  *         return PyBytes_FromStringAndSize(<char*>self._data, size)
  * 
  *     def __getbuffer__(self, Py_buffer* buffer, int flags):             # <<<<<<<<<<<<<<
@@ -22337,7 +22626,7 @@ static int __pyx_pf_11algo_engine_4base_11market_data_10MarketData_24__getbuffer
   __pyx_v_buffer->obj = Py_None; __Pyx_INCREF(Py_None);
   __Pyx_GIVEREF(__pyx_v_buffer->obj);
 
-  /* "algo_engine/base/market_data.pyx":158
+  /* "algo_engine/base/market_data.pyx":163
  *         Implement the buffer protocol for read-only access.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22347,20 +22636,20 @@ static int __pyx_pf_11algo_engine_4base_11market_data_10MarketData_24__getbuffer
   __pyx_t_1 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_1)) {
 
-    /* "algo_engine/base/market_data.pyx":159
+    /* "algo_engine/base/market_data.pyx":164
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Cannot get buffer from uninitialized data")             # <<<<<<<<<<<<<<
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 159, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 164, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 159, __pyx_L1_error)
+    __PYX_ERR(0, 164, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":158
+    /* "algo_engine/base/market_data.pyx":163
  *         Implement the buffer protocol for read-only access.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22369,7 +22658,7 @@ static int __pyx_pf_11algo_engine_4base_11market_data_10MarketData_24__getbuffer
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":161
+  /* "algo_engine/base/market_data.pyx":166
  *             raise ValueError("Cannot get buffer from uninitialized data")
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype             # <<<<<<<<<<<<<<
@@ -22379,26 +22668,26 @@ static int __pyx_pf_11algo_engine_4base_11market_data_10MarketData_24__getbuffer
   __pyx_t_3 = __pyx_v_self->_data->MetaInfo.dtype;
   __pyx_v_dtype = __pyx_t_3;
 
-  /* "algo_engine/base/market_data.pyx":162
+  /* "algo_engine/base/market_data.pyx":167
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  *         cdef size_t size = MarketData.get_size(dtype)             # <<<<<<<<<<<<<<
  *         PyBuffer_FillInfo(buffer, self, <void*>self._data, size, 1, flags)
  * 
  */
-  __pyx_t_4 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(__pyx_v_dtype); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 162, __pyx_L1_error)
+  __pyx_t_4 = __pyx_f_11algo_engine_4base_11market_data_10MarketData_get_size(__pyx_v_dtype); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L1_error)
   __pyx_v_size = __pyx_t_4;
 
-  /* "algo_engine/base/market_data.pyx":163
+  /* "algo_engine/base/market_data.pyx":168
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  *         cdef size_t size = MarketData.get_size(dtype)
  *         PyBuffer_FillInfo(buffer, self, <void*>self._data, size, 1, flags)             # <<<<<<<<<<<<<<
  * 
  *     def __releasebuffer__(self, Py_buffer* buffer):
  */
-  __pyx_t_5 = PyBuffer_FillInfo(__pyx_v_buffer, ((PyObject *)__pyx_v_self), ((void *)__pyx_v_self->_data), __pyx_v_size, 1, __pyx_v_flags); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_5 = PyBuffer_FillInfo(__pyx_v_buffer, ((PyObject *)__pyx_v_self), ((void *)__pyx_v_self->_data), __pyx_v_size, 1, __pyx_v_flags); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 168, __pyx_L1_error)
 
-  /* "algo_engine/base/market_data.pyx":154
+  /* "algo_engine/base/market_data.pyx":159
  *         return PyBytes_FromStringAndSize(<char*>self._data, size)
  * 
  *     def __getbuffer__(self, Py_buffer* buffer, int flags):             # <<<<<<<<<<<<<<
@@ -22428,7 +22717,7 @@ static int __pyx_pf_11algo_engine_4base_11market_data_10MarketData_24__getbuffer
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":165
+/* "algo_engine/base/market_data.pyx":170
  *         PyBuffer_FillInfo(buffer, self, <void*>self._data, size, 1, flags)
  * 
  *     def __releasebuffer__(self, Py_buffer* buffer):             # <<<<<<<<<<<<<<
@@ -22457,7 +22746,7 @@ static void __pyx_pf_11algo_engine_4base_11market_data_10MarketData_26__releaseb
   /* function exit code */
 }
 
-/* "algo_engine/base/market_data.pyx":171
+/* "algo_engine/base/market_data.pyx":176
  *         pass
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22495,7 +22784,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/market_data.pyx":176
+  /* "algo_engine/base/market_data.pyx":181
  *         Get the ticker symbol.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22505,20 +22794,20 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
   __pyx_t_1 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_1)) {
 
-    /* "algo_engine/base/market_data.pyx":177
+    /* "algo_engine/base/market_data.pyx":182
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         return self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
  * 
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 177, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 182, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 177, __pyx_L1_error)
+    __PYX_ERR(0, 182, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":176
+    /* "algo_engine/base/market_data.pyx":181
  *         Get the ticker symbol.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22527,7 +22816,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":178
+  /* "algo_engine/base/market_data.pyx":183
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")
  *         return self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')             # <<<<<<<<<<<<<<
@@ -22536,10 +22825,10 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __pyx_v_self->_data->MetaInfo.ticker;
-  __pyx_t_4 = __Pyx_ssize_strlen(__pyx_t_3); if (unlikely(__pyx_t_4 == ((Py_ssize_t)-1))) __PYX_ERR(0, 178, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_decode_c_string(__pyx_t_3, 0, __pyx_t_4, NULL, NULL, PyUnicode_DecodeUTF8); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 178, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_ssize_strlen(__pyx_t_3); if (unlikely(__pyx_t_4 == ((Py_ssize_t)-1))) __PYX_ERR(0, 183, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_decode_c_string(__pyx_t_3, 0, __pyx_t_4, NULL, NULL, PyUnicode_DecodeUTF8); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 183, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_rstrip); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 178, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_rstrip); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 183, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_5 = NULL;
@@ -22560,7 +22849,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
     PyObject *__pyx_callargs[2] = {__pyx_t_5, __pyx_kp_u__14};
     __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_6, __pyx_callargs+1-__pyx_t_7, 1+__pyx_t_7);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 178, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 183, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   }
@@ -22568,7 +22857,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":171
+  /* "algo_engine/base/market_data.pyx":176
  *         pass
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22589,7 +22878,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_6ticker
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":180
+/* "algo_engine/base/market_data.pyx":185
  *         return self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22622,7 +22911,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_9timest
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/market_data.pyx":185
+  /* "algo_engine/base/market_data.pyx":190
  *         Get the timestamp.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22632,20 +22921,20 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_9timest
   __pyx_t_1 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_1)) {
 
-    /* "algo_engine/base/market_data.pyx":186
+    /* "algo_engine/base/market_data.pyx":191
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         return self._data.MetaInfo.timestamp
  * 
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 186, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 191, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 186, __pyx_L1_error)
+    __PYX_ERR(0, 191, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":185
+    /* "algo_engine/base/market_data.pyx":190
  *         Get the timestamp.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22654,7 +22943,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_9timest
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":187
+  /* "algo_engine/base/market_data.pyx":192
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")
  *         return self._data.MetaInfo.timestamp             # <<<<<<<<<<<<<<
@@ -22662,13 +22951,13 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_9timest
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->_data->MetaInfo.timestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 187, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->_data->MetaInfo.timestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 192, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":180
+  /* "algo_engine/base/market_data.pyx":185
  *         return self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22687,7 +22976,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_9timest
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":189
+/* "algo_engine/base/market_data.pyx":194
  *         return self._data.MetaInfo.timestamp
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22720,7 +23009,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5dtype_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/market_data.pyx":194
+  /* "algo_engine/base/market_data.pyx":199
  *         Get the data type.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22730,20 +23019,20 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5dtype_
   __pyx_t_1 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_1)) {
 
-    /* "algo_engine/base/market_data.pyx":195
+    /* "algo_engine/base/market_data.pyx":200
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         return self._data.MetaInfo.dtype
  * 
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 195, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 200, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 195, __pyx_L1_error)
+    __PYX_ERR(0, 200, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":194
+    /* "algo_engine/base/market_data.pyx":199
  *         Get the data type.
  *         """
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22752,7 +23041,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5dtype_
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":196
+  /* "algo_engine/base/market_data.pyx":201
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")
  *         return self._data.MetaInfo.dtype             # <<<<<<<<<<<<<<
@@ -22760,13 +23049,13 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5dtype_
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyInt_From_uint8_t(__pyx_v_self->_data->MetaInfo.dtype); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 196, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_uint8_t(__pyx_v_self->_data->MetaInfo.dtype); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 201, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":189
+  /* "algo_engine/base/market_data.pyx":194
  *         return self._data.MetaInfo.timestamp
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22785,7 +23074,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5dtype_
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":198
+/* "algo_engine/base/market_data.pyx":203
  *         return self._data.MetaInfo.dtype
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22825,7 +23114,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/market_data.pyx":200
+  /* "algo_engine/base/market_data.pyx":205
  *     @property
  *     def topic(self) -> str:
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22835,20 +23124,20 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
   __pyx_t_1 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_1)) {
 
-    /* "algo_engine/base/market_data.pyx":201
+    /* "algo_engine/base/market_data.pyx":206
  *     def topic(self) -> str:
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         ticker_str = self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
  *         return f'{ticker_str}.{self.__class__.__name__}'
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 201, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 206, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 201, __pyx_L1_error)
+    __PYX_ERR(0, 206, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":200
+    /* "algo_engine/base/market_data.pyx":205
  *     @property
  *     def topic(self) -> str:
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -22857,7 +23146,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":202
+  /* "algo_engine/base/market_data.pyx":207
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")
  *         ticker_str = self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')             # <<<<<<<<<<<<<<
@@ -22865,10 +23154,10 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
  * 
  */
   __pyx_t_3 = __pyx_v_self->_data->MetaInfo.ticker;
-  __pyx_t_4 = __Pyx_ssize_strlen(__pyx_t_3); if (unlikely(__pyx_t_4 == ((Py_ssize_t)-1))) __PYX_ERR(0, 202, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_decode_c_string(__pyx_t_3, 0, __pyx_t_4, NULL, NULL, PyUnicode_DecodeUTF8); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 202, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_ssize_strlen(__pyx_t_3); if (unlikely(__pyx_t_4 == ((Py_ssize_t)-1))) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_decode_c_string(__pyx_t_3, 0, __pyx_t_4, NULL, NULL, PyUnicode_DecodeUTF8); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_rstrip); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 202, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_rstrip); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_5 = NULL;
@@ -22889,14 +23178,14 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
     PyObject *__pyx_callargs[2] = {__pyx_t_5, __pyx_kp_u__14};
     __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_6, __pyx_callargs+1-__pyx_t_7, 1+__pyx_t_7);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 202, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 207, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   }
   __pyx_v_ticker_str = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "algo_engine/base/market_data.pyx":203
+  /* "algo_engine/base/market_data.pyx":208
  *             raise ValueError("Data not initialized")
  *         ticker_str = self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
  *         return f'{ticker_str}.{self.__class__.__name__}'             # <<<<<<<<<<<<<<
@@ -22904,11 +23193,11 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_4 = 0;
   __pyx_t_8 = 127;
-  __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_v_ticker_str, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_v_ticker_str, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_t_8 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_8) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_8;
   __pyx_t_4 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_6);
@@ -22919,12 +23208,12 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
   __pyx_t_4 += 1;
   __Pyx_GIVEREF(__pyx_kp_u__2);
   PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_kp_u__2);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_class); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_class); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_name_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_name_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_8 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) > __pyx_t_8) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_6) : __pyx_t_8;
@@ -22932,14 +23221,14 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
   __Pyx_GIVEREF(__pyx_t_6);
   PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_t_6);
   __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyUnicode_Join(__pyx_t_2, 3, __pyx_t_4, __pyx_t_8); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyUnicode_Join(__pyx_t_2, 3, __pyx_t_4, __pyx_t_8); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_6;
   __pyx_t_6 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":198
+  /* "algo_engine/base/market_data.pyx":203
  *         return self._data.MetaInfo.dtype
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22961,7 +23250,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_5topic_
   return __pyx_r;
 }
 
-/* "algo_engine/base/market_data.pyx":205
+/* "algo_engine/base/market_data.pyx":210
  *         return f'{ticker_str}.{self.__class__.__name__}'
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -22998,7 +23287,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_11marke
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "algo_engine/base/market_data.pyx":207
+  /* "algo_engine/base/market_data.pyx":212
  *     @property
  *     def market_time(self) -> datetime:
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -23008,19 +23297,19 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_11marke
   __pyx_t_1 = (__pyx_v_self->_data == NULL);
   if (unlikely(__pyx_t_1)) {
 
-    /* "algo_engine/base/market_data.pyx":208
+    /* "algo_engine/base/market_data.pyx":213
  *     def market_time(self) -> datetime:
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         return datetime.fromtimestamp(self._data.MetaInfo.timestamp, tz=PROFILE.time_zone)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 208, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 213, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 208, __pyx_L1_error)
+    __PYX_ERR(0, 213, __pyx_L1_error)
 
-    /* "algo_engine/base/market_data.pyx":207
+    /* "algo_engine/base/market_data.pyx":212
  *     @property
  *     def market_time(self) -> datetime:
  *         if self._data == NULL:             # <<<<<<<<<<<<<<
@@ -23029,31 +23318,31 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_11marke
  */
   }
 
-  /* "algo_engine/base/market_data.pyx":209
+  /* "algo_engine/base/market_data.pyx":214
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")
  *         return datetime.fromtimestamp(self._data.MetaInfo.timestamp, tz=PROFILE.time_zone)             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_ptype_7cpython_8datetime_datetime), __pyx_n_s_fromtimestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_ptype_7cpython_8datetime_datetime), __pyx_n_s_fromtimestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->_data->MetaInfo.timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->_data->MetaInfo.timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_3);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_3)) __PYX_ERR(0, 209, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_3)) __PYX_ERR(0, 214, __pyx_L1_error);
   __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_PROFILE); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_PROFILE); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_time_zone); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_time_zone); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_tz, __pyx_t_6) < 0) __PYX_ERR(0, 209, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_tz, __pyx_t_6) < 0) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 209, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 214, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -23062,7 +23351,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_11market_data_10MarketData_11marke
   __pyx_t_6 = 0;
   goto __pyx_L0;
 
-  /* "algo_engine/base/market_data.pyx":205
+  /* "algo_engine/base/market_data.pyx":210
  *         return f'{ticker_str}.{self.__class__.__name__}'
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -24517,6 +24806,7 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_kp_u_Time_zones_are_not_available_fro, __pyx_k_Time_zones_are_not_available_fro, sizeof(__pyx_k_Time_zones_are_not_available_fro), 0, 1, 0, 0},
     {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
     {&__pyx_kp_s_Unable_to_convert_item_to_object, __pyx_k_Unable_to_convert_item_to_object, sizeof(__pyx_k_Unable_to_convert_item_to_object), 0, 0, 1, 0},
+    {&__pyx_kp_u_Unknown_data_type, __pyx_k_Unknown_data_type, sizeof(__pyx_k_Unknown_data_type), 0, 1, 0, 0},
     {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
     {&__pyx_n_s_View_MemoryView, __pyx_k_View_MemoryView, sizeof(__pyx_k_View_MemoryView), 0, 0, 1, 1},
     {&__pyx_kp_u__14, __pyx_k__14, sizeof(__pyx_k__14), 0, 1, 0, 0},
@@ -24718,36 +25008,36 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
 
-  /* "algo_engine/base/market_data.pyx":148
+  /* "algo_engine/base/market_data.pyx":153
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Cannot convert uninitialized data to bytes")             # <<<<<<<<<<<<<<
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  */
-  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_u_Cannot_convert_uninitialized_dat); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 148, __pyx_L1_error)
+  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_u_Cannot_convert_uninitialized_dat); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 153, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__11);
   __Pyx_GIVEREF(__pyx_tuple__11);
 
-  /* "algo_engine/base/market_data.pyx":159
+  /* "algo_engine/base/market_data.pyx":164
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Cannot get buffer from uninitialized data")             # <<<<<<<<<<<<<<
  * 
  *         cdef uint8_t dtype = self._data.MetaInfo.dtype
  */
-  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_u_Cannot_get_buffer_from_uninitial); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(0, 159, __pyx_L1_error)
+  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_u_Cannot_get_buffer_from_uninitial); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(0, 164, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__12);
   __Pyx_GIVEREF(__pyx_tuple__12);
 
-  /* "algo_engine/base/market_data.pyx":177
+  /* "algo_engine/base/market_data.pyx":182
  *         """
  *         if self._data == NULL:
  *             raise ValueError("Data not initialized")             # <<<<<<<<<<<<<<
  *         return self._data.MetaInfo.ticker.decode('utf-8').rstrip('\0')
  * 
  */
-  __pyx_tuple__13 = PyTuple_Pack(1, __pyx_kp_u_Data_not_initialized); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 177, __pyx_L1_error)
+  __pyx_tuple__13 = PyTuple_Pack(1, __pyx_kp_u_Data_not_initialized); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 182, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__13);
   __Pyx_GIVEREF(__pyx_tuple__13);
 
@@ -26170,51 +26460,51 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   PyType_Modified(__pyx_ptype_11algo_engine_4base_11market_data_MarketData);
 
-  /* "algo_engine/base/market_data.pyx":122
- *             return sizeof(_MarketDataBuffer)
+  /* "algo_engine/base/market_data.pyx":127
+ *             raise ValueError(f'Unknown data type {dtype}.')
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
  *     def buffer_size(cls) -> int:
  *         return MarketData.get_size(cls._dtype)
  */
-  __Pyx_GetNameInClass(__pyx_t_7, (PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_buffer_size); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 122, __pyx_L1_error)
+  __Pyx_GetNameInClass(__pyx_t_7, (PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_buffer_size); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_5 = __Pyx_Method_ClassMethod(__pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 122, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_Method_ClassMethod(__pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_buffer_size, __pyx_t_5) < 0) __PYX_ERR(0, 122, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_buffer_size, __pyx_t_5) < 0) __PYX_ERR(0, 127, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   PyType_Modified(__pyx_ptype_11algo_engine_4base_11market_data_MarketData);
 
-  /* "algo_engine/base/market_data.pyx":134
+  /* "algo_engine/base/market_data.pyx":139
  *         return sizeof(_MarketDataBuffer)
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
  *     def from_buffer(cls, const unsigned char[:] buffer):
  *         ...
  */
-  __Pyx_GetNameInClass(__pyx_t_5, (PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_buffer); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __Pyx_GetNameInClass(__pyx_t_5, (PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_buffer); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_7 = __Pyx_Method_ClassMethod(__pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_Method_ClassMethod(__pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_buffer, __pyx_t_7) < 0) __PYX_ERR(0, 134, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_buffer, __pyx_t_7) < 0) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   PyType_Modified(__pyx_ptype_11algo_engine_4base_11market_data_MarketData);
 
-  /* "algo_engine/base/market_data.pyx":138
+  /* "algo_engine/base/market_data.pyx":143
  *         ...
  * 
  *     @classmethod             # <<<<<<<<<<<<<<
  *     def from_bytes(cls, bytes data):
  *         ...
  */
-  __Pyx_GetNameInClass(__pyx_t_7, (PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_bytes); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 138, __pyx_L1_error)
+  __Pyx_GetNameInClass(__pyx_t_7, (PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_bytes); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 143, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_5 = __Pyx_Method_ClassMethod(__pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 138, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_Method_ClassMethod(__pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 143, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_bytes, __pyx_t_5) < 0) __PYX_ERR(0, 138, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_11algo_engine_4base_11market_data_MarketData, __pyx_n_s_from_bytes, __pyx_t_5) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   PyType_Modified(__pyx_ptype_11algo_engine_4base_11market_data_MarketData);
 

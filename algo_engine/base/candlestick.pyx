@@ -307,6 +307,10 @@ cdef class BarData(MarketData):
             raise ValueError("Data not initialized")
         return datetime.fromtimestamp(self.start_timestamp, tz=PROFILE.time_zone)
 
+    @property
+    def market_price(self) -> float:
+        return self.close_price
+
 
 class DailyBar(BarData):
     def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):

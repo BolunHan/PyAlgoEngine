@@ -12,7 +12,6 @@ from .transaction cimport TransactionData, OrderData
 from .tick cimport TickData, TickDataLite
 from .candlestick cimport BarData
 
-
 cdef class MarketDataBuffer:
     """
     A buffer for storing and managing multiple market data entries.
@@ -508,10 +507,10 @@ cdef class MarketDataBuffer:
             raise IndexError(f'{self.__class__.__name__} index out of range')
 
         cdef uint64_t offset = self._offsets[idx]
-        cdef _MetaInfo* ptr = <_MetaInfo *> (self._data + offset)
+        cdef _MetaInfo * ptr = <_MetaInfo *> (self._data + offset)
         cdef uint8_t dtype = ptr.dtype
         cdef size_t entry_size = MarketData.get_size(dtype)
-        cdef bytes data = PyBytes_FromStringAndSize(<char*> ptr, entry_size)
+        cdef bytes data = PyBytes_FromStringAndSize(<char *> ptr, entry_size)
 
         # Create appropriate object based on dtype
         if dtype == DataType.DTYPE_TRANSACTION:
@@ -592,7 +591,6 @@ cdef class MarketDataBuffer:
 
         return data
 
-
 cdef class MarketDataRingBuffer:
     """
     A ring buffer implementation for MarketData with variable-sized entries.
@@ -652,7 +650,7 @@ cdef class MarketDataRingBuffer:
         pointer_offset = header_size
         data_offset = pointer_offset + pointer_size
 
-        self._header = <_RingBufferHeader*> self._buffer
+        self._header = <_RingBufferHeader *> self._buffer
         memset(self._header, 0, sizeof(_RingBufferHeader))
 
         self._header.buffer_header.dtype = dtype
@@ -708,7 +706,7 @@ cdef class MarketDataRingBuffer:
 
         cdef uint64_t tail_idx = (self._header.tail - 1) % self._header.buffer_header.capacity
         cdef uint64_t offset = self._offsets[tail_idx]
-        cdef _MetaInfo* ptr = <_MetaInfo*> (self._data + offset)
+        cdef _MetaInfo * ptr = <_MetaInfo *> (self._data + offset)
         cdef size_t entry_size = MarketData.get_size(ptr.dtype)
         cdef uint64_t end_pos = offset + entry_size
 
@@ -747,7 +745,7 @@ cdef class MarketDataRingBuffer:
             return free_space < MarketData.max_size()
 
     @staticmethod
-    cdef bytes read(char* data, uint64_t offset, size_t size, uint64_t max_offset):
+    cdef bytes read(char * data, uint64_t offset, size_t size, uint64_t max_offset):
         """
         Read data from buffer, handling wrap-around if needed.
 
@@ -783,7 +781,7 @@ cdef class MarketDataRingBuffer:
             free(temp_buf)
 
     @staticmethod
-    cdef void write(char* data, uint64_t offset, char* src, size_t size, uint64_t max_offset):
+    cdef void write(char * data, uint64_t offset, char * src, size_t size, uint64_t max_offset):
         """
         Write data to buffer, handling wrap-around if needed.
 
@@ -798,7 +796,7 @@ cdef class MarketDataRingBuffer:
         """
         cdef size_t first_part = max_offset - offset
 
-        if  size <= first_part:
+        if size <= first_part:
             # Contiguous write
             memcpy(data + offset, src, size)
         else:
@@ -830,7 +828,7 @@ cdef class MarketDataRingBuffer:
         cdef uint64_t write_offset = self._header.buffer_header.tail_offset
 
         # Write the data
-        MarketDataRingBuffer.write(data=self._data, offset=write_offset, src=<char*> data_ptr, size=entry_size, max_offset=self._header.buffer_header.max_offset)
+        MarketDataRingBuffer.write(data=self._data, offset=write_offset, src=<char *> data_ptr, size=entry_size, max_offset=self._header.buffer_header.max_offset)
 
         # Store the offset
         self._offsets[self._header.tail % self._header.buffer_header.capacity] = write_offset
@@ -905,7 +903,6 @@ cdef class MarketDataRingBuffer:
     @property
     def count(self) -> int:
         return self._header.buffer_header.count
-
 
 cdef class MarketDataConcurrentBuffer:
     def __cinit__(self):
@@ -1031,7 +1028,7 @@ cdef class MarketDataConcurrentBuffer:
 
         cdef uint64_t tail_idx = (self._header.tail - 1) % self._header.buffer_header.capacity
         cdef uint64_t offset = self._offsets[tail_idx]
-        cdef _MetaInfo* ptr = <_MetaInfo*> (self._data + offset)
+        cdef _MetaInfo * ptr = <_MetaInfo *> (self._data + offset)
         cdef size_t entry_size = MarketData.get_size(ptr.dtype)
         cdef uint64_t end_pos = offset + entry_size
 
@@ -1072,7 +1069,6 @@ cdef class MarketDataConcurrentBuffer:
             return free_space + max_offset < MarketData.max_size()
         else:
             return free_space < MarketData.max_size()
-
 
     cpdef void put(self, MarketData market_data):
         if self.is_full():
@@ -1134,25 +1130,27 @@ cdef class MarketDataConcurrentBuffer:
         else:
             return MarketData.from_bytes(data)
 
-    cpdef MarketData listen(self, uint32_t worker_id, double timeout=-1.0):
+    cpdef MarketData listen(self, uint32_t worker_id, bint block=True, double timeout=-1.0):
         """
         Ultra-low-latency wait with progressive backoff strategy.
         """
+        cdef uint32_t spin_per_check = 1000
         cdef time_t start_time = 0
         cdef time_t current_time
         cdef double elapsed = 0.0
         cdef uint32_t spin_count = 0
         cdef uint32_t sleep_us = 0
-        cdef bint use_timeout = timeout >= 0
-        cdef _ConcurrentBufferHeader* header = self._header  # Local pointer for direct access
+        cdef bint use_timeout = timeout > 0
+        cdef _ConcurrentBufferHeader * header = self._header  # Local pointer for direct access
         cdef uint64_t idx = self._header.heads[worker_id]
+
         if worker_id >= self._header.n_workers:
             raise IndexError("worker_id exceeds number of workers")
 
-        if use_timeout:
-            time(&start_time)
-        elif self.is_empty(worker_id):
-            raise IndexError("Buffer is empty for this worker")
+        if (not block) and self.is_empty(worker_id):
+            raise BufferError("Buffer is empty for this worker")
+
+        time(&start_time)
 
         while True:
             # Check for data - direct struct field access
@@ -1161,29 +1159,34 @@ cdef class MarketDataConcurrentBuffer:
                 return self.get(idx=idx)
 
             # Timeout check
-            if use_timeout:
+            if spin_count % spin_per_check == 0:
                 time(&current_time)
                 elapsed = difftime(current_time, start_time)
-                if elapsed >= timeout:
+
+                if use_timeout and elapsed >= timeout:
                     raise TimeoutError("Timeout while waiting for data")
 
-            # Progressive backoff strategy
-            if spin_count < 10000:
-                # Phase 1: Pure spin (0 sleep)
-                pass
-            elif spin_count < 20000:
-                # Phase 2: 1us sleep
-                sleep_us = 1
-            elif spin_count < 30000:
-                # Phase 3: 10us sleep
-                sleep_us = 10
-            elif spin_count < 40000:
-                # Phase 4: 100us sleep
-                sleep_us = 100
-            else:
-                # Phase 5: 1ms sleep
-                sleep_us = 1000
+                # Progressive backoff based on elapsed time
+                if elapsed < 0.1:  # < 100 ms: pure spin
+                    sleep_us = 0
+                elif elapsed < 1.0:  # 100 - 1000 ms: 1us sleep
+                    sleep_us = 1
+                elif elapsed < 3.0:  # 1000 - 3000 ms: 10us sleep
+                    sleep_us = 10
+                elif elapsed < 15.0:  # 3000 ms - 15 s: 100us sleep
+                    sleep_us = 100
+                else:  # > 1s: 1ms sleep
+                    sleep_us = 1000
 
             if sleep_us > 0:
                 platform_usleep(sleep_us)
             spin_count += 1
+
+    @property
+    def head(self) -> list[int]:
+        """Return a Python list containing all head indices from the buffer header."""
+        return [self._header.heads[i] for i in range(self._header.n_workers)]
+
+    @property
+    def tail(self) -> int:
+        return self._header.tail

@@ -19,6 +19,9 @@ class MarketData:
 
     def __init__(self, ticker: str, timestamp: float, **kwargs: Any) -> None: ...
 
+    def update(self, name: str, value: Any) -> None:
+        ...
+
     @classmethod
     def buffer_size(cls) -> int: ...
 

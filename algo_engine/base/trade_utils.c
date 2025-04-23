@@ -1573,6 +1573,13 @@ static const char *__pyx_f[] = {
 #define __Pyx_FastGIL_Forget()
 #define __Pyx_FastGilFuncInit()
 
+/* None.proto */
+#if defined(__GNUC__)
+#define __Pyx_PACKED __attribute__((__packed__))
+#else
+#define __Pyx_PACKED
+#endif
+
 /* BufferFormatStructs.proto */
 struct __Pyx_StructField_;
 #define __PYX_BUF_FLAGS_PACKED_STRUCT (1 << 0)
@@ -1805,48 +1812,83 @@ struct __pyx_t_11algo_engine_4base_11market_data__ID {
 /* "market_data.pxd":85
  * 
  * # Meta info structure
- * cdef struct _MetaInfo:             # <<<<<<<<<<<<<<
+ * cdef packed struct _MetaInfo:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__MetaInfo {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__MetaInfo {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":91
  * 
  * # OrderBookEntry structure
- * cdef struct _OrderBookEntry:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderBookEntry:             # <<<<<<<<<<<<<<
  *     double price
  *     double volume
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry {
   double price;
   double volume;
   uint64_t n_orders;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":97
  * 
  * # OrderBookBuffer structure
- * cdef struct _OrderBookBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderBookBuffer:             # <<<<<<<<<<<<<<
  *     _OrderBookEntry entries[BOOK_SIZE]
  * 
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookEntry entries[BOOK_SIZE];
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":101
  * 
  * # BarData structure
- * cdef struct _CandlestickBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _CandlestickBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1859,15 +1901,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__CandlestickBuffer {
   double notional;
   uint32_t trade_count;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":115
  * 
  * # TickDataLite structure
- * cdef struct _TickDataLiteBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TickDataLiteBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1880,28 +1932,48 @@ struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer {
   double total_traded_notional;
   uint32_t total_trade_count;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":129
  * 
  * # TickData structure
- * cdef struct _TickDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TickDataBuffer:             # <<<<<<<<<<<<<<
  *     _TickDataLiteBuffer lite
  *     _OrderBookBuffer bid
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TickDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TickDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__TickDataLiteBuffer lite;
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer bid;
   struct __pyx_t_11algo_engine_4base_11market_data__OrderBookBuffer ask;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":135
  * 
  * # TransactionData structure
- * cdef struct _TransactionDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TransactionDataBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1914,15 +1986,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__TransactionDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID buy_id;
   struct __pyx_t_11algo_engine_4base_11market_data__ID sell_id;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":149
  * 
  * # OrderData structure
- * cdef struct _OrderDataBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _OrderDataBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1932,15 +2014,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__OrderDataBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID order_id;
   uint8_t order_type;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":160
  * 
  * # TradeReport structure
- * cdef struct _TradeReportBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TradeReportBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1953,15 +2045,25 @@ struct __pyx_t_11algo_engine_4base_11market_data__TradeReportBuffer {
   struct __pyx_t_11algo_engine_4base_11market_data__ID order_id;
   struct __pyx_t_11algo_engine_4base_11market_data__ID trade_id;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":175
  * 
  * # TradeInstruction structure
- * cdef struct _TradeInstructionBuffer:             # <<<<<<<<<<<<<<
+ * cdef packed struct _TradeInstructionBuffer:             # <<<<<<<<<<<<<<
  *     uint8_t dtype
  *     char ticker[TICKER_SIZE]
  */
-struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
+#if defined(__SUNPRO_C)
+  #pragma pack(1)
+#elif !defined(__GNUC__)
+  #pragma pack(push, 1)
+#endif
+struct __Pyx_PACKED __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
   uint8_t dtype;
   char ticker[TICKER_SIZE];
   double timestamp;
@@ -1979,6 +2081,11 @@ struct __pyx_t_11algo_engine_4base_11market_data__TradeInstructionBuffer {
   double ts_canceled;
   double ts_finished;
 };
+#if defined(__SUNPRO_C)
+  #pragma pack()
+#elif !defined(__GNUC__)
+  #pragma pack(pop)
+#endif
 
 /* "market_data.pxd":195
  * 
