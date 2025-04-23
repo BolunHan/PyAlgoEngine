@@ -1,6 +1,6 @@
 import abc
 import datetime
-from typing import Self
+from typing import Self, Literal
 
 
 class Profile(object, metaclass=abc.ABCMeta):
@@ -52,6 +52,121 @@ class Profile(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, **kwargs) -> list[datetime.date]:
         ...
+
+    def trading_days_before(self, market_date: datetime.date, days: int, **kwargs) -> datetime.date:
+        """
+        Calculate the trading date that is `days` trading days before the given market_date.
+
+        Args:
+            market_date: The reference date
+            days: Number of trading days to go back (must be positive)
+
+        Returns:
+            The trading date that is `days` trading days before market_date
+
+        Raises:
+            ValueError: If days is not positive
+        """
+        if days <= 0:
+            raise ValueError("days must be positive")
+
+        # Calculate how many years we need to go back (250 trading days ≈ 1 year)
+        years_back = (days // 250) + 1
+        start_date = market_date - datetime.timedelta(days=365 * years_back)
+
+        # Get the trade calendar
+        trade_dates = self.trade_calendar(start_date=start_date, end_date=market_date, **kwargs)
+
+        # Find the market_date in the calendar (it should be the last or near last)
+        if market_date == trade_dates[-1]:
+            idx = len(trade_dates) - days - 1
+        else:
+            idx = len(trade_dates) - days
+
+        if idx < 0:
+            return self.trading_days_before(market_date=trade_dates[0], days=-idx, **kwargs)
+
+        return trade_dates[idx]
+
+    def trading_days_after(self, market_date: datetime.date, days: int, **kwargs) -> datetime.date:
+        """
+        Calculate the trading date that is `days` trading days after the given market_date.
+
+        Args:
+            market_date: The reference date
+            days: Number of trading days to go forward (must be positive)
+
+        Returns:
+            The trading date that is `days` trading days after market_date
+
+        Raises:
+            ValueError: If days is not positive
+        """
+        if days <= 0:
+            raise ValueError("days must be positive")
+
+        # Calculate how many years we need to look ahead (250 trading days ≈ 1 year)
+        years_ahead = (days // 250) + 1
+        end_date = market_date + datetime.timedelta(days=365 * years_ahead)
+
+        # Get the trade calendar
+        trade_dates = self.trade_calendar(start_date=market_date, end_date=end_date, **kwargs)
+
+        # Find the market_date in the calendar (it should be the first or near first)
+        if market_date == trade_dates[0]:
+            idx = days
+        else:
+            # If market_date isn't a trading day, the first date is the next trading day
+            idx = days - 1
+
+        if idx >= len(trade_dates):
+            # Need to look further ahead
+            return self.trading_days_after(market_date=trade_dates[-1], days=idx - len(trade_dates) + 1, **kwargs)
+
+        return trade_dates[idx]
+
+    def nearest_trading_date(
+            self,
+            market_date: datetime.date,
+            method: Literal['previous', 'next'] = 'previous',
+            **kwargs
+    ) -> datetime.date:
+        """
+        Find the nearest trading date relative to the given market_date.
+
+        Args:
+            market_date: The reference date
+            method: Either 'previous' (default) or 'next' to determine which side to look when the date isn't a trading day
+
+        Keyword Args:
+            **kwargs: Additional arguments passed to trade_calendar
+
+        Returns:
+            The nearest trading date according to the specified method
+
+        Raises:
+            ValueError: If method is not 'previous' or 'next'
+        """
+        if method not in ('previous', 'next'):
+            raise ValueError("method must be either 'previous' or 'next'")
+
+        # If not a trading day, find nearest according to method
+        if method == 'previous':
+            # Get previous trading day by looking back 1 year (safe upper bound)
+            previous_dates = self.trade_calendar(
+                start_date=market_date - datetime.timedelta(days=30),
+                end_date=market_date,
+                **kwargs
+            )
+            return previous_dates[-1]
+        else:
+            # Get next trading day by looking ahead 1 year (safe upper bound)
+            next_dates = self.trade_calendar(
+                start_date=market_date,
+                end_date=market_date + datetime.timedelta(days=30),
+                **kwargs
+            )
+            return next_dates[0]
 
     @property
     def range_break(self) -> list[dict]:
