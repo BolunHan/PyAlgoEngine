@@ -354,7 +354,7 @@ class SimpleReplay(Replay):
         if not hasattr(self, '_buffer'):
             raise RuntimeError(f'{self.__class__.__name__} not started yet.')
 
-        return (self._idx_date + (self._idx_buffer / self._buffer_size - 1)) / len(self._calendar)
+        return (self._idx_date + self._idx_buffer / self._buffer_size) / len(self._calendar)
 
     @property
     def tickers(self) -> list[str]:
@@ -439,6 +439,7 @@ class ProgressReplay(SimpleReplay):
 
                 progress_config = dict(
                     tasks=1,
+                    tick_size=0.001,
                     **self.pbar_config['config'],
                 )
 
@@ -454,7 +455,7 @@ class ProgressReplay(SimpleReplay):
                 self._pbar.set_description(f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)})')
                 self._pbar.refresh()
             case 'native':
-                self.progress.prompt = f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)}):'
+                self._pbar.prompt = f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)}):'
                 self._pbar.output()
             case _:
                 raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
@@ -470,7 +471,7 @@ class ProgressReplay(SimpleReplay):
                 self._pbar.close()
                 self._pbar = None
             case 'native':
-                self.progress.done_tasks = 1
+                self._pbar.done_tasks = 1
                 self._pbar.output()
             case _:
                 raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
