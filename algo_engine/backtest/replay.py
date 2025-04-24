@@ -245,7 +245,7 @@ class SimpleReplay(Replay):
 
     def __iter__(self):
         self._calendar = self.calendar or [self.start_date + datetime.timedelta(days=i) for i in range((self.end_date - self.start_date).days + 1)]
-        self._market_date = self.market_date or sorted(_ for _ in self._calendar if _ >= self.market_date)[0]
+        self._market_date = sorted(_ for _ in self._calendar if _ >= self.market_date)[0]
         self._status = {market_date: 'skipped' if market_date < self.market_date else 'idle' for market_date in self._calendar}
         self._idx_buffer = 0
         self._idx_date = sum([1 for _ in self._calendar if _ < self.market_date])
