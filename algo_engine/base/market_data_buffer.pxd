@@ -102,6 +102,8 @@ cdef class MarketDataConcurrentBuffer:
     cdef uint64_t data_head(self)
     cdef uint64_t data_tail(self)
 
+    cpdef uint64_t get_head(self, uint32_t worker_id)
+
     cpdef uint64_t min_head(self)
 
     cpdef bint is_empty(self, uint32_t worker_id)

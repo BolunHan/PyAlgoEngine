@@ -12,6 +12,7 @@ from .transaction cimport TransactionData, OrderData
 from .tick cimport TickData, TickDataLite
 from .candlestick cimport BarData
 
+
 cdef class MarketDataBuffer:
     """
     A buffer for storing and managing multiple market data entries.
@@ -1000,6 +1001,11 @@ cdef class MarketDataConcurrentBuffer:
         if self._view_obtained:
             PyBuffer_Release(&self._view)
             self._view_obtained = False
+
+    cpdef uint64_t get_head(self, uint32_t worker_id):
+        if worker_id >= self._header.n_workers:
+            raise IndexError("worker_id exceeds number of workers")
+        return self._header.heads[worker_id]
 
     cpdef uint64_t min_head(self):
         """Get the minimum head position across all workers."""
