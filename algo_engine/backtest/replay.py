@@ -405,99 +405,96 @@ class ProgressReplay(SimpleReplay):
             'config': pbar_config,
         }
         self._pbar = None
-        self.add_bod(self._update_pbar_prefix, priority=0)
 
-    def _init_pbar(self):
-        pbar_backend = self.pbar_config['backend']
-        match pbar_backend:
-            case 'tqdm':
-                from tqdm.auto import tqdm
-                from tqdm.std import tqdm as tqdm_std
-                from tqdm.contrib.logging import _TqdmLoggingHandler, _get_first_found_console_logging_handler, _is_console_logging_handler
+    def _init_pbar_tqdm(self):
+        from tqdm.auto import tqdm
+        from tqdm.std import tqdm as tqdm_std
+        from tqdm.contrib.logging import _TqdmLoggingHandler, _get_first_found_console_logging_handler, _is_console_logging_handler
 
-                tqdm_secondary_config = {
-                    'total': 1,
-                    'unit_scale': True,
-                    'unit': 'percent',
-                    'mininterval': 0.1,
-                    'miniters': 0.001,
-                    **self.pbar_config['config'],
-                }
-                self._pbar_secondary = tqdm(**tqdm_secondary_config)
+        tqdm_config = {
+            'total': 1,
+            'unit_scale': True,
+            'unit': 'percent',
+            'mininterval': 0.1,
+            'miniters': 0.001,
+            **self.pbar_config['config'],
+        }
+        self._pbar = tqdm(**tqdm_config)
 
-                tqdm_config = {
-                    'total': 1,
-                    'unit_scale': True,
-                    'unit': 'percent',
-                    'mininterval': 0.1,
-                    'miniters': 0.001,
-                    **self.pbar_config['config'],
-                }
-                self._pbar = tqdm(**tqdm_config)
+        self.pbar_config['loggers'] = loggers = [LOGGER.root] + [_ for _ in LOGGER.root.manager.loggerDict.values() if isinstance(_, logging.Logger) and _.handlers]
+        self.pbar_config['original_handlers_list'] = [logger.handlers for logger in loggers]
+        for logger in loggers:
+            tqdm_handler = _TqdmLoggingHandler(tqdm_std)
+            orig_handler = _get_first_found_console_logging_handler(logger.handlers)
+            if orig_handler is not None:
+                tqdm_handler.setFormatter(orig_handler.formatter)
+                tqdm_handler.stream = orig_handler.stream
+            logger.handlers = [handler for handler in logger.handlers if not _is_console_logging_handler(handler)] + [tqdm_handler]
 
-                self._update_pbar_progress = self._update_tqdm_progress
-                self.pbar_config['loggers'] = loggers = [LOGGER.root] + [_ for _ in LOGGER.root.manager.loggerDict.values() if isinstance(_, logging.Logger) and _.handlers]
-                self.pbar_config['original_handlers_list'] = [logger.handlers for logger in loggers]
-                for logger in loggers:
-                    tqdm_handler = _TqdmLoggingHandler(tqdm_std)
-                    orig_handler = _get_first_found_console_logging_handler(logger.handlers)
-                    if orig_handler is not None:
-                        tqdm_handler.setFormatter(orig_handler.formatter)
-                        tqdm_handler.stream = orig_handler.stream
-                    logger.handlers = [handler for handler in logger.handlers if not _is_console_logging_handler(handler)] + [tqdm_handler]
-            case 'native':
-                from ..base import Progress
+        self.add_bod(self._init_pbar_tqdm_secondary, priority=0)
+        self.add_eod(self._close_pbar_tqdm_secondary, priority=0)
+        self.add_bod(self._update_tqdm_prefix, priority=0)
+        self._update_pbar_progress = self._update_tqdm_progress
 
-                progress_config = dict(
-                    tasks=1,
-                    tick_size=0.001,
-                    **self.pbar_config['config'],
-                )
+    def _init_pbar_tqdm_secondary(self, market_date):
+        from tqdm.auto import tqdm
 
-                self._pbar = Progress(**progress_config)
-                self._update_pbar_progress = self._update_native_progress
-            case _:
-                raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
+        tqdm_secondary_config = {
+            'total': 1,
+            'unit_scale': True,
+            'unit': 'percent',
+            'mininterval': 0.1,
+            'miniters': 0.001,
+            **self.pbar_config['config'],
+        }
+        self._pbar_secondary = tqdm(**tqdm_secondary_config)
+        prompt = f'Progress Total ({self._idx_date + 1} / {len(self._calendar)})'
+        prompt_secondary = f'Progress [{market_date:%Y-%m-%d}]'
+        prompt_length = max(len(prompt), len(prompt_secondary))
+        self._pbar_secondary.n = 0
+        self._pbar_secondary.set_description(prompt_secondary.ljust(prompt_length))
+        self._pbar_secondary.refresh()
 
-    def _update_pbar_prefix(self, market_date: datetime.date):
-        pbar_backend = self.pbar_config['backend']
-        match pbar_backend:
-            case 'tqdm':
-                prompt = f'Progress Total ({self._idx_date + 1} / {len(self._calendar)})'
-                prompt_secondary = f'Progress [{market_date:%Y-%m-%d}]'
-                prompt_length = max(len(prompt), len(prompt_secondary))
-                self._pbar.set_description(prompt.ljust(prompt_length))
-                self._pbar.refresh()
-                self._pbar_secondary.n = 0
-                self._pbar_secondary.set_description(prompt_secondary.ljust(prompt_length))
-                self._pbar_secondary.refresh()
-            case 'native':
-                self._pbar.prompt = f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)}):'
-                self._pbar.output()
-            case _:
-                raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
+    def _close_pbar_tqdm_secondary(self, market_date: datetime.date):
+        self._pbar_secondary.n = 1
+        # self._pbar_secondary.refresh()
+        self._pbar_secondary.close()
+        self._pbar_secondary = None
 
-    def _close_pbar(self):
-        pbar_backend = self.pbar_config['backend']
-        match pbar_backend:
-            case 'tqdm':
-                for logger, original_handlers in zip(self.pbar_config['loggers'], self.pbar_config['original_handlers_list']):
-                    logger.handlers = original_handlers
+    def _init_pbar_native(self):
+        from ..base import Progress
 
-                self._pbar_secondary.n = 1
-                # self._pbar_secondary.refresh()
-                self._pbar_secondary.close()
-                self._pbar_secondary = None
+        progress_config = dict(
+            tasks=1,
+            tick_size=0.001,
+            **self.pbar_config['config'],
+        )
 
-                self._pbar.n = 1
-                # self._pbar.refresh()
-                self._pbar.close()
-                self._pbar = None
-            case 'native':
-                self._pbar.done_tasks = 1
-                self._pbar.output()
-            case _:
-                raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
+        self.add_bod(self._update_native_prefix, priority=0)
+        self._pbar = Progress(**progress_config)
+        self._update_pbar_progress = self._update_native_progress
+
+    def _update_tqdm_prefix(self, market_date: datetime.date):
+        prompt = f'Progress Total ({self._idx_date + 1} / {len(self._calendar)})'
+        self._pbar.set_description(prompt)
+        self._pbar.refresh()
+
+    def _update_native_prefix(self, market_date: datetime.date):
+        self._pbar.prompt = f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)}):'
+        self._pbar.output()
+
+    def _close_pbar_tqdm(self):
+        for logger, original_handlers in zip(self.pbar_config['loggers'], self.pbar_config['original_handlers_list']):
+            logger.handlers = original_handlers
+
+        self._pbar.n = 1
+        # self._pbar.refresh()
+        self._pbar.close()
+        self._pbar = None
+
+    def _close_pbar_native(self):
+        self._pbar.done_tasks = 1
+        self._pbar.output()
 
     def _update_tqdm_progress(self):
         self._pbar.n = self.progress
@@ -515,7 +512,16 @@ class ProgressReplay(SimpleReplay):
             self._pbar.output()
 
     def __iter__(self):
-        self._init_pbar()
+        pbar_backend = self.pbar_config['backend']
+
+        match pbar_backend:
+            case 'tqdm':
+                self._init_pbar_tqdm()
+            case 'native':
+                self._init_pbar_native()
+            case _:
+                raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
+
         return super().__iter__()
 
     def __next__(self) -> MarketData:
@@ -526,7 +532,14 @@ class ProgressReplay(SimpleReplay):
             return result
         except StopIteration:
             if self._pbar is not None:
-                self._close_pbar()
+                pbar_backend = self.pbar_config['backend']
+                match pbar_backend:
+                    case 'tqdm':
+                        self._close_pbar_tqdm()
+                    case 'native':
+                        self._close_pbar_native()
+                    case _:
+                        raise NotImplementedError(f'Invalid pbar backend {pbar_backend}')
             raise
 
 
