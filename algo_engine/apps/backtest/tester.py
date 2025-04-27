@@ -8,7 +8,7 @@ import numpy as np
 from algo_engine.backtest.metrics import TradeMetrics
 from . import LOGGER
 from .web_app import WebApp
-from ...backtest import SimMatch, ProgressiveReplay
+from ...backtest import SimMatch, ProgressReplay
 from ...base import MarketData, TradeReport, TradeInstruction
 from ...profile import Profile, PROFILE
 
@@ -109,16 +109,17 @@ class Tester(object, metaclass=abc.ABCMeta):
         pass
 
     def run(self, **kwargs):
-        replay = ProgressiveReplay(
+        replay = ProgressReplay(
             loader=self.load_data,
-            tickers=list(self.subscription),
-            dtype=['TickData', 'TradeData'],
             start_date=self.start_date,
             end_date=self.end_date,
             bod=self.bod,
             eod=self.eod,
-            tick_size=kwargs.get('progress_tick_size', 0.001),
         )
+
+        for ticker in self.subscription:
+            replay.add_subscription(ticker, dtype='TickData')
+            replay.add_subscription(ticker, dtype='TradeData')
 
         _start_ts = time.time()
 
@@ -222,16 +223,17 @@ class StrategyTester(Tester):
         if not self.event_engine.active:
             self.event_engine.start()
 
-        replay = ProgressiveReplay(
+        replay = ProgressReplay(
             loader=self.load_data,
-            tickers=list(self.subscription),
-            dtype=['TickData', 'TradeData'],
             start_date=self.start_date,
             end_date=self.end_date,
             bod=self.bod,
             eod=self.eod,
-            tick_size=kwargs.get('progress_tick_size', 0.001),
         )
+
+        for ticker in self.subscription:
+            replay.add_subscription(ticker, dtype='TickData')
+            replay.add_subscription(ticker, dtype='TradeData')
 
         _start_ts = time.time()
 

@@ -5,7 +5,7 @@ from collections.abc import Callable
 from functools import cached_property
 
 from . import LOGGER
-from ..backtest import SimMatch, ProgressiveReplay
+from ..backtest import SimMatch, ProgressReplay
 from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset
 from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE
 
@@ -387,16 +387,17 @@ class StrategyEngine(StrategyEngineTemplate):
         pass
 
     def back_test_lite(self, start_date: datetime.date, end_date: datetime.date, data_loader: Callable, **kwargs):
-        replay = ProgressiveReplay(
+        replay = ProgressReplay(
             loader=data_loader,
-            tickers=list(self.subscription),
-            dtype=['TickData', 'TradeData'],
             start_date=start_date,
             end_date=end_date,
             bod=self.bod,
             eod=self.eod,
-            tick_size=kwargs.get('progress_tick_size', 0.001),
         )
+
+        for ticker in self.subscription:
+            replay.add_subscription(ticker, dtype='TickData')
+            replay.add_subscription(ticker, dtype='TradeData')
 
         sim_match = {}
         multi_threading = kwargs.get('multi_threading', False)
