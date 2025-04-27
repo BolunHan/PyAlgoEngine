@@ -415,6 +415,16 @@ class ProgressReplay(SimpleReplay):
                 from tqdm.std import tqdm as tqdm_std
                 from tqdm.contrib.logging import _TqdmLoggingHandler, _get_first_found_console_logging_handler, _is_console_logging_handler
 
+                tqdm_secondary_config = {
+                    'total': 1,
+                    'unit_scale': True,
+                    'unit': 'percent',
+                    'mininterval': 0.1,
+                    'miniters': 0.001,
+                    **self.pbar_config['config'],
+                }
+                self._pbar_secondary = tqdm(**tqdm_secondary_config)
+
                 tqdm_config = {
                     'total': 1,
                     'unit_scale': True,
@@ -424,6 +434,7 @@ class ProgressReplay(SimpleReplay):
                     **self.pbar_config['config'],
                 }
                 self._pbar = tqdm(**tqdm_config)
+
                 self._update_pbar_progress = self._update_tqdm_progress
                 self.pbar_config['loggers'] = loggers = [LOGGER.root] + [_ for _ in LOGGER.root.manager.loggerDict.values() if isinstance(_, logging.Logger) and _.handlers]
                 self.pbar_config['original_handlers_list'] = [logger.handlers for logger in loggers]
@@ -452,8 +463,14 @@ class ProgressReplay(SimpleReplay):
         pbar_backend = self.pbar_config['backend']
         match pbar_backend:
             case 'tqdm':
-                self._pbar.set_description(f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)})')
+                prompt = f'Progress Total ({self._idx_date + 1} / {len(self._calendar)})'
+                prompt_secondary = f'Progress [{market_date:%Y-%m-%d}]'
+                prompt_length = max(len(prompt), len(prompt_secondary))
+                self._pbar.set_description(prompt.ljust(prompt_length))
                 self._pbar.refresh()
+                self._pbar_secondary.n = 0
+                self._pbar_secondary.set_description(prompt_secondary.ljust(prompt_length))
+                self._pbar_secondary.refresh()
             case 'native':
                 self._pbar.prompt = f'Replay {market_date:%Y-%m-%d} ({self._idx_date + 1} / {len(self._calendar)}):'
                 self._pbar.output()
@@ -466,8 +483,14 @@ class ProgressReplay(SimpleReplay):
             case 'tqdm':
                 for logger, original_handlers in zip(self.pbar_config['loggers'], self.pbar_config['original_handlers_list']):
                     logger.handlers = original_handlers
+
+                self._pbar_secondary.n = 1
+                # self._pbar_secondary.refresh()
+                self._pbar_secondary.close()
+                self._pbar_secondary = None
+
                 self._pbar.n = 1
-                self._pbar.refresh()
+                # self._pbar.refresh()
                 self._pbar.close()
                 self._pbar = None
             case 'native':
@@ -479,6 +502,9 @@ class ProgressReplay(SimpleReplay):
     def _update_tqdm_progress(self):
         self._pbar.n = self.progress
         self._pbar.update(0)
+
+        self._pbar_secondary.n = self._idx_buffer / self._buffer_size
+        self._pbar_secondary.update(0)
 
     def _update_native_progress(self):
         self._pbar.done_tasks = self.progress
