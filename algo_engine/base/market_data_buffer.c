@@ -1593,20 +1593,20 @@ enum OrderState {
 /* "market_data.pxd":68
  * 
  * # Data type mapping
- * cdef public enum DataType:             # <<<<<<<<<<<<<<
+ * cpdef enum DataType:             # <<<<<<<<<<<<<<
  *     DTYPE_UNKNOWN = 0
  *     DTYPE_MARKET_DATA = 10
  */
-enum DataType {
-  DTYPE_UNKNOWN = 0,
-  DTYPE_MARKET_DATA = 10,
-  DTYPE_TRANSACTION = 20,
-  DTYPE_ORDER = 30,
-  DTYPE_TICK_LITE = 31,
-  DTYPE_TICK = 32,
-  DTYPE_BAR = 40,
-  DTYPE_REPORT = 50,
-  DTYPE_INSTRUCTION = 51
+enum __pyx_t_11algo_engine_4base_11market_data_DataType {
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_UNKNOWN = 0,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_MARKET_DATA = 10,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_TRANSACTION = 20,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_ORDER = 30,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK_LITE = 31,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK = 32,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_BAR = 40,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_REPORT = 50,
+  __pyx_e_11algo_engine_4base_11market_data_DTYPE_INSTRUCTION = 51
 };
 
 /* "market_data.pxd":80
@@ -6585,7 +6585,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *             return self.push(market_data=TickData(**kwargs))
  * 
  */
-  __pyx_t_1 = (__pyx_v_dtype == DTYPE_TICK);
+  __pyx_t_1 = (__pyx_v_dtype == __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK);
   if (__pyx_t_1) {
 
     /* "algo_engine/base/market_data_buffer.pyx":274
@@ -6959,7 +6959,7 @@ static void __pyx_f_11algo_engine_4base_18market_data_buffer_16MarketDataBuffer_
  *         elif dtype == DataType.DTYPE_ORDER:
  */
   switch (__pyx_v_dtype) {
-    case DTYPE_TRANSACTION:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TRANSACTION:
 
     /* "algo_engine/base/market_data_buffer.pyx":329
  *         # Set specific fields based on dtype
@@ -6978,7 +6978,7 @@ static void __pyx_f_11algo_engine_4base_18market_data_buffer_16MarketDataBuffer_
  *         elif dtype == DataType.DTYPE_ORDER:
  */
     break;
-    case DTYPE_ORDER:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_ORDER:
 
     /* "algo_engine/base/market_data_buffer.pyx":331
  *             MarketDataBuffer._set_transaction_fields(buffer, kwargs)
@@ -6997,7 +6997,7 @@ static void __pyx_f_11algo_engine_4base_18market_data_buffer_16MarketDataBuffer_
  *         elif dtype == DataType.DTYPE_TICK_LITE:
  */
     break;
-    case DTYPE_TICK_LITE:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK_LITE:
 
     /* "algo_engine/base/market_data_buffer.pyx":333
  *             MarketDataBuffer._set_order_fields(buffer, kwargs)
@@ -7016,7 +7016,7 @@ static void __pyx_f_11algo_engine_4base_18market_data_buffer_16MarketDataBuffer_
  *         elif dtype == DataType.DTYPE_TICK:
  */
     break;
-    case DTYPE_TICK:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK:
 
     /* "algo_engine/base/market_data_buffer.pyx":335
  *             MarketDataBuffer._set_tick_lite_fields(buffer, kwargs)
@@ -7035,7 +7035,7 @@ static void __pyx_f_11algo_engine_4base_18market_data_buffer_16MarketDataBuffer_
  *         elif dtype == DataType.DTYPE_BAR:
  */
     break;
-    case DTYPE_BAR:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_BAR:
 
     /* "algo_engine/base/market_data_buffer.pyx":337
  *             MarketDataBuffer._set_tick_fields(buffer, kwargs)
@@ -8888,7 +8888,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_ORDER:
  */
   switch (__pyx_v_dtype) {
-    case DTYPE_TRANSACTION:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TRANSACTION:
 
     /* "algo_engine/base/market_data_buffer.pyx":518
  *         # Create appropriate object based on dtype
@@ -8934,7 +8934,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_ORDER:
  */
     break;
-    case DTYPE_ORDER:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_ORDER:
 
     /* "algo_engine/base/market_data_buffer.pyx":520
  *             return TransactionData.from_bytes(data)
@@ -8980,7 +8980,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_TICK_LITE:
  */
     break;
-    case DTYPE_TICK_LITE:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK_LITE:
 
     /* "algo_engine/base/market_data_buffer.pyx":522
  *             return OrderData.from_bytes(data)
@@ -9026,7 +9026,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_TICK:
  */
     break;
-    case DTYPE_TICK:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK:
 
     /* "algo_engine/base/market_data_buffer.pyx":524
  *             return TickDataLite.from_bytes(data)
@@ -9072,7 +9072,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_BAR:
  */
     break;
-    case DTYPE_BAR:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_BAR:
 
     /* "algo_engine/base/market_data_buffer.pyx":526
  *             return TickData.from_bytes(data)
@@ -9324,7 +9324,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_ORDER:
  */
   switch (__pyx_v_dtype) {
-    case DTYPE_TRANSACTION:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TRANSACTION:
 
     /* "algo_engine/base/market_data_buffer.pyx":557
  *         # Create appropriate object based on dtype
@@ -9370,7 +9370,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_ORDER:
  */
     break;
-    case DTYPE_ORDER:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_ORDER:
 
     /* "algo_engine/base/market_data_buffer.pyx":559
  *             return TransactionData.from_bytes(data)
@@ -9416,7 +9416,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_TICK_LITE:
  */
     break;
-    case DTYPE_TICK_LITE:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK_LITE:
 
     /* "algo_engine/base/market_data_buffer.pyx":561
  *             return OrderData.from_bytes(data)
@@ -9462,7 +9462,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_TICK:
  */
     break;
-    case DTYPE_TICK:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK:
 
     /* "algo_engine/base/market_data_buffer.pyx":563
  *             return TickDataLite.from_bytes(data)
@@ -9508,7 +9508,7 @@ static PyObject *__pyx_pf_11algo_engine_4base_18market_data_buffer_16MarketDataB
  *         elif dtype == DataType.DTYPE_BAR:
  */
     break;
-    case DTYPE_BAR:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_BAR:
 
     /* "algo_engine/base/market_data_buffer.pyx":565
  *             return TickData.from_bytes(data)
@@ -12571,7 +12571,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_ORDER:
  */
   switch (__pyx_v_dtype) {
-    case DTYPE_TRANSACTION:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TRANSACTION:
 
     /* "algo_engine/base/market_data_buffer.pyx":871
  *         # Create appropriate MarketData object
@@ -12618,7 +12618,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_ORDER:
  */
     break;
-    case DTYPE_ORDER:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_ORDER:
 
     /* "algo_engine/base/market_data_buffer.pyx":873
  *             return TransactionData.from_bytes(data)
@@ -12665,7 +12665,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_TICK_LITE:
  */
     break;
-    case DTYPE_TICK_LITE:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK_LITE:
 
     /* "algo_engine/base/market_data_buffer.pyx":875
  *             return OrderData.from_bytes(data)
@@ -12712,7 +12712,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_TICK:
  */
     break;
-    case DTYPE_TICK:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK:
 
     /* "algo_engine/base/market_data_buffer.pyx":877
  *             return TickDataLite.from_bytes(data)
@@ -12759,7 +12759,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_BAR:
  */
     break;
-    case DTYPE_BAR:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_BAR:
 
     /* "algo_engine/base/market_data_buffer.pyx":879
  *             return TickData.from_bytes(data)
@@ -16687,7 +16687,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_ORDER:
  */
   switch (__pyx_v_dtype) {
-    case DTYPE_TRANSACTION:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TRANSACTION:
 
     /* "algo_engine/base/market_data_buffer.pyx":1127
  *         # Create appropriate MarketData object
@@ -16734,7 +16734,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_ORDER:
  */
     break;
-    case DTYPE_ORDER:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_ORDER:
 
     /* "algo_engine/base/market_data_buffer.pyx":1129
  *             return TransactionData.from_bytes(data)
@@ -16781,7 +16781,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_TICK_LITE:
  */
     break;
-    case DTYPE_TICK_LITE:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK_LITE:
 
     /* "algo_engine/base/market_data_buffer.pyx":1131
  *             return OrderData.from_bytes(data)
@@ -16828,7 +16828,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_TICK:
  */
     break;
-    case DTYPE_TICK:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_TICK:
 
     /* "algo_engine/base/market_data_buffer.pyx":1133
  *             return TickDataLite.from_bytes(data)
@@ -16875,7 +16875,7 @@ static struct __pyx_obj_11algo_engine_4base_11market_data_MarketData *__pyx_f_11
  *         elif dtype == DataType.DTYPE_BAR:
  */
     break;
-    case DTYPE_BAR:
+    case __pyx_e_11algo_engine_4base_11market_data_DTYPE_BAR:
 
     /* "algo_engine/base/market_data_buffer.pyx":1135
  *             return TickData.from_bytes(data)

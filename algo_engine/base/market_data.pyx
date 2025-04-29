@@ -11,19 +11,6 @@ from libc.string cimport memcpy, memset
 from ..profile import PROFILE
 
 
-class PyDataType(enum.IntEnum):
-    DTYPE_UNKNOWN = DataType.DTYPE_UNKNOWN
-    DTYPE_MARKET_DATA = DataType.DTYPE_MARKET_DATA
-    DTYPE_TRANSACTION = DataType.DTYPE_TRANSACTION
-    DTYPE_ORDER = DataType.DTYPE_ORDER
-    DTYPE_TICK_LITE = DataType.DTYPE_TICK_LITE
-    DTYPE_TICK = DataType.DTYPE_TICK
-    DTYPE_BAR = DataType.DTYPE_BAR
-
-    DTYPE_REPORT = DataType.DTYPE_REPORT
-    DTYPE_INSTRUCTION = DataType.DTYPE_INSTRUCTION
-
-
 # Base MarketData class
 cdef class MarketData:
     """

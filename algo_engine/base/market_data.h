@@ -44,25 +44,6 @@ enum OrderState {
   STATE_CANCELED = 9
 };
 
-/* "algo_engine/base/market_data.pxd":68
- * 
- * # Data type mapping
- * cdef public enum DataType:             # <<<<<<<<<<<<<<
- *     DTYPE_UNKNOWN = 0
- *     DTYPE_MARKET_DATA = 10
- */
-enum DataType {
-  DTYPE_UNKNOWN = 0,
-  DTYPE_MARKET_DATA = 10,
-  DTYPE_TRANSACTION = 20,
-  DTYPE_ORDER = 30,
-  DTYPE_TICK_LITE = 31,
-  DTYPE_TICK = 32,
-  DTYPE_BAR = 40,
-  DTYPE_REPORT = 50,
-  DTYPE_INSTRUCTION = 51
-};
-
 #ifndef __PYX_HAVE_API__algo_engine__base__market_data
 
 #ifdef CYTHON_EXTERN_C

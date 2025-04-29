@@ -65,7 +65,7 @@ cdef public enum OrderState:
 
 
 # Data type mapping
-cdef public enum DataType:
+cpdef enum DataType:
     DTYPE_UNKNOWN = 0
     DTYPE_MARKET_DATA = 10
     DTYPE_TRANSACTION = 20

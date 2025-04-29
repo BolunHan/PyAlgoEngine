@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 
-class PyDataType(enum.IntEnum):
+class DataType(enum.IntEnum):
     DTYPE_UNKNOWN: int
     DTYPE_MARKET_DATA: int
     DTYPE_TRANSACTION: int
