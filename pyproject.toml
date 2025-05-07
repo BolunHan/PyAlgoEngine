@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 WebApps = ["flask", "waitress", "bokeh"]
+Docs = ["sphinx", "sphinx-rtd-theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
 Homepage = "https://github.com/BolunHan/PyAlgoEngine"
