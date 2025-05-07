@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools", "numpy", "Cython"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyAlgoEngine"
+dynamic = ["version"]
+description = "Basic algo engine"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Han Bolun", email = "Bolun.Han@outlook.com" }]
+license = { text = "MIT" }  # Or your actual license
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "exchange_calendars",
+    "PyEventEngine",
+    "cython"
+]
+
+[project.optional-dependencies]
+WebApps = ["flask", "waitress", "bokeh"]
+
+[project.urls]
+Homepage = "https://github.com/BolunHan/PyAlgoEngine"
+Repository = "https://github.com/BolunHan/PyAlgoEngine"
+Issues = "https://github.com/BolunHan/PyAlgoEngine/issues"
+
+[tool.setuptools]
+ext-modules = [
+    { name = "algo_engine.base.market_data", sources = ["algo_engine/base/market_data.pyx"]},
+    { name = "algo_engine.base.transaction", sources = ["algo_engine/base/transaction.pyx"]},
+    { name = "algo_engine.base.candlestick", sources = ["algo_engine/base/candlestick.pyx"]},
+    { name = "algo_engine.base.tick", sources = ["algo_engine/base/tick.pyx"]},
+    { name = "algo_engine.base.market_data_buffer", sources = ["algo_engine/base/market_data_buffer.pyx"]},
+    { name = "algo_engine.base.trade_utils", sources = ["algo_engine/base/trade_utils.pyx"]},
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "algo_engine.__version__" }
