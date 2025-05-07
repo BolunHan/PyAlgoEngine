@@ -1,0 +1,45 @@
+algo\_engine.apps.sim\_input package
+====================================
+
+Submodules
+----------
+
+algo\_engine.apps.sim\_input.client module
+------------------------------------------
+
+.. automodule:: algo_engine.apps.sim_input.client
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.apps.sim\_input.sim\_keyboard module
+-------------------------------------------------
+
+.. automodule:: algo_engine.apps.sim_input.sim_keyboard
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.apps.sim\_input.sim\_mouse module
+----------------------------------------------
+
+.. automodule:: algo_engine.apps.sim_input.sim_mouse
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.apps.sim\_input.window module
+------------------------------------------
+
+.. automodule:: algo_engine.apps.sim_input.window
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.apps.sim_input
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,586 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.apps.sim_input.client &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../apps.html">algo_engine.apps</a></li>
+          <li class="breadcrumb-item"><a href="../sim_input.html">algo_engine.apps.sim_input</a></li>
+      <li class="breadcrumb-item active">algo_engine.apps.sim_input.client</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.apps.sim_input.client</h1><div class="highlight"><pre>
+<span></span><span class="n">__package__</span> <span class="o">=</span> <span class="s1">&#39;algo_engine.apps.sim_input&#39;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tkinter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">threading</span><span class="w"> </span><span class="kn">import</span> <span class="n">Thread</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tkinter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ttk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">NotRequired</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;Client&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Action">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.Action">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Action</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="Action.Step">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.Action.Step">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Step</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="n">procedure</span><span class="p">:</span> <span class="n">Callable</span>
+        <span class="n">args</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Iterable</span><span class="p">]</span>
+        <span class="n">kwargs</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+        <span class="n">comments</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Action.__init__">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.Action.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Action</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="Action.append">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.Action.append">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">comments</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">Action</span><span class="o">.</span><span class="n">Step</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">procedure</span><span class="o">=</span><span class="n">action</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">step</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span>
+
+        <span class="k">if</span> <span class="n">kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">step</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+        <span class="k">if</span> <span class="n">comments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">step</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">comments</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">procedure</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s1">&#39;procedure&#39;</span><span class="p">]</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;kwargs&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">comments</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;comments&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">procedure</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&lt;Action </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&gt; &lt;step </span><span class="si">{</span><span class="n">comments</span><span class="si">}</span><span class="s1">&gt;(</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1"> / </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s1">) Failed!&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ignore_error</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&lt;Action </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&gt; &lt;step </span><span class="si">{</span><span class="n">comments</span><span class="si">}</span><span class="s1">&gt;(</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1"> / </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s1">) Completed!&#39;</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&lt;Action </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&gt; completed!&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AutoWorkClient">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AutoWorkClient</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+<div class="viewcode-block" id="AutoWorkClient.__init__">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">root</span> <span class="k">if</span> <span class="n">root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tkinter</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span> <span class="s2">&quot;Structured GUI Client&quot;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Action</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># State variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">worker_thread</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recording</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_layout</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.render_layout">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.render_layout">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render_layout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># No fixed geometry, letting it resize</span>
+        <span class="c1"># self.root.geometry(&quot;600x500&quot;)</span>
+
+        <span class="c1"># Grid(0, 0): Create button</span>
+        <span class="n">button_takeover</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;button_takeover&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ttk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Takeover Input&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">toggle_auto_work</span><span class="p">)</span>
+        <span class="n">button_takeover</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;ew&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Grid(0, 1): Mock button</span>
+        <span class="n">button_record</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;button_record&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ttk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Record Action&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">record_action</span><span class="p">)</span>
+        <span class="n">button_record</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;ew&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Grid(1, 0): Mock button</span>
+        <span class="n">button_mock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;button_mock&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ttk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Mock Action&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">toggle_mock</span><span class="p">)</span>
+        <span class="n">button_mock</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;ew&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Grid(1, 1): Dropdown for action selection</span>
+        <span class="n">action_selected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_selected&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tkinter</span><span class="o">.</span><span class="n">StringVar</span><span class="p">()</span>
+        <span class="n">action_dropdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_dropdown&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ttk</span><span class="o">.</span><span class="n">Combobox</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">textvariable</span><span class="o">=</span><span class="n">action_selected</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s2">&quot;readonly&quot;</span><span class="p">)</span>
+        <span class="n">action_dropdown</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;ew&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Grid(2, 0): Create table</span>
+        <span class="n">action_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_table&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ttk</span><span class="o">.</span><span class="n">Treeview</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Action&quot;</span><span class="p">,</span> <span class="s2">&quot;Status&quot;</span><span class="p">,</span> <span class="s2">&quot;Comments&quot;</span><span class="p">),</span> <span class="n">show</span><span class="o">=</span><span class="s2">&quot;tree headings&quot;</span><span class="p">)</span>
+        <span class="n">action_table</span><span class="o">.</span><span class="n">heading</span><span class="p">(</span><span class="s2">&quot;Action&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Action&quot;</span><span class="p">)</span>
+        <span class="n">action_table</span><span class="o">.</span><span class="n">heading</span><span class="p">(</span><span class="s2">&quot;Status&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Status&quot;</span><span class="p">)</span>
+        <span class="n">action_table</span><span class="o">.</span><span class="n">heading</span><span class="p">(</span><span class="s2">&quot;Comments&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Comments&quot;</span><span class="p">)</span>
+        <span class="n">action_table</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;nsew&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Make the window resize properly by configuring grid weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">minsize</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>  <span class="c1"># Adjust minsize for column 0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">minsize</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>  <span class="c1"># Adjust minsize for column 1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">grid_rowconfigure</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Make row 2 expand with the window</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.listen_signal">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.listen_signal">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listen_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.register_action">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.register_action">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+        <span class="c1"># Update the dropdown with all registered actions.</span>
+        <span class="n">all_actions</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Signal </span><span class="si">{</span><span class="n">signal</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">signal</span><span class="p">,</span> <span class="n">actions</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">]</span>
+        <span class="n">action_dropdown</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_dropdown&#39;</span><span class="p">]</span>
+        <span class="n">action_dropdown</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_actions</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.mock_action">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.mock_action">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mock_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mock the execution of an action on a transparent test ground.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">iconify</span><span class="p">()</span>
+
+        <span class="c1"># Create a borderless, transparent test ground window</span>
+        <span class="n">testground</span> <span class="o">=</span> <span class="n">tkinter</span><span class="o">.</span><span class="n">Toplevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="c1"># testground.overrideredirect(True)  # Remove all window borders and decorations</span>
+
+        <span class="c1"># Get screen dimensions and set the testground window to cover the entire screen</span>
+        <span class="c1"># screen_width = self.root.winfo_screenwidth()</span>
+        <span class="c1"># screen_height = self.root.winfo_screenheight()</span>
+        <span class="c1"># testground.geometry(f&quot;{screen_width}x{screen_height}+0+0&quot;)</span>
+
+        <span class="c1"># Make the window semi-transparent and ensure it stays on top</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">attributes</span><span class="p">(</span><span class="s2">&quot;-alpha&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># Set transparency to 50%</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">attributes</span><span class="p">(</span><span class="s2">&quot;-fullscreen&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">attributes</span><span class="p">(</span><span class="s2">&quot;-topmost&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>  <span class="c1"># Ensure it stays above other windows</span>
+
+        <span class="c1"># Force the window manager to render the window completely</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">lift</span><span class="p">()</span>  <span class="c1"># Bring it to the front</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">focus_force</span><span class="p">()</span>  <span class="c1"># Force focus to this window</span>
+
+        <span class="c1"># Add a label to display input history</span>
+        <span class="n">input_history</span> <span class="o">=</span> <span class="n">tkinter</span><span class="o">.</span><span class="n">Listbox</span><span class="p">(</span><span class="n">testground</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="mi">14</span><span class="p">))</span>
+        <span class="n">input_history</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">fill</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Mocking </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">update_idletasks</span><span class="p">()</span>
+
+        <span class="c1"># Simulate action execution</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">action</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
+            <span class="c1"># Display the step name in the input history</span>
+            <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Executing Step: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Comments: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;No comments&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+            <span class="n">input_history</span><span class="o">.</span><span class="n">see</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">)</span>
+            <span class="n">testground</span><span class="o">.</span><span class="n">update_idletasks</span><span class="p">()</span>
+
+            <span class="c1"># Simulate mouse and keyboard inputs</span>
+            <span class="n">procedure</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s1">&#39;procedure&#39;</span><span class="p">]</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;kwargs&#39;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">procedure</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">input_history</span><span class="o">.</span><span class="n">see</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Simulate delay between steps</span>
+
+        <span class="c1"># Wait 3 seconds, then close the test ground and restore the client window</span>
+        <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+        <span class="n">input_history</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Mocking </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> Completed! Exiting in </span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s2"> seconds...&quot;</span><span class="p">)</span>
+
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">deiconify</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.toggle_auto_work">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.toggle_auto_work">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toggle_auto_work</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Toggle the daemon thread to start or stop auto work.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">takeover_control</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">release_control</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.takeover_control">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.takeover_control">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">takeover_control</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Autoworker already running!&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;button_takeover&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Release Control&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">worker_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">auto_work</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">worker_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.release_control">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.release_control">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">release_control</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Autoworker already stopped!&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;button_takeover&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Takeover Input&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.toggle_mock">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.toggle_mock">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">toggle_mock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mock the action selected in the dropdown.&quot;&quot;&quot;</span>
+        <span class="n">selected_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_selected&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">selected_name</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No action selected to mock!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">selected_action</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">signal</span><span class="p">,</span> <span class="n">actions</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">:</span>
+                <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;Signal </span><span class="si">{</span><span class="n">signal</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">==</span> <span class="n">selected_name</span><span class="p">:</span>
+                    <span class="n">selected_action</span> <span class="o">=</span> <span class="n">action</span>
+                    <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">selected_action</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action &#39;</span><span class="si">{</span><span class="n">selected_name</span><span class="si">}</span><span class="s2">&#39; not found!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mock_action</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="n">selected_action</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.auto_work">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.auto_work">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auto_work</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate data for the table in a loop.&quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="n">signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listen_signal</span><span class="p">()</span>
+            <span class="n">actions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="c1"># Update table for the current signal</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_table</span><span class="p">(</span><span class="n">actions</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">action_idx</span><span class="p">,</span> <span class="n">action</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">actions</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># Update action status to &quot;Executing&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">parent_id</span><span class="o">=</span><span class="n">action_idx</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;Executing&quot;</span><span class="p">)</span>
+                <span class="n">action_done</span> <span class="o">=</span> <span class="kc">False</span>
+
+                <span class="k">for</span> <span class="n">step_idx</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">steps</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+                        <span class="k">break</span>
+
+                    <span class="c1"># Update step status to &quot;Executing&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">parent_id</span><span class="o">=</span><span class="n">action_idx</span><span class="p">,</span> <span class="n">child_id</span><span class="o">=</span><span class="n">step_idx</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;Executing&quot;</span><span class="p">)</span>
+
+                    <span class="c1"># Execute the step</span>
+                    <span class="n">step</span><span class="p">[</span><span class="s2">&quot;procedure&quot;</span><span class="p">](</span><span class="o">*</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="p">[]),</span> <span class="o">**</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+
+                    <span class="c1"># Mark step as &quot;Done&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">parent_id</span><span class="o">=</span><span class="n">action_idx</span><span class="p">,</span> <span class="n">child_id</span><span class="o">=</span><span class="n">step_idx</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Mark action as &quot;Done&quot; after all steps</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">parent_id</span><span class="o">=</span><span class="n">action_idx</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
+                    <span class="n">action_done</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">action_done</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">parent_id</span><span class="o">=</span><span class="n">action_idx</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;Stopped&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.update_table">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.update_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">actions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Action</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the table based on the provided actions.&quot;&quot;&quot;</span>
+        <span class="n">action_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_table&#39;</span><span class="p">]</span>
+        <span class="n">action_table</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">action_table</span><span class="o">.</span><span class="n">get_children</span><span class="p">())</span>  <span class="c1"># Clear existing rows</span>
+
+        <span class="k">for</span> <span class="n">action_idx</span><span class="p">,</span> <span class="n">action</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">actions</span><span class="p">):</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="nb">chr</span><span class="p">(</span><span class="mh">0x250C</span><span class="p">)</span>
+            <span class="c1"># Insert the parent row</span>
+            <span class="n">parent_id</span> <span class="o">=</span> <span class="n">action_table</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="n">iid</span><span class="o">=</span><span class="n">action_idx</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;Pending&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Insert child rows for steps</span>
+            <span class="k">for</span> <span class="n">step_idx</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">steps</span><span class="p">):</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">chr</span><span class="p">(</span><span class="mh">0x251C</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">step_idx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="nb">chr</span><span class="p">(</span><span class="mh">0x2514</span><span class="p">)</span><span class="si">}{</span><span class="nb">chr</span><span class="p">(</span><span class="mh">0x2500</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="n">action_table</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+                    <span class="n">parent_id</span><span class="p">,</span>
+                    <span class="s2">&quot;end&quot;</span><span class="p">,</span>
+                    <span class="n">iid</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">action_idx</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">step_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">values</span><span class="o">=</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2"> Step </span><span class="si">{</span><span class="n">step_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;Pending&quot;</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;comments&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)),</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Expand parent row by default</span>
+            <span class="n">action_table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">parent_id</span><span class="p">,</span> <span class="nb">open</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Auto-adjust column widths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjust_column_widths</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.update_status">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.update_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">child_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Pending&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the status of the specified row.&quot;&quot;&quot;</span>
+        <span class="n">row_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">child_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">child_id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">action_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_table&#39;</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">action_table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">row_id</span><span class="p">,</span> <span class="s2">&quot;values&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Select the row if the status is &quot;Executing&quot;</span>
+        <span class="k">match</span> <span class="n">status</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s2">&quot;Executing&quot;</span><span class="p">:</span>
+                <span class="n">action_table</span><span class="o">.</span><span class="n">selection_set</span><span class="p">(</span><span class="n">row_id</span><span class="p">)</span>
+                <span class="n">action_table</span><span class="o">.</span><span class="n">see</span><span class="p">(</span><span class="n">row_id</span><span class="p">)</span>  <span class="c1"># Ensure the row is visible</span>
+
+        <span class="n">action_table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="n">row_id</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">status</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.adjust_column_widths">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.adjust_column_widths">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adjust_column_widths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Automatically adjust column widths based on content.&quot;&quot;&quot;</span>
+        <span class="n">action_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;action_table&#39;</span><span class="p">]</span>
+        <span class="n">action_table</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="s2">&quot;#0&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">minwidth</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">action_table</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]:</span>
+            <span class="n">max_width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">action_table</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">col</span><span class="p">)))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">action_table</span><span class="o">.</span><span class="n">get_children</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">col</span><span class="p">)]</span>
+            <span class="p">)</span>
+            <span class="n">action_table</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">max_width</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="n">minwidth</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Scale width for readability</span></div>
+
+
+<div class="viewcode-block" id="AutoWorkClient.record_action">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.record_action">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record_action</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Capture and log mouse and keyboard events in the test ground.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">iconify</span><span class="p">()</span>
+
+        <span class="c1"># Create a semi-transparent test ground window</span>
+        <span class="n">testground</span> <span class="o">=</span> <span class="n">tkinter</span><span class="o">.</span><span class="n">Toplevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">attributes</span><span class="p">(</span><span class="s2">&quot;-alpha&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># Set transparency</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">attributes</span><span class="p">(</span><span class="s2">&quot;-fullscreen&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">attributes</span><span class="p">(</span><span class="s2">&quot;-topmost&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">lift</span><span class="p">()</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">focus_force</span><span class="p">()</span>
+
+        <span class="c1"># Listbox to display recorded events</span>
+        <span class="n">event_log</span> <span class="o">=</span> <span class="n">tkinter</span><span class="o">.</span><span class="n">Listbox</span><span class="p">(</span><span class="n">testground</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Courier&quot;</span><span class="p">,</span> <span class="mi">14</span><span class="p">),</span> <span class="n">selectmode</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">tkinter</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">)</span>
+        <span class="c1"># event_log.bindtags((event_log, self.root, &quot;all&quot;))</span>
+        <span class="n">event_log</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">fill</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">log_event</span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Log the event details to the console and the event log.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">event_type</span> <span class="o">==</span> <span class="s2">&quot;Key&quot;</span><span class="p">:</span>
+                <span class="n">event_details</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">keysym</span><span class="si">}</span><span class="s2"> (char: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">char</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">event_details</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s2">: Button-</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">num</span><span class="si">}</span><span class="s2"> @ (</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">x</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">y</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">event_details</span><span class="p">)</span>
+            <span class="n">event_log</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">tkinter</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">)</span>
+            <span class="n">event_log</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="n">event_details</span><span class="p">)</span>
+            <span class="n">event_log</span><span class="o">.</span><span class="n">see</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">)</span>
+            <span class="n">event_log</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">tkinter</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">)</span>
+
+        <span class="c1"># Bind events for mouse clicks, double-clicks, and keyboard inputs</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s2">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;Click&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s2">&quot;&lt;Double-1&gt;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;Double Click&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s2">&quot;&lt;Button-3&gt;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;Right Click&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="n">testground</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s2">&quot;&lt;Key&gt;&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;Key&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+
+        <span class="c1"># Exit recording when the ESC key is pressed</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">exit_record</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">keysym</span> <span class="o">==</span> <span class="s2">&quot;Escape&quot;</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Exiting recording mode.&quot;</span><span class="p">)</span>
+                <span class="n">testground</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">deiconify</span><span class="p">()</span>
+
+        <span class="n">testground</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s2">&quot;&lt;Escape&gt;&quot;</span><span class="p">,</span> <span class="n">exit_record</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ExampleClient">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.ExampleClient">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExampleClient</span><span class="p">(</span><span class="n">AutoWorkClient</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An example implementation of the AutoWorkClient.&quot;&quot;&quot;</span>
+    <span class="n">dummy_signal</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">is_init</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="ExampleClient.dummy_action">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.ExampleClient.dummy_action">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dummy_action</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;start working on </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;working completed!&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ExampleClient.listen_signal">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.ExampleClient.listen_signal">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listen_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Simulate listening for a signal (e.g., return random signal).&quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dummy_signal</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dummy_signal</span> <span class="o">%</span> <span class="mi">2</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">ExampleClient</span><span class="p">()</span>
+
+    <span class="c1"># Example usage: Register actions for signal 1</span>
+    <span class="n">action1</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="s2">&quot;Example Action 1&quot;</span><span class="p">)</span>
+    <span class="n">action1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S1A1s1&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 1 Action 1&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 1&quot;</span><span class="p">))</span>
+    <span class="n">action1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S1A1s2&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 1 Action 1&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 2&quot;</span><span class="p">))</span>
+
+    <span class="n">action2</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="s2">&quot;Example Action 2&quot;</span><span class="p">)</span>
+    <span class="n">action2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S1A2s1&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 1 Action 2&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 1&quot;</span><span class="p">))</span>
+    <span class="n">action2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S1A2s2&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 1 Action 2&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 2&quot;</span><span class="p">))</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">register_action</span><span class="p">(</span><span class="n">action1</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">register_action</span><span class="p">(</span><span class="n">action2</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">action3</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="s2">&quot;Example Action 3&quot;</span><span class="p">)</span>
+    <span class="n">action3</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S2A1s1&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 2 Action 1&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 1&quot;</span><span class="p">))</span>
+    <span class="n">action3</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S2A1s2&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 2 Action 1&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 2&quot;</span><span class="p">))</span>
+    <span class="n">action3</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;S2A1s3&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">ExampleClient</span><span class="o">.</span><span class="n">dummy_action</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Signal 2 Action 1&quot;</span><span class="p">,</span> <span class="s2">&quot;Step 3&quot;</span><span class="p">))</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">register_action</span><span class="p">(</span><span class="n">action3</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">main</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

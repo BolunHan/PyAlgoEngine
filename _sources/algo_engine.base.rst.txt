@@ -1,0 +1,117 @@
+algo\_engine.base package
+=========================
+
+Submodules
+----------
+
+algo\_engine.base.candlestick module
+------------------------------------
+
+.. automodule:: algo_engine.base.candlestick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.console\_utils module
+---------------------------------------
+
+.. automodule:: algo_engine.base.console_utils
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.finance\_decimal module
+-----------------------------------------
+
+.. automodule:: algo_engine.base.finance_decimal
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.market\_data module
+-------------------------------------
+
+.. automodule:: algo_engine.base.market_data
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.market\_data\_buffer module
+---------------------------------------------
+
+.. automodule:: algo_engine.base.market_data_buffer
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.market\_utils\_nt module
+------------------------------------------
+
+.. automodule:: algo_engine.base.market_utils_nt
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.market\_utils\_posix module
+---------------------------------------------
+
+.. automodule:: algo_engine.base.market_utils_posix
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.technical\_analysis module
+--------------------------------------------
+
+.. automodule:: algo_engine.base.technical_analysis
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.telemetrics module
+------------------------------------
+
+.. automodule:: algo_engine.base.telemetrics
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.tick module
+-----------------------------
+
+.. automodule:: algo_engine.base.tick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.trade\_utils module
+-------------------------------------
+
+.. automodule:: algo_engine.base.trade_utils
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.trade\_utils\_native module
+---------------------------------------------
+
+.. automodule:: algo_engine.base.trade_utils_native
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.transaction module
+------------------------------------
+
+.. automodule:: algo_engine.base.transaction
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.base
+   :members:
+   :show-inheritance:
+   :undoc-members:

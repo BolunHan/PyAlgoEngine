@@ -1,0 +1,21 @@
+algo\_engine.apps.demo package
+==============================
+
+Submodules
+----------
+
+algo\_engine.apps.demo.test module
+----------------------------------
+
+.. automodule:: algo_engine.apps.demo.test
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.apps.demo
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,21 @@
+algo\_engine.monitor package
+============================
+
+Submodules
+----------
+
+algo\_engine.monitor.advanced\_data\_interface module
+-----------------------------------------------------
+
+.. automodule:: algo_engine.monitor.advanced_data_interface
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.monitor
+   :members:
+   :show-inheritance:
+   :undoc-members:

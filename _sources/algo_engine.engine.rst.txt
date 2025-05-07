@@ -1,0 +1,45 @@
+algo\_engine.engine package
+===========================
+
+Submodules
+----------
+
+algo\_engine.engine.algo\_engine module
+---------------------------------------
+
+.. automodule:: algo_engine.engine.algo_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.engine.event\_engine module
+----------------------------------------
+
+.. automodule:: algo_engine.engine.event_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.engine.market\_engine module
+-----------------------------------------
+
+.. automodule:: algo_engine.engine.market_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.engine.trade\_engine module
+----------------------------------------
+
+.. automodule:: algo_engine.engine.trade_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.engine
+   :members:
+   :show-inheritance:
+   :undoc-members:

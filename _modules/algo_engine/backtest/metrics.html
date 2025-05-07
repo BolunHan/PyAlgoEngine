@@ -1,0 +1,303 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.backtest.metrics &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.backtest.metrics</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.backtest.metrics</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="TradeMetrics">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TradeMetrics</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="TradeMetrics.__init__">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trades</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_pnl</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_cash_flow</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_pnl</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cash_flow&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;pnl&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;turnover&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;trades&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TradeMetrics.update">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="o">=</span> <span class="n">market_price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_pnl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">market_price</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_cash_flow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_pnl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">market_price</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">market_price</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;cash_flow&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="TradeMetrics.add_trades">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.add_trades">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_trades</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">trade_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span> <span class="sa">f</span><span class="s2">&quot;trade side must in </span><span class="si">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="k">assert</span> <span class="n">volume</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">volume</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;volume must be positive.&quot;</span>
+
+        <span class="k">if</span> <span class="n">volume</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">side</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">volume</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">side</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">volume</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">volume</span> <span class="o">=</span> <span class="mf">1.</span>
+
+        <span class="k">if</span> <span class="n">trade_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trade_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">int</span>
+        <span class="k">elif</span> <span class="n">trade_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># split the trades</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">target_exposure</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">+</span> <span class="n">volume</span> <span class="o">*</span> <span class="n">side</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_trades</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">),</span> <span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">trade_id</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">trade_id</span><span class="si">}</span><span class="s1">.0&#39;</span><span class="p">)</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+            <span class="n">trade_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">trade_id</span><span class="si">}</span><span class="s1">.1&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">+=</span> <span class="n">volume</span> <span class="o">*</span> <span class="n">side</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_cash_flow</span> <span class="o">-=</span> <span class="n">volume</span> <span class="o">*</span> <span class="n">side</span> <span class="o">*</span> <span class="n">price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_pnl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">price</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_cash_flow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span> <span class="o">-=</span> <span class="n">volume</span> <span class="o">*</span> <span class="n">side</span> <span class="o">*</span> <span class="n">price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_pnl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">price</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="o">=</span> <span class="n">price</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="p">[</span><span class="n">trade_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">trade_log</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span>
+            <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span>
+            <span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span>
+            <span class="n">exposure</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span>
+            <span class="n">cash_flow</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span><span class="p">,</span>
+            <span class="n">pnl</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">current_pnl</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;init_side&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;init_side&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">side</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;cash_flow&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">volume</span> <span class="o">*</span> <span class="n">side</span> <span class="o">*</span> <span class="n">price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">price</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;cash_flow&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;turnover&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">volume</span><span class="p">)</span> <span class="o">*</span> <span class="n">price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">[</span><span class="s1">&#39;trades&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trade_log</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cash_flow&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;pnl&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;turnover&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;trades&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_pnl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span> <span class="o">=</span> <span class="mf">0.</span></div>
+
+
+<div class="viewcode-block" id="TradeMetrics.add_trades_batch">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.add_trades_batch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_trades_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade_logs</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">trade_logs</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>  <span class="c1"># type: float, dict</span>
+            <span class="n">side</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;side&#39;</span><span class="p">]</span>
+            <span class="n">price</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;current_price&#39;</span><span class="p">]</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_trades</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TradeMetrics.clear">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.clear">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_pnl</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_cash_flow</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_pnl</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_cash_flow</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_trade_batch</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cash_flow&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;pnl&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;turnover&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">,</span> <span class="s1">&#39;trades&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">info_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">total_gain</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+            <span class="n">total_loss</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+            <span class="n">trade_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">win_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">lose_count</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">turnover</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">trade_batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;total_gain&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;trade_count&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;win_count&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;turnover&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;turnover&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;total_loss&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;trade_count&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;lose_count&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;turnover&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;turnover&#39;</span><span class="p">]</span>
+
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;win_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;win_count&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;trade_count&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;trade_count&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="mf">0.</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;average_gain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;total_gain&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;win_count&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="k">if</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;win_count&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="mf">0.</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;average_loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;total_loss&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;lose_count&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="k">if</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;lose_count&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="mf">0.</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;gain_loss_ratio&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;average_gain&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;average_loss&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;average_loss&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="mf">1.</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;long_avg_pnl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">([</span><span class="n">_</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">long_trades</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="k">if</span> <span class="p">(</span><span class="n">long_trades</span> <span class="o">:=</span> <span class="p">[</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span> <span class="k">if</span> <span class="n">_</span><span class="p">[</span><span class="s1">&#39;init_side&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">])</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;short_avg_pnl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">([</span><span class="n">_</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">short_trades</span><span class="p">])</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_price</span> <span class="k">if</span> <span class="p">(</span><span class="n">short_trades</span> <span class="o">:=</span> <span class="p">[</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span> <span class="k">if</span> <span class="n">_</span><span class="p">[</span><span class="s1">&#39;init_side&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;ttl_pnl.no_leverage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">trade_batch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span><span class="p">])</span>
+        <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;net_pnl.optimistic&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;ttl_pnl.no_leverage&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="mf">0.00034</span> <span class="o">+</span> <span class="mf">0.000023</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">info_dict</span><span class="p">[</span><span class="s1">&#39;turnover&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">info_dict</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">trade_info</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">trade_index</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">trade_batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trade_batch</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">trade_id</span><span class="p">,</span> <span class="n">trade_dict</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trade_batch</span><span class="p">[</span><span class="s1">&#39;trades&#39;</span><span class="p">]):</span>
+                <span class="n">trade_info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="nb">dict</span><span class="p">(</span>
+                        <span class="n">timestamp</span><span class="o">=</span><span class="n">trade_dict</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">],</span>
+                        <span class="n">side</span><span class="o">=</span><span class="n">trade_dict</span><span class="p">[</span><span class="s1">&#39;side&#39;</span><span class="p">],</span>
+                        <span class="n">volume</span><span class="o">=</span><span class="n">trade_dict</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">],</span>
+                        <span class="n">price</span><span class="o">=</span><span class="n">trade_dict</span><span class="p">[</span><span class="s1">&#39;price&#39;</span><span class="p">],</span>
+                        <span class="n">exposure</span><span class="o">=</span><span class="n">trade_dict</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">],</span>
+                        <span class="n">pnl</span><span class="o">=</span><span class="n">trade_dict</span><span class="p">[</span><span class="s1">&#39;pnl&#39;</span><span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">trade_index</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="sa">f</span><span class="s1">&#39;batch.</span><span class="si">{</span><span class="n">batch_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;trade.</span><span class="si">{</span><span class="n">trade_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">trade_info</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">trade_index</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+<div class="viewcode-block" id="TradeMetrics.to_string">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.to_string">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">metric_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span>
+
+        <span class="n">fmt_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;total_gain&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;total_gain&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;total_loss&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;total_loss&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;trade_count&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;trade_count&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;win_count&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;win_count&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;lose_count&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;lose_count&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;turnover&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;turnover&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;win_rate&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;win_rate&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">.2%</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;average_gain&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;average_gain&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.4%</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;average_loss&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;average_loss&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.4%</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;long_avg_pnl&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;long_avg_pnl&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.4%</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;short_avg_pnl&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;short_avg_pnl&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.4%</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;gain_loss_ratio&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_info</span><span class="p">[</span><span class="s2">&quot;gain_loss_ratio&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">,.3%</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="p">}</span>
+
+        <span class="n">info_str</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Trade Metrics Report:&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">fmt_dict</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">info_str</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

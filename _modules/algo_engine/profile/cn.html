@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.profile.cn &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../profile.html">algo_engine.profile</a></li>
+      <li class="breadcrumb-item active">algo_engine.profile.cn</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.profile.cn</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">Profile</span>
+
+
+<div class="viewcode-block" id="ProfileCN">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProfileCN</span><span class="p">(</span><span class="n">Profile</span><span class="p">):</span>
+<div class="viewcode-block" id="ProfileCN.__init__">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">profile_id</span><span class="o">=</span><span class="s1">&#39;cn&#39;</span><span class="p">,</span>
+            <span class="n">session_start</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+            <span class="n">session_end</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">session_break</span><span class="o">=</span><span class="p">[(</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">0</span><span class="p">))]</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.override_profile">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.override_profile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">override_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">override_profile</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span>
+
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="s1">&#39;cn_trade_calendar_cache&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.trade_calendar">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.trade_calendar">[docs]</a>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_calendar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">exchange_calendars</span>
+
+        <span class="n">market</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;market&#39;</span><span class="p">,</span> <span class="s1">&#39;XSHG&#39;</span><span class="p">)</span>
+        <span class="n">tz</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tz&#39;</span><span class="p">,</span> <span class="s1">&#39;UTC&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">market</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">:</span>
+            <span class="n">trade_calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">[</span><span class="n">market</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trade_calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">[</span><span class="n">market</span><span class="p">]</span> <span class="o">=</span> <span class="n">exchange_calendars</span><span class="o">.</span><span class="n">get_calendar</span><span class="p">(</span><span class="n">market</span><span class="p">)</span>
+
+        <span class="n">calendar</span> <span class="o">=</span> <span class="n">trade_calendar</span><span class="o">.</span><span class="n">sessions_in_range</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">calendar</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.is_trade_day">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.is_trade_day">[docs]</a>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_trade_day</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">market</span><span class="o">=</span><span class="s1">&#39;XSHG&#39;</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">market</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">:</span>
+            <span class="n">trade_calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">[</span><span class="n">market</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">exchange_calendars</span>
+            <span class="n">trade_calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_trade_calendar_cache</span><span class="p">[</span><span class="n">market</span><span class="p">]</span> <span class="o">=</span> <span class="n">exchange_calendars</span><span class="o">.</span><span class="n">get_calendar</span><span class="p">(</span><span class="n">market</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">trade_calendar</span><span class="o">.</span><span class="n">is_session</span><span class="p">(</span><span class="n">market_date</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.trade_days_between">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.trade_days_between">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_days_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the number of trade days between the given date, which is the pre-open of the start_date to the pre-open of the end_date.</span>
+<span class="sd">        :param start_date: the given trade date</span>
+<span class="sd">        :param end_date: the given trade date</span>
+<span class="sd">        :return: integer number of days</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">start_date</span> <span class="o">&lt;=</span> <span class="n">end_date</span><span class="p">,</span> <span class="s2">&quot;The end date must not before the start date&quot;</span>
+
+        <span class="k">if</span> <span class="n">start_date</span> <span class="o">==</span> <span class="n">end_date</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">market_date_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">market_date_list</span><span class="p">:</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">last_trade_date</span> <span class="o">=</span> <span class="n">market_date_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">market_date_list</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">last_trade_date</span> <span class="o">==</span> <span class="n">end_date</span><span class="p">:</span>
+                    <span class="n">offset</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">offset</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.time_to_seconds">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.time_to_seconds">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">time_to_seconds</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">hour</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">t</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">t</span><span class="o">.</span><span class="n">second</span> <span class="o">+</span> <span class="n">t</span><span class="o">.</span><span class="n">microsecond</span> <span class="o">/</span> <span class="mi">1000</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.trade_time_between">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.trade_time_between">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_time_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;timedelta&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">start_time</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">end_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mf">0.</span>
+            <span class="k">elif</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;timedelta&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid fmt </span><span class="si">{</span><span class="n">fmt</span><span class="si">}</span><span class="s1">, should be &quot;timestamp&quot; or &quot;timedelta&quot;&#39;</span><span class="p">)</span>
+
+        <span class="n">session_start</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;session_start&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span><span class="p">)</span>
+        <span class="n">session_break</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;session_break&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_break</span><span class="p">)</span>
+        <span class="n">session_end</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;session_end&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_end</span><span class="p">)</span>
+        <span class="n">session_length_0</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_start</span><span class="p">))</span>
+        <span class="n">session_length_1</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_end</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">session_length</span> <span class="o">=</span> <span class="n">session_length_0</span> <span class="o">+</span> <span class="n">session_length_1</span>
+        <span class="n">implied_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+            <span class="n">implied_date</span> <span class="o">=</span> <span class="n">start_time</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end_time</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">end_time</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+            <span class="n">implied_date</span> <span class="o">=</span> <span class="n">end_time</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">implied_date</span><span class="p">,</span> <span class="n">start_time</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end_time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">implied_date</span><span class="p">,</span> <span class="n">end_time</span><span class="p">)</span>
+
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">()</span>
+
+        <span class="n">market_time</span> <span class="o">=</span> <span class="n">start_time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># calculate the timespan from start_time to session_end</span>
+        <span class="k">if</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_start</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length</span>
+        <span class="k">elif</span> <span class="n">session_start</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">start_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="n">start_time</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length_1</span>
+        <span class="k">elif</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length_1</span>
+        <span class="k">elif</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_end</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">start_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="n">session_end</span><span class="p">)</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">offset</span> <span class="o">-=</span> <span class="n">session_length</span>
+
+        <span class="n">market_time</span> <span class="o">=</span> <span class="n">end_time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># calculate the timespan from session_start to end_time</span>
+        <span class="k">if</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_start</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">session_start</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">end_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="n">session_start</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length_0</span>
+        <span class="k">elif</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_end</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">end_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length_0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length</span>
+
+        <span class="c1"># calculate market_date difference</span>
+        <span class="k">if</span> <span class="n">start_time</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">!=</span> <span class="n">end_time</span><span class="o">.</span><span class="n">date</span><span class="p">():</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">session_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_days_between</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="n">start_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">offset</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;timedelta&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">offset</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid fmt </span><span class="si">{</span><span class="n">fmt</span><span class="si">}</span><span class="s1">, should be &quot;timestamp&quot; or &quot;timedelta&quot;&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProfileCN.is_market_session">
+<a class="viewcode-back" href="../../../algo_engine.profile.html#algo_engine.profile.cn.ProfileCN.is_market_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_market_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">market_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+            <span class="n">market_time</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+            <span class="n">market_time</span> <span class="o">=</span> <span class="n">timestamp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Expect timestamp to be a float, int or datetime, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">market_time</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">market_time</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">market_time</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+</div>
+
+
+
+<span class="n">PROFILE_CN</span> <span class="o">=</span> <span class="n">ProfileCN</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

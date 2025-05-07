@@ -1,0 +1,37 @@
+algo\_engine.apps.backtest package
+==================================
+
+Submodules
+----------
+
+algo\_engine.apps.backtest.doc\_server module
+---------------------------------------------
+
+.. automodule:: algo_engine.apps.backtest.doc_server
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.apps.backtest.tester module
+----------------------------------------
+
+.. automodule:: algo_engine.apps.backtest.tester
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.apps.backtest.web\_app module
+------------------------------------------
+
+.. automodule:: algo_engine.apps.backtest.web_app
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.apps.backtest
+   :members:
+   :show-inheritance:
+   :undoc-members:

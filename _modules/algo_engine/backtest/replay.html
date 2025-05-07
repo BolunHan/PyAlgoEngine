@@ -1,0 +1,801 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.backtest.replay &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.backtest.replay</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.backtest.replay</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">operator</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span><span class="p">,</span> <span class="n">get_type_hints</span><span class="p">,</span> <span class="n">Self</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">DataType</span><span class="p">,</span> <span class="n">MarketDataBuffer</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;Replay&#39;</span><span class="p">)</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PyDataScope&#39;</span><span class="p">,</span> <span class="s1">&#39;MarketDateCallable&#39;</span><span class="p">,</span> <span class="s1">&#39;MarketDataLoader&#39;</span><span class="p">,</span> <span class="s1">&#39;MarketDataBulkLoader&#39;</span><span class="p">,</span> <span class="s1">&#39;Replay&#39;</span><span class="p">,</span> <span class="s1">&#39;SimpleReplay&#39;</span><span class="p">,</span> <span class="s1">&#39;ProgressReplay&#39;</span><span class="p">,</span> <span class="s1">&#39;ProgressiveReplay&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="PyDataScope">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.PyDataScope">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PyDataScope</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Flag</span><span class="p">):</span>
+    <span class="n">SCOPE_TRANSACTION</span> <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">SCOPE_ORDER</span> <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">SCOPE_TICK</span> <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+    <span class="n">SCOPE_TICK_LITE</span> <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">auto</span><span class="p">()</span>
+
+    <span class="n">SCOPE_ALL</span> <span class="o">=</span> <span class="n">SCOPE_TRANSACTION</span> <span class="o">|</span> <span class="n">SCOPE_ORDER</span> <span class="o">|</span> <span class="n">SCOPE_TICK</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TickDataLite&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderData&#39;</span><span class="p">,</span> <span class="s1">&#39;TransactionData&#39;</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_missing_</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">dtypes</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">dtypes</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="n">_</span> <span class="o">=</span> <span class="n">PyDataScope</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">dtypes</span><span class="p">:</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">_</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_</span>
+
+<div class="viewcode-block" id="PyDataScope.get_dtype">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.PyDataScope.get_dtype">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dtype</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">DataType</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TickDataLite&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderData&#39;</span><span class="p">,</span> <span class="s1">&#39;TransactionData&#39;</span><span class="p">]:</span>
+        <span class="k">match</span> <span class="n">dtype</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s1">&#39;TickData&#39;</span> <span class="o">|</span> <span class="s1">&#39;TickDataLite&#39;</span> <span class="o">|</span> <span class="s1">&#39;OrderData&#39;</span> <span class="o">|</span> <span class="s1">&#39;TransactionData&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="k">case</span> <span class="s1">&#39;TradeData&#39;</span><span class="p">:</span>  <span class="c1"># handle the alias</span>
+                <span class="k">return</span> <span class="s1">&#39;TransactionData&#39;</span>
+            <span class="k">case</span> <span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TICK</span> <span class="o">|</span> <span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_ORDER</span> <span class="o">|</span> <span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TRANSACTION</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">DataType</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s1">&#39;DTYPE_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;Data&#39;</span>
+            <span class="k">case</span> <span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TICK_LITE</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;Data&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">DataType</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s1">&#39;DTYPE_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">))</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid dtype </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s1">, expect str or int.&#39;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_dtype</span><span class="p">())</span>
+
+<div class="viewcode-block" id="PyDataScope.to_dtype">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.PyDataScope.to_dtype">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DataType</span><span class="p">]:</span>
+        <span class="n">scope</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">())</span>
+        <span class="n">scope_dtype</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">scope</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="n">PyDataScope</span><span class="o">.</span><span class="n">SCOPE_TRANSACTION</span><span class="p">:</span>
+                <span class="n">scope_dtype</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TRANSACTION</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="n">PyDataScope</span><span class="o">.</span><span class="n">SCOPE_ORDER</span><span class="p">:</span>
+                <span class="n">scope_dtype</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_ORDER</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="n">PyDataScope</span><span class="o">.</span><span class="n">SCOPE_TICK_LITE</span><span class="p">:</span>
+                <span class="n">scope_dtype</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TICK_LITE</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="n">PyDataScope</span><span class="o">.</span><span class="n">SCOPE_TICK</span><span class="p">:</span>
+                <span class="n">scope_dtype</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TICK</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">scope_dtype</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PyDataScope.to_int">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.PyDataScope.to_int">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dtype</span><span class="p">()]</span></div>
+
+
+<div class="viewcode-block" id="PyDataScope.to_str">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.PyDataScope.to_str">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_dtype</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dtype</span><span class="p">()]</span></div>
+
+
+<div class="viewcode-block" id="PyDataScope.from_str">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.PyDataScope.from_str">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TickDataLite&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderData&#39;</span><span class="p">,</span> <span class="s1">&#39;TransactionData&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">match</span> <span class="n">dtype</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s1">&#39;TickData&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPE_TICK</span>
+            <span class="k">case</span> <span class="s1">&#39;TickDataLite&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPE_TICK_LITE</span>
+            <span class="k">case</span> <span class="s1">&#39;OrderData&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPE_ORDER</span>
+            <span class="k">case</span> <span class="s1">&#39;TransactionData&#39;</span> <span class="o">|</span> <span class="s1">&#39;TradeData&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCOPE_TRANSACTION</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid str </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MarketDateCallable">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.MarketDateCallable">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MarketDateCallable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="MarketDataLoader">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.MarketDataLoader">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MarketDataLoader</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">DataType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">MarketData</span><span class="p">]</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">MarketData</span><span class="p">]:</span>
+        <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="MarketDataBulkLoader">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.MarketDataBulkLoader">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MarketDataBulkLoader</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">tickers</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">dtypes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">DataType</span><span class="p">]</span> <span class="o">|</span> <span class="n">PyDataScope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">MarketData</span><span class="p">]</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">MarketData</span><span class="p">]</span> <span class="o">|</span> <span class="n">MarketDataBuffer</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">check_protocol_signature</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> is not callable&quot;</span><span class="p">)</span>
+
+    <span class="n">proto_sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">protocol</span><span class="o">.</span><span class="fm">__call__</span><span class="p">)</span>
+    <span class="n">func_sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="n">proto_params</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">proto_sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># Skip &#39;self&#39;</span>
+    <span class="n">func_params</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">func_sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">enable_keywords</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># Check for *args (VAR_POSITIONAL) — not allowed</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">func_params</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> uses *args, which is not allowed&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">:</span>
+            <span class="n">enable_keywords</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Extract positional args (POSITIONAL_ONLY or POSITIONAL_OR_KEYWORD)</span>
+    <span class="n">proto_arg_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">proto_params</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span>
+    <span class="p">)]</span>
+
+    <span class="n">func_arg_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">func_params</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span>
+        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span>
+    <span class="p">)]</span>
+
+    <span class="c1"># Check if required positional args match (ignore **kwargs)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">enable_keywords</span> <span class="ow">and</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">proto_arg_names</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">func_arg_names</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> argument names </span><span class="si">{</span><span class="n">func_arg_names</span><span class="si">}</span><span class="s2"> do not match protocol </span><span class="si">{</span><span class="n">proto_arg_names</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># Type hint comparison (warn if mismatched, but allow)</span>
+    <span class="n">proto_hints</span> <span class="o">=</span> <span class="n">get_type_hints</span><span class="p">(</span><span class="n">protocol</span><span class="o">.</span><span class="fm">__call__</span><span class="p">)</span>
+    <span class="n">func_hints</span> <span class="o">=</span> <span class="n">get_type_hints</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pname</span> <span class="ow">in</span> <span class="n">proto_arg_names</span><span class="p">:</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="n">proto_hints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+        <span class="n">actual</span> <span class="o">=</span> <span class="n">func_hints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">expected</span> <span class="ow">and</span> <span class="n">actual</span> <span class="ow">and</span> <span class="n">expected</span> <span class="o">!=</span> <span class="n">actual</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Type hint mismatch for parameter &#39;</span><span class="si">{</span><span class="n">pname</span><span class="si">}</span><span class="s2">&#39;: expected </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">actual</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Optional: check return type</span>
+    <span class="n">expected_ret</span> <span class="o">=</span> <span class="n">proto_hints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return&quot;</span><span class="p">)</span>
+    <span class="n">actual_ret</span> <span class="o">=</span> <span class="n">func_hints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">expected_ret</span> <span class="ow">and</span> <span class="n">actual_ret</span> <span class="ow">and</span> <span class="n">expected_ret</span> <span class="o">!=</span> <span class="n">actual_ret</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Return type mismatch: expected </span><span class="si">{</span><span class="n">expected_ret</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">actual_ret</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="Replay">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.Replay">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Replay</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="c1"># __slots__ = (&#39;start_date&#39;, &#39;end_date&#39;, &#39;market_date&#39;, &#39;calendar&#39;, &#39;bod&#39;, &#39;eod&#39;, &#39;subscription&#39;, &#39;_calendar&#39;, &#39;_market_date&#39;, &#39;_status&#39;, &#39;_progress&#39;)</span>
+
+<div class="viewcode-block" id="Replay.__init__">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.Replay.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">calendar</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">eod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">start_date</span> <span class="ow">or</span> <span class="n">market_date</span> <span class="ow">or</span> <span class="n">calendar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="n">end_date</span> <span class="ow">or</span> <span class="n">calendar</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">market_date</span> <span class="o">=</span> <span class="n">market_date</span> <span class="ow">or</span> <span class="n">start_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calendar</span> <span class="o">=</span> <span class="n">calendar</span> <span class="ow">or</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bod</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eod</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">bod</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_bod</span><span class="p">(</span><span class="n">bod</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">eod</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_eod</span><span class="p">(</span><span class="n">eod</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Replay.add_bod">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.Replay.add_bod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_bod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">MarketDateCallable</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">priority</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">priority</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Replay.add_eod">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.Replay.add_eod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_eod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">MarketDateCallable</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">priority</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eod</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eod</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">priority</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Replay.add_subscription">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.Replay.add_subscription">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">DataType</span> <span class="o">|</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">PyDataScope</span><span class="o">.</span><span class="n">get_dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">topic</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Replay.remove_subscription">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.Replay.remove_subscription">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">DataType</span> <span class="o">|</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">PyDataScope</span><span class="o">.</span><span class="n">get_dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">topic</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">_</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">topic</span><span class="si">}</span><span class="s1"> not in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="SimpleReplay">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.SimpleReplay">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimpleReplay</span><span class="p">(</span><span class="n">Replay</span><span class="p">):</span>
+<div class="viewcode-block" id="SimpleReplay.__init__">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.SimpleReplay.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">loader</span><span class="p">:</span> <span class="n">MarketDataBulkLoader</span> <span class="o">|</span> <span class="n">MarketDataLoader</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">calendar</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">bod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">eod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span> <span class="n">calendar</span><span class="o">=</span><span class="n">calendar</span><span class="p">,</span> <span class="n">bod</span><span class="o">=</span><span class="n">bod</span><span class="p">,</span> <span class="n">eod</span><span class="o">=</span><span class="n">eod</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="n">loader</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calendar</span> <span class="ow">or</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_date</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="p">{</span><span class="n">market_date</span><span class="p">:</span> <span class="s1">&#39;skipped&#39;</span> <span class="k">if</span> <span class="n">market_date</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_date</span> <span class="k">else</span> <span class="s1">&#39;idle&#39;</span> <span class="k">for</span> <span class="n">market_date</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_date</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="p">:</span>
+            <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_safe_load</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketData</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">eod</span><span class="p">:</span>
+            <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="p">:</span>
+            <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_safe_load</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="se">{{</span><span class="s1">id=</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s1">, from=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="si">}</span><span class="s1">, to=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="si">}</span><span class="se">}}</span><span class="s1">&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_bulk_load_protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> loading </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dtypes</span><span class="p">))</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">dtypes</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;data&#39;</span><span class="si">}</span><span class="s1"> for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tickers</span><span class="p">)</span><span class="si">}</span><span class="s1"> tickers...&#39;</span><span class="p">)</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="p">,</span> <span class="n">tickers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tickers</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> sorting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="si">}</span><span class="s1"> data...&#39;</span><span class="p">)</span>
+        <span class="n">buffer</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">MarketDataBuffer</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="si">}</span><span class="s1"> total </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> items loaded.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_individual_load_protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">topic</span><span class="p">,</span> <span class="p">(</span><span class="n">_ticker</span><span class="p">,</span> <span class="n">_dtype</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> loading </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">_ticker</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">_dtype</span><span class="si">}</span><span class="s1">...&#39;</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="p">,</span> <span class="n">ticker</span><span class="o">=</span><span class="n">_ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">_dtype</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+                <span class="n">buffer</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+                <span class="n">buffer</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The loader </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="si">}</span><span class="s1"> returned </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1">. Expect a sequence or mapping of MarketData&#39;</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> sorting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="si">}</span><span class="s1"> data...&#39;</span><span class="p">)</span>
+        <span class="n">buffer</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">attrgetter</span><span class="p">(</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;ticker&#39;</span><span class="p">,</span> <span class="s1">&#39;_dtype&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_market_date</span><span class="si">}</span><span class="s1"> total </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> items loaded.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_safe_load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_buffer&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;Without assigning a data loader, the _buffer of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> should be set in bod process.&#39;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">is_bulk_loader</span> <span class="o">=</span> <span class="n">check_protocol_signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="n">MarketDataBulkLoader</span><span class="p">)</span>
+        <span class="n">is_individual_loader</span> <span class="o">=</span> <span class="n">check_protocol_signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span> <span class="n">MarketDataLoader</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">is_bulk_loader</span> <span class="ow">and</span> <span class="n">is_individual_loader</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">is_bulk_loader</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_individual_loader</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_load_protocol</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Failed to load data using MarketDataBulkLoader protocol!&#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_individual_load_protocol</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Failed to load data using MarketDataLoader protocol!&#39;</span><span class="p">)</span>
+                <span class="k">raise</span>
+
+        <span class="k">if</span> <span class="n">is_bulk_loader</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_load_protocol</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_individual_load_protocol</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">progress</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_buffer&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> not started yet.&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tickers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">tickers</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">tickers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dtypes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">dtypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_status&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> not started yet.&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span></div>
+
+
+
+<div class="viewcode-block" id="ProgressReplay">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.ProgressReplay">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressReplay</span><span class="p">(</span><span class="n">SimpleReplay</span><span class="p">):</span>
+<div class="viewcode-block" id="ProgressReplay.__init__">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.ProgressReplay.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">loader</span><span class="p">:</span> <span class="n">MarketDataBulkLoader</span> <span class="o">|</span> <span class="n">MarketDataLoader</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">calendar</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">bod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">eod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">pbar_config</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+            <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="n">calendar</span><span class="o">=</span><span class="n">calendar</span><span class="p">,</span>
+            <span class="n">bod</span><span class="o">=</span><span class="n">bod</span><span class="p">,</span>
+            <span class="n">eod</span><span class="o">=</span><span class="n">eod</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;backend&#39;</span><span class="p">:</span> <span class="n">pbar_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;backend&#39;</span><span class="p">,</span> <span class="s1">&#39;tqdm&#39;</span><span class="p">),</span>  <span class="c1"># tqdm or native</span>
+            <span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">pbar_config</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_pbar_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.std</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_std</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.contrib.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">_TqdmLoggingHandler</span><span class="p">,</span> <span class="n">_get_first_found_console_logging_handler</span><span class="p">,</span> <span class="n">_is_console_logging_handler</span>
+
+        <span class="n">tqdm_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;total&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;unit_scale&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="s1">&#39;percent&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;mininterval&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;miniters&#39;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="o">**</span><span class="n">tqdm_config</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;loggers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loggers</span> <span class="o">=</span> <span class="p">[</span><span class="n">LOGGER</span><span class="o">.</span><span class="n">root</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">loggerDict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_</span><span class="o">.</span><span class="n">handlers</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;original_handlers_list&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span> <span class="k">for</span> <span class="n">logger</span> <span class="ow">in</span> <span class="n">loggers</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">logger</span> <span class="ow">in</span> <span class="n">loggers</span><span class="p">:</span>
+            <span class="n">tqdm_handler</span> <span class="o">=</span> <span class="n">_TqdmLoggingHandler</span><span class="p">(</span><span class="n">tqdm_std</span><span class="p">)</span>
+            <span class="n">orig_handler</span> <span class="o">=</span> <span class="n">_get_first_found_console_logging_handler</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">orig_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tqdm_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">orig_handler</span><span class="o">.</span><span class="n">formatter</span><span class="p">)</span>
+                <span class="n">tqdm_handler</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="n">orig_handler</span><span class="o">.</span><span class="n">stream</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span><span class="n">handler</span> <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_console_logging_handler</span><span class="p">(</span><span class="n">handler</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="n">tqdm_handler</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_pbar_tqdm_secondary</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_eod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_close_pbar_tqdm_secondary</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_tqdm_prefix</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_pbar_progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_tqdm_progress</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_pbar_tqdm_secondary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+
+        <span class="n">tqdm_secondary_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;total&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;unit_scale&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="s1">&#39;percent&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;mininterval&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;miniters&#39;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="o">**</span><span class="n">tqdm_secondary_config</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Progress Total (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> / </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span>
+        <span class="n">prompt_secondary</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Progress [</span><span class="si">{</span><span class="n">market_date</span><span class="si">:</span><span class="s1">%Y-%m-%d</span><span class="si">}</span><span class="s1">]&#39;</span>
+        <span class="n">prompt_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_secondary</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="n">prompt_secondary</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">prompt_length</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_close_pbar_tqdm_secondary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># self._pbar_secondary.refresh()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_pbar_native</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Progress</span>
+
+        <span class="n">progress_config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">tasks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">tick_size</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_native_prefix</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="o">=</span> <span class="n">Progress</span><span class="p">(</span><span class="o">**</span><span class="n">progress_config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_pbar_progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_native_progress</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_tqdm_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">):</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Progress Total (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> / </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_native_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Replay </span><span class="si">{</span><span class="n">market_date</span><span class="si">:</span><span class="s1">%Y-%m-%d</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> / </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">)</span><span class="si">}</span><span class="s1">):&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">output</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_close_pbar_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">logger</span><span class="p">,</span> <span class="n">original_handlers</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;loggers&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;original_handlers_list&#39;</span><span class="p">]):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="n">original_handlers</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># self._pbar.refresh()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_close_pbar_native</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">done_tasks</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">output</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_tqdm_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idx_buffer</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar_secondary</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_native_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">done_tasks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">tick_size</span><span class="p">)</span> \
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">progress</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">tick_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">last_output</span> \
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">is_done</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">output</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pbar_backend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;backend&#39;</span><span class="p">]</span>
+
+        <span class="k">match</span> <span class="n">pbar_backend</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s1">&#39;tqdm&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_pbar_tqdm</span><span class="p">()</span>
+            <span class="k">case</span> <span class="s1">&#39;native&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_pbar_native</span><span class="p">()</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid pbar backend </span><span class="si">{</span><span class="n">pbar_backend</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketData</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_pbar_progress</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pbar_backend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pbar_config</span><span class="p">[</span><span class="s1">&#39;backend&#39;</span><span class="p">]</span>
+                <span class="k">match</span> <span class="n">pbar_backend</span><span class="p">:</span>
+                    <span class="k">case</span> <span class="s1">&#39;tqdm&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_close_pbar_tqdm</span><span class="p">()</span>
+                    <span class="k">case</span> <span class="s1">&#39;native&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_close_pbar_native</span><span class="p">()</span>
+                    <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid pbar backend </span><span class="si">{</span><span class="n">pbar_backend</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+
+<div class="viewcode-block" id="ProgressiveReplay">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.ProgressiveReplay">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressiveReplay</span><span class="p">(</span><span class="n">SimpleReplay</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    progressively loading and replaying market data</span>
+
+<span class="sd">    requires arguments</span>
+<span class="sd">    loader: a data loading function. Expect loader = Callable(market_date: datetime.date, ticker: str, dtype: str| type) -&gt; dict[any, MarketData]</span>
+<span class="sd">    start_date &amp; end_date: the given replay period</span>
+<span class="sd">    or calendar: the given replay calendar.</span>
+
+<span class="sd">    accepts kwargs:</span>
+<span class="sd">    ticker / tickers: the given symbols to replay, expect a str| list[str]</span>
+<span class="sd">    dtype / dtypes: the given dtype(s) of symbol to replay, expect a str | type, list[str | type]. default = all, which is (TradeData, TickData, OrderBook)</span>
+<span class="sd">    subscription / subscribe: the given ticker-dtype pair to replay, expect a list[dict[str, str | type]]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ProgressiveReplay.__init__">
+<a class="viewcode-back" href="../../../algo_engine.backtest.html#algo_engine.backtest.replay.ProgressiveReplay.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">loader</span><span class="p">:</span> <span class="n">MarketDataLoader</span><span class="p">,</span>
+            <span class="n">tickers</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">dtypes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">DataType</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">calendar</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">bod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">eod</span><span class="p">:</span> <span class="n">MarketDateCallable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">progress_config</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;User ProgressReplay instead!&#39;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="n">loader</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span> <span class="n">calendar</span><span class="o">=</span><span class="n">calendar</span><span class="p">,</span> <span class="n">bod</span><span class="o">=</span><span class="n">bod</span><span class="p">,</span> <span class="n">eod</span><span class="o">=</span><span class="n">eod</span><span class="p">)</span>
+
+        <span class="n">tickers</span> <span class="o">=</span> <span class="n">tickers</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="n">dtypes</span> <span class="ow">or</span> <span class="p">[</span><span class="s1">&#39;TransactionData&#39;</span><span class="p">,</span> <span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderData&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">MarketDataLoader</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;loader function has 3 requires args, market_date, ticker and dtype.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tickers</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">tickers</span> <span class="o">=</span> <span class="p">[</span><span class="n">tickers</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tickers</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">tickers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ticker </span><span class="si">{</span><span class="n">tickers</span><span class="si">}</span><span class="s1">, expect str or list[str]&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtypes</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">DataType</span><span class="p">)):</span>
+            <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">dtypes</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtypes</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">dtypes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid dtype </span><span class="si">{</span><span class="n">dtypes</span><span class="si">}</span><span class="s1">, expect str or list[str]&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">dtypes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_subscription</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">tasks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">progress_config</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_bod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_progress_bar</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Progress</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="o">=</span> <span class="n">Progress</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">progress_config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketData</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">done_tasks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">tick_size</span><span class="p">)</span> \
+                        <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">progress</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">tick_size</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">last_output</span> \
+                        <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">is_done</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">output</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">is_done</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">done_tasks</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">output</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_progress_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Replay </span><span class="si">{</span><span class="n">market_date</span><span class="si">:</span><span class="s1">%Y-%m-%d</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_idx_date</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1"> / </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calendar</span><span class="p">)</span><span class="si">}</span><span class="s1">):&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pbar</span><span class="o">.</span><span class="n">output</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

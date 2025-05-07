@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.apps.bokeh_server &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../apps.html">algo_engine.apps</a></li>
+      <li class="breadcrumb-item active">algo_engine.apps.bokeh_server</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.apps.bokeh_server</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">threading</span><span class="w"> </span><span class="kn">import</span> <span class="n">Thread</span><span class="p">,</span> <span class="n">Lock</span><span class="p">,</span> <span class="n">Event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">overload</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketData</span>
+
+
+<div class="viewcode-block" id="DocTheme">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocTheme">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DocTheme</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="DocServer">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DocServer</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+<div class="viewcode-block" id="DocServer.__init__">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theme</span><span class="p">:</span> <span class="n">DocTheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">update_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">lock</span><span class="p">:</span> <span class="n">Lock</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.document</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnDataSource</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">theme</span><span class="p">:</span> <span class="n">DocTheme</span> <span class="o">=</span> <span class="n">theme</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">max_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">update_interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span> <span class="k">if</span> <span class="n">lock</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">lock</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_documents</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Document</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># self.bokeh_source: dict[int, ColumnDataSource] = {}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_pipe</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_patch</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_source</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ColumnDataSource</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&gt;(id=</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_document</span><span class="p">(</span><span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">market_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">open_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">close_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">high_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">low_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span>
+
+<div class="viewcode-block" id="DocServer.update">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.update">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="DocServer.layout">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.layout">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">layout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="DocServer.stream">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">doc_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_documents</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># doc = self.bokeh_documents[doc_id]</span>
+        <span class="n">data_pipe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_pipe</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_source</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span>
+
+        <span class="n">source</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">new_data</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">data_pipe</span><span class="p">),</span> <span class="n">rollover</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">data_pipe</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">seq</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s1"> &lt;stream&gt; updated!&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DocServer.patch">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.patch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">patch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">doc_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_documents</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># doc = self.bokeh_documents[doc_id]</span>
+        <span class="n">data_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_patch</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_source</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span>
+
+        <span class="n">source</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">patches</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">data_patch</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">data_patch</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">seq</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s1"> &lt;patch&gt; updated!&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DocServer.register_document">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.register_document">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_document</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColumnDataSource</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+
+        <span class="n">doc_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">int</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_documents</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">doc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_pipe</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">data</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_patch</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">data</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_source</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">ColumnDataSource</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">(</span><span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_interval</span><span class="p">:</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">add_periodic_callback</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span> <span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">),</span> <span class="n">period_milliseconds</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">update_interval</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">))</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">add_periodic_callback</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">patch</span><span class="p">,</span> <span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">),</span> <span class="n">period_milliseconds</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">update_interval</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">))</span>
+
+        <span class="n">doc</span><span class="o">.</span><span class="n">on_session_destroyed</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_unregister_document</span><span class="p">,</span> <span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">))</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> registered Bokeh document id = </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unregister_document</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_context</span><span class="p">,</span> <span class="n">doc_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Session </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s1"> disconnected!&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_documents</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_pipe</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_patch</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_source</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        the data used to provide initial values for new bokeh.ColumnDataSource.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="DocManager">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DocManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="DocManager.__init__">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocManager.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">21543</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_host</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bokeh_host&#39;</span><span class="p">,</span> <span class="s1">&#39;localhost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bokeh_port&#39;</span><span class="p">,</span> <span class="mi">5006</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_check_unused_sessions</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bokeh_check_unused_sessions&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DocServer</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">doc_url</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">DocServer</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_thread</span> <span class="o">=</span> <span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">serve_bokeh</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">doc_server</span><span class="p">:</span> <span class="n">DocServer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">doc_server</span><span class="o">=</span><span class="n">doc_server</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DocManager.register">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocManager.register">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">doc_server</span><span class="p">:</span> <span class="n">DocServer</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1"> already registered! Existed doc_server </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="p">[</span><span class="n">url</span><span class="p">]</span><span class="si">}</span><span class="s1"> overridden!&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="p">[</span><span class="n">url</span><span class="p">]</span> <span class="o">=</span> <span class="n">doc_server</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">doc_url</span><span class="p">[</span><span class="n">doc_server</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="k">return</span> <span class="n">doc_server</span></div>
+
+
+<div class="viewcode-block" id="DocManager.serve_bokeh">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocManager.serve_bokeh">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">serve_bokeh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">bokeh.server.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">Server</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+
+        <span class="c1"># Get all network interfaces and their IP addresses</span>
+        <span class="n">addrs</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">net_if_addrs</span><span class="p">()</span>
+        <span class="n">websocket_origin</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">interface</span><span class="p">,</span> <span class="n">addr_info</span> <span class="ow">in</span> <span class="n">addrs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">addr</span> <span class="ow">in</span> <span class="n">addr_info</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">addr</span><span class="o">.</span><span class="n">family</span> <span class="o">==</span> <span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">:</span>  <span class="c1"># Filter only IPv4 addresses</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Binding network interface: </span><span class="si">{</span><span class="n">interface</span><span class="si">}</span><span class="s2">, IP Address: </span><span class="si">{</span><span class="n">addr</span><span class="o">.</span><span class="n">address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">addr</span><span class="o">.</span><span class="n">address</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">addr</span><span class="o">.</span><span class="n">address</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">_</span> <span class="o">:=</span> <span class="sa">f</span><span class="s1">&#39;localhost:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">websocket_origin</span><span class="p">:</span>
+            <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_</span> <span class="o">:=</span> <span class="sa">f</span><span class="s1">&#39;127.0.0.1:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">websocket_origin</span><span class="p">:</span>
+            <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_</span> <span class="o">:=</span> <span class="sa">f</span><span class="s1">&#39;localhost:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">websocket_origin</span><span class="p">:</span>
+            <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_</span> <span class="o">:=</span> <span class="sa">f</span><span class="s1">&#39;127.0.0.1:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">websocket_origin</span><span class="p">:</span>
+            <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_</span> <span class="o">:=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">websocket_origin</span><span class="p">:</span>
+            <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">_</span> <span class="o">:=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">websocket_origin</span><span class="p">:</span>
+            <span class="n">websocket_origin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span> <span class="o">=</span> <span class="n">Server</span><span class="p">(</span>
+            <span class="n">applications</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="p">,</span>
+            <span class="n">address</span><span class="o">=</span><span class="s1">&#39;0.0.0.0&#39;</span><span class="p">,</span>
+            <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="p">,</span>
+            <span class="n">check_unused_sessions_milliseconds</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_check_unused_sessions</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span>
+            <span class="n">allow_websocket_origin</span><span class="o">=</span><span class="n">websocket_origin</span><span class="p">,</span>
+            <span class="n">use_xheaders</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="c1"># num_procs=1</span>
+        <span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;bokeh service started at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="si">}</span><span class="s1">!</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_port</span><span class="si">}{</span><span class="n">url</span><span class="si">}</span><span class="s1"> =&gt; </span><span class="si">{</span><span class="n">app</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">url</span><span class="p">,</span> <span class="n">app</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_server</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="c1"># Start the Bokeh server IOLoop unless stop_event is triggered</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in Bokeh server: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Bokeh server has been stopped.&quot;</span><span class="p">)</span>
+                <span class="k">break</span></div>
+
+
+<div class="viewcode-block" id="DocManager.start">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocManager.start">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Starting Bokeh service...&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DocManager.stop">
+<a class="viewcode-back" href="../../../algo_engine.apps.html#algo_engine.apps.bokeh_server.DocManager.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Stopping Bokeh service...&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Signal the event to stop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+        <span class="c1"># Stop the Bokeh server gracefully</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># Stop the IOLoop</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_server</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>  <span class="c1"># Stop the Bokeh server itself</span>
+
+        <span class="c1"># Wait for the Bokeh thread to finish if it&#39;s still running</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Bokeh service has been stopped.&#39;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

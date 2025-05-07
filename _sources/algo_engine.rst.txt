@@ -1,0 +1,25 @@
+algo\_engine package
+====================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   algo_engine.apps
+   algo_engine.backtest
+   algo_engine.base
+   algo_engine.engine
+   algo_engine.monitor
+   algo_engine.profile
+   algo_engine.strategy
+   algo_engine.utils
+
+Module contents
+---------------
+
+.. automodule:: algo_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:

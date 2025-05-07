@@ -1,0 +1,527 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.engine.market_engine &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.engine.market_engine</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.engine.market_engine</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">inf</span><span class="p">,</span> <span class="n">nan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">multiprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">shared_memory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">TickData</span><span class="p">,</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="n">TransactionDirection</span><span class="p">,</span> <span class="n">DataType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE</span><span class="p">,</span> <span class="n">Profile</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;MarketEngine&#39;</span><span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MDS&#39;</span><span class="p">,</span> <span class="s1">&#39;MarketDataService&#39;</span><span class="p">,</span> <span class="s1">&#39;MarketDataMonitor&#39;</span><span class="p">,</span> <span class="s1">&#39;MonitorManager&#39;</span><span class="p">,</span> <span class="s1">&#39;Singleton&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Singleton">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.Singleton">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Singleton</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="n">_instances</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Singleton</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instances</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="MarketDataMonitor">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MarketDataMonitor</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    this is a template for market data monitor</span>
+
+<span class="sd">    A data monitor is a module that process market data and generate custom index</span>
+
+<span class="sd">    When MDS receive an update of market data, the __call__ function of this monitor is triggered.</span>
+
+<span class="sd">    Note: all the market_data, of all subscribed ticker will be fed into monitor. It should be assumed that a storage for multiple ticker is required.</span>
+<span class="sd">    To access the monitor, use `monitor = MDS[monitor_id]`</span>
+<span class="sd">    To access the index generated by the monitor, use `monitor.value`</span>
+<span class="sd">    To indicate that the monitor is ready to use set `monitor.is_ready = True`</span>
+
+<span class="sd">    The implemented monitor should be initialized and use `MDS.add_monitor(monitor)` to attach onto the engine</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MarketDataMonitor.__init__">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span> <span class="k">if</span> <span class="n">monitor_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">monitor_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_json</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_json</span><span class="p">(),)</span>
+
+<div class="viewcode-block" id="MarketDataMonitor.to_json">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor.to_json">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="MarketDataMonitor.from_json">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="MarketDataMonitor.to_shm">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor.to_shm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_shm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Put the data of the monitor into python shared memory.</span>
+<span class="sd">        This function is designed to facilitate multiprocessing.</span>
+<span class="sd">        Some monitor is not advised to be handled concurrently,</span>
+<span class="sd">        In which case, raise a NotImplementedError.</span>
+
+<span class="sd">        The function is expected to put all data into a sharable list,</span>
+<span class="sd">        and return the name of the list, which can be set by the given name.</span>
+<span class="sd">        Default name = self.monitor_id</span>
+
+<span class="sd">        Note that this method HAVE NO LOCK, use with caution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor_id</span><span class="si">}</span><span class="s1">.json&#39;</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">))</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">shm</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="o">.</span><span class="n">SharedMemory</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">shm</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">size</span><span class="p">:</span>
+                <span class="n">shm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">shm</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+                <span class="n">shm</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="o">.</span><span class="n">SharedMemory</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">_</span><span class="p">:</span>
+            <span class="n">shm</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="o">.</span><span class="n">SharedMemory</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">shm</span><span class="o">.</span><span class="n">buf</span><span class="p">[:</span><span class="n">size</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">shm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">name</span></div>
+
+
+<div class="viewcode-block" id="MarketDataMonitor.from_shm">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor.from_shm">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_shm</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        retrieve the data and update the monitor from shared memory.</span>
+<span class="sd">        This function is designed to facilitate multiprocessing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="MarketDataMonitor.clear">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataMonitor.clear">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="o">...</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="MonitorManager">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MonitorManager</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    manage market data monitor</span>
+
+<span class="sd">    state codes for the manager</span>
+<span class="sd">    0: idle</span>
+<span class="sd">    1: working</span>
+<span class="sd">    -1: terminating</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MonitorManager.__init__">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MarketDataMonitor</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">monitor_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_work</span><span class="p">(</span><span class="n">monitor_id</span><span class="o">=</span><span class="n">monitor_id</span><span class="p">,</span> <span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MonitorManager.add_monitor">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager.add_monitor">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MarketDataMonitor</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">[</span><span class="n">monitor</span><span class="o">.</span><span class="n">monitor_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">monitor</span></div>
+
+
+<div class="viewcode-block" id="MonitorManager.pop_monitor">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager.pop_monitor">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pop_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketDataMonitor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">monitor_id</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_work</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">):</span>
+        <span class="n">monitor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">monitor_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">monitor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">monitor</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="n">monitor</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">market_data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MonitorManager.start">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager.start">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="MonitorManager.stop">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="MonitorManager.clear">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MonitorManager.clear">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">monitor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">monitor</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">values</span></div>
+
+
+
+<div class="viewcode-block" id="MarketDataService">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MarketDataService</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+<div class="viewcode-block" id="MarketDataService.__init__">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILE</span> <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">profile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_history</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;cache_history&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_price</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_history</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MarketData</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MarketDataMonitor</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_manager</span> <span class="o">=</span> <span class="n">MonitorManager</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;market_data&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;market_data&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketDataMonitor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">[</span><span class="n">monitor_id</span><span class="p">]</span>
+
+<div class="viewcode-block" id="MarketDataService.add_monitor">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.add_monitor">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MarketDataMonitor</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">[</span><span class="n">monitor</span><span class="o">.</span><span class="n">monitor_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">monitor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor_manager</span><span class="o">.</span><span class="n">add_monitor</span><span class="p">(</span><span class="n">monitor</span><span class="p">)</span>
+        <span class="n">monitor</span><span class="o">.</span><span class="n">mds</span> <span class="o">=</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="MarketDataService.pop_monitor">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.pop_monitor">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pop_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MarketDataMonitor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">monitor_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">monitor_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">monitor_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">monitor_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">_</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">monitor_name</span><span class="p">:</span>
+                    <span class="n">monitor_id</span> <span class="o">=</span> <span class="n">_</span><span class="o">.</span><span class="n">monitor_id</span>
+            <span class="k">if</span> <span class="n">monitor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;monitor_name </span><span class="si">{</span><span class="n">monitor_name</span><span class="si">}</span><span class="s1"> not registered.&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">monitor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">monitor_id</span> <span class="o">=</span> <span class="n">monitor</span><span class="o">.</span><span class="n">monitor_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;must assign a monitor, or monitor_id, or monitor_name to pop.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">monitor_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor_manager</span><span class="o">.</span><span class="n">pop_monitor</span><span class="p">(</span><span class="n">monitor_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MarketDataService.on_market_data">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.on_market_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_market_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">):</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">market_time</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_time</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="n">market_price</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_price</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_price</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span> <span class="o">=</span> <span class="n">market_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span> <span class="o">=</span> <span class="n">timestamp</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_history</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_market_history</span><span class="p">[</span><span class="n">ticker</span><span class="p">][</span><span class="n">market_time</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_price</span>
+
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_data</span><span class="p">:</span>
+            <span class="n">snapshot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_data</span><span class="p">[</span><span class="n">dtype</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">snapshot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_data</span><span class="p">[</span><span class="n">dtype</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">snapshot</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;MDS confirmed </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">market_data</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> subscribed!&#39;</span><span class="p">)</span>
+
+        <span class="n">snapshot</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_data</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor_manager</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MarketDataService.get_queued_volume">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.get_queued_volume">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_queued_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span> <span class="o">|</span> <span class="n">TransactionDirection</span><span class="p">,</span> <span class="n">p_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">p_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get queued volume prior / posterior to given price, NOT COUNTING GIVEN PRICE!</span>
+<span class="sd">        :param ticker: the given ticker</span>
+<span class="sd">        :param side: the given trade side</span>
+<span class="sd">        :param p_min: the given price</span>
+<span class="sd">        :param p_max: optional the given posterior price</span>
+<span class="sd">        :return: the summed queued volume, in float. 0 if not available.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tick_data</span><span class="p">:</span> <span class="n">TickData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_data</span><span class="p">[</span><span class="n">DataType</span><span class="o">.</span><span class="n">DTYPE_TICK</span><span class="o">.</span><span class="n">value</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tick_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.</span>
+
+        <span class="n">sign</span> <span class="o">=</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span>
+
+        <span class="k">if</span> <span class="n">sign</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">book</span> <span class="o">=</span> <span class="n">tick_data</span><span class="o">.</span><span class="n">bid</span>
+        <span class="k">elif</span> <span class="n">sign</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">book</span> <span class="o">=</span> <span class="n">tick_data</span><span class="o">.</span><span class="n">ask</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">p_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">inf</span>
+
+        <span class="k">if</span> <span class="n">p_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p_max</span> <span class="o">=</span> <span class="n">inf</span>
+
+        <span class="k">return</span> <span class="n">book</span><span class="o">.</span><span class="n">loc_volume</span><span class="p">(</span><span class="n">p0</span><span class="o">=</span><span class="n">p_min</span><span class="p">,</span> <span class="n">p1</span><span class="o">=</span><span class="n">p_max</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MarketDataService.trade_time_between">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.trade_time_between">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_time_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">trade_time_between</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MarketDataService.is_market_session">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.is_market_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_market_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">is_market_session</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">market_time</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MarketDataService.clear">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.market_engine.MarketDataService.clear">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># self._market_price.clear()</span>
+        <span class="c1"># self._market_time = None</span>
+        <span class="c1"># self._timestamp = None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_history</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_market_data</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor_manager</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_price</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_price</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_history</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_date</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">market_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_market_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">session_start</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session_end</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">session_end</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session_break</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">session_break</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MarketDataMonitor</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MonitorManager</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_manager</span>
+
+    <span class="nd">@monitor_manager</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manager</span><span class="p">:</span> <span class="n">MonitorManager</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_manager</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_manager</span> <span class="o">=</span> <span class="n">manager</span>
+
+        <span class="k">for</span> <span class="n">monitor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_manager</span><span class="o">.</span><span class="n">add_monitor</span><span class="p">(</span><span class="n">monitor</span><span class="o">=</span><span class="n">monitor</span><span class="p">)</span></div>
+
+
+
+<span class="n">MDS</span> <span class="o">=</span> <span class="n">MarketDataService</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

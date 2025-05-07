@@ -1,0 +1,21 @@
+algo\_engine.strategy package
+=============================
+
+Submodules
+----------
+
+algo\_engine.strategy.strategy\_engine module
+---------------------------------------------
+
+.. automodule:: algo_engine.strategy.strategy_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.strategy
+   :members:
+   :show-inheritance:
+   :undoc-members:

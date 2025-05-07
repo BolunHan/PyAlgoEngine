@@ -1,0 +1,874 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.apps.backtest package &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=78239c4e"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="algo_engine.apps.demo package" href="algo_engine.apps.demo.html" />
+    <link rel="prev" title="algo_engine.apps package" href="algo_engine.apps.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apis.html">APIs</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="modules.html">algo_engine</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="algo_engine.html">algo_engine package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="algo_engine.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.html#module-algo_engine">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apis.html">APIs</a></li>
+          <li class="breadcrumb-item"><a href="modules.html">algo_engine</a></li>
+          <li class="breadcrumb-item"><a href="algo_engine.html">algo_engine package</a></li>
+          <li class="breadcrumb-item"><a href="algo_engine.apps.html">algo_engine.apps package</a></li>
+      <li class="breadcrumb-item active">algo_engine.apps.backtest package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/algo_engine.apps.backtest.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="algo-engine-apps-backtest-package">
+<h1>algo_engine.apps.backtest package<a class="headerlink" href="#algo-engine-apps-backtest-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-algo_engine.apps.backtest.doc_server">
+<span id="algo-engine-apps-backtest-doc-server-module"></span><h2>algo_engine.apps.backtest.doc_server module<a class="headerlink" href="#module-algo_engine.apps.backtest.doc_server" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.doc_server.</span></span><span class="sig-name descname"><span class="pre">StickTheme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style:</span> <span class="pre">~algo_engine.apps.backtest.doc_server.ColorStyle</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#StickTheme"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="algo_engine.apps.html#algo_engine.apps.bokeh_server.DocTheme" title="algo_engine.apps.bokeh_server.DocTheme"><code class="xref py py-class docutils literal notranslate"><span class="pre">DocTheme</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.stick_padding">
+<span class="sig-name descname"><span class="pre">stick_padding</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.1</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.stick_padding" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.range_padding">
+<span class="sig-name descname"><span class="pre">range_padding</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.01</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.range_padding" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.ColorStyle">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ColorStyle</span></span><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.ColorStyle" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.ColorStyle.up">
+<span class="sig-name descname"><span class="pre">up</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.ColorStyle.up" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.ColorStyle.down">
+<span class="sig-name descname"><span class="pre">down</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.ColorStyle.down" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.ws_style">
+<span class="sig-name descname"><span class="pre">ws_style</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'down':</span> <span class="pre">'red',</span> <span class="pre">'up':</span> <span class="pre">'green'}</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.ws_style" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.cn_style">
+<span class="sig-name descname"><span class="pre">cn_style</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'down':</span> <span class="pre">'green',</span> <span class="pre">'up':</span> <span class="pre">'red'}</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.cn_style" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style:</span> <span class="pre">~algo_engine.apps.backtest.doc_server.ColorStyle</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#StickTheme.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.StickTheme.stick_style">
+<span class="sig-name descname"><span class="pre">stick_style</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pct_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#StickTheme.stick_style"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.StickTheme.stick_style" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.doc_server.</span></span><span class="sig-name descname"><span class="pre">CandleStick</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_axis:</span> <span class="pre">list[float]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme:</span> <span class="pre">~algo_engine.apps.bokeh_server.DocTheme</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer" title="algo_engine.apps.bokeh_server.DocServer"><code class="xref py py-class docutils literal notranslate"><span class="pre">DocServer</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ActiveBarData</span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.ActiveBarData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.idx">
+<span class="sig-name descname"><span class="pre">idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.idx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.ts_start">
+<span class="sig-name descname"><span class="pre">ts_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.ts_start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.ts_end">
+<span class="sig-name descname"><span class="pre">ts_end</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.ts_end" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.open_price">
+<span class="sig-name descname"><span class="pre">open_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.open_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.close_price">
+<span class="sig-name descname"><span class="pre">close_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.close_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.high_price">
+<span class="sig-name descname"><span class="pre">high_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.high_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.low_price">
+<span class="sig-name descname"><span class="pre">low_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.low_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.volume">
+<span class="sig-name descname"><span class="pre">volume</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">NotRequired</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ActiveBarData.volume" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_axis:</span> <span class="pre">list[float]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme:</span> <span class="pre">~algo_engine.apps.bokeh_server.DocTheme</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.ts_indices">
+<span class="sig-name descname"><span class="pre">ts_indices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.ts_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.ts_indices" title="Link to this definition"></a></dt>
+<dd><p>generate integer indices
+from start date to end date, with given interval, in seconds</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.loc_indices">
+<span class="sig-name descname"><span class="pre">loc_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.loc_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.loc_indices" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.update" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.pipe">
+<span class="sig-name descname"><span class="pre">pipe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.pipe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.pipe" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.layout">
+<span class="sig-name descname"><span class="pre">layout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.layout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.layout" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.to_csv">
+<span class="sig-name descname"><span class="pre">to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.to_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.to_csv" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.doc_server.CandleStick.data">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#algo_engine.apps.backtest.doc_server.CandleStick.data" title="Link to this definition"></a></dt>
+<dd><p>the data used to provide initial values for new bokeh.ColumnDataSource.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-algo_engine.apps.backtest.tester">
+<span id="algo-engine-apps-backtest-tester-module"></span><h2>algo_engine.apps.backtest.tester module<a class="headerlink" href="#module-algo_engine.apps.backtest.tester" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.tester.</span></span><span class="sig-name descname"><span class="pre">Tester</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.register_ticker">
+<span class="sig-name descname"><span class="pre">register_ticker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.register_ticker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.register_ticker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.unregister_ticker">
+<span class="sig-name descname"><span class="pre">unregister_ticker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.unregister_ticker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.unregister_ticker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.buy">
+<span class="sig-name descname"><span class="pre">buy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.buy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.buy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.sell">
+<span class="sig-name descname"><span class="pre">sell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.sell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.sell" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.load_data">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'TickData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TradeData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TransactionData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'OrderBook'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.load_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.on_market_data">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_market_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.on_market_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.on_market_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.on_report">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeReport" title="algo_engine.base.trade_utils.TradeReport"><span class="pre">TradeReport</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.on_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.on_report" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.on_order">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeInstruction" title="algo_engine.base.trade_utils.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.on_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.on_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.bod">
+<span class="sig-name descname"><span class="pre">bod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.bod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.bod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.eod">
+<span class="sig-name descname"><span class="pre">eod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.eod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.eod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.Tester.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.Tester.run" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.tester.</span></span><span class="sig-name descname"><span class="pre">StrategyTester</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.strategy.html#algo_engine.strategy.strategy_engine.StrategyEngine" title="algo_engine.strategy.strategy_engine.StrategyEngine"><span class="pre">StrategyEngine</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#algo_engine.apps.backtest.tester.Tester" title="algo_engine.apps.backtest.tester.Tester"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tester</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">StrategyEngine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position_tracker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.trade_engine.PositionManagementService" title="algo_engine.engine.trade_engine.PositionManagementService"><span class="pre">PositionManagementService</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="algo_engine.strategy.html#algo_engine.strategy.strategy_engine.StrategyEngineTemplate" title="algo_engine.strategy.strategy_engine.StrategyEngineTemplate"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrategyEngineTemplate</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position_tracker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.trade_engine.PositionManagementService" title="algo_engine.engine.trade_engine.PositionManagementService"><span class="pre">PositionManagementService</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.add_handler">
+<span class="sig-name descname"><span class="pre">add_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.add_handler" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.add_handler_safe">
+<span class="sig-name descname"><span class="pre">add_handler_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.add_handler_safe" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.algos">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">algos</span></span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.algos" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.attach_strategy">
+<span class="sig-name descname"><span class="pre">attach_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.attach_strategy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.back_test">
+<span class="sig-name descname"><span class="pre">back_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.back_test" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.back_test_lite">
+<span class="sig-name descname"><span class="pre">back_test_lite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.back_test_lite" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.bod">
+<span class="sig-name descname"><span class="pre">bod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.bod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.cancel">
+<span class="sig-name descname"><span class="pre">cancel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">side</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.transaction.TransactionSide" title="algo_engine.base.transaction.TransactionSide"><span class="pre">TransactionSide</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algo_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.cancel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.eod">
+<span class="sig-name descname"><span class="pre">eod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.eod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.on_market_data">
+<span class="sig-name descname"><span class="pre">on_market_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.on_market_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.on_order">
+<span class="sig-name descname"><span class="pre">on_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeInstruction" title="algo_engine.base.trade_utils.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.on_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.on_report">
+<span class="sig-name descname"><span class="pre">on_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeReport" title="algo_engine.base.trade_utils.TradeReport"><span class="pre">TradeReport</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.on_report" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.open_pos">
+<span class="sig-name descname"><span class="pre">open_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">side</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.transaction.TransactionSide" title="algo_engine.base.transaction.TransactionSide"><span class="pre">TransactionSide</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.open_pos" title="Link to this definition"></a></dt>
+<dd><p>a method to open position
+:param ticker: the given ticker
+:param volume: the target open volume
+:param side: trade side
+:param limit_price: Optional limit
+:param algo: Optional the specified algo
+:param kwargs: other keyword used in algo
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic_set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_register</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.register" title="Link to this definition"></a></dt>
+<dd><p>Register a virtual subclass of an ABC.</p>
+<p>Returns the subclass, to allow usage as a class decorator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.remove_handler">
+<span class="sig-name descname"><span class="pre">remove_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.remove_handler" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.remove_handler_safe">
+<span class="sig-name descname"><span class="pre">remove_handler_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.remove_handler_safe" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.reset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.stop" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.subscribe">
+<span class="sig-name descname"><span class="pre">subscribe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.subscribe" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.unregister">
+<span class="sig-name descname"><span class="pre">unregister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic_set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_unregister</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.unregister" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.unwind_pos">
+<span class="sig-name descname"><span class="pre">unwind_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">side</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.transaction.TransactionSide" title="algo_engine.base.transaction.TransactionSide"><span class="pre">TransactionSide</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">safe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.StrategyEngine.unwind_pos" title="Link to this definition"></a></dt>
+<dd><p>unwind method provide a safe way to unwind position of given ticker.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ticker</strong> – the given exposure</p></li>
+<li><p><strong>volume</strong> – the target unwinding volume, should be a positive number</p></li>
+<li><p><strong>side</strong> – the trade action side, e.g. if strategy wishes to sell (in order to unwind long position), then side = TransactionSide.Sell_to_Unwind</p></li>
+<li><p><strong>limit_price</strong> – Optional, a limit price</p></li>
+<li><p><strong>algo</strong> – Optional the algo to be used to execute unwinding action</p></li>
+<li><p><strong>safe</strong> – True -&gt; unwind volume should not exceed the exposed volume; False -&gt; can flip position. Default is safe=True</p></li>
+<li><p><strong>kwargs</strong> – other kwargs passing to <cite>algo.launch</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>executed volume, remaining volume</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.strategy.html#algo_engine.strategy.strategy_engine.StrategyEngine" title="algo_engine.strategy.strategy_engine.StrategyEngine"><span class="pre">StrategyEngine</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.register_ticker">
+<span class="sig-name descname"><span class="pre">register_ticker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.register_ticker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.register_ticker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.register" title="Link to this definition"></a></dt>
+<dd><p>Register a virtual subclass of an ABC.</p>
+<p>Returns the subclass, to allow usage as a class decorator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.initialize_position_management">
+<span class="sig-name descname"><span class="pre">initialize_position_management</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.initialize_position_management"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.initialize_position_management" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.load_data">
+<span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'TickData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TradeData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TransactionData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'OrderBook'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.load_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.bod">
+<span class="sig-name descname"><span class="pre">bod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.bod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.bod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.eod">
+<span class="sig-name descname"><span class="pre">eod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.eod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.eod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.on_market_data">
+<span class="sig-name descname"><span class="pre">on_market_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.on_market_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.on_market_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.on_report">
+<span class="sig-name descname"><span class="pre">on_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeReport" title="algo_engine.base.trade_utils.TradeReport"><span class="pre">TradeReport</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.on_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.on_report" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.on_order">
+<span class="sig-name descname"><span class="pre">on_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeInstruction" title="algo_engine.base.trade_utils.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.on_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.on_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.buy">
+<span class="sig-name descname"><span class="pre">buy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.buy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.buy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.sell">
+<span class="sig-name descname"><span class="pre">sell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.sell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.sell" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.tester.StrategyTester.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#StrategyTester.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.tester.StrategyTester.run" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-algo_engine.apps.backtest.web_app">
+<span id="algo-engine-apps-backtest-web-app-module"></span><h2>algo_engine.apps.backtest.web_app module<a class="headerlink" href="#module-algo_engine.apps.backtest.web_app" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.web_app.</span></span><span class="sig-name descname"><span class="pre">WebApp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'WebApp.Backtest'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.0.0.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8080</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'WebApp.Backtest'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.0.0.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8080</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.update" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.register" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.render_index">
+<span class="sig-name descname"><span class="pre">render_index</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.render_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.render_index" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.render_dashboard">
+<span class="sig-name descname"><span class="pre">render_dashboard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.render_dashboard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.render_dashboard" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.serve">
+<span class="sig-name descname"><span class="pre">serve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blocking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.serve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.serve" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.WebApp.url">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#algo_engine.apps.backtest.web_app.WebApp.url" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.web_app.start_app">
+<span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.web_app.</span></span><span class="sig-name descname"><span class="pre">start_app</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#start_app"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.web_app.start_app" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-algo_engine.apps.backtest">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-algo_engine.apps.backtest" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.</span></span><span class="sig-name descname"><span class="pre">CandleStick</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_axis:</span> <span class="pre">list[float]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme:</span> <span class="pre">~algo_engine.apps.bokeh_server.DocTheme</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer" title="algo_engine.apps.bokeh_server.DocServer"><code class="xref py py-class docutils literal notranslate"><span class="pre">DocServer</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ActiveBarData</span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.ActiveBarData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.idx">
+<span class="sig-name descname"><span class="pre">idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.idx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.ts_start">
+<span class="sig-name descname"><span class="pre">ts_start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.ts_start" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.ts_end">
+<span class="sig-name descname"><span class="pre">ts_end</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.ts_end" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.open_price">
+<span class="sig-name descname"><span class="pre">open_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.open_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.close_price">
+<span class="sig-name descname"><span class="pre">close_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.close_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.high_price">
+<span class="sig-name descname"><span class="pre">high_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.high_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.low_price">
+<span class="sig-name descname"><span class="pre">low_price</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.low_price" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ActiveBarData.volume">
+<span class="sig-name descname"><span class="pre">volume</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">NotRequired</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ActiveBarData.volume" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date:</span> <span class="pre">~datetime.date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_axis:</span> <span class="pre">list[float]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme:</span> <span class="pre">~algo_engine.apps.bokeh_server.DocTheme</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.data">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.data" title="Link to this definition"></a></dt>
+<dd><p>the data used to provide initial values for new bokeh.ColumnDataSource.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.layout">
+<span class="sig-name descname"><span class="pre">layout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.layout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.layout" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.loc_indices">
+<span class="sig-name descname"><span class="pre">loc_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.loc_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.loc_indices" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.pipe">
+<span class="sig-name descname"><span class="pre">pipe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.pipe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.pipe" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.to_csv">
+<span class="sig-name descname"><span class="pre">to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.to_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.to_csv" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.ts_indices">
+<span class="sig-name descname"><span class="pre">ts_indices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.ts_indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.ts_indices" title="Link to this definition"></a></dt>
+<dd><p>generate integer indices
+from start date to end date, with given interval, in seconds</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.CandleStick.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#CandleStick.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.CandleStick.update" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.</span></span><span class="sig-name descname"><span class="pre">StickTheme</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style:</span> <span class="pre">~algo_engine.apps.backtest.doc_server.ColorStyle</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#StickTheme"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="algo_engine.apps.html#algo_engine.apps.bokeh_server.DocTheme" title="algo_engine.apps.bokeh_server.DocTheme"><code class="xref py py-class docutils literal notranslate"><span class="pre">DocTheme</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.ColorStyle">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ColorStyle</span></span><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.ColorStyle" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.ColorStyle.up">
+<span class="sig-name descname"><span class="pre">up</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.ColorStyle.up" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.ColorStyle.down">
+<span class="sig-name descname"><span class="pre">down</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.ColorStyle.down" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile:</span> <span class="pre">~algo_engine.profile.Profile</span> <span class="pre">=</span> <span class="pre">&lt;Profile</span> <span class="pre">non-stop&gt;(140556044655488)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style:</span> <span class="pre">~algo_engine.apps.backtest.doc_server.ColorStyle</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#StickTheme.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.cn_style">
+<span class="sig-name descname"><span class="pre">cn_style</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'down':</span> <span class="pre">'green',</span> <span class="pre">'up':</span> <span class="pre">'red'}</span></em><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.cn_style" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.range_padding">
+<span class="sig-name descname"><span class="pre">range_padding</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.01</span></em><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.range_padding" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.stick_padding">
+<span class="sig-name descname"><span class="pre">stick_padding</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.1</span></em><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.stick_padding" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.stick_style">
+<span class="sig-name descname"><span class="pre">stick_style</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pct_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/doc_server.html#StickTheme.stick_style"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.stick_style" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.StickTheme.ws_style">
+<span class="sig-name descname"><span class="pre">ws_style</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'down':</span> <span class="pre">'red',</span> <span class="pre">'up':</span> <span class="pre">'green'}</span></em><a class="headerlink" href="#algo_engine.apps.backtest.StickTheme.ws_style" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.</span></span><span class="sig-name descname"><span class="pre">WebApp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'WebApp.Backtest'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.0.0.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8080</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'WebApp.Backtest'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'0.0.0.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8080</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.register" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.render_dashboard">
+<span class="sig-name descname"><span class="pre">render_dashboard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.render_dashboard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.render_dashboard" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.render_index">
+<span class="sig-name descname"><span class="pre">render_index</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.render_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.render_index" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.serve">
+<span class="sig-name descname"><span class="pre">serve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blocking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.serve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.serve" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#WebApp.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.update" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.WebApp.url">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#algo_engine.apps.backtest.WebApp.url" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.start_app">
+<span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.</span></span><span class="sig-name descname"><span class="pre">start_app</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blocking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/web_app.html#start_app"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.start_app" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">algo_engine.apps.backtest.</span></span><span class="sig-name descname"><span class="pre">Tester</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.profile.html#algo_engine.profile.Profile" title="algo_engine.profile.Profile"><span class="pre">Profile</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.bod">
+<span class="sig-name descname"><span class="pre">bod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.bod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.bod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.buy">
+<span class="sig-name descname"><span class="pre">buy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.buy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.buy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.eod">
+<span class="sig-name descname"><span class="pre">eod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.eod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.eod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.load_data">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">market_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'TickData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TradeData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TransactionData'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'OrderBook'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.load_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.on_market_data">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_market_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.market_data.MarketData" title="algo_engine.base.market_data.MarketData"><span class="pre">MarketData</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.on_market_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.on_market_data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.on_order">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeInstruction" title="algo_engine.base.trade_utils.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.on_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.on_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.on_report">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.trade_utils.TradeReport" title="algo_engine.base.trade_utils.TradeReport"><span class="pre">TradeReport</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.on_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.on_report" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.register_ticker">
+<span class="sig-name descname"><span class="pre">register_ticker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.register_ticker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.register_ticker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.run" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.sell">
+<span class="sig-name descname"><span class="pre">sell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_price</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.sell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.sell" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.apps.backtest.Tester.unregister_ticker">
+<span class="sig-name descname"><span class="pre">unregister_ticker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/apps/backtest/tester.html#Tester.unregister_ticker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.apps.backtest.Tester.unregister_ticker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="algo_engine.apps.html" class="btn btn-neutral float-left" title="algo_engine.apps package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="algo_engine.apps.demo.html" class="btn btn-neutral float-right" title="algo_engine.apps.demo package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

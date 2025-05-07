@@ -1,0 +1,31 @@
+algo\_engine.apps package
+=========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   algo_engine.apps.backtest
+   algo_engine.apps.demo
+   algo_engine.apps.sim_input
+
+Submodules
+----------
+
+algo\_engine.apps.bokeh\_server module
+--------------------------------------
+
+.. automodule:: algo_engine.apps.bokeh_server
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.apps
+   :members:
+   :show-inheritance:
+   :undoc-members:

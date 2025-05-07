@@ -1,0 +1,1071 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.engine.algo_engine &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.engine.algo_engine</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.engine.algo_engine</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Type</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.market_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">MDS</span><span class="p">,</span> <span class="n">Singleton</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="n">OrderState</span><span class="p">,</span> <span class="n">OrderType</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;AlgoEngine&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.trade_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectMarketAccess</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;AlgoTemplate&#39;</span><span class="p">,</span> <span class="s1">&#39;AlgoRegistry&#39;</span><span class="p">,</span> <span class="s1">&#39;AlgoEngine&#39;</span><span class="p">,</span> <span class="s1">&#39;ALGO_ENGINE&#39;</span><span class="p">,</span> <span class="s1">&#39;ALGO_REGISTRY&#39;</span><span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AlgoStatus</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">idle</span> <span class="o">=</span> <span class="s1">&#39;idle&#39;</span>  <span class="c1"># init state</span>
+    <span class="n">preparing</span> <span class="o">=</span> <span class="s1">&#39;preparing&#39;</span>  <span class="c1"># preparing</span>
+    <span class="n">ready</span> <span class="o">=</span> <span class="s1">&#39;ready&#39;</span>  <span class="c1"># ready to launch order</span>
+    <span class="n">working</span> <span class="o">=</span> <span class="s1">&#39;working&#39;</span>  <span class="c1"># order launched</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="s1">&#39;done&#39;</span>  <span class="c1"># transaction complete!</span>
+    <span class="n">closed</span> <span class="o">=</span> <span class="s1">&#39;closed&#39;</span>  <span class="c1"># transaction failed and close</span>
+    <span class="n">stopping</span> <span class="o">=</span> <span class="s1">&#39;stopping&#39;</span>  <span class="c1"># trying to stop transaction</span>
+    <span class="n">rejected</span> <span class="o">=</span> <span class="s1">&#39;rejected&#39;</span>  <span class="c1"># internal / external rejected</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span>  <span class="c1"># internal / external error</span>
+
+
+<div class="viewcode-block" id="AlgoTemplate">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlgoTemplate</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="n">Status</span> <span class="o">=</span> <span class="n">AlgoStatus</span>
+
+<div class="viewcode-block" id="AlgoTemplate.__init__">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dma</span><span class="p">:</span> <span class="s1">&#39;DirectMarketAccess&#39;</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_volume</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Template for trading algorithm</span>
+<span class="sd">        an abstract class to create a trading algorithm</span>
+
+<span class="sd">        :param dma: direct market access</span>
+<span class="sd">        :param ticker: the given symbol of the underlying to trade</span>
+<span class="sd">        :param target_volume: the given volume to trade</span>
+<span class="sd">        :param side: the given TransactionSide</span>
+<span class="sd">        :keyword algo_engine: the algo_engine instance, default is ALGO_ENGINE</span>
+<span class="sd">        :keyword logger: the logger instance, default is LOGGER</span>
+<span class="sd">        :keyword algo_id: the id of the algo, default is uuid4()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dma</span> <span class="o">=</span> <span class="n">dma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">ticker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side</span> <span class="o">=</span> <span class="n">side</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span> <span class="o">=</span> <span class="n">target_volume</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;algo_engine&#39;</span><span class="p">,</span> <span class="n">ALGO_ENGINE</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">algo_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;algo_type&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">reversed_registry</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;logger&#39;</span><span class="p">,</span> <span class="n">LOGGER</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">algo_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;algo_id&#39;</span><span class="p">,</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">:</span> <span class="n">AlgoStatus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">idle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target_progress</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">work</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TradeInstruction</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TradeInstruction</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;TradeAlgo&gt;(ticker=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1">, target=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span><span class="si">}</span><span class="s1">, done=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_volume</span><span class="si">}</span><span class="s1">, algo=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">, status=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">, id=</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+<div class="viewcode-block" id="AlgoTemplate.on_sync_progress">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.on_sync_progress">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_sync_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target_progress</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">progress</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync</span><span class="p">(</span><span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.on_market_data">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.on_market_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_market_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.on_filled">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.on_filled">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filled</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">[</span><span class="n">report</span><span class="o">.</span><span class="n">order_id</span><span class="p">],</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[Failed to fill] </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> has no matching for working order </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">order_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.on_canceled">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.on_canceled">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_canceled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">order_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_canceled</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">[</span><span class="n">order_id</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[Failed to cancel] </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> has no matching for working order </span><span class="si">{</span><span class="n">order_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.on_rejected">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.on_rejected">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_rejected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rejected</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[Failed to reject] </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> has no matching for working order </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.recover">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.recover">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">recover</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_working_order</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_volume</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_volume</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> recovery successful! status </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Caution! Recovering WORKING trade handler </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> may cause unexpected error!&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_working_order</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        refresh working order, to remove the finished orders</span>
+<span class="sd">        :return: a dict of working orders</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">order_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">):</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">is_done</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">order_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assign_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">Status</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid status </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s1">! Expect </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="si">}</span><span class="s1">, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+
+        <span class="n">state_0</span><span class="p">,</span> <span class="n">state_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">status</span>
+
+        <span class="k">if</span> <span class="n">timestamp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span>
+
+        <span class="k">if</span> <span class="s1">&#39;market_time&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="ne">DeprecationWarning</span><span class="p">(</span><span class="s1">&#39;Assigning market_time deprecated, use timestamp instead!&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">state_0</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">idle</span> <span class="ow">and</span> <span class="n">state_1</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span> <span class="o">=</span> <span class="n">timestamp</span>
+        <span class="k">elif</span> <span class="n">state_1</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span> <span class="ow">or</span> <span class="n">state_1</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span> <span class="o">=</span> <span class="n">timestamp</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">state_1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sync_pos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ._update_status provides a method to clear working orders and auto assign status.</span>
+<span class="sd">        ._update_status DOES NOT call .on_filled, .on_rejected nor .on_canceled, these method is triggered by position management service.</span>
+<span class="sd">        ._update_status should be called in .on_filled .on_rejected and .on_canceled.</span>
+
+<span class="sd">        as the result of concurrency, assigning status while sync_pos may cause unexpected result, use with caution</span>
+
+<span class="sd">        :param status: the given status</span>
+<span class="sd">        :param sync_pos: whether to auto-clear working orders</span>
+<span class="sd">        :param kwargs: market_time to assign the exact time when status is changed, used in backtesting</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">sync_pos</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_working_order</span><span class="p">()</span>
+
+        <span class="c1"># if &#39;market_time&#39; in kwargs:</span>
+        <span class="c1">#     market_time: datetime.datetime = kwargs[&#39;market_time&#39;]</span>
+        <span class="c1">#     self.ts_started = market_time.timestamp()</span>
+
+        <span class="c1"># assign status with given status</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span>
+
+        <span class="c1"># update status with self info</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">idle</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled_volume</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dma</span><span class="o">.</span><span class="n">launch_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># order launched, order state can be pending, placed, or rejected (by internal on_order risk control)</span>
+        <span class="c1"># DO NOT assume order state is_working, it may be rejected!</span>
+        <span class="c1"># DO NOT assume order is in .working_order, it may be rejected!</span>
+        <span class="c1"># DO NOT assume algo state is working, it may be rejected!</span>
+        <span class="c1"># therefor calling _update_status is recommended but still optional.</span>
+        <span class="c1"># self._update_status(sync_pos=False)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cancel_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dma</span><span class="o">.</span><span class="n">cancel_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># self._update_status(sync_pos=False)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        callback on order filled / part-filled</span>
+
+<span class="sd">        this callback will REMOVE filled order from working order dict and update algo status</span>
+<span class="sd">        :param order: the given filled order</span>
+<span class="sd">        :param kwargs: keyword args for updating status. e.g. timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">trade_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">order</span><span class="o">.</span><span class="n">trades</span><span class="p">:</span>
+            <span class="n">order</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">trade_report</span><span class="o">=</span><span class="n">report</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sync_pos&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_status</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canceled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        callback on order canceled</span>
+
+<span class="sd">        this callback will REMOVE cancelled order from working order dict and update algo status</span>
+<span class="sd">        :param order: the given canceled order</span>
+<span class="sd">        :param kwargs: keyword args for updating status. e.g. timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_working_order</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_volume</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">closed</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rejected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">rejected</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span>
+
+<div class="viewcode-block" id="AlgoTemplate.to_json">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.to_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;algo_type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_type</span><span class="p">,</span>
+            <span class="s1">&#39;ticker&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="p">,</span>
+            <span class="s1">&#39;side&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s1">&#39;target_volume&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span><span class="p">,</span>
+            <span class="s1">&#39;algo_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_id</span><span class="p">,</span>
+            <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s1">&#39;target_progress&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_progress</span><span class="p">,</span>
+            <span class="s1">&#39;ts_started&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span><span class="p">,</span>
+            <span class="s1">&#39;ts_finished&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span><span class="p">,</span>
+            <span class="s1">&#39;order&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">_</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="n">_</span><span class="p">]</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">},</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_dict</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.from_json">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.from_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_str</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span><span class="si">}</span><span class="s1">, expect [str, bytes, dict]&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;ticker&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side</span> <span class="o">=</span> <span class="n">TransactionSide</span><span class="p">(</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;side&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;target_volume&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">algo_id</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;algo_id&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="p">[</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target_progress</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;target_progress&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;ts_started&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;ts_finished&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="p">{</span><span class="n">_</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="n">_</span><span class="p">])</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span> <span class="o">=</span> <span class="p">{</span><span class="n">order_id</span><span class="p">:</span> <span class="n">order</span> <span class="k">for</span> <span class="n">order_id</span><span class="p">,</span> <span class="n">order</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="o">.</span><span class="n">is_done</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.work">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.work">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">work</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.launch">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.launch">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TradeInstruction</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        launch is a method to initiate the algo and launching orders.</span>
+<span class="sd">        this method will set the algo is_active = true</span>
+<span class="sd">        this method will set a new algo state, usually idle -&gt; working</span>
+<span class="sd">        launch method is designed to be called by strategy / position management service.</span>
+
+<span class="sd">        :param kwargs: other keywords needed to launch an algo</span>
+<span class="sd">        :return: a list of working orders. Noted, that not all working order is returned by this method, for example, TWAP algo will init a sequence of order and return later.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="AlgoTemplate.cancel">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.cancel">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        cancel is a method to cancel / stop ALL working orders</span>
+<span class="sd">        this method will set the algo is_active = false</span>
+<span class="sd">        this method may set a new algo state, usually working -&gt; stopping</span>
+<span class="sd">        launch method is designed to be called by strategy / position management service.</span>
+
+<span class="sd">        :param kwargs: other keywords needed to cancel an algo</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trades</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TradeReport</span><span class="p">]:</span>
+        <span class="n">trades</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">trade_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">trades</span><span class="p">):</span>
+                <span class="n">trade_report</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">trade_id</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">trade_report</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">trades</span><span class="p">[</span><span class="n">trade_report</span><span class="o">.</span><span class="n">trade_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">trade_report</span>
+
+        <span class="k">return</span> <span class="n">trades</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">average_price</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">adjust_volume</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">notional</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">report</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">price</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">adjust_volume</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">volume</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">adjust_volume</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">notional</span> <span class="o">/</span> <span class="n">report</span><span class="o">.</span><span class="n">price</span>
+            <span class="n">notional</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">notional</span>
+
+        <span class="k">if</span> <span class="n">adjust_volume</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">notional</span> <span class="o">/</span> <span class="n">adjust_volume</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exposure_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &lt;WITH SIGN&gt; net exposed VOLUME indicating the exposure of the pos</span>
+<span class="sd">        :return: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">report</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">exposure</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">volume</span> <span class="o">*</span> <span class="n">report</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span>
+
+        <span class="k">return</span> <span class="n">exposure</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">working_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &lt;WITHOUT SIGN&gt; net working VOLUME indicating the working status of the pos</span>
+<span class="sd">        :return: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">working</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">order_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">):</span>
+            <span class="n">working_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">working_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">working</span> <span class="o">+=</span> <span class="n">working_order</span><span class="o">.</span><span class="n">working_volume</span>  <span class="c1"># should be all positive</span>
+
+        <span class="k">return</span> <span class="n">working</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filled_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &lt;WITHOUT SIGN&gt; filled VOLUME</span>
+<span class="sd">        :return: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">report</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">volume</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">volume</span>
+
+        <span class="k">return</span> <span class="n">volume</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filled_notional</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &lt;POSSIBLY WITH SIGN&gt; total filled Notional</span>
+<span class="sd">        :return: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">notional</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">report</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">notional</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">notional</span>  <span class="c1"># which should be a POSITIVE number in normal cases.</span>
+
+        <span class="k">return</span> <span class="n">notional</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fee</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &lt;POSSIBLY WITH SIGN&gt; total transaction fee</span>
+<span class="sd">        :return: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">total_fee</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="k">for</span> <span class="n">report</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trades</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">total_fee</span> <span class="o">+=</span> <span class="n">report</span><span class="o">.</span><span class="n">fee</span>
+
+        <span class="k">return</span> <span class="n">total_fee</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cash_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &lt;WITH SIGN&gt; total cash flow</span>
+<span class="sd">        :return: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cash_flow</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">filled_notional</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span>
+        <span class="k">return</span> <span class="n">cash_flow</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">multiplier</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">multiplier</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filled_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled_volume</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">placed_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">working_volume</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled_progress</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">target_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_progress</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_price</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">market_price</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">market_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">market_time</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">timestamp</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">finish_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts_finished</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Passive</span><span class="p">(</span><span class="n">AlgoTemplate</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Passive trading algorithm</span>
+<span class="sd">    Passive is a basic trading algo which trades all target volume into one single LIMIT order.</span>
+<span class="sd">    Algo will stop after order get filled or canceled.</span>
+<span class="sd">    no additional order will be launched except the initial one</span>
+
+<span class="sd">    a limit price can be set by keyword arguments, see also in doc: algo_engine.calculate_limit</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        init a Passive trade algo</span>
+
+<span class="sd">        requires all params from AlgoTemplate and additional following 4</span>
+<span class="sd">        :keyword limit_price: the absolute limit price of the order</span>
+<span class="sd">        :keyword limit_adjust_factor: limit price = market_price * (1 + factor) for long order else limit price = market_price * (1 - factor) for short order</span>
+<span class="sd">        :keyword limit_adjust_level:  for long order, limit price = bid[lvl] if lvl &gt; 0 else ask[lvl] for lvl &lt; 0.</span>
+<span class="sd">        :keyword limit_mode: if multiple limit price standard is provided, use &quot;strict&quot; to select strictest limit price or &quot;loose&quot; to select loosest one. Default is None, which is &quot;strict&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_price&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_factor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_adjust_factor&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_level</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_adjust_level&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_mode&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">work</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> is working already&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">limit_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_price&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_price</span><span class="p">)</span>
+        <span class="n">limit_adjust_factor</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_adjust_factor&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_factor</span><span class="p">)</span>
+        <span class="n">limit_adjust_level</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_adjust_level&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_level</span><span class="p">)</span>
+        <span class="n">limit_mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;limit_mode&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_mode</span><span class="p">)</span>
+
+        <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">calculate_limit</span><span class="p">(</span>
+            <span class="n">algo</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">limit_price</span><span class="o">=</span><span class="n">limit_price</span><span class="p">,</span>
+            <span class="n">limit_adjust_factor</span><span class="o">=</span><span class="n">limit_adjust_factor</span><span class="p">,</span>
+            <span class="n">limit_adjust_level</span><span class="o">=</span><span class="n">limit_adjust_level</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">limit_mode</span>
+        <span class="p">)</span>
+        <span class="n">order_type</span> <span class="o">=</span> <span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_LIMIT</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_volume</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled_volume</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_volume</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> launching </span><span class="si">{</span><span class="n">order_type</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">volume</span><span class="p">:</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="n">TradeInstruction</span><span class="p">(</span>
+                <span class="n">ticker</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="p">,</span>
+                <span class="n">side</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="p">,</span>
+                <span class="n">order_type</span><span class="o">=</span><span class="n">order_type</span><span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span>
+                <span class="n">limit_price</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+                <span class="n">order_id</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">side_name</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dma</span><span class="o">.</span><span class="n">timestamp</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">[</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">order</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">order</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dma</span><span class="o">.</span><span class="n">timestamp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_launch</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">stopping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancel_all_order</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cancel_all_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">order_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">):</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_state</span> <span class="ow">in</span> <span class="p">[</span><span class="n">OrderState</span><span class="o">.</span><span class="n">Pending</span><span class="p">,</span> <span class="n">OrderState</span><span class="o">.</span><span class="n">Placed</span><span class="p">,</span> <span class="n">OrderState</span><span class="o">.</span><span class="n">PartFilled</span><span class="p">]:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> canceling </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dma</span><span class="o">.</span><span class="n">cancel_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rejected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_rejected</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_volume</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_filled</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled_volume</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canceled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_canceled</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled_volume</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">closed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">)</span>
+
+        <span class="n">additional_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">limit_price</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">limit_price</span><span class="p">,</span>
+            <span class="n">limit_adjust_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_factor</span><span class="p">,</span>
+            <span class="n">limit_adjust_level</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_level</span><span class="p">,</span>
+            <span class="n">limit_mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">limit_mode</span>
+        <span class="p">)</span>
+
+        <span class="n">json_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">additional_dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_dict</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_str</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span><span class="si">}</span><span class="s1">, expect [str, bytes, dict]&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_price</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;limit_price&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_factor</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;limit_adjust_factor&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_adjust_level</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;limit_adjust_level&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_mode</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;limit_mode&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PassiveTimeout</span><span class="p">(</span><span class="n">Passive</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Passive handler with timeout function</span>
+<span class="sd">    PassiveTimeout is similar to Passive, with a timeout value (in seconds) and cancel working order after that</span>
+
+<span class="sd">    Default timeout is 0, which is no timeout (same as passive).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;timeout&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_market_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">work</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">work</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">algo_engine</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">trade_time_between</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ts_started</span><span class="p">,</span> <span class="n">end_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="ow">and</span> <span class="n">ts</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> canceling. status=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s1">, ts=</span><span class="si">{</span><span class="n">ts</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1"> working. status=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s1">, ts=</span><span class="si">{</span><span class="n">ts</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">s, timeout=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">)</span>
+
+        <span class="n">additional_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span>
+        <span class="p">)</span>
+
+        <span class="n">json_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">additional_dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json_dict</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_str</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span><span class="si">}</span><span class="s1">, expect [str, bytes, dict]&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;timeout&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Aggressive</span><span class="p">(</span><span class="n">Passive</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Aggressive trading algorithm</span>
+<span class="sd">    Aggressive is similar as Passive.</span>
+<span class="sd">    Aggressive will re-launch a &quot;fixing&quot; order immediately</span>
+<span class="sd">    after working order got canceled or filled, if there is any un-filled volume.</span>
+
+<span class="sd">    USE WITH CAUTION</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_filled</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canceled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_canceled</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_assign_status</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">done</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working_order</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">working</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AggressiveTimeout</span><span class="p">(</span><span class="n">PassiveTimeout</span><span class="p">,</span> <span class="n">Aggressive</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Similar to PassiveTimeout, AggressiveTimeout cancel working order after timeout and re-launch &quot;fixing&quot; order after canceled or filled.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Aggressive</span><span class="o">.</span><span class="n">_filled</span><span class="p">(</span><span class="bp">self</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canceled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Aggressive</span><span class="o">.</span><span class="n">_canceled</span><span class="p">(</span><span class="bp">self</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="AlgoEngine">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoEngine">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlgoEngine</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+<div class="viewcode-block" id="AlgoEngine.__init__">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoEngine.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mds</span> <span class="o">=</span> <span class="n">mds</span> <span class="k">if</span> <span class="n">mds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">MDS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="n">registry</span> <span class="k">if</span> <span class="n">registry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ALGO_REGISTRY</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compare_price</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">original_limit</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;strict&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">calculated_limit</span> <span class="o">=</span> <span class="n">original_limit</span>
+
+        <span class="k">if</span> <span class="n">limit_price</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">calculated_limit</span>
+        <span class="k">elif</span> <span class="n">calculated_limit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">limit_price</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;strict&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">calculated_limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">calculated_limit</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;loose&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">calculated_limit</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">calculated_limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid compare mode </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">limit_price</span>
+
+        <span class="k">return</span> <span class="n">calculated_limit</span>
+
+<div class="viewcode-block" id="AlgoEngine.get_algo">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoEngine.get_algo">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_algo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">algo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">to_algo</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">algo_engine</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">algo</span></div>
+
+
+<div class="viewcode-block" id="AlgoEngine.calculate_limit">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoEngine.calculate_limit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_limit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">algo</span><span class="p">:</span> <span class="n">AlgoTemplate</span><span class="p">,</span>
+            <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">limit_adjust_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">limit_adjust_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;loose&#39;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate limit price</span>
+
+<span class="sd">        :param algo: given algo</span>
+<span class="sd">        :param limit_price: absolute limit_price</span>
+<span class="sd">        :param limit_adjust_factor: limit_price = market_price * (1 + factor) for long order else limit price = market_price * (1 - factor) for short order</span>
+<span class="sd">        :param limit_adjust_level:  for long order, limit price = bid[lvl] if lvl &gt; 0 else ask[lvl] for lvl &lt; 0.</span>
+<span class="sd">        :param mode: &quot;strict&quot; to select strictest limit price or &quot;loose&quot; to select loosest one. Default is None, which is &quot;strict&quot;.</span>
+<span class="sd">        :return: the calculated limit price, if there is any</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">side</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">side</span>
+        <span class="n">market_price</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">market_price</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+
+        <span class="c1"># validate side</span>
+        <span class="k">if</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># market data not available</span>
+        <span class="k">if</span> <span class="n">market_price</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> market data not available&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">calculated_limit</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">limit_abs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">limit_adj</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">limit_lvl</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># compare with absolute limit_price</span>
+        <span class="k">if</span> <span class="n">limit_price</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">limit_abs</span> <span class="o">=</span> <span class="n">limit_price</span>
+
+        <span class="k">if</span> <span class="n">limit_adjust_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">limit_adj</span> <span class="o">=</span> <span class="n">market_price</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">limit_adjust_factor</span> <span class="o">*</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">limit_adjust_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">order_book</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">get_order_book</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">order_book</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lvl</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">limit_adjust_level</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">limit_adjust_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">book</span> <span class="o">=</span> <span class="n">order_book</span><span class="o">.</span><span class="n">bid</span><span class="o">.</span><span class="n">price</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">book</span> <span class="o">=</span> <span class="n">order_book</span><span class="o">.</span><span class="n">ask</span><span class="o">.</span><span class="n">price</span>
+
+                    <span class="n">limit_lvl</span> <span class="o">=</span> <span class="n">book</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">book</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">limit_adjust_level</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">book</span> <span class="o">=</span> <span class="n">order_book</span><span class="o">.</span><span class="n">ask</span><span class="o">.</span><span class="n">price</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">book</span> <span class="o">=</span> <span class="n">order_book</span><span class="o">.</span><span class="n">bid</span><span class="o">.</span><span class="n">price</span>
+
+                    <span class="n">limit_lvl</span> <span class="o">=</span> <span class="n">book</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">book</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+
+        <span class="n">calculated_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compare_price</span><span class="p">(</span><span class="n">limit_price</span><span class="o">=</span><span class="n">limit_abs</span><span class="p">,</span> <span class="n">original_limit</span><span class="o">=</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">calculated_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compare_price</span><span class="p">(</span><span class="n">limit_price</span><span class="o">=</span><span class="n">limit_adj</span><span class="p">,</span> <span class="n">original_limit</span><span class="o">=</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">calculated_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compare_price</span><span class="p">(</span><span class="n">limit_price</span><span class="o">=</span><span class="n">limit_lvl</span><span class="p">,</span> <span class="n">original_limit</span><span class="o">=</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">calculated_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compare_price</span><span class="p">(</span><span class="n">limit_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span> <span class="n">original_limit</span><span class="o">=</span><span class="n">calculated_limit</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;BBA limits </span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> market_price=</span><span class="si">{</span><span class="n">market_price</span><span class="si">}</span><span class="s1">, lmt_abs=</span><span class="si">{</span><span class="n">limit_price</span><span class="si">}</span><span class="s1">, lmt_adj=</span><span class="si">{</span><span class="n">limit_adj</span><span class="si">}</span><span class="s1">, lmt_lvl=</span><span class="si">{</span><span class="n">limit_lvl</span><span class="si">}</span><span class="s1">, mode=</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s1">, cal_lmt=</span><span class="si">{</span><span class="n">calculated_limit</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">calculated_limit</span></div>
+
+
+<div class="viewcode-block" id="AlgoEngine.from_json">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoEngine.from_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_str</span><span class="p">,</span> <span class="n">dma</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AlgoTemplate</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_str</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span><span class="si">}</span><span class="s1">, expect [str, bytes, dict]&#39;</span><span class="p">)</span>
+
+        <span class="n">algo</span><span class="p">:</span> <span class="n">AlgoTemplate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_algo</span><span class="p">(</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;algo_type&#39;</span><span class="p">])(</span>
+            <span class="n">ticker</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;ticker&#39;</span><span class="p">],</span>
+            <span class="n">side</span><span class="o">=</span><span class="n">TransactionSide</span><span class="p">(</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;side&#39;</span><span class="p">]),</span>
+            <span class="n">target_volume</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;target_volume&#39;</span><span class="p">],</span>
+            <span class="n">dma</span><span class="o">=</span><span class="n">dma</span><span class="p">,</span>
+            <span class="n">algo_id</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;algo_id&#39;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">algo</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">json_dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">algo</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AlgoRegistry">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoRegistry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AlgoRegistry</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">Singleton</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    registry for trade algos</span>
+
+<span class="sd">    to add a new algo, add name to __init__ method, add handler to .cast() method</span>
+
+<span class="sd">    DO NOT add any other value to __init__.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AlgoRegistry.__init__">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoRegistry.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alias</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># pre-defined algo name for easy access</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggressive</span> <span class="o">=</span> <span class="s1">&#39;aggressive&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">passive</span> <span class="o">=</span> <span class="s1">&#39;passive&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggressive_timeout</span> <span class="o">=</span> <span class="s1">&#39;aggressive_timeout&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">passive_timeout</span> <span class="o">=</span> <span class="s1">&#39;passive_timeout&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit_range</span> <span class="o">=</span> <span class="s1">&#39;limit_range&#39;</span></div>
+
+
+<div class="viewcode-block" id="AlgoRegistry.add_algo">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoRegistry.add_algo">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_algo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">alias</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">AlgoTemplate</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">handler</span>
+
+        <span class="k">for</span> <span class="n">_alias</span> <span class="ow">in</span> <span class="n">alias</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">[</span><span class="n">_alias</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span></div>
+
+
+<div class="viewcode-block" id="AlgoRegistry.cast">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoRegistry.cast">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># check alias</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alias</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="c1"># init from storage</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid name </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reversed_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="n">reversed_registry</span> <span class="o">=</span> <span class="p">{</span><span class="n">algo</span><span class="o">.</span><span class="vm">__name__</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">algo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">reversed_registry</span>
+
+<div class="viewcode-block" id="AlgoRegistry.to_algo">
+<a class="viewcode-back" href="../../../algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoRegistry.to_algo">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_algo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">algo_engine</span><span class="p">:</span> <span class="n">AlgoEngine</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">algo_engine</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">algo_engine</span> <span class="o">=</span> <span class="n">ALGO_ENGINE</span>
+
+        <span class="n">algo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">algo</span><span class="p">,</span> <span class="n">algo_engine</span><span class="o">=</span><span class="n">algo_engine</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="n">ALGO_REGISTRY</span> <span class="o">=</span> <span class="n">AlgoRegistry</span><span class="p">()</span>
+
+<span class="n">ALGO_REGISTRY</span><span class="o">.</span><span class="n">add_algo</span><span class="p">(</span><span class="s1">&#39;aggressive&#39;</span><span class="p">,</span> <span class="s1">&#39;aggr&#39;</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">Aggressive</span><span class="p">)</span>
+<span class="n">ALGO_REGISTRY</span><span class="o">.</span><span class="n">add_algo</span><span class="p">(</span><span class="s1">&#39;passive&#39;</span><span class="p">,</span> <span class="s1">&#39;pass&#39;</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">Passive</span><span class="p">)</span>
+<span class="n">ALGO_REGISTRY</span><span class="o">.</span><span class="n">add_algo</span><span class="p">(</span><span class="s1">&#39;aggressive_timeout&#39;</span><span class="p">,</span> <span class="s1">&#39;aggr_timeout&#39;</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">AggressiveTimeout</span><span class="p">)</span>
+<span class="n">ALGO_REGISTRY</span><span class="o">.</span><span class="n">add_algo</span><span class="p">(</span><span class="s1">&#39;passive_timeout&#39;</span><span class="p">,</span> <span class="s1">&#39;pass_timeout&#39;</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">PassiveTimeout</span><span class="p">)</span>
+
+<span class="n">ALGO_ENGINE</span> <span class="o">=</span> <span class="n">AlgoEngine</span><span class="p">(</span><span class="n">mds</span><span class="o">=</span><span class="n">MDS</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">ALGO_REGISTRY</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

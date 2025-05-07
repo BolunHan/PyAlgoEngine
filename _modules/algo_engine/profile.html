@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.profile &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.profile</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.profile</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span><span class="p">,</span> <span class="n">Literal</span>
+
+
+<div class="viewcode-block" id="Profile">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Profile</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+<div class="viewcode-block" id="Profile.__init__">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">profile_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">session_break</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile_id</span> <span class="o">=</span> <span class="n">profile_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span> <span class="o">=</span> <span class="n">session_start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_end</span> <span class="o">=</span> <span class="n">session_end</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_break</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">session_break</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_break</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_zone</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;Profile </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">profile_id</span><span class="si">}</span><span class="s1">&gt;(</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+<div class="viewcode-block" id="Profile.override_profile">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.override_profile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">override_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Self</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILE</span>
+
+        <span class="n">profile</span><span class="o">.</span><span class="n">profile_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_id</span>
+        <span class="n">profile</span><span class="o">.</span><span class="n">session_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span>
+        <span class="n">profile</span><span class="o">.</span><span class="n">session_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_end</span>
+
+        <span class="k">if</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_break</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_break</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">profile</span><span class="o">.</span><span class="n">session_break</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">profile</span><span class="o">.</span><span class="n">session_break</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="n">profile</span><span class="o">.</span><span class="n">session_break</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session_break</span><span class="p">)</span>
+
+        <span class="n">profile</span><span class="o">.</span><span class="n">trade_time_between</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_time_between</span>
+        <span class="n">profile</span><span class="o">.</span><span class="n">is_market_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_market_session</span>
+        <span class="n">profile</span><span class="o">.</span><span class="n">trade_calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_calendar</span>
+
+        <span class="k">return</span> <span class="n">profile</span></div>
+
+
+<div class="viewcode-block" id="Profile.trade_time_between">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.trade_time_between">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_time_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Profile.is_market_session">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.is_market_session">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_market_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Profile.trade_calendar">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.trade_calendar">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_calendar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Profile.trading_days_before">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.trading_days_before">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trading_days_before</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">days</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the trading date that is `days` trading days before the given market_date.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            market_date: The reference date</span>
+<span class="sd">            days: Number of trading days to go back (must be positive)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The trading date that is `days` trading days before market_date</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If days is not positive</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;days must be positive&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate how many years we need to go back (250 trading days ≈ 1 year)</span>
+        <span class="n">years_back</span> <span class="o">=</span> <span class="p">(</span><span class="n">days</span> <span class="o">//</span> <span class="mi">250</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">market_date</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span> <span class="o">*</span> <span class="n">years_back</span><span class="p">)</span>
+
+        <span class="c1"># Get the trade calendar</span>
+        <span class="n">trade_dates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Find the market_date in the calendar (it should be the last or near last)</span>
+        <span class="k">if</span> <span class="n">market_date</span> <span class="o">==</span> <span class="n">trade_dates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">)</span> <span class="o">-</span> <span class="n">days</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">)</span> <span class="o">-</span> <span class="n">days</span>
+
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trading_days_before</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">trade_dates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">days</span><span class="o">=-</span><span class="n">idx</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">trade_dates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Profile.trading_days_after">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.trading_days_after">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trading_days_after</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">days</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the trading date that is `days` trading days after the given market_date.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            market_date: The reference date</span>
+<span class="sd">            days: Number of trading days to go forward (must be positive)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The trading date that is `days` trading days after market_date</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If days is not positive</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">days</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;days must be positive&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate how many years we need to look ahead (250 trading days ≈ 1 year)</span>
+        <span class="n">years_ahead</span> <span class="o">=</span> <span class="p">(</span><span class="n">days</span> <span class="o">//</span> <span class="mi">250</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">market_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span> <span class="o">*</span> <span class="n">years_ahead</span><span class="p">)</span>
+
+        <span class="c1"># Get the trade calendar</span>
+        <span class="n">trade_dates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Find the market_date in the calendar (it should be the first or near first)</span>
+        <span class="k">if</span> <span class="n">market_date</span> <span class="o">==</span> <span class="n">trade_dates</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">days</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If market_date isn&#39;t a trading day, the first date is the next trading day</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">days</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">):</span>
+            <span class="c1"># Need to look further ahead</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">trading_days_after</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">trade_dates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">days</span><span class="o">=</span><span class="n">idx</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">trade_dates</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">trade_dates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Profile.nearest_trading_date">
+<a class="viewcode-back" href="../../algo_engine.profile.html#algo_engine.profile.Profile.nearest_trading_date">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nearest_trading_date</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;previous&#39;</span><span class="p">,</span> <span class="s1">&#39;next&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;previous&#39;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the nearest trading date relative to the given market_date.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            market_date: The reference date</span>
+<span class="sd">            method: Either &#39;previous&#39; (default) or &#39;next&#39; to determine which side to look when the date isn&#39;t a trading day</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            **kwargs: Additional arguments passed to trade_calendar</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The nearest trading date according to the specified method</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If method is not &#39;previous&#39; or &#39;next&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;previous&#39;</span><span class="p">,</span> <span class="s1">&#39;next&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;method must be either &#39;previous&#39; or &#39;next&#39;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># If not a trading day, find nearest according to method</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;previous&#39;</span><span class="p">:</span>
+            <span class="c1"># Get previous trading day by looking back 1 year (safe upper bound)</span>
+            <span class="n">previous_dates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span>
+                <span class="n">start_date</span><span class="o">=</span><span class="n">market_date</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
+                <span class="n">end_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">previous_dates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Get next trading day by looking ahead 1 year (safe upper bound)</span>
+            <span class="n">next_dates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span>
+                <span class="n">start_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
+                <span class="n">end_date</span><span class="o">=</span><span class="n">market_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
+                <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">next_dates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">range_break</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        an range break designed for plotly.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">range_break</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_break</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">range_break</span>
+
+        <span class="c1"># Convert session_break to range_break format</span>
+        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_break</span><span class="p">:</span>
+            <span class="n">start_hour</span> <span class="o">=</span> <span class="n">start</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="n">start</span><span class="o">.</span><span class="n">minute</span> <span class="o">/</span> <span class="mi">60</span>
+            <span class="n">end_hour</span> <span class="o">=</span> <span class="n">end</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="n">end</span><span class="o">.</span><span class="n">minute</span> <span class="o">/</span> <span class="mi">60</span>
+            <span class="n">range_break</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">[</span><span class="n">start_hour</span><span class="p">,</span> <span class="n">end_hour</span><span class="p">],</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;hour&quot;</span><span class="p">))</span>
+
+        <span class="c1"># Add the additional fixed non-trading periods</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span> <span class="o">!=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span><span class="p">:</span>
+            <span class="n">range_break</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start</span><span class="o">.</span><span class="n">minute</span> <span class="o">/</span> <span class="mi">60</span><span class="p">],</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;hour&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_end</span> <span class="o">!=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">max</span><span class="p">:</span>
+            <span class="n">range_break</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">session_end</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_end</span><span class="o">.</span><span class="n">minute</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">24</span><span class="p">],</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;hour&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">range_break</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DefaultProfile</span><span class="p">(</span><span class="n">Profile</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">profile_id</span><span class="o">=</span><span class="s1">&#39;non-stop&#39;</span><span class="p">,</span>
+            <span class="n">session_start</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
+            <span class="n">session_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">session_break</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_time_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">start_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">end_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end_time</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">end_time</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">start_time</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">end_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">start_time</span> <span class="o">&gt;</span> <span class="n">end_time</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_market_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">trade_calendar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">((</span><span class="n">end_date</span> <span class="o">-</span> <span class="n">start_date</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.cn</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE_CN</span>
+
+<span class="n">PROFILE</span> <span class="o">=</span> <span class="n">DefaultProfile</span><span class="p">()</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Profile&#39;</span><span class="p">,</span> <span class="s1">&#39;PROFILE&#39;</span><span class="p">,</span> <span class="s1">&#39;PROFILE_CN&#39;</span><span class="p">]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

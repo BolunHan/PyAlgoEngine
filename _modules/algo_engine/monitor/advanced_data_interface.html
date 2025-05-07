@@ -1,0 +1,482 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.monitor.advanced_data_interface &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.monitor.advanced_data_interface</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.monitor.advanced_data_interface</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ctypes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Structure</span><span class="p">,</span> <span class="n">c_double</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">multiprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">shared_memory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">Monitor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TradeData</span><span class="p">,</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">OrderData</span><span class="p">,</span> <span class="n">TransactionData</span><span class="p">,</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="n">TickData</span><span class="p">,</span> <span class="n">TickDataLite</span><span class="p">,</span> <span class="n">BarData</span>
+
+
+<div class="viewcode-block" id="Entry">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.Entry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Entry</span><span class="p">(</span><span class="n">Structure</span><span class="p">):</span>
+    <span class="n">_fields_</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="n">c_double</span><span class="p">),</span>  <span class="c1"># Double precision floating point for price</span>
+        <span class="p">(</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="n">c_double</span><span class="p">),</span>  <span class="c1"># Double precision floating point for volume</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Entry(price=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">price</span><span class="si">}</span><span class="s2">, volume=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="si">}</span><span class="s2">, n_orders=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orders</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="PyOrderBook">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.PyOrderBook">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PyOrderBook</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="PyOrderBook.__init__">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.PyOrderBook.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Entry</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side</span> <span class="o">=</span> <span class="n">TransactionSide</span><span class="p">(</span><span class="n">side</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Entry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SyntheticOrderBookMonitor">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SyntheticOrderBookMonitor</span><span class="p">(</span><span class="n">Monitor</span><span class="p">):</span>
+
+<div class="viewcode-block" id="SyntheticOrderBookMonitor.__init__">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;Monitor.SyntheticOrderBook&#39;</span><span class="p">),</span>
+            <span class="n">monitor_id</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;monitor_id&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PyOrderBook</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PyOrderBook</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tick_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TickData</span> <span class="o">|</span> <span class="n">TickDataLite</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_data</span><span class="p">,</span> <span class="p">(</span><span class="n">TickData</span><span class="p">,</span> <span class="n">TickDataLite</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_tick_data</span><span class="p">(</span><span class="n">market_data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_data</span><span class="p">,</span> <span class="p">(</span><span class="n">TransactionData</span><span class="p">,</span> <span class="n">TradeData</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_on_trade_data</span><span class="p">(</span><span class="n">market_data</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_order_book</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PyOrderBook</span><span class="p">,</span> <span class="n">PyOrderBook</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bid</span><span class="p">:</span>
+            <span class="n">bid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bid</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bid</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">PyOrderBook</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">TransactionSide</span><span class="o">.</span><span class="n">SIDE_BID</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">:</span>
+            <span class="n">ask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">PyOrderBook</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">TransactionSide</span><span class="o">.</span><span class="n">SIDE_ASK</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">bid</span><span class="p">,</span> <span class="n">ask</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_tick_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tick_data</span><span class="p">:</span> <span class="n">TickData</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tick_data</span><span class="p">,</span> <span class="n">TickDataLite</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tick_data</span><span class="p">[</span><span class="n">tick_data</span><span class="o">.</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">tick_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tick_data</span><span class="p">[</span><span class="n">tick_data</span><span class="o">.</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">tick_data</span><span class="o">.</span><span class="n">lite</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_on_trade_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade_data</span><span class="p">:</span> <span class="n">TransactionData</span> <span class="o">|</span> <span class="n">TradeData</span><span class="p">):</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">bid</span><span class="p">,</span> <span class="n">ask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_order_book</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+        <span class="n">price</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">price</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">volume</span>
+        <span class="n">sign</span> <span class="o">=</span> <span class="n">trade_data</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span>
+
+        <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">ask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="n">entry</span><span class="o">.</span><span class="n">volume</span> <span class="o">-=</span> <span class="n">volume</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">volume</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">price</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">bid</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="n">entry</span><span class="o">.</span><span class="n">volume</span> <span class="o">-=</span> <span class="n">volume</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">volume</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bid</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">price</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SyntheticOrderBookMonitor.on_order_data">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.on_order_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_order_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_data</span><span class="p">:</span> <span class="n">OrderData</span><span class="p">):</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">order_data</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">bid</span><span class="p">,</span> <span class="n">ask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_order_book</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+        <span class="n">price</span> <span class="o">=</span> <span class="n">order_data</span><span class="o">.</span><span class="n">price</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">order_data</span><span class="o">.</span><span class="n">volume</span>
+        <span class="n">sign</span> <span class="o">=</span> <span class="n">order_data</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span>
+
+        <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">ask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ask</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">price</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">volume</span> <span class="o">+=</span> <span class="n">volume</span>
+        <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">bid</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">bid</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">price</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">volume</span> <span class="o">+=</span> <span class="n">volume</span></div>
+
+
+<div class="viewcode-block" id="SyntheticOrderBookMonitor.to_json">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.to_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">monitor_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor_id</span><span class="p">,</span>
+            <span class="n">bid</span><span class="o">=</span><span class="p">{</span><span class="n">ticker</span><span class="p">:</span> <span class="p">{</span><span class="n">price</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">price</span><span class="p">]</span><span class="o">.</span><span class="n">volume</span> <span class="k">for</span> <span class="n">price</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">order_book</span><span class="o">.</span><span class="n">data</span><span class="p">)}</span> <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">order_book</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bid</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">ask</span><span class="o">=</span><span class="p">{</span><span class="n">ticker</span><span class="p">:</span> <span class="p">{</span><span class="n">price</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">price</span><span class="p">]</span><span class="o">.</span><span class="n">volume</span> <span class="k">for</span> <span class="n">price</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">order_book</span><span class="o">.</span><span class="n">data</span><span class="p">)}</span> <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">order_book</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data_dict</span>
+        <span class="k">elif</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;str&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid format </span><span class="si">{</span><span class="n">fmt</span><span class="si">}</span><span class="s1">, except &quot;dict&quot; or &quot;str&quot;.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SyntheticOrderBookMonitor.from_json">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_message</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_message</span><span class="p">)</span>
+
+        <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+            <span class="n">monitor_id</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;monitor_id&#39;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bid</span> <span class="o">=</span> <span class="p">{</span><span class="n">ticker</span><span class="p">:</span> <span class="p">(</span><span class="n">book</span> <span class="o">:=</span> <span class="n">PyOrderBook</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">TransactionSide</span><span class="o">.</span><span class="n">SIDE_BID</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="n">price</span><span class="p">:</span> <span class="n">Entry</span><span class="p">(</span><span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">)</span> <span class="k">for</span> <span class="n">price</span><span class="p">,</span> <span class="n">volume</span> <span class="ow">in</span> <span class="n">order_book</span><span class="o">.</span><span class="n">items</span><span class="p">()}))</span> <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">order_book</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;bid&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bid</span> <span class="o">=</span> <span class="p">{</span><span class="n">ticker</span><span class="p">:</span> <span class="p">(</span><span class="n">book</span> <span class="o">:=</span> <span class="n">PyOrderBook</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">TransactionSide</span><span class="o">.</span><span class="n">SIDE_ASK</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="n">price</span><span class="p">:</span> <span class="n">Entry</span><span class="p">(</span><span class="n">price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">)</span> <span class="k">for</span> <span class="n">price</span><span class="p">,</span> <span class="n">volume</span> <span class="ow">in</span> <span class="n">order_book</span><span class="o">.</span><span class="n">items</span><span class="p">()}))</span> <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">order_book</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;ask&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="SyntheticOrderBookMonitor.clear">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.clear">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bid</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ask</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tick_data</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TickData</span><span class="p">]:</span>
+        <span class="n">order_book</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">tick_lite</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tick_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">bid</span><span class="p">,</span> <span class="n">ask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_order_book</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+
+            <span class="n">bid_price</span><span class="p">,</span> <span class="n">bid_volume</span><span class="p">,</span> <span class="n">ask_price</span><span class="p">,</span> <span class="n">ask_volume</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{},</span> <span class="p">{},</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">price</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">bid</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">bid_price</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;bid_price_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+                <span class="n">bid_price</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;bid_volume_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bid</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">price</span><span class="p">]</span><span class="o">.</span><span class="n">volume</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">price</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ask</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">bid_price</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ask_price_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+                <span class="n">bid_price</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ask_volume_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ask</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">price</span><span class="p">]</span><span class="o">.</span><span class="n">volume</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">TickData</span><span class="p">(</span>
+                <span class="n">ticker</span><span class="o">=</span><span class="n">tick_lite</span><span class="o">.</span><span class="n">ticker</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">tick_lite</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+                <span class="n">last_price</span><span class="o">=</span><span class="n">tick_lite</span><span class="o">.</span><span class="n">last_price</span><span class="p">,</span>
+                <span class="n">total_traded_volume</span><span class="o">=</span><span class="n">tick_lite</span><span class="o">.</span><span class="n">total_traded_volume</span><span class="p">,</span>
+                <span class="n">total_traded_notional</span><span class="o">=</span><span class="n">tick_lite</span><span class="o">.</span><span class="n">total_traded_notional</span><span class="p">,</span>
+                <span class="n">total_trade_count</span><span class="o">=</span><span class="n">tick_lite</span><span class="o">.</span><span class="n">total_trade_count</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">bid_price</span><span class="p">,</span> <span class="o">**</span><span class="n">bid_volume</span><span class="p">,</span> <span class="o">**</span><span class="n">ask_price</span><span class="p">,</span> <span class="o">**</span><span class="n">ask_volume</span>
+            <span class="p">)</span>
+
+            <span class="n">order_book</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="k">return</span> <span class="n">order_book</span></div>
+
+
+
+<div class="viewcode-block" id="MinuteBarMonitor">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MinuteBarMonitor</span><span class="p">(</span><span class="n">Monitor</span><span class="p">):</span>
+
+<div class="viewcode-block" id="MinuteBarMonitor.__init__">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;Monitor.MinuteBarMonitor&#39;</span><span class="p">),</span>
+            <span class="n">monitor_id</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;monitor_id&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BarData</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BarData</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_last_bar</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+        <span class="c1"># self._update_active_bar(market_data=market_data, interval=self.interval)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_last_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">market_price</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span>
+        <span class="n">market_time</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_time</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
+
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span> <span class="ow">or</span> <span class="n">market_time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="o">.</span><span class="n">bar_end_time</span><span class="p">:</span>
+            <span class="c1"># update bar_data</span>
+            <span class="k">if</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+
+            <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">BarData</span><span class="p">(</span>
+                <span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">timestamp</span> <span class="o">//</span> <span class="n">interval</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">interval</span><span class="p">,</span>
+                <span class="n">start_timestamp</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">timestamp</span> <span class="o">//</span> <span class="n">interval</span><span class="p">)</span> <span class="o">*</span> <span class="n">interval</span><span class="p">,</span>
+                <span class="n">bar_span</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">),</span>
+                <span class="n">high_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">low_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">open_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">close_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                <span class="n">notional</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                <span class="n">trade_count</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_data</span><span class="p">,</span> <span class="n">TradeData</span><span class="p">):</span>
+            <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">volume</span>
+            <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;notional&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">notional</span>
+            <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;trade_count&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_price</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">bar_data</span><span class="o">.</span><span class="n">high_price</span><span class="p">,</span> <span class="n">market_price</span><span class="p">)</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;low_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">bar_data</span><span class="o">.</span><span class="n">low_price</span><span class="p">,</span> <span class="n">market_price</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_active_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span>
+        <span class="n">market_price</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span>
+        <span class="n">market_time</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_time</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
+
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span> <span class="ow">or</span> <span class="n">market_time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="o">.</span><span class="n">bar_end_time</span><span class="p">:</span>
+            <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">BarData</span><span class="p">(</span>
+                <span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span>
+                <span class="n">start_timestamp</span><span class="o">=</span><span class="n">timestamp</span> <span class="o">-</span> <span class="n">interval</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span>
+                <span class="n">bar_span</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">),</span>
+                <span class="n">high_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">low_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">open_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">close_price</span><span class="o">=</span><span class="n">market_price</span><span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                <span class="n">notional</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                <span class="n">trade_count</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)</span>
+            <span class="n">bar_data</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bar_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+
+        <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TradeData</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">bar_data</span><span class="p">,</span> <span class="s1">&#39;history&#39;</span><span class="p">)</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;start_timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timestamp</span> <span class="o">-</span> <span class="n">interval</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_data</span><span class="p">,</span> <span class="n">TradeData</span><span class="p">):</span>
+            <span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">market_data</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">history</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">market_time</span> <span class="o">&gt;=</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">bar_start_time</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">history</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">volume</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">history</span><span class="p">])</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;notional&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">notional</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">history</span><span class="p">])</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;trade_count&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">notional</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">history</span><span class="p">])</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_price</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">history</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">market_price</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">market_price</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">history</span><span class="p">])</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s1">&#39;low_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">market_price</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">history</span><span class="p">])</span>
+
+<div class="viewcode-block" id="MinuteBarMonitor.to_json">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.to_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">data_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">monitor_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor_id</span><span class="p">,</span>
+            <span class="n">interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span>
+            <span class="n">minute_bar_data</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">last_bar_data</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data_dict</span>
+        <span class="k">elif</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s1">&#39;str&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid format </span><span class="si">{</span><span class="n">fmt</span><span class="si">}</span><span class="s1">, except &quot;dict&quot; or &quot;str&quot;.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MinuteBarMonitor.from_json">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_message</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_message</span><span class="p">)</span>
+
+        <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+            <span class="n">monitor_id</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;monitor_id&#39;</span><span class="p">],</span>
+            <span class="n">interval</span><span class="o">=</span><span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;interval&#39;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">BarData</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;minute_bar_data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">BarData</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;last_bar_data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="MinuteBarMonitor.from_shm">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.from_shm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_shm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor_id</span><span class="si">}</span><span class="s1">.json&#39;</span>
+
+        <span class="n">shm</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="o">.</span><span class="n">SharedMemory</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">shm</span><span class="o">.</span><span class="n">buf</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">BarData</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;minute_bar_data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">BarData</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">json_dict</span><span class="p">[</span><span class="s1">&#39;last_bar_data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span></div>
+
+
+<div class="viewcode-block" id="MinuteBarMonitor.clear">
+<a class="viewcode-back" href="../../../algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.clear">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_minute_bar_data</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BarData</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_bar_data</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

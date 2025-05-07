@@ -1,0 +1,37 @@
+algo\_engine.backtest package
+=============================
+
+Submodules
+----------
+
+algo\_engine.backtest.metrics module
+------------------------------------
+
+.. automodule:: algo_engine.backtest.metrics
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.backtest.replay module
+-----------------------------------
+
+.. automodule:: algo_engine.backtest.replay
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.backtest.sim\_match module
+---------------------------------------
+
+.. automodule:: algo_engine.backtest.sim_match
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.backtest
+   :members:
+   :show-inheritance:
+   :undoc-members:

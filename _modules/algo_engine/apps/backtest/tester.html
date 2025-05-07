@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.apps.backtest.tester &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../apps.html">algo_engine.apps</a></li>
+      <li class="breadcrumb-item active">algo_engine.apps.backtest.tester</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.apps.backtest.tester</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.backtest.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">TradeMetrics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.web_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...backtest</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimMatch</span><span class="p">,</span> <span class="n">ProgressReplay</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="n">TradeInstruction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">Profile</span><span class="p">,</span> <span class="n">PROFILE</span>
+
+
+<div class="viewcode-block" id="Tester">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Tester</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+<div class="viewcode-block" id="Tester.__init__">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">start_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="n">end_date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TradeData&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dtype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILE</span> <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">profile</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_price</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">web_app</span> <span class="o">=</span> <span class="n">WebApp</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TradeMetrics</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SimMatch</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="Tester.register_ticker">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.register_ticker">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_ticker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">TradeMetrics</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">web_app</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">sim_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">SimMatch</span><span class="p">(</span>
+            <span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span>
+            <span class="n">instant_fill</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;instant_fill&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+        <span class="c1"># to add callback function to sim_match, use following codes.</span>
+        <span class="c1"># sim_match.on_order = self.on_order</span>
+        <span class="c1"># sim_match.on_report = self.on_report</span>
+
+<div class="viewcode-block" id="Tester.unregister_ticker">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.unregister_ticker">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_ticker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+
+        <span class="c1"># the web app does not provide an unregister method, however, this is not a requirement</span>
+
+        <span class="n">sim_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+        <span class="n">sim_match</span><span class="o">.</span><span class="n">unregister</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_launch_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">TradeInstruction</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">volume</span><span class="p">),</span> <span class="n">volume</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="o">.</span><span class="n">launch_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Tester.buy">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.buy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">buy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">volume</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trade_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="n">trade_metrics</span><span class="o">.</span><span class="n">exposure</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="o">-</span><span class="n">exposure</span> <span class="k">if</span> <span class="n">exposure</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">limit_price</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">limit_price</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_price</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_launch_order</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span> <span class="n">limit_price</span><span class="o">=</span><span class="n">limit_price</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Tester.sell">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.sell">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">volume</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trade_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="n">trade_metrics</span><span class="o">.</span><span class="n">exposure</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="o">-</span><span class="n">exposure</span> <span class="k">if</span> <span class="n">exposure</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">limit_price</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">limit_price</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_price</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_launch_order</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span> <span class="n">limit_price</span><span class="o">=</span><span class="n">limit_price</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Tester.load_data">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.load_data">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TradeData&#39;</span><span class="p">,</span> <span class="s1">&#39;TransactionData&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderBook&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">MarketData</span><span class="p">]:</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Tester.on_market_data">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.on_market_data">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_market_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Tester.on_report">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.on_report">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Tester.on_order">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.on_order">[docs]</a>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Tester.bod">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.bod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Tester.eod">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.eod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Tester.run">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">replay</span> <span class="o">=</span> <span class="n">ProgressReplay</span><span class="p">(</span>
+            <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="n">bod</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="p">,</span>
+            <span class="n">eod</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eod</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">:</span>
+            <span class="n">replay</span><span class="o">.</span><span class="n">add_subscription</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;TickData&#39;</span><span class="p">)</span>
+            <span class="n">replay</span><span class="o">.</span><span class="n">add_subscription</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;TradeData&#39;</span><span class="p">)</span>
+
+        <span class="n">_start_ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">market_data</span> <span class="ow">in</span> <span class="n">replay</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="p">[</span><span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span><span class="p">](</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">web_app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_price</span><span class="p">[</span><span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;All done! time_cost: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">_start_ts</span><span class="si">:</span><span class="s1">,.3</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StrategyTester">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StrategyTester</span><span class="p">(</span><span class="n">Tester</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">...strategy.strategy_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrategyEngine</span>
+
+<div class="viewcode-block" id="StrategyTester.__init__">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">data_loader</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="n">StrategyEngine</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_loader</span> <span class="o">=</span> <span class="n">data_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">event_engine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">topic_set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multi_threading</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;multi_threading&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">lock</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;dtype&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TradeData&#39;</span><span class="p">]),</span>
+            <span class="n">profile</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;profile&#39;</span><span class="p">,</span> <span class="n">PROFILE</span><span class="p">),</span>
+            <span class="n">event_engine</span><span class="o">=</span><span class="n">strategy</span><span class="o">.</span><span class="n">event_engine</span><span class="p">,</span>
+            <span class="n">topic_set</span><span class="o">=</span><span class="n">strategy</span><span class="o">.</span><span class="n">topic_set</span><span class="p">,</span>
+            <span class="n">multi_threading</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;multi_threading&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.register_ticker">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.register_ticker">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_ticker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">register_ticker</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">sim_match</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sim_match</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">event_engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="p">,</span> <span class="n">topic_set</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.register">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.register">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">realtime</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">realtime</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">position_tracker</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">realtime</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">on_order</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">balance</span><span class="o">.</span><span class="n">on_order</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">on_order</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">on_order</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">on_report</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">balance</span><span class="o">.</span><span class="n">on_report</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">on_report</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">on_report</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.initialize_position_management">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.initialize_position_management">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize_position_management</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">:</span>
+            <span class="n">risk_profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">position_tracker</span><span class="o">.</span><span class="n">dma</span><span class="o">.</span><span class="n">risk_profile</span>
+
+            <span class="n">risk_profile</span><span class="o">.</span><span class="n">set_rule</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s1">&#39;max_trade_long&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+            <span class="n">risk_profile</span><span class="o">.</span><span class="n">set_rule</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s1">&#39;max_trade_short&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+            <span class="n">risk_profile</span><span class="o">.</span><span class="n">set_rule</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s1">&#39;max_exposure_long&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+            <span class="n">risk_profile</span><span class="o">.</span><span class="n">set_rule</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s1">&#39;max_exposure_short&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.load_data">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.load_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;TickData&#39;</span><span class="p">,</span> <span class="s1">&#39;TradeData&#39;</span><span class="p">,</span> <span class="s1">&#39;TransactionData&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderBook&#39;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">MarketData</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_loader</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.bod">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.bod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">bod</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.eod">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.eod">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">bod</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.on_market_data">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.on_market_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_market_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">locked</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.on_report">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.on_report">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">TradeReport</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">on_report</span><span class="p">(</span><span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.on_order">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.on_order">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">on_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_launch_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">open_pos</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">volume</span><span class="p">),</span> <span class="n">trade_side</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">volume</span><span class="p">))</span>
+
+<div class="viewcode-block" id="StrategyTester.buy">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.buy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">buy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> not subscribed for trading!&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">buy</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span> <span class="n">limit_price</span><span class="o">=</span><span class="n">limit_price</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.sell">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.sell">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> not subscribed for trading!&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">sell</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="n">ticker</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span> <span class="n">limit_price</span><span class="o">=</span><span class="n">limit_price</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StrategyTester.run">
+<a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.StrategyTester.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="n">replay</span> <span class="o">=</span> <span class="n">ProgressReplay</span><span class="p">(</span>
+            <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="n">bod</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bod</span><span class="p">,</span>
+            <span class="n">eod</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eod</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">:</span>
+            <span class="n">replay</span><span class="o">.</span><span class="n">add_subscription</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;TickData&#39;</span><span class="p">)</span>
+            <span class="n">replay</span><span class="o">.</span><span class="n">add_subscription</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;TradeData&#39;</span><span class="p">)</span>
+
+        <span class="n">_start_ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">market_data</span> <span class="ow">in</span> <span class="n">replay</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_threading</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event_engine</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_set</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">),</span> <span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">mds</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">position_tracker</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sim_match</span><span class="p">[</span><span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span><span class="p">](</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">web_app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_price</span><span class="p">[</span><span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;All done! time_cost: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">_start_ts</span><span class="si">:</span><span class="s1">,.3</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

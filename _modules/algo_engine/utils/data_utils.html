@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>algo_engine.utils.data_utils &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyAlgoEngine
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyAlgoEngine</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.utils.data_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for algo_engine.utils.data_utils</h1><div class="highlight"><pre>
+<span></span><span class="n">__package__</span> <span class="o">=</span> <span class="s1">&#39;algo_engine.utils&#39;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">overload</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">Profile</span><span class="p">,</span> <span class="n">PROFILE</span>
+
+
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">session_start</span><span class="p">,</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">session_break</span><span class="p">,</span> <span class="n">time_zone</span><span class="p">,</span> <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span> <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">session_start</span><span class="p">,</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">session_break</span><span class="p">,</span> <span class="n">time_zone</span><span class="p">,</span> <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span> <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;datetime&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
+    <span class="o">...</span>
+
+
+<div class="viewcode-block" id="ts_indices">
+<a class="viewcode-back" href="../../../algo_engine.utils.html#algo_engine.utils.data_utils.ts_indices">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span>
+        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_break</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">time_zone</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">tzinfo</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;datetime&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;timestamp&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">market_date</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">market_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+
+    <span class="c1"># this is supposed to be the end_time of the given candle stick</span>
+    <span class="n">market_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">session_start</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">session_end</span><span class="p">:</span>
+        <span class="n">session_end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
+    <span class="c1"># session end in next day</span>
+    <span class="k">elif</span> <span class="n">session_end</span> <span class="o">&lt;</span> <span class="n">session_start</span><span class="p">:</span>
+        <span class="n">session_end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session_end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+        <span class="n">session_end</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+
+    <span class="n">ts_index</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_end</span><span class="p">:</span>
+        <span class="c1"># check if the given market_time is in session break</span>
+        <span class="n">in_session</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">session_break</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">break_range</span> <span class="ow">in</span> <span class="n">session_break</span><span class="p">:</span>
+                <span class="n">break_start</span><span class="p">,</span> <span class="n">break_end</span> <span class="o">=</span> <span class="n">break_range</span>
+
+                <span class="k">if</span> <span class="n">break_start</span> <span class="o">&lt;</span> <span class="n">market_time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">break_end</span><span class="p">:</span>
+                    <span class="n">in_session</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;start&#39;</span> <span class="ow">or</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+            <span class="n">_market_time</span> <span class="o">=</span> <span class="n">market_time</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span>
+            <span class="n">_market_time</span> <span class="o">=</span> <span class="n">market_time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ts_mode </span><span class="si">{</span><span class="n">ts_mode</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">in_session</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span>
+                <span class="n">timestamp</span> <span class="o">=</span> <span class="n">_market_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;datetime&#39;</span><span class="p">:</span>
+                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_market_time</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ts_format </span><span class="si">{</span><span class="n">ts_format</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+        <span class="n">market_time</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ts_index</span></div>
+
+
+
+<div class="viewcode-block" id="fake_daily_data">
+<a class="viewcode-back" href="../../../algo_engine.utils.html#algo_engine.utils.data_utils.fake_daily_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fake_daily_data</span><span class="p">(</span>
+        <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">p0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span>
+        <span class="n">volatility</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.20</span><span class="p">,</span>
+        <span class="n">calendar</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">calendar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">exchange_calendars</span>
+        <span class="n">market</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;market&#39;</span><span class="p">,</span> <span class="s1">&#39;SSE&#39;</span><span class="p">)</span>
+        <span class="n">calendar</span> <span class="o">=</span> <span class="n">exchange_calendars</span><span class="o">.</span><span class="n">get_calendar</span><span class="p">(</span><span class="n">market</span><span class="p">)</span>
+        <span class="n">sessions</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">sessions_in_range</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+        <span class="n">calendar</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">sessions</span><span class="p">])</span>
+
+    <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttl_days&#39;</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
+    <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;risk_free_rate&#39;</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
+
+    <span class="n">num_days</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">calendar</span><span class="p">)</span>
+    <span class="n">daily_volatility</span> <span class="o">=</span> <span class="n">volatility</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ttl_days</span><span class="p">)</span>
+    <span class="n">daily_risk_free_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">risk_free_rate</span><span class="p">)</span> <span class="o">/</span> <span class="n">ttl_days</span>
+
+    <span class="c1"># Generate percentage changes</span>
+    <span class="n">pct_changes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">daily_risk_free_rate</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">daily_volatility</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">num_days</span><span class="p">)</span>
+
+    <span class="c1"># Generate close prices</span>
+    <span class="n">close_price</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="n">pct_changes</span><span class="o">.</span><span class="n">cumprod</span><span class="p">()</span>
+
+    <span class="c1"># Generate open, high, low prices</span>
+    <span class="n">high_deviation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">daily_volatility</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">num_days</span><span class="p">)</span>
+    <span class="n">low_deviation</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">daily_volatility</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">num_days</span><span class="p">)</span>
+
+    <span class="n">high_price</span> <span class="o">=</span> <span class="n">close_price</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">high_deviation</span><span class="p">)</span>
+    <span class="n">low_price</span> <span class="o">=</span> <span class="n">close_price</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">low_deviation</span><span class="p">)</span>
+    <span class="n">open_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="n">low_price</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">high_price</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s1">&#39;date&#39;</span><span class="p">:</span> <span class="n">calendar</span><span class="p">,</span>
+        <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
+        <span class="s1">&#39;high_price&#39;</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
+        <span class="s1">&#39;low_price&#39;</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
+        <span class="s1">&#39;close_price&#39;</span><span class="p">:</span> <span class="n">close_price</span>
+    <span class="p">})</span>
+
+    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="fake_data">
+<a class="viewcode-back" href="../../../algo_engine.utils.html#algo_engine.utils.data_utils.fake_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fake_data</span><span class="p">(</span>
+        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
+        <span class="n">p0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span>
+        <span class="n">volatility</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.20</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_break</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILE</span>
+
+    <span class="n">session_start</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_start</span> <span class="k">if</span> <span class="n">session_start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_start</span>
+    <span class="n">session_end</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_end</span> <span class="k">if</span> <span class="n">session_end</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_end</span>
+    <span class="n">session_break</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_break</span> <span class="k">if</span> <span class="n">session_break</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_break</span>
+    <span class="n">time_zone</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time_zone&#39;</span><span class="p">,</span> <span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">session_start</span><span class="p">:</span>
+        <span class="n">session_start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span>
+
+    <span class="n">_ts_indices</span> <span class="o">=</span> <span class="n">ts_indices</span><span class="p">(</span>
+        <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
+        <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="o">=</span><span class="n">session_start</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="o">=</span><span class="n">session_end</span><span class="p">,</span>
+        <span class="n">session_break</span><span class="o">=</span><span class="n">session_break</span><span class="p">,</span>
+        <span class="n">time_zone</span><span class="o">=</span><span class="n">time_zone</span><span class="p">,</span>
+        <span class="n">ts_mode</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttl_days&#39;</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
+    <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;risk_free_rate&#39;</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
+    <span class="n">num_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">_ts_indices</span><span class="p">)</span>
+    <span class="n">obs_volatility</span> <span class="o">=</span> <span class="n">volatility</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ttl_days</span> <span class="o">*</span> <span class="n">num_obs</span><span class="p">)</span>
+    <span class="n">obs_risk_free_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">risk_free_rate</span><span class="p">)</span> <span class="o">/</span> <span class="n">ttl_days</span> <span class="o">/</span> <span class="n">num_obs</span>
+
+    <span class="n">pct_changes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">obs_risk_free_rate</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">obs_volatility</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">num_obs</span><span class="p">)</span>
+    <span class="n">close_price</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="n">pct_changes</span><span class="o">.</span><span class="n">cumprod</span><span class="p">()</span>
+
+    <span class="c1"># gamma distribution with shape = 1 is the same of exponential.</span>
+    <span class="c1"># high_deviation = np.random.gamma(shape=1, scale=obs_volatility, size=num_obs)</span>
+    <span class="c1"># low_deviation = -np.random.gamma(shape=1, scale=obs_volatility, size=num_obs)</span>
+    <span class="n">high_deviation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">obs_volatility</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">num_obs</span><span class="p">)</span>
+    <span class="n">low_deviation</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">obs_volatility</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">num_obs</span><span class="p">)</span>
+
+    <span class="n">high_price</span> <span class="o">=</span> <span class="n">close_price</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">high_deviation</span><span class="p">)</span>
+    <span class="n">low_price</span> <span class="o">=</span> <span class="n">close_price</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">low_deviation</span><span class="p">)</span>
+    <span class="c1"># open_price = np.random.uniform(low=low_price, high=high_price)</span>
+
+    <span class="n">open_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="n">p0</span><span class="p">],</span> <span class="n">close_price</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">high_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">high_price</span><span class="p">,</span> <span class="n">open_price</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">low_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">low_price</span><span class="p">,</span> <span class="n">open_price</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">_ts_indices</span><span class="p">,</span>
+        <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
+        <span class="s1">&#39;high_price&#39;</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
+        <span class="s1">&#39;low_price&#39;</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
+        <span class="s1">&#39;close_price&#39;</span><span class="p">:</span> <span class="n">close_price</span>
+    <span class="p">})</span>
+
+    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../algo_engine.utils.html#algo_engine.utils.data_utils.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Generate fake market data.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ticker&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;FAKE&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Ticker symbol for the fake data&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--start_date&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Start date in YYYY-MM-DD format&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--end_date&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;End date in YYYY-MM-DD format&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--volatility&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.20</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Annualized volatility of the fake data&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--risk_free_rate&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Risk-free rate for generating fake data&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--seed&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Random seed for reproducibility&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--minute_data&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Generate minute data instead of daily data&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--market_date&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Market date for minute data in YYYY-MM-DD format&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--p0&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Starting price for minute data&#39;</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">minute_data</span><span class="p">:</span>
+        <span class="n">market_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">market_date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">data_set</span> <span class="o">=</span> <span class="n">fake_data</span><span class="p">(</span>
+            <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
+            <span class="n">p0</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">p0</span><span class="p">,</span>
+            <span class="n">volatility</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">volatility</span><span class="p">,</span>
+            <span class="n">risk_free_rate</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">risk_free_rate</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">data_set</span> <span class="o">=</span> <span class="n">fake_daily_data</span><span class="p">(</span>
+            <span class="n">ticker</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ticker</span><span class="p">,</span>
+            <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span>
+            <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span>
+            <span class="n">volatility</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">volatility</span><span class="p">,</span>
+            <span class="n">risk_free_rate</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">risk_free_rate</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data_set</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_test</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">):</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="c1"># Example usage:</span>
+    <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">daily_data_set</span> <span class="o">=</span> <span class="n">fake_daily_data</span><span class="p">(</span><span class="s1">&#39;FAKE&#39;</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+    <span class="n">minute_data_set</span> <span class="o">=</span> <span class="n">fake_data</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">daily_data_set</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">minute_data_set</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">_test</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
