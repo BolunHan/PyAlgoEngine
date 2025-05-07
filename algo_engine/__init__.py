@@ -38,4 +38,8 @@ except ImportError:
     algo_addon = None
     LOGGER.debug(f'Install PyAlgoEngineAddons to use additional trading algos module\n{traceback.format_exc()}')
 
-__all__ = ['LOGGER', 'base', 'engine', 'backtest', 'strategy', 'algo_addon']
+__all__ = [
+    'apps', 'backtest', 'base', 'engine', 'monitor', 'profile', 'strategy', 'utils',
+    'algo_addon',
+    'LOGGER'
+]

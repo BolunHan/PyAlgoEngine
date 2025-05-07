@@ -1,2 +1,5 @@
 include LICENSE
 include README.md
+include algo_engine/apps/backtest/static/styles/*
+include algo_engine/apps/backtest/templates/*
+exclude algo_engine/base/*.c

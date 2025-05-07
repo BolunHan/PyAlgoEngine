@@ -2,41 +2,37 @@ name: Publish Python Package to PyPI
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*.*.*'
 
 jobs:
-  build:
+  build_wheels:
+    name: Build and publish wheels
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: "3.11"  # Or whatever version you target
 
-      - name: Install dependencies
-        env:
-          GITHUB_ACTIONS: "true"
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt  # Optional
+      - name: Install cibuildwheel
+        run: python -m pip install --upgrade cibuildwheel
 
-      - name: Build package
-        env:
-          GITHUB_ACTIONS: "true"
+      - name: Build wheels
         run: |
-          python setup.py sdist bdist_wheel
+          python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_SKIP: "pp*"  # Skip PyPy if not needed
+          CIBW_BUILD: "cp3*-manylinux*"  # optional, for only CPython manylinux
 
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: "__token__"
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          pip install twine
-          twine upload dist/*
+          python -m pip install twine
+          twine upload wheelhouse/*

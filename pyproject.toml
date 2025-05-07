@@ -43,5 +43,7 @@ ext-modules = [
     { name = "algo_engine.base.trade_utils", sources = ["algo_engine/base/trade_utils.pyx"]},
 ]
 
+[tool.setuptools.packages.find]
+
 [tool.setuptools.dynamic]
 version = { attr = "algo_engine.__version__" }

@@ -35,63 +35,58 @@ class BuildExtWithFallback(build_ext):
             print("Falling back to pure Python implementation.")
 
 
-# Skip building ext_modules in CI
-if os.getenv('GITHUB_ACTIONS') == 'true':
-    print("Skipping ext_modules as we're in a CI environment.")
-    ext_modules = []
-else:
-    # Define Cython extension (use the .pyx file)
-    from Cython.Build import cythonize
 
-    cython_ext = [
-        Extension(
-            name="algo_engine.base.market_data",
-            sources=["algo_engine/base/market_data.pyx"],
-            extra_compile_args=['-O3', '-flto'],
-            extra_link_args=['-flto', '-s']
-        ),
-        Extension(
-            name="algo_engine.base.transaction",
-            sources=["algo_engine/base/transaction.pyx"],
-            extra_compile_args=['-O3', '-flto'],
-            extra_link_args=['-flto', '-s']
-        ),
-        Extension(
-            name="algo_engine.base.candlestick",
-            sources=["algo_engine/base/candlestick.pyx"],
-            extra_compile_args=['-O3', '-flto'],
-            extra_link_args=['-flto', '-s']
-        ),
-        Extension(
-            name="algo_engine.base.tick",
-            sources=["algo_engine/base/tick.pyx"],
-            extra_compile_args=['-O3', '-flto'],
-            extra_link_args=['-flto', '-s']
-        ),
-        Extension(
-            name="algo_engine.base.market_data_buffer",
-            sources=["algo_engine/base/market_data_buffer.pyx"],
-            extra_compile_args=['-O3', '-flto'],
-            extra_link_args=['-flto', '-s']
-        ),
-        Extension(
-            name="algo_engine.base.trade_utils",
-            sources=["algo_engine/base/trade_utils.pyx"],
-            extra_compile_args=['-O3', '-flto'],
-            extra_link_args=['-flto', '-s']
-        )
-    ]
+from Cython.Build import cythonize
 
-    ext_modules = cythonize(
-        cython_ext,
-        compiler_directives={
-            'language_level': "3",
-            'optimize.use_switch': True,
-            'optimize.unpack_method_calls': True,
-            'binding': False
-        },
-        annotate=False
+cython_ext = [
+    Extension(
+        name="algo_engine.base.market_data",
+        sources=["algo_engine/base/market_data.pyx"],
+        extra_compile_args=['-O3', '-flto'],
+        extra_link_args=['-flto']
+    ),
+    Extension(
+        name="algo_engine.base.transaction",
+        sources=["algo_engine/base/transaction.pyx"],
+        extra_compile_args=['-O3', '-flto'],
+        extra_link_args=['-flto']
+    ),
+    Extension(
+        name="algo_engine.base.candlestick",
+        sources=["algo_engine/base/candlestick.pyx"],
+        extra_compile_args=['-O3', '-flto'],
+        extra_link_args=['-flto']
+    ),
+    Extension(
+        name="algo_engine.base.tick",
+        sources=["algo_engine/base/tick.pyx"],
+        extra_compile_args=['-O3', '-flto'],
+        extra_link_args=['-flto']
+    ),
+    Extension(
+        name="algo_engine.base.market_data_buffer",
+        sources=["algo_engine/base/market_data_buffer.pyx"],
+        extra_compile_args=['-O3', '-flto'],
+        extra_link_args=['-flto']
+    ),
+    Extension(
+        name="algo_engine.base.trade_utils",
+        sources=["algo_engine/base/trade_utils.pyx"],
+        extra_compile_args=['-O3', '-flto'],
+        extra_link_args=['-flto']
     )
+]
+
+ext_modules = cythonize(
+    cython_ext,
+    compiler_directives={
+        'language_level': "3",
+        'optimize.use_switch': True,
+        'optimize.unpack_method_calls': True,
+        'binding': False
+    },
+    annotate=False
+)
 
 long_description = read("README.md")
 
@@ -118,6 +113,7 @@ setuptools.setup(
         'pandas',
         'exchange_calendars',
         'PyEventEngine',
+        'cython'
     ],
     extras_require={
         "WebApps": [
