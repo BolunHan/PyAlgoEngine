@@ -15,7 +15,7 @@ class StickTheme(DocTheme):
     stick_padding = 0.1
     range_padding = 0.01
 
-    ColorStyle = TypedDict('ColorStyle', fields={'up': str, 'down': str})
+    ColorStyle = TypedDict('ColorStyle', {'up': str, 'down': str})
     ws_style = ColorStyle(up="green", down="red")
     cn_style = ColorStyle(up="red", down="green")
 
