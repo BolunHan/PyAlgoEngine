@@ -21,7 +21,7 @@ class ProfileCN(Profile):
         setattr(profile, 'cn_trade_calendar_cache', self.cn_trade_calendar_cache)
 
     @functools.lru_cache
-    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, **kwargs) -> list[datetime.date]:
+    def _trade_calendar(self, start_date: datetime.date, end_date: datetime.date, **kwargs) -> list[datetime.date]:
         import pandas as pd
         import exchange_calendars
 
@@ -39,6 +39,9 @@ class ProfileCN(Profile):
         result = list(pd.to_datetime(calendar).date)
 
         return result
+
+    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date, **kwargs) -> list[datetime.date]:
+        return self._trade_calendar(start_date=start_date, end_date=end_date, **kwargs).copy()
 
     @functools.lru_cache
     def is_trade_day(self, market_date: datetime.date, market='XSHG', tz='UTC') -> bool:
