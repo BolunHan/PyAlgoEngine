@@ -8,7 +8,7 @@ from cpython.mem cimport PyMem_Free
 from libc.stdint cimport uint8_t
 from libc.string cimport memcpy, memset
 
-from ..profile import PROFILE
+from algo_engine.profile import PROFILE
 
 
 # Base MarketData class

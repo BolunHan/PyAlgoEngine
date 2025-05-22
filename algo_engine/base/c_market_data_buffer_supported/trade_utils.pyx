@@ -13,8 +13,8 @@ from libc.string cimport memcpy, memset
 from .market_data cimport MarketData, _MarketDataBuffer, DataType, OrderType as OrderTypeCython, OrderState as OrderStateCython, _TradeReportBuffer, _TradeInstructionBuffer
 from .transaction cimport TransactionData, TransactionHelper
 from .transaction import TransactionSide, OrderType
-from ..base import LOGGER
-from ..profile import PROFILE
+from algo_engine.base import LOGGER
+from algo_engine.profile import PROFILE
 
 
 # Python wrapper for Direction enum

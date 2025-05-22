@@ -9,7 +9,7 @@ from libc.string cimport memcpy, memset
 from libc.stdint cimport uint32_t
 
 from .market_data cimport MarketData, _MarketDataBuffer, _CandlestickBuffer, DataType
-from ..profile import PROFILE
+from algo_engine.profile import PROFILE
 
 cdef class BarData(MarketData):
     """

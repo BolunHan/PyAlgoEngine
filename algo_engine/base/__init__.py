@@ -11,7 +11,9 @@ USE_CYTHON = True
 def set_logger(logger: logging.Logger):
     global LOGGER
     LOGGER = logger
-    trade_utils.LOGGER = logger.getChild('TradeUtils')
+    from .c_market_data import c_trade_utils
+
+    c_trade_utils.LOGGER = logger.getChild('TradeUtils')
     technical_analysis.LOGGER = logger.getChild('TA')
     console_utils.LOGGER = logger.getChild('Console')
 
@@ -34,21 +36,19 @@ def check_cython_module(cython_module) -> bool:
 
 from .finance_decimal import FinancialDecimal
 
-if check_cython_module(['market_data', 'transaction', 'tick', 'candlestick', 'market_data_buffer']):
-    from .market_data import MarketData, DataType
-    from .transaction import TransactionDirection, TransactionOffset, TransactionSide, OrderType, TransactionData, TradeData, OrderData
-    from .tick import TickDataLite, TickData
-    from .candlestick import BarData, DailyBar
-    from .market_data_buffer import MarketDataBuffer, MarketDataRingBuffer, MarketDataConcurrentBuffer
-else:
-    import_cmd = f'from .market_utils_{os.name} import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer'
-    exec(import_cmd)
+from .c_market_data.c_market_data import MarketData, DataType, OrderType
+from .c_market_data.c_transaction import TransactionDirection, TransactionOffset, TransactionSide, TransactionData, TradeData, OrderData
+from .c_market_data.c_tick import TickDataLite, TickData
+from .c_market_data.c_candlestick import BarData, DailyBar
+from .c_market_data.c_market_data_buffer import MarketDataBuffer, MarketDataRingBuffer, MarketDataConcurrentBuffer
+from .c_market_data.c_trade_utils import OrderState, TradeInstruction, TradeReport
 
-if check_cython_module(['trade_utils']):
-    from .trade_utils import OrderState, TradeInstruction, TradeReport
-else:
-    import_cmd = f'from .trade_utils_native import OrderState, TradeInstruction, TradeReport'
-    exec(import_cmd)
+# from .c_market_data_buffer_supported.market_data import MarketData, DataType
+# from .c_market_data_buffer_supported.transaction import TransactionDirection, TransactionOffset, TransactionSide, TransactionData, TradeData, OrderData, OrderType
+# from .c_market_data_buffer_supported.tick import TickDataLite, TickData
+# from .c_market_data_buffer_supported.candlestick import BarData, DailyBar
+# from .c_market_data_buffer_supported.market_data_buffer import MarketDataBuffer, MarketDataRingBuffer, MarketDataConcurrentBuffer
+# from .c_market_data_buffer_supported.trade_utils import OrderState, TradeInstruction, TradeReport
 
 from .technical_analysis import TechnicalAnalysis
 from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalStyle, InteractiveShell, ShellTransfer
