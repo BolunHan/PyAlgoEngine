@@ -36,12 +36,18 @@ Issues = "https://github.com/BolunHan/PyAlgoEngine/issues"
 
 [tool.setuptools]
 ext-modules = [
-    { name = "algo_engine.base.market_data", sources = ["algo_engine/base/market_data.pyx"]},
-    { name = "algo_engine.base.transaction", sources = ["algo_engine/base/transaction.pyx"]},
-    { name = "algo_engine.base.candlestick", sources = ["algo_engine/base/candlestick.pyx"]},
-    { name = "algo_engine.base.tick", sources = ["algo_engine/base/tick.pyx"]},
-    { name = "algo_engine.base.market_data_buffer", sources = ["algo_engine/base/market_data_buffer.pyx"]},
-    { name = "algo_engine.base.trade_utils", sources = ["algo_engine/base/trade_utils.pyx"]},
+    { name = "algo_engine.base.c_market_data.c_market_data", sources = ["algo_engine/base/c_market_data/c_market_data.pyx"]},
+    { name = "algo_engine.base.c_market_data.c_transaction", sources = ["algo_engine/base/c_market_data/c_transaction.pyx"]},
+    { name = "algo_engine.base.c_market_data.c_candlestick", sources = ["algo_engine/base/c_market_data/c_candlestick.pyx"]},
+    { name = "algo_engine.base.c_market_data.c_tick", sources = ["algo_engine/base/c_market_data/c_tick.pyx"]},
+    { name = "algo_engine.base.c_market_data.c_market_data_buffer", sources = ["algo_engine/base/c_market_data/c_market_data_buffer.pyx"]},
+    { name = "algo_engine.base.c_market_data.c_trade_utils", sources = ["algo_engine/base/c_market_data/c_trade_utils.pyx"]},
+#    { name = "algo_engine.base.c_market_data_buffer_supported.market_data", sources = ["algo_engine/base/c_market_data_buffer_supported/market_data.pyx"]},
+#    { name = "algo_engine.base.c_market_data_buffer_supported.transaction", sources = ["algo_engine/base/c_market_data_buffer_supported/transaction.pyx"]},
+#    { name = "algo_engine.base.c_market_data_buffer_supported.candlestick", sources = ["algo_engine/base/c_market_data_buffer_supported/candlestick.pyx"]},
+#    { name = "algo_engine.base.c_market_data_buffer_supported.tick", sources = ["algo_engine/base/c_market_data_buffer_supported/tick.pyx"]},
+#    { name = "algo_engine.base.c_market_data_buffer_supported.market_data_buffer", sources = ["algo_engine/base/c_market_data_buffer_supported/market_data_buffer.pyx"]},
+#    { name = "algo_engine.base.c_market_data_buffer_supported.trade_utils", sources = ["algo_engine/base/c_market_data_buffer_supported/trade_utils.pyx"]},
 ]
 
 [tool.setuptools.packages.find]
