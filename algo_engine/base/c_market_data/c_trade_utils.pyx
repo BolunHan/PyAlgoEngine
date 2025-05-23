@@ -8,9 +8,9 @@ from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
 from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport uint8_t
-from libc.string cimport memcpy, memset
+from libc.string cimport memcpy
 
-from .c_market_data cimport MarketData, TICKER_SIZE, _MarketDataBuffer, DataType, OrderType, OrderState as OrderStateCython, _TradeReportBuffer, _TradeInstructionBuffer
+from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, DataType, OrderType, OrderState as OrderStateCython, _TradeReportBuffer, _TradeInstructionBuffer
 from .c_transaction cimport TransactionData, TransactionHelper
 from .c_transaction import TransactionSide
 
@@ -94,7 +94,7 @@ cdef class OrderStateHelper:
 
 
 @cython.freelist(128)
-cdef class TradeReport(MarketData):
+cdef class TradeReport:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
 
@@ -149,6 +149,18 @@ cdef class TradeReport(MarketData):
 
         return f"<TradeReport id={self.trade_id}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker} {side_name} {self.volume} at {self.price})"
 
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef TradeReport instance = TradeReport.__new__(TradeReport)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TradeReportBuffer))
+        return instance
+
     cpdef TradeReport reset_order_id(self, object order_id=None):
         if order_id is None:
             order_id = uuid.uuid4()
@@ -181,11 +193,6 @@ cdef class TradeReport(MarketData):
     def from_bytes(cls, bytes data):
         return TradeReport.c_from_bytes(data)
 
-    def __copy__(self):
-        cdef TradeReport instance = TradeReport.__new__(TradeReport)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TradeReportBuffer))
-        return instance
-
     def copy(self):
         return self.__copy__()
 
@@ -200,6 +207,27 @@ cdef class TradeReport(MarketData):
             transaction_id=self.trade_id,
             multiplier=self.multiplier
         )
+
+    @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
 
     @property
     def price(self) -> float:
@@ -256,11 +284,11 @@ cdef class TradeReport(MarketData):
 
     @property
     def trade_time(self) -> datetime:
-        return MarketData.c_to_dt(self._data.timestamp)
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
 
 
 @cython.freelist(128)
-cdef class TradeInstruction(MarketData):
+cdef class TradeInstruction:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
         self.trades = {}
@@ -316,6 +344,18 @@ cdef class TradeInstruction(MarketData):
         else:
             return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
 
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TradeInstructionBuffer))
+        return instance
+
     @classmethod
     def buffer_size(cls):
         return sizeof(_TradeInstructionBuffer)
@@ -335,11 +375,6 @@ cdef class TradeInstruction(MarketData):
     @classmethod
     def from_bytes(cls, bytes data):
         return TradeInstruction.c_from_bytes(data)
-
-    def __copy__(self):
-        cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TradeInstructionBuffer))
-        return instance
 
     cpdef TradeInstruction reset(self):
         self.trades.clear()
@@ -444,6 +479,27 @@ cdef class TradeInstruction(MarketData):
         return self
 
     @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+
+    @property
     def is_working(self) -> bool:
         return OrderStateHelper.is_working(order_state=self._data.order_state)
 
@@ -516,25 +572,25 @@ cdef class TradeInstruction(MarketData):
 
     @property
     def start_time(self) -> datetime:
-        return MarketData.c_to_dt(self._data.timestamp)
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
 
     @property
     def placed_time(self) -> datetime | None:
         cdef double ts_placed = self._data.ts_placed
         if ts_placed:
-            return MarketData.c_to_dt(ts_placed)
+            return _MarketDataVirtualBase.c_to_dt(ts_placed)
         return None
 
     @property
     def canceled_time(self):
         cdef double ts_canceled = self._data.ts_canceled
         if ts_canceled:
-            return MarketData.c_to_dt(ts_canceled)
+            return _MarketDataVirtualBase.c_to_dt(ts_canceled)
         return None
 
     @property
     def finished_time(self):
         cdef double ts_finished = self._data.ts_finished
         if ts_finished:
-            return MarketData.c_to_dt(ts_finished)
+            return _MarketDataVirtualBase.c_to_dt(ts_finished)
         return None

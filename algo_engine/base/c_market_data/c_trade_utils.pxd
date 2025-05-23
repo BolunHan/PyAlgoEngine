@@ -1,7 +1,7 @@
 # cython: language_level=3
 from libc.stdint cimport uint8_t
 
-from .c_market_data cimport MarketData, _TradeReportBuffer, _TradeInstructionBuffer
+from .c_market_data cimport _MarketDataBuffer, _TradeReportBuffer, _TradeInstructionBuffer
 from .c_transaction cimport TransactionData
 
 
@@ -13,7 +13,9 @@ cdef class OrderStateHelper:
     cdef bint is_done(int order_state)
 
 
-cdef class TradeReport(MarketData):
+cdef class TradeReport:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
     cdef _TradeReportBuffer _data
 
     cpdef TradeReport reset_order_id(self, object order_id=?)
@@ -28,7 +30,9 @@ cdef class TradeReport(MarketData):
     cdef TradeReport c_from_bytes(bytes data)
 
 
-cdef class TradeInstruction(MarketData):
+cdef class TradeInstruction:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
     cdef _TradeInstructionBuffer _data
     cdef public dict trades
 
