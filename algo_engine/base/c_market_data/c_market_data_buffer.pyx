@@ -360,10 +360,11 @@ cdef class MarketDataBuffer:
         if self._header.data_tail + entry_size > self._header.data_capacity:
             raise MemoryError(f"Not enough space in buffer for new entry, requested {entry_size}, remaining {self._header.data_capacity - self._header.data_tail}")
 
-        cdef _MarketDataBuffer * data = <_MarketDataBuffer*> (<void*> self._data_array + self._header.data_tail)
+        cdef _MarketDataBuffer* data = <_MarketDataBuffer*> (<void*> self._data_array + self._header.data_tail)
         cdef bytes ticker_bytes = ticker.encode('utf-8')
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &data.MetaInfo.ticker, <const char*> ticker_bytes, ticker_len)
+        data.MetaInfo.ticker[ticker_len] = 0
         data.MetaInfo.timestamp = timestamp
         data.MetaInfo.dtype = dtype
 
