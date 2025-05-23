@@ -1,37 +1,12 @@
 # cython: language_level=3
+import abc
 from cpython.datetime cimport datetime
 from libc.stdint cimport uint8_t
-from libc.string cimport memset, memcpy
 
 from algo_engine.profile import PROFILE
 
 
-# Base MarketData class
-cdef class MarketData:
-    """
-    Base class for all market data types.
-    """
-
-    def __init__(self, *, str ticker, double timestamp, uint8_t dtype, **kwargs):
-        """
-        Initialize the market data with values.
-        This method should only be called after memory has been allocated by a child class.
-        """
-        if self._data_ptr is NULL:
-            raise ValueError("Memory not allocated. This is a abstract class and should not be instantiated directly.")
-
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
-        cdef int ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-
-        memset(&self._data_ptr.MetaInfo.ticker, 0, TICKER_SIZE)
-        memcpy(&self._data_ptr.MetaInfo.ticker, <const char*> ticker_bytes, ticker_len)
-
-        self._data_ptr.MetaInfo.timestamp = timestamp
-        self._data_ptr.MetaInfo.dtype = dtype
-
-        if kwargs:
-            self.__dict__.update(kwargs)
-
+cdef class _MarketDataVirtualBase:
     @staticmethod
     cdef size_t c_get_size(uint8_t dtype):
         if dtype == DataType.DTYPE_TRANSACTION:
@@ -65,48 +40,67 @@ cdef class MarketData:
     cdef datetime c_to_dt(double timestamp):
         return datetime.fromtimestamp(timestamp, tz=PROFILE.time_zone)
 
-    # --- python interface ---
 
+class MarketData(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
     def __reduce__(self):
-        """Support for pickle serialization"""
-        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+        ...
 
+    @abc.abstractmethod
     def __setstate__(self, state):
-        """Restore state from pickle"""
-        if state:
-            self.__dict__.update(state)
+        ...
 
+    @abc.abstractmethod
     def __copy__(self):
-        return self.__class__.from_bytes(self.to_bytes())
+        ...
 
     @classmethod
+    @abc.abstractmethod
     def buffer_size(cls) -> int:
-        return sizeof(_MarketDataBuffer)
+        ...
 
     @classmethod
+    @abc.abstractmethod
     def from_bytes(cls, data: bytes):
         ...
 
+    @abc.abstractmethod
     def to_bytes(self) -> bytes:
         ...
 
     @property
+    @abc.abstractmethod
     def ticker(self) -> str:
-        return self._data_ptr.MetaInfo.ticker.decode('utf-8')
+        ...
 
     @property
+    @abc.abstractmethod
     def timestamp(self) -> float:
-        return self._data_ptr.MetaInfo.timestamp
+        ...
 
     @property
+    @abc.abstractmethod
     def dtype(self) -> int:
-        return self._data_ptr.MetaInfo.dtype
+        ...
 
     @property
+    @abc.abstractmethod
     def topic(self) -> str:
-        ticker_str = self._data_ptr.MetaInfo.ticker.decode('utf-8').rstrip('\0')
-        return f'{ticker_str}.{self.__class__.__name__}'
+        ...
 
     @property
+    @abc.abstractmethod
     def market_time(self) -> datetime:
-        return datetime.fromtimestamp(self._data_ptr.MetaInfo.timestamp, tz=PROFILE.time_zone)
+        ...
+
+
+from .c_tick cimport TickData, TickDataLite
+from .c_transaction cimport TransactionData, OrderData
+from .c_candlestick cimport BarData
+
+MarketData.register(TickData)
+MarketData.register(TickDataLite)
+MarketData.register(TransactionData)
+MarketData.register(OrderData)
+MarketData.register(BarData)

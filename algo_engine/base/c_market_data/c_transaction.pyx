@@ -9,7 +9,7 @@ from libc.stdint cimport uint8_t, int8_t
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset, memcmp
 
-from .c_market_data cimport MarketData, _MarketDataBuffer, TICKER_SIZE, _TransactionDataBuffer, _OrderDataBuffer, _ID, DataType, ID_SIZE, Direction, Offset, Side, OrderType
+from .c_market_data cimport _MarketDataVirtualBase, _MarketDataBuffer, TICKER_SIZE, _TransactionDataBuffer, _OrderDataBuffer, _ID, DataType, ID_SIZE, Direction, Offset, Side, OrderType
 
 
 # Python wrapper for Direction enum
@@ -483,11 +483,12 @@ cdef class TransactionHelper:
 
 
 @cython.freelist(128)
-cdef class TransactionData(MarketData):
+cdef class TransactionData:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
+        self._data_addr = <uintptr_t> self._data_ptr
 
-    def __init__(self, *, ticker: str, double timestamp, double price, double volume, int side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
+    def __init__(self, *, ticker: str, double timestamp, double price, double volume, uint8_t side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
         # Initialize base class fields
         cdef bytes ticker_bytes = ticker.encode('utf-8')
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
@@ -517,6 +518,18 @@ cdef class TransactionData(MarketData):
         side_name = TransactionHelper.get_side_name(self._data.side).decode('utf-8')
         return f"<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name})"
 
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef TransactionData instance = TransactionData.__new__(TransactionData)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TransactionDataBuffer))
+        return instance
+
     @classmethod
     def buffer_size(cls):
         return sizeof(_TransactionDataBuffer)
@@ -536,11 +549,6 @@ cdef class TransactionData(MarketData):
     @classmethod
     def from_bytes(cls, bytes data):
         return TransactionData.c_from_bytes(data)
-
-    def __copy__(self):
-        cdef TransactionData instance = TransactionData.__new__(TransactionData)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TransactionDataBuffer))
-        return instance
 
     @classmethod
     def merge(cls, list data_list not None):
@@ -612,6 +620,27 @@ cdef class TransactionData(MarketData):
         )
 
     @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+
+    @property
     def price(self) -> float:
         return self._data.price
 
@@ -666,9 +695,10 @@ cdef class TransactionData(MarketData):
 
 
 @cython.freelist(128)
-cdef class OrderData(MarketData):
+cdef class OrderData:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
+        self._data_addr = <uintptr_t> self._data_ptr
 
     def __init__(self, *, str ticker, double timestamp, double price, double volume, uint8_t side, object order_id=None, uint8_t order_type=0, **kwargs):
         # Initialize base class fields
@@ -693,6 +723,18 @@ cdef class OrderData(MarketData):
         order_type_name = TransactionHelper.get_order_type_name(self._data.order_type).decode('utf-8')
         return f"<OrderData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name}, order_type={order_type_name})"
 
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef OrderData instance = OrderData.__new__(OrderData)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_OrderDataBuffer))
+        return instance
+
     @classmethod
     def buffer_size(cls):
         return sizeof(_OrderDataBuffer)
@@ -713,10 +755,26 @@ cdef class OrderData(MarketData):
     def from_bytes(cls, bytes data):
         return OrderData.c_from_bytes(data)
 
-    def __copy__(self):
-        cdef OrderData instance = OrderData.__new__(OrderData)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_OrderDataBuffer))
-        return instance
+    @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
 
     @property
     def price(self) -> float:
@@ -756,7 +814,6 @@ cdef class OrderData(MarketData):
         return sign * self._data.volume
 
 
-@cython.freelist(128)
 cdef class TradeData(TransactionData):
     """
     Alias for `TransactionData` with alternate property names for trade price and volume.

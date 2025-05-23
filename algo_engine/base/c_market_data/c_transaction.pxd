@@ -1,7 +1,7 @@
 # cython: language_level=3
-from libc.stdint cimport uint8_t, int8_t
+from libc.stdint cimport uint8_t, int8_t, uintptr_t
 
-from .c_market_data cimport MarketData, _ID, _TransactionDataBuffer, _OrderDataBuffer
+from .c_market_data cimport _MarketDataBuffer, _ID, _TransactionDataBuffer, _OrderDataBuffer
 
 
 cdef class TransactionHelper:
@@ -40,7 +40,10 @@ cdef class TransactionHelper:
     cdef const char* get_offset_name(uint8_t side)
 
 
-cdef class TransactionData(MarketData):
+cdef class TransactionData:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
+    cdef public uintptr_t _data_addr
     cdef _TransactionDataBuffer _data
 
     cdef bytes c_to_bytes(self)
@@ -49,7 +52,10 @@ cdef class TransactionData(MarketData):
     cdef TransactionData c_from_bytes(bytes data)
 
 
-cdef class OrderData(MarketData):
+cdef class OrderData:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
+    cdef public uintptr_t _data_addr
     cdef _OrderDataBuffer _data
 
     cdef bytes c_to_bytes(self)

@@ -9,13 +9,14 @@ from libc.stdint cimport uint32_t
 from libc.stdlib cimport qsort
 from libc.string cimport memcpy, memset
 
-from .c_market_data cimport MarketData, TICKER_SIZE, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
+from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
 
 
 @cython.freelist(128)
-cdef class TickDataLite(MarketData):
+cdef class TickDataLite:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
+        self._data_addr = <uintptr_t> self._data_ptr
 
     def __init__(
             self,
@@ -52,6 +53,18 @@ cdef class TickDataLite(MarketData):
     def __repr__(self):
         return f'<TickDataLite>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TickDataLiteBuffer))
+        return instance
+
     @classmethod
     def buffer_size(cls):
         return sizeof(_TickDataLiteBuffer)
@@ -72,10 +85,26 @@ cdef class TickDataLite(MarketData):
     def from_bytes(cls, bytes data):
         return TickDataLite.c_from_bytes(data)
 
-    def __copy__(self):
-        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TickDataLiteBuffer))
-        return instance
+    @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
 
     @property
     def last_price(self):
@@ -339,9 +368,10 @@ cdef class OrderBook:
         return [self._data.entries[i].n_orders for i in range(BOOK_SIZE) if self._data.entries[i].n_orders]
 
 
-cdef class TickData(MarketData):
+cdef class TickData:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
+        self._data_addr = <uintptr_t> self._data_ptr
 
     def __init__(
             self,
@@ -372,6 +402,30 @@ cdef class TickData(MarketData):
         self._data.lite.total_trade_count = total_trade_count
 
         # Initialize bid and ask books
+        self._init_order_book()
+
+        # Parse kwargs to initialize the order books
+        if kwargs:
+            self.parse(kwargs)
+
+    def __repr__(self):
+        return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
+
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef TickData instance = TickData.__new__(TickData)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TickDataBuffer))
+        instance._init_order_book()
+        return instance
+
+    cdef _init_order_book(self):
+        # Initialize bid and ask books
         self._bid_book = OrderBook.__new__(OrderBook)
         self._bid_book._data = &self._data.bid
         self._bid_book.side = Side.SIDE_BID
@@ -379,10 +433,6 @@ cdef class TickData(MarketData):
         self._ask_book = OrderBook.__new__(OrderBook)
         self._ask_book._data = &self._data.ask
         self._ask_book.side = Side.SIDE_ASK
-
-        # Parse kwargs to initialize the order books
-        if kwargs:
-            self.parse(kwargs)
 
     cpdef void parse(self, dict kwargs):
         """
@@ -462,9 +512,6 @@ cdef class TickData(MarketData):
         self._bid_book.sort()
         self._ask_book.sort()
 
-    def __repr__(self):
-        return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
-
     @classmethod
     def buffer_size(cls):
         return sizeof(_TickDataBuffer)
@@ -476,14 +523,7 @@ cdef class TickData(MarketData):
     cdef TickData c_from_bytes(bytes data):
         cdef TickData instance = TickData.__new__(TickData)
         memcpy(<void*> &instance._data, <const char*> data, sizeof(_TickDataBuffer))
-
-        instance._bid_book = OrderBook.__new__(OrderBook)
-        instance._bid_book._data = &instance._data.bid
-        instance._bid_book.side = Side.SIDE_BID
-
-        instance._ask_book = OrderBook.__new__(OrderBook)
-        instance._ask_book._data = &instance._data.ask
-        instance._bid_book.side = Side.SIDE_ASK
+        instance._init_order_book()
         return instance
 
     def to_bytes(self) -> bytes:
@@ -497,6 +537,27 @@ cdef class TickData(MarketData):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
         memcpy(<void*> &instance._data, <const char*> &self._data.lite, sizeof(_TickDataLiteBuffer))
         return instance
+
+    @property
+    def ticker(self) -> str:
+        return self._data.lite.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.lite.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.lite.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.lite.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.lite.timestamp)
 
     @property
     def bid(self) -> OrderBook:

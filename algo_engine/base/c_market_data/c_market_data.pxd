@@ -40,6 +40,7 @@ cdef extern from "market_data_external.c":
         SIDE_LONG
         SIDE_SHORT
 
+
 cpdef public enum OrderType:
     ORDER_UNKNOWN = 2
     ORDER_CANCEL = 1
@@ -50,6 +51,7 @@ cpdef public enum OrderType:
     ORDER_FOK = 21
     ORDER_FAK = 22
     ORDER_IOC = 23
+
 
 cdef enum OrderState:
     STATE_UNKNOWN = 0
@@ -62,6 +64,7 @@ cdef enum OrderState:
     STATE_FILLED = 7  # order fully filled
     STATE_CANCELING = 8  # order canceling
     STATE_CANCELED = 9  # order stopped and canceled
+
 
 # Data type mapping
 cpdef public enum DataType:
@@ -76,9 +79,11 @@ cpdef public enum DataType:
     DTYPE_REPORT = 50
     DTYPE_INSTRUCTION = 51
 
-cdef struct _ID:
+
+cdef packed struct _ID:
     uint8_t id_type
     char data[ID_SIZE]
+
 
 # Meta info structure
 cdef packed struct _MetaInfo:
@@ -86,15 +91,18 @@ cdef packed struct _MetaInfo:
     char ticker[TICKER_SIZE]
     double timestamp
 
+
 # OrderBookEntry structure
 cdef packed struct _OrderBookEntry:
     double price
     double volume
     uint64_t n_orders
 
+
 # OrderBookBuffer structure
 cdef packed struct _OrderBookBuffer:
     _OrderBookEntry entries[BOOK_SIZE]
+
 
 # BarData structure
 cdef packed struct _CandlestickBuffer:
@@ -110,6 +118,7 @@ cdef packed struct _CandlestickBuffer:
     double notional
     uint32_t trade_count
 
+
 # TickDataLite structure
 cdef packed struct _TickDataLiteBuffer:
     uint8_t dtype
@@ -124,11 +133,13 @@ cdef packed struct _TickDataLiteBuffer:
     double total_traded_notional
     uint32_t total_trade_count
 
+
 # TickData structure
 cdef packed struct _TickDataBuffer:
     _TickDataLiteBuffer lite
     _OrderBookBuffer bid
     _OrderBookBuffer ask
+
 
 # TransactionData structure
 cdef packed struct _TransactionDataBuffer:
@@ -144,6 +155,7 @@ cdef packed struct _TransactionDataBuffer:
     _ID buy_id
     _ID sell_id
 
+
 # OrderData structure
 cdef packed struct _OrderDataBuffer:
     uint8_t dtype
@@ -154,6 +166,7 @@ cdef packed struct _OrderDataBuffer:
     uint8_t side
     _ID order_id
     uint8_t order_type
+
 
 # TradeReport structure
 cdef packed struct _TradeReportBuffer:
@@ -168,6 +181,7 @@ cdef packed struct _TradeReportBuffer:
     double fee
     _ID order_id
     _ID trade_id
+
 
 # TradeInstruction structure
 cdef packed struct _TradeInstructionBuffer:
@@ -188,6 +202,7 @@ cdef packed struct _TradeInstructionBuffer:
     double ts_canceled
     double ts_finished
 
+
 # Base MarketData structure as a union
 cdef union _MarketDataBuffer:
     _MetaInfo MetaInfo
@@ -200,8 +215,9 @@ cdef union _MarketDataBuffer:
     _TradeReportBuffer TradeReport
     _TradeInstructionBuffer TradeInstruction
 
+
 # Declare MarketData class
-cdef class MarketData:
+cdef class _MarketDataVirtualBase:
     cdef dict __dict__
     cdef _MarketDataBuffer* _data_ptr
 

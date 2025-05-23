@@ -1,10 +1,13 @@
 # cython: language_level=3
-from libc.stdint cimport uint8_t
+from libc.stdint cimport uint8_t, uintptr_t
 
-from .c_market_data cimport MarketData, _OrderBookBuffer, _TickDataLiteBuffer, _TickDataBuffer
+from .c_market_data cimport _MarketDataBuffer, _OrderBookBuffer, _TickDataLiteBuffer, _TickDataBuffer
 
 
-cdef class TickDataLite(MarketData):
+cdef class TickDataLite:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
+    cdef public uintptr_t _data_addr
     cdef _TickDataLiteBuffer _data
 
     cdef bytes c_to_bytes(self)
@@ -30,10 +33,15 @@ cdef class OrderBook:
     cdef void c_sort(self)
 
 
-cdef class TickData(MarketData):
+cdef class TickData:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
+    cdef public uintptr_t _data_addr
     cdef _TickDataBuffer _data
     cdef OrderBook _bid_book
     cdef OrderBook _ask_book
+
+    cdef _init_order_book(self)
 
     cdef bytes c_to_bytes(self)
 

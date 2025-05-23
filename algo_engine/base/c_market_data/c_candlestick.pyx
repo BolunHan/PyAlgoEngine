@@ -8,13 +8,14 @@ from libc.math cimport NAN
 from libc.string cimport memcpy
 from libc.stdint cimport uint32_t
 
-from .c_market_data cimport MarketData, TICKER_SIZE, _MarketDataBuffer, _CandlestickBuffer, DataType
+from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, _CandlestickBuffer, DataType
 
 
 @cython.freelist(128)
-cdef class BarData(MarketData):
+cdef class BarData:
     def __cinit__(self):
         self._data_ptr = <_MarketDataBuffer*> &self._data
+        self._data_addr = <uintptr_t> self._data_ptr
 
     def __init__(self, *, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
         # Initialize base class fields
@@ -48,6 +49,18 @@ cdef class BarData(MarketData):
 
     def __repr__(self) -> str:
         return f"<BarData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef BarData instance = BarData.__new__(BarData)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_CandlestickBuffer))
+        return instance
 
     def __setitem__(self, key: str, value: float | int):
         if key == 'high_price':
@@ -105,10 +118,26 @@ cdef class BarData(MarketData):
     def from_bytes(cls, bytes data):
         return BarData.c_from_bytes(data)
 
-    def __copy__(self):
-        cdef BarData instance = BarData.__new__(BarData)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_CandlestickBuffer))
-        return instance
+    @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
 
     @property
     def high_price(self) -> float:
@@ -173,11 +202,11 @@ cdef class BarData(MarketData):
 
     @property
     def bar_end_time(self) -> datetime:
-        return MarketData.c_to_dt(self.timestamp)
+        return _MarketDataVirtualBase.c_to_dt(self.timestamp)
 
     @property
     def bar_start_time(self) -> datetime:
-        return MarketData.c_to_dt(self.start_timestamp)
+        return _MarketDataVirtualBase.c_to_dt(self.start_timestamp)
 
     @property
     def market_price(self) -> float:
