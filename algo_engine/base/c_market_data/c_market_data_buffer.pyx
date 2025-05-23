@@ -81,7 +81,7 @@ cdef class MarketDataBuffer:
     @staticmethod
     cdef MarketDataBuffer c_from_buffer(object buffer):
         # Create instance without initialization
-        cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, buffer, False)
+        cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, buffer, True)
 
         # restore from buffer
         instance._header = <_BufferHeader*> instance._buffer
@@ -336,6 +336,10 @@ cdef class MarketDataBuffer:
         self._idx += 1
         return md
 
+    @classmethod
+    def buffer_size(cls, uint32_t n_transaction_data=0, uint32_t n_order_data=0, uint32_t n_tick_data_lite=0, uint32_t n_tick_data=0, uint32_t n_bar_data=0):
+        return MarketDataBuffer.c_buffer_size(n_transaction_data=n_transaction_data, n_order_data=n_order_data, n_tick_data_lite=n_tick_data_lite, n_tick_data=n_tick_data, n_bar_data=n_bar_data)
+
     def put(self, object market_data):
         cdef uintptr_t data_addr = market_data._data_addr
         return self.c_put(market_data_ptr=<_MarketDataBuffer*> data_addr)
@@ -420,6 +424,9 @@ cdef class MarketDataBuffer:
             self._header.current_timestamp = timestamp
         else:
             self._header.sorted = 0
+
+    def sort(self):
+        return self.c_sort()
 
     def to_bytes(self) -> bytes():
         return self.c_to_bytes()

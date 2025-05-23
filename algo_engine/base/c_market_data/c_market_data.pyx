@@ -56,9 +56,8 @@ class MarketData(metaclass=abc.ABCMeta):
         ...
 
     @classmethod
-    @abc.abstractmethod
     def buffer_size(cls) -> int:
-        ...
+        return _MarketDataVirtualBase.c_max_size()
 
     @classmethod
     @abc.abstractmethod
