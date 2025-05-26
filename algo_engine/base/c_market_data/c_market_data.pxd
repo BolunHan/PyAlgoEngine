@@ -129,6 +129,7 @@ cdef packed struct _TickDataLiteBuffer:
     double ask_price
     double ask_volume
     double last_price
+    double prev_close
     double total_traded_volume
     double total_traded_notional
     uint32_t total_trade_count

@@ -27,6 +27,7 @@ cdef class TickDataLite:
             double bid_volume,
             double ask_price,
             double ask_volume,
+            double prev_close=NAN,
             double total_traded_volume=0.0,
             double total_traded_notional=0.0,
             uint32_t total_trade_count=0,
@@ -46,6 +47,7 @@ cdef class TickDataLite:
         self._data.bid_volume = bid_volume
         self._data.ask_price = ask_price
         self._data.ask_volume = ask_volume
+        self._data.prev_close = prev_close
         self._data.total_traded_volume = total_traded_volume
         self._data.total_traded_notional = total_traded_notional
         self._data.total_trade_count = total_trade_count
@@ -125,6 +127,10 @@ cdef class TickDataLite:
     @property
     def ask_volume(self):
         return self._data.ask_volume
+
+    @property
+    def prev_close(self):
+        return self._data.prev_close
 
     @property
     def total_traded_volume(self):
@@ -397,6 +403,7 @@ cdef class TickData:
         self._data.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
         self._data.lite.ask_price = kwargs.get('ask_price_1', NAN)
         self._data.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
+        self._data.lite.prev_close = kwargs.get('prev_close', NAN)
         self._data.lite.total_traded_volume = total_traded_volume
         self._data.lite.total_traded_notional = total_traded_notional
         self._data.lite.total_trade_count = total_trade_count
@@ -604,6 +611,10 @@ cdef class TickData:
     @property
     def ask_volume(self):
         return self._data.lite.ask_volume
+
+    @property
+    def prev_close(self):
+        return self._data.lite.prev_close
 
     @property
     def total_traded_volume(self):

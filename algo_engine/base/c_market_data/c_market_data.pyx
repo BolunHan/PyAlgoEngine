@@ -93,6 +93,11 @@ class MarketData(metaclass=abc.ABCMeta):
     def market_time(self) -> datetime:
         ...
 
+    @property
+    @abc.abstractmethod
+    def market_price(self) -> float:
+        ...
+
 
 from .c_tick cimport TickData, TickDataLite
 from .c_transaction cimport TransactionData, OrderData
