@@ -51,6 +51,10 @@ ext-modules = [
 ]
 
 [tool.setuptools.packages.find]
+exclude = [
+    "algo_engine.base.native_market_data",
+    "algo_engine.base.c_market_data_buffer_supported",
+]
 
 [tool.setuptools.dynamic]
 version = { attr = "algo_engine.__version__" }

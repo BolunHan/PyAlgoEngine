@@ -2,7 +2,7 @@ import ctypes
 import os
 import platform
 
-from . import LOGGER
+from .. import LOGGER
 from . import market_utils_posix
 from .market_utils_posix import Contexts, BufferConstructor as _BufferConstructor
 from .market_utils_posix import TransactionSide, OrderType, MarketData, OrderBook, BarData, DailyBar, CandleStick, TickData, TransactionData, TradeData, OrderData, MarketDataBuffer, MarketDataRingBuffer

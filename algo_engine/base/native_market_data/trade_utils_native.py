@@ -8,7 +8,8 @@ import time
 import uuid
 from typing import Self
 
-from . import LOGGER, PROFILE, TransactionSide, TransactionData, OrderType
+from .. import LOGGER, PROFILE
+from . import TransactionSide, TransactionData, OrderType
 
 LOGGER = LOGGER.getChild('TradeUtils')
 __all__ = ['OrderState', 'OrderType', 'TradeInstruction', 'TradeReport']

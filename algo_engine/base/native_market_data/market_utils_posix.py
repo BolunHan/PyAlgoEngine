@@ -14,7 +14,7 @@ from typing import overload, Literal, Self
 
 import numpy as np
 
-from . import LOGGER, PROFILE
+from .. import LOGGER, PROFILE
 
 LOGGER = LOGGER.getChild('MarketUtils')
 __all__ = ['TransactionSide', 'OrderType',
