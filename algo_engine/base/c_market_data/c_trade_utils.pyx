@@ -2,6 +2,7 @@
 import enum
 import time
 import uuid
+from typing import Literal
 
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
@@ -240,6 +241,10 @@ cdef class TradeReport:
     @property
     def side_int(self) -> int:
         return self._data.side
+
+    @property
+    def side_sign(self) -> Literal[-1, 0, 1]:
+        return TransactionHelper.get_sign(self._data.side)
 
     @property
     def side(self) -> TransactionSide:
@@ -518,6 +523,10 @@ cdef class TradeInstruction:
     @property
     def side_int(self) -> int:
         return self._data.side
+
+    @property
+    def side_sign(self) -> Literal[-1, 0, 1]:
+        return TransactionHelper.get_sign(self._data.side)
 
     @property
     def side(self) -> TransactionSide:

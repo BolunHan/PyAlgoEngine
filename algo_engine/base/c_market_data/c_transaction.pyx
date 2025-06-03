@@ -1,6 +1,7 @@
 # cython: language_level=3
 import enum
 import uuid
+from typing import Literal
 
 cimport cython
 from cpython cimport PyList_Size, PyList_GET_ITEM
@@ -653,6 +654,10 @@ cdef class TransactionData:
         return self._data.side
 
     @property
+    def side_sign(self) -> Literal[-1, 0, 1]:
+        return TransactionHelper.get_sign(self._data.side)
+
+    @property
     def side(self) -> TransactionSide:
         return TransactionSide(self.side_int)
 
@@ -787,6 +792,10 @@ cdef class OrderData:
     @property
     def side_int(self) -> int:
         return self._data.side
+
+    @property
+    def side_sign(self) -> Literal[-1, 0, 1]:
+        return TransactionHelper.get_sign(self._data.side)
 
     @property
     def side(self) -> TransactionSide:
