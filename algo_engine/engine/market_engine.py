@@ -7,22 +7,13 @@ from math import inf, nan
 from multiprocessing import shared_memory
 from typing import Self
 
-from . import LOGGER
+from . import LOGGER, Singleton
 from ..base import MarketData, TickData, TransactionSide, TransactionDirection, DataType, InternalData
 from ..profile import PROFILE, Profile
 
 LOGGER = LOGGER.getChild('MarketEngine')
 
-__all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton']
-
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+__all__ = ['MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager']
 
 
 class MarketDataMonitor(object, metaclass=abc.ABCMeta):
@@ -134,10 +125,10 @@ class MonitorManager(object, metaclass=Singleton):
         for monitor_id in self.monitor:
             self._work(monitor_id=monitor_id, market_data=market_data)
 
-    def add_monitor(self, monitor: MarketDataMonitor):
+    def add_monitor(self, monitor: MarketDataMonitor, **kwargs):
         self.monitor[monitor.monitor_id] = monitor
 
-    def pop_monitor(self, monitor_id: str) -> MarketDataMonitor:
+    def pop_monitor(self, monitor_id: str, **kwargs) -> MarketDataMonitor:
         return self.monitor.pop(monitor_id)
 
     def _work(self, monitor_id: str, market_data: MarketData):
@@ -185,10 +176,14 @@ class MarketDataService(object, metaclass=Singleton):
     def __getitem__(self, monitor_id: str) -> MarketDataMonitor:
         return self.monitor[monitor_id]
 
-    def add_monitor(self, monitor: MarketDataMonitor):
+    def add_monitor(self, monitor: MarketDataMonitor, **kwargs):
         self.monitor[monitor.monitor_id] = monitor
-        self.monitor_manager.add_monitor(monitor)
-        monitor.mds = self
+        self.monitor_manager.add_monitor(monitor, **kwargs)
+        # remove the mds attr from the monitor as it is misleading
+        # when using the multiprocessing the state of mds in child process is not complete.
+        # thus using it will causes problem.
+        # an alternative is to create a shared contexts monitor.
+        # monitor.mds = self
 
     def pop_monitor(self, monitor: MarketDataMonitor = None, monitor_id: str = None, monitor_name: str = None):
         if monitor_id is not None:

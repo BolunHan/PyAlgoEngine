@@ -9,8 +9,8 @@ from typing import Type, TYPE_CHECKING
 
 import numpy as np
 
-from . import LOGGER
-from .market_engine import MDS, Singleton
+from . import LOGGER, Singleton
+from .market_engine import MDS
 from ..base import TransactionSide, TradeInstruction, MarketData, TradeReport, OrderState, OrderType
 
 LOGGER = LOGGER.getChild('AlgoEngine')

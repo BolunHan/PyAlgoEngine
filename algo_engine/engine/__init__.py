@@ -17,8 +17,17 @@ def set_logger(logger: logging.Logger):
     trade_engine.LOGGER = logger.getChild('TradeEngine')
 
 
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
 from .event_engine import EVENT_ENGINE, TOPIC
-from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager, Singleton
+from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
 from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .trade_engine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile
 

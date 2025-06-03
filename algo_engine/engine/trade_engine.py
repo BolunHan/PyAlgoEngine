@@ -15,9 +15,9 @@ from threading import Thread, Semaphore
 import numpy as np
 import pandas as pd
 
-from . import LOGGER
+from . import LOGGER, Singleton
 from .algo_engine import ALGO_ENGINE, AlgoTemplate
-from .market_engine import MarketDataService, Singleton
+from .market_engine import MarketDataService
 from ..base import TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset, TradeInstruction, MarketData, OrderState, TradeReport
 
 LOGGER = LOGGER.getChild('TradeEngine')
