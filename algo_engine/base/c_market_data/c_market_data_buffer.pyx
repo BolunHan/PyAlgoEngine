@@ -6,7 +6,7 @@ from libc.string cimport memcpy, memset
 from libc.stdint cimport uint8_t, INT8_MAX, uint32_t, uint64_t, uintptr_t
 from libc.time cimport time, time_t, difftime
 
-from .c_market_data cimport compare_md_ptr, _MarketDataVirtualBase, DataType, _MetaInfo, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE, Side, platform_usleep
+from .c_market_data cimport compare_md_ptr, _MarketDataVirtualBase, InternalData, DataType, _MetaInfo, _InternalBuffer, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE, Side, platform_usleep
 from .c_transaction cimport TransactionData, OrderData, TransactionHelper
 from .c_tick cimport TickData, TickDataLite, OrderBook
 from .c_candlestick cimport BarData
@@ -66,11 +66,12 @@ cdef class MarketDataBuffer:
             self._view_obtained = False
 
     @staticmethod
-    cdef size_t c_buffer_size(uint32_t n_transaction_data=0, uint32_t n_order_data=0, uint32_t n_tick_data_lite=0, uint32_t n_tick_data=0, uint32_t n_bar_data=0):
+    cdef size_t c_buffer_size(uint32_t n_internal_data=0, uint32_t n_transaction_data=0, uint32_t n_order_data=0, uint32_t n_tick_data_lite=0, uint32_t n_tick_data=0, uint32_t n_bar_data=0):
         cdef size_t header_size = sizeof(_BufferHeader)
-        cdef size_t capacity = n_transaction_data + n_order_data + n_tick_data_lite + n_tick_data + n_bar_data
+        cdef size_t capacity = n_internal_data + n_transaction_data + n_order_data + n_tick_data_lite + n_tick_data + n_bar_data
         cdef size_t offset_size = sizeof(uint64_t) * capacity
         cdef size_t buffer_size = header_size + offset_size
+        buffer_size += n_internal_data * sizeof(_InternalBuffer)
         buffer_size += n_transaction_data * sizeof(_TransactionDataBuffer)
         buffer_size += n_order_data * sizeof(_OrderDataBuffer)
         buffer_size += n_tick_data_lite * sizeof(_TickDataLiteBuffer)
@@ -195,13 +196,18 @@ cdef class MarketDataBuffer:
         cdef _MetaInfo* ptr = <_MetaInfo*> (<void*> self._data_array + data_offset)
         cdef uint8_t dtype = ptr.dtype
         cdef size_t length = _MarketDataVirtualBase.c_get_size(dtype)
+        cdef InternalData internal_data
         cdef TransactionData transaction_data
         cdef OrderData order_data
         cdef TickDataLite tick_data_lite
         cdef TickData tick_data
         cdef BarData bar_data
 
-        if dtype == DataType.DTYPE_TRANSACTION:
+        if dtype == DataType.DTYPE_INTERNAL:
+            internal_data = InternalData.__new__(InternalData)
+            memcpy(<char*> internal_data._data_ptr, <const char*> self._data_array + data_offset, length)
+            return internal_data
+        elif dtype == DataType.DTYPE_TRANSACTION:
             transaction_data = TransactionData.__new__(TransactionData)
             memcpy(<char*> transaction_data._data_ptr, <const char*> self._data_array + data_offset, length)
             return transaction_data
@@ -224,6 +230,12 @@ cdef class MarketDataBuffer:
             return bar_data
         else:
             raise ValueError(f'Unknown data type {dtype}')
+
+    @staticmethod
+    cdef void _set_internal_fields(void* buffer, uint32_t code):
+        cdef _InternalBuffer* data = <_InternalBuffer*> buffer
+
+        data.code = code
 
     @staticmethod
     cdef void _set_transaction_fields(void* buffer, double price, double volume, uint8_t side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None):
@@ -337,8 +349,8 @@ cdef class MarketDataBuffer:
         return md
 
     @classmethod
-    def buffer_size(cls, uint32_t n_transaction_data=0, uint32_t n_order_data=0, uint32_t n_tick_data_lite=0, uint32_t n_tick_data=0, uint32_t n_bar_data=0):
-        return MarketDataBuffer.c_buffer_size(n_transaction_data=n_transaction_data, n_order_data=n_order_data, n_tick_data_lite=n_tick_data_lite, n_tick_data=n_tick_data, n_bar_data=n_bar_data)
+    def buffer_size(cls, uint32_t n_internal_data=0, uint32_t n_transaction_data=0, uint32_t n_order_data=0, uint32_t n_tick_data_lite=0, uint32_t n_tick_data=0, uint32_t n_bar_data=0):
+        return MarketDataBuffer.c_buffer_size(n_internal_data=n_internal_data, n_transaction_data=n_transaction_data, n_order_data=n_order_data, n_tick_data_lite=n_tick_data_lite, n_tick_data=n_tick_data, n_bar_data=n_bar_data)
 
     def put(self, object market_data):
         cdef uintptr_t data_addr = market_data._data_addr
@@ -369,7 +381,12 @@ cdef class MarketDataBuffer:
         data.MetaInfo.dtype = dtype
 
         # Set fields based on kwargs
-        if dtype == DataType.DTYPE_TRANSACTION:
+        if dtype == DataType.DTYPE_INTERNAL:
+            MarketDataBuffer._set_internal_fields(
+                buffer=<void*> data,
+                code=kwargs['code'],
+            )
+        elif dtype == DataType.DTYPE_TRANSACTION:
             MarketDataBuffer._set_transaction_fields(
                 buffer=<void*> data,
                 price=kwargs['price'],
@@ -606,6 +623,7 @@ cdef class MarketDataRingBuffer:
         cdef uint8_t dtype = market_data_ptr[0]
         cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
         # cdef MarketData instance
+        cdef InternalData internal_data
         cdef TransactionData transaction_data
         cdef OrderData order_data
         cdef TickDataLite tick_data_lite
@@ -613,7 +631,11 @@ cdef class MarketDataRingBuffer:
         cdef BarData bar_data
 
         # Create appropriate MarketData object
-        if dtype == DataType.DTYPE_TRANSACTION:
+        if dtype == DataType.DTYPE_INTERNAL:
+            internal_data = InternalData.__new__(InternalData)
+            memcpy(<char*> internal_data._data_ptr, <const char*> self._data_array + data_offset, length)
+            return internal_data
+        elif dtype == DataType.DTYPE_TRANSACTION:
             transaction_data = TransactionData.__new__(TransactionData)
             self.c_read(data_offset=data_offset, length=length, output=<char*> transaction_data._data_ptr)
             return transaction_data
@@ -982,6 +1004,7 @@ cdef class MarketDataConcurrentBuffer:
         cdef uint8_t dtype = market_data_ptr[0]
         cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
         # cdef MarketData instance
+        cdef InternalData internal_data
         cdef TransactionData transaction_data
         cdef OrderData order_data
         cdef TickDataLite tick_data_lite
@@ -990,7 +1013,11 @@ cdef class MarketDataConcurrentBuffer:
         # print(f'[getter]\t(ptr_idx={idx}, data_offset={data_offset}, dtype={dtype}, data_length={length}) parsing data...')
 
         # Create appropriate MarketData object
-        if dtype == DataType.DTYPE_TRANSACTION:
+        if dtype == DataType.DTYPE_INTERNAL:
+            internal_data = InternalData.__new__(InternalData)
+            memcpy(<char*> internal_data._data_ptr, <const char*> self._data_array + data_offset, length)
+            return internal_data
+        elif dtype == DataType.DTYPE_TRANSACTION:
             transaction_data = TransactionData.__new__(TransactionData)
             self.c_read(data_offset=data_offset, length=length, output=<char*> transaction_data._data_ptr)
             return transaction_data

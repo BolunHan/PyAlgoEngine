@@ -1,6 +1,6 @@
 # cython: language_level=3
 from cpython.datetime cimport datetime
-from libc.stdint cimport uint8_t, int32_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
 
 # Declare external constants
 cdef extern from "market_data_external.c":
@@ -69,6 +69,7 @@ cdef enum OrderState:
 # Data type mapping
 cpdef public enum DataType:
     DTYPE_UNKNOWN = 0
+    DTYPE_INTERNAL = 1
     DTYPE_MARKET_DATA = 10
     DTYPE_TRANSACTION = 20
     DTYPE_ORDER = 30
@@ -90,6 +91,14 @@ cdef packed struct _MetaInfo:
     uint8_t dtype
     char ticker[TICKER_SIZE]
     double timestamp
+
+
+# Internal structure
+cdef packed struct _InternalBuffer:
+    uint8_t dtype
+    char ticker[TICKER_SIZE]
+    double timestamp
+    uint32_t code
 
 
 # OrderBookEntry structure
@@ -207,6 +216,7 @@ cdef packed struct _TradeInstructionBuffer:
 # Base MarketData structure as a union
 cdef union _MarketDataBuffer:
     _MetaInfo MetaInfo
+    _InternalBuffer Internal
     _TransactionDataBuffer TransactionData
     _OrderDataBuffer OrderData
     _CandlestickBuffer BarData
@@ -215,6 +225,18 @@ cdef union _MarketDataBuffer:
 
     _TradeReportBuffer TradeReport
     _TradeInstructionBuffer TradeInstruction
+
+
+cdef class InternalData:
+    cdef dict __dict__
+    cdef _MarketDataBuffer* _data_ptr
+    cdef public uintptr_t _data_addr
+    cdef _InternalBuffer _data
+
+    cdef bytes c_to_bytes(self)
+
+    @staticmethod
+    cdef InternalData c_from_bytes(bytes data)
 
 
 # Declare MarketData class

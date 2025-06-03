@@ -1,7 +1,11 @@
 # cython: language_level=3
+cimport cython
 import abc
+
+from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
 from libc.stdint cimport uint8_t
+from libc.string cimport memcpy
 
 from algo_engine.profile import PROFILE
 
@@ -9,7 +13,9 @@ from algo_engine.profile import PROFILE
 cdef class _MarketDataVirtualBase:
     @staticmethod
     cdef size_t c_get_size(uint8_t dtype):
-        if dtype == DataType.DTYPE_TRANSACTION:
+        if dtype == DataType.DTYPE_INTERNAL:
+            return sizeof(_InternalBuffer)
+        elif dtype == DataType.DTYPE_TRANSACTION:
             return sizeof(_TransactionDataBuffer)
         elif dtype == DataType.DTYPE_ORDER:
             return sizeof(_OrderDataBuffer)
@@ -99,10 +105,94 @@ class MarketData(metaclass=abc.ABCMeta):
         ...
 
 
+@cython.freelist(128)
+cdef class InternalData:
+    def __cinit__(self):
+        self._data_ptr = <_MarketDataBuffer*> &self._data
+        self._data_addr = <uintptr_t> self._data_ptr
+
+    def __init__(self, *, ticker: str, double timestamp, uint32_t code, **kwargs):
+        # Initialize base class fields
+        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
+        memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
+        self._data.timestamp = timestamp
+        self._data.dtype = DataType.DTYPE_INTERNAL
+        if kwargs: self.__dict__.update(kwargs)
+
+        # Initialize internal-specific fields
+        self._data.code = code
+
+    def __repr__(self) -> str:
+        return f"<InternalData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, code={self.code})"
+
+    def __reduce__(self):
+        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+
+    def __setstate__(self, state):
+        if state:
+            self.__dict__.update(state)
+
+    def __copy__(self):
+        cdef TransactionData instance = TransactionData.__new__(TransactionData)
+        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_InternalBuffer))
+        return instance
+
+    @classmethod
+    def buffer_size(cls):
+        return sizeof(_InternalBuffer)
+
+    cdef bytes c_to_bytes(self):
+        return PyBytes_FromStringAndSize(<char*> &self._data, sizeof(self._data))
+
+    @staticmethod
+    cdef InternalData c_from_bytes(bytes data):
+        cdef InternalData instance = InternalData.__new__(InternalData)
+        memcpy(<void*> &instance._data, <const char*> data, sizeof(_InternalBuffer))
+        return instance
+
+    def to_bytes(self) -> bytes:
+        return self.c_to_bytes()
+
+    @classmethod
+    def from_bytes(cls, bytes data):
+        return InternalData.c_from_bytes(data)
+
+    @property
+    def ticker(self) -> str:
+        return self._data.ticker.decode('utf-8')
+
+    @property
+    def timestamp(self) -> float:
+        return self._data.timestamp
+
+    @property
+    def dtype(self) -> int:
+        return self._data.dtype
+
+    @property
+    def topic(self) -> str:
+        ticker_str = self._data.ticker.decode('utf-8')
+        return f'{ticker_str}.{self.__class__.__name__}'
+
+    @property
+    def market_time(self) :
+        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+
+    @property
+    def price(self) -> float:
+        return 0.
+
+    @property
+    def code(self) -> int:
+        return self._data.code
+
+
 from .c_tick cimport TickData, TickDataLite
 from .c_transaction cimport TransactionData, OrderData
 from .c_candlestick cimport BarData
 
+MarketData.register(InternalData)
 MarketData.register(TickData)
 MarketData.register(TickDataLite)
 MarketData.register(TransactionData)

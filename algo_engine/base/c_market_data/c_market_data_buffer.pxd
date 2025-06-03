@@ -59,7 +59,7 @@ cdef class MarketDataBuffer:
     cdef size_t _idx
 
     @staticmethod
-    cdef size_t c_buffer_size(uint32_t n_transaction_data=*, uint32_t n_order_data=*, uint32_t n_tick_data_lite=*, uint32_t n_tick_data=*, uint32_t n_bar_data=*)
+    cdef size_t c_buffer_size(uint32_t n_internal_data=*, uint32_t n_transaction_data=*, uint32_t n_order_data=*, uint32_t n_tick_data_lite=*, uint32_t n_tick_data=*, uint32_t n_bar_data=*)
 
     @staticmethod
     cdef MarketDataBuffer c_from_buffer(object buffer)
@@ -72,6 +72,9 @@ cdef class MarketDataBuffer:
     cdef void c_put(self, _MarketDataBuffer* market_data_ptr)
 
     cdef object c_get(self, uint32_t idx)
+
+    @staticmethod
+    cdef void _set_internal_fields(void* buffer, uint32_t code)
 
     @staticmethod
     cdef void _set_transaction_fields(void* buffer, double price, double volume, uint8_t side, double multiplier=*, double notional=*, object transaction_id=*, object buy_id=*, object sell_id=*)
