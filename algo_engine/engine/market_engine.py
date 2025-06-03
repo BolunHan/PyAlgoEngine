@@ -8,7 +8,7 @@ from multiprocessing import shared_memory
 from typing import Self
 
 from . import LOGGER
-from ..base import MarketData, TickData, TransactionSide, TransactionDirection, DataType
+from ..base import MarketData, TickData, TransactionSide, TransactionDirection, DataType, InternalData
 from ..profile import PROFILE, Profile
 
 LOGGER = LOGGER.getChild('MarketEngine')
@@ -208,6 +208,9 @@ class MarketDataService(object, metaclass=Singleton):
         self.monitor.pop(monitor_id)
         self.monitor_manager.pop_monitor(monitor_id)
 
+    def on_internal_data(self, internal_data: InternalData):
+        self.monitor_manager.__call__(market_data=internal_data)
+
     def on_market_data(self, market_data: MarketData):
         ticker = market_data.ticker
         market_time = market_data.market_time
@@ -225,6 +228,8 @@ class MarketDataService(object, metaclass=Singleton):
         dtype = market_data.dtype
         if dtype in self._market_data:
             snapshot = self._market_data[dtype]
+        elif dtype == DataType.DTYPE_INTERNAL:
+            raise TypeError('Internal data must be passed in using on_internal_data method')
         else:
             snapshot = self._market_data[dtype] = {}
 
