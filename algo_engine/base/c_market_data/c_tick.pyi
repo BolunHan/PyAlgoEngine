@@ -72,6 +72,11 @@ class TickDataLite(MarketData):
         ...
 
     @property
+    def prev_close(self) -> float:
+        """Get the previous close price."""
+        ...
+
+    @property
     def total_traded_volume(self) -> float:
         """Get the cumulative traded volume."""
         ...
@@ -233,6 +238,70 @@ class TickData(MarketData):
 
     def parse(self, kwargs: dict[str, Any]) -> None:
         """Parse the order book info and additional market data from keyword arguments."""
+        ...
+
+    @property
+    def last_price(self) -> float:
+        """Get the last traded price."""
+        ...
+
+    @property
+    def bid_price(self) -> float:
+        """Get the current best bid price."""
+        ...
+
+    @property
+    def bid_volume(self) -> float:
+        """Get the volume available at the best bid."""
+        ...
+
+    @property
+    def ask_price(self) -> float:
+        """Get the current best ask price."""
+        ...
+
+    @property
+    def ask_volume(self) -> float:
+        """Get the volume available at the best ask."""
+        ...
+
+    @property
+    def prev_close(self) -> float:
+        """Get the previous close price."""
+        ...
+
+    @property
+    def total_traded_volume(self) -> float:
+        """Get the cumulative traded volume."""
+        ...
+
+    @property
+    def total_traded_notional(self) -> float:
+        """Get the cumulative traded notional value."""
+        ...
+
+    @property
+    def total_trade_count(self) -> int:
+        """Get the total number of trades."""
+        ...
+
+    @property
+    def mid_price(self) -> float:
+        """Calculate the mid-price ((bid + ask) / 2)."""
+        ...
+
+    @property
+    def spread(self) -> float:
+        """Calculate the bid-ask spread (ask - bid)."""
+        ...
+
+    @property
+    def market_price(self) -> float:
+        """
+        Get the representative market price.
+
+        Defaults to last traded price if available, otherwise mid-price.
+        """
         ...
 
     @property
