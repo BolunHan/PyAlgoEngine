@@ -8,7 +8,8 @@ import time
 import uuid
 from typing import Self
 
-from .. import LOGGER, PROFILE
+from algo_engine.base import LOGGER
+from algo_engine.profile import PROFILE
 from . import TransactionSide, TransactionData, OrderType
 
 LOGGER = LOGGER.getChild('TradeUtils')

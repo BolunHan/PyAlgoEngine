@@ -14,7 +14,8 @@ from typing import overload, Literal, Self
 
 import numpy as np
 
-from .. import LOGGER, PROFILE
+from algo_engine.base import LOGGER
+from algo_engine.profile import PROFILE
 
 LOGGER = LOGGER.getChild('MarketUtils')
 __all__ = ['TransactionSide', 'OrderType',

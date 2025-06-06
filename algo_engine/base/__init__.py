@@ -3,7 +3,6 @@ import os
 import pathlib
 
 from .telemetrics import LOGGER
-from ..profile import PROFILE
 
 USE_CYTHON = True
 
@@ -54,7 +53,7 @@ from .technical_analysis import TechnicalAnalysis
 from .console_utils import Progress, GetInput, GetArgs, count_ordinal, TerminalStyle, InteractiveShell, ShellTransfer
 
 __all__ = [
-    'PROFILE',
+    # 'PROFILE',
     'FinancialDecimal',
     'TransactionDirection', 'TransactionOffset', 'TransactionSide', 'OrderType', 'InternalData', 'MarketData', 'DataType', 'BarData', 'DailyBar', 'TickDataLite', 'TickData', 'TransactionData', 'TradeData', 'OrderData', 'MarketDataBuffer', 'MarketDataRingBuffer', 'MarketDataConcurrentBuffer',
     # 'MarketDataMemoryBuffer', 'OrderBookBuffer', 'BarDataBuffer', 'TickDataBuffer', 'TransactionDataBuffer',
