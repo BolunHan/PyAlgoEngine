@@ -255,3 +255,19 @@ cdef class _MarketDataVirtualBase:
 
     @staticmethod
     cdef datetime c_to_dt(double timestamp)
+
+
+cdef enum _FilterMode:
+    NO_INTERNAL = 1 << 0
+    NO_CANCEL = 1 << 1
+    NO_AUCTION = 1 << 2
+    NO_ORDER = 1 << 3
+    NO_TRADE = 1 << 4
+    NO_TICK = 1 << 5
+
+
+cdef class FilterMode:
+    cdef public uint32_t value
+
+    @staticmethod
+    cdef bint c_mask_data(object market_data, uint32_t filter_mode)
