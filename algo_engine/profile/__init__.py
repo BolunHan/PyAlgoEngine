@@ -14,7 +14,7 @@ class Profile(object, metaclass=abc.ABCMeta):
         self.profile_id = profile_id
         self.session_start = session_start
         self.session_end = session_end
-        self.session_break = [] if session_break is None else session_break
+        self.session_break = session_break or []
 
         self.time_zone = None
 
@@ -196,6 +196,29 @@ class Profile(object, metaclass=abc.ABCMeta):
             )
 
         return range_break
+
+    @property
+    def session_length(self) -> float:
+        """
+        return the total seconds of a typical market session
+        """
+        if (t := self.session_start) is None:
+            session_start_ts = 0
+        else:
+            session_start_ts = (t.hour * 60 + t.minute) * 60 + t.second + t.microsecond / 1000000
+
+        if (t := self.session_end) is None:
+            session_end_ts = 24 * 60 * 60.
+        else:
+            session_end_ts = (t.hour * 60 + t.minute) * 60 + t.second + t.microsecond / 1000000
+
+        session_break_ts = 0
+        for t0, t1 in self.session_break:
+            session_break_ts += (t1.hour * 60 + t1.minute) * 60 + t1.second + t1.microsecond / 1000000
+            session_break_ts -= (t0.hour * 60 + t0.minute) * 60 + t0.second + t0.microsecond / 1000000
+
+        session_length = session_end_ts - session_start_ts - session_break_ts
+        return session_length
 
 
 class DefaultProfile(Profile):
