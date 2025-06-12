@@ -51,7 +51,7 @@ ext-modules = [
 ]
 
 [tool.setuptools.package-data]
-"algo_engine.base.c_market_data" = ["*.pxd"]
+"algo_engine.base.c_market_data" = ["*.pxd", "market_data_external.c"]
 #"algo_engine.base.c_market_data_buffer_supported" = ["*.pxd"]
 
 [tool.setuptools.packages.find]
