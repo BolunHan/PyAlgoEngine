@@ -1,11 +1,8 @@
 import abc
 import datetime
-import pickle
 import uuid
 from collections import defaultdict
-from math import inf, nan
-from multiprocessing import shared_memory
-from typing import Self
+from math import inf
 
 from . import LOGGER, Singleton
 from ..base import MarketData, TickData, TransactionSide, TransactionDirection, DataType, InternalData
@@ -40,59 +37,6 @@ class MarketDataMonitor(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs):
         ...
-
-    def __reduce__(self):
-        return self.__class__.from_json, (self.to_json(),)
-
-    @abc.abstractmethod
-    def to_json(self, fmt='str') -> dict | str:
-        ...
-
-    @classmethod
-    @abc.abstractmethod
-    def from_json(cls, json_message: str | bytes | bytearray | dict) -> Self:
-        ...
-
-    def to_shm(self, name: str = None) -> str:
-        """
-        Put the data of the monitor into python shared memory.
-        This function is designed to facilitate multiprocessing.
-        Some monitor is not advised to be handled concurrently,
-        In which case, raise a NotImplementedError.
-
-        The function is expected to put all data into a sharable list,
-        and return the name of the list, which can be set by the given name.
-        Default name = self.monitor_id
-
-        Note that this method HAVE NO LOCK, use with caution.
-        """
-        if name is None:
-            name = f'{self.monitor_id}.json'
-
-        data = pickle.dumps(self.to_json(fmt='dict'))
-        size = len(data)
-
-        try:
-            shm = shared_memory.SharedMemory(name=name)
-
-            if shm.size != size:
-                shm.close()
-                shm.unlink()
-                shm = shared_memory.SharedMemory(create=True, size=size, name=name)
-        except FileNotFoundError as _:
-            shm = shared_memory.SharedMemory(create=True, size=size, name=name)
-
-        shm.buf[:size] = data
-        shm.close()
-        return name
-
-    @classmethod
-    def from_shm(cls, monitor_id: str):
-        """
-        retrieve the data and update the monitor from shared memory.
-        This function is designed to facilitate multiprocessing.
-        """
-        return
 
     @abc.abstractmethod
     def clear(self) -> None:

@@ -188,8 +188,92 @@ cdef class InternalData:
         return self._data.code
 
 
+cdef class FilterMode:
+    # Class-level constants for flags
+    NO_INTERNAL = FilterMode.__new__(FilterMode, _FilterMode.NO_INTERNAL)
+    NO_CANCEL = FilterMode.__new__(FilterMode, _FilterMode.NO_CANCEL)
+    NO_AUCTION = FilterMode.__new__(FilterMode, _FilterMode.NO_AUCTION)
+    NO_ORDER = FilterMode.__new__(FilterMode, _FilterMode.NO_ORDER)
+    NO_TRADE = FilterMode.__new__(FilterMode, _FilterMode.NO_TRADE)
+    NO_TICK = FilterMode.__new__(FilterMode, _FilterMode.NO_TICK)
+
+    def __cinit__(self, uint32_t value=0):
+        self.value = value
+
+    @classmethod
+    def all(cls):
+        return FilterMode.__new__(
+            FilterMode,
+            _FilterMode.NO_INTERNAL |
+            _FilterMode.NO_CANCEL |
+            _FilterMode.NO_AUCTION |
+            _FilterMode.NO_ORDER |
+            _FilterMode.NO_TRADE |
+            _FilterMode.NO_TICK
+        )
+
+    def __or__(self, FilterMode other):
+        return FilterMode.__new__(FilterMode, self.value | other.value)
+
+    def __and__(self, FilterMode other):
+        return FilterMode.__new__(FilterMode, self.value & other.value)
+
+    def __contains__(self, FilterMode other):
+        return (self.value & other.value) == other.value
+
+    def __repr__(self):
+        flags = []
+        if _FilterMode.NO_INTERNAL & self.value: flags.append("NO_INTERNAL")
+        if _FilterMode.NO_CANCEL & self.value: flags.append("NO_CANCEL")
+        if _FilterMode.NO_AUCTION & self.value: flags.append("NO_AUCTION")
+        if _FilterMode.NO_ORDER & self.value: flags.append("NO_ORDER")
+        if _FilterMode.NO_TRADE & self.value: flags.append("NO_TRADE")
+        if _FilterMode.NO_TICK & self.value: flags.append("NO_TICK")
+        return f"<FilterMode {self.value:#0x}: {' | '.join(flags) or 'None'}>"
+
+    @staticmethod
+    cdef bint c_mask_data(object market_data, uint32_t filter_mode):
+        cdef uintptr_t data_addr = market_data._data_addr
+        cdef _MarketDataBuffer* market_data_ptr = <_MarketDataBuffer*> data_addr
+        cdef uint8_t dtype = market_data_ptr.MetaInfo.dtype
+        cdef double timestamp = market_data_ptr.MetaInfo.timestamp
+        cdef _TransactionDataBuffer* trade_data
+
+        if _FilterMode.NO_INTERNAL & filter_mode:
+            if dtype == DataType.DTYPE_INTERNAL:
+                return False
+
+        if _FilterMode.NO_CANCEL & filter_mode:
+            if dtype == DataType.DTYPE_TRANSACTION:
+                trade_data = <_TransactionDataBuffer*> data_addr
+                side = trade_data.side
+                if TransactionHelper.get_offset(side) == Offset.OFFSET_CANCEL:
+                    return False
+
+        if _FilterMode.NO_AUCTION & filter_mode:
+            if not PROFILE.is_market_session(timestamp=timestamp):
+                return False
+
+        if _FilterMode.NO_ORDER & filter_mode:
+            if dtype == DataType.DTYPE_ORDER:
+                return False
+
+        if _FilterMode.NO_TRADE & filter_mode:
+            if dtype == DataType.DTYPE_TRANSACTION:
+                return False
+
+        if _FilterMode.NO_TICK & filter_mode:
+            if dtype == DataType.DTYPE_TICK or dtype == DataType.DTYPE_TICK_LITE:
+                return False
+
+        return True
+
+    def mask_data(self, market_data: object) -> bool:
+        return FilterMode.c_mask_data(market_data, self.value)
+
+
 from .c_tick cimport TickData, TickDataLite
-from .c_transaction cimport TransactionData, OrderData
+from .c_transaction cimport TransactionData, OrderData, TransactionHelper
 from .c_candlestick cimport BarData
 
 MarketData.register(InternalData)

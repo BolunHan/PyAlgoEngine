@@ -50,6 +50,10 @@ ext-modules = [
 #    { name = "algo_engine.base.c_market_data_buffer_supported.trade_utils", sources = ["algo_engine/base/c_market_data_buffer_supported/trade_utils.pyx"]},
 ]
 
+[tool.setuptools.package-data]
+"algo_engine.base.c_market_data" = ["*.pxd"]
+#"algo_engine.base.c_market_data_buffer_supported" = ["*.pxd"]
+
 [tool.setuptools.packages.find]
 exclude = [
     "algo_engine.base.native_market_data",

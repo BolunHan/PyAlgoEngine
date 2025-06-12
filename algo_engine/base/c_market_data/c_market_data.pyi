@@ -27,6 +27,8 @@ class DataType(enum.IntEnum):
     DTYPE_TICK_LITE: int = ...
     DTYPE_TICK: int = ...
     DTYPE_BAR: int = ...
+    DTYPE_REPORT: int = ...
+    DTYPE_INSTRUCTION: int = ...
 
 
 class MarketData(object, metaclass=abc.ABCMeta):
@@ -187,3 +189,80 @@ class InternalData(MarketData):
     def code(self) -> int:
         """Get the protocol code this message triggers."""
         ...
+
+
+class FilterMode:
+    """A bitmask class for filtering different types of market data."""
+
+    value: int
+    """The underlying integer value of the bitmask"""
+
+    # Class-level constants
+    NO_INTERNAL: FilterMode = ...
+    NO_CANCEL: FilterMode = ...
+    NO_AUCTION: FilterMode = ...
+    NO_ORDER: FilterMode = ...
+    NO_TRADE: FilterMode = ...
+    NO_TICK: FilterMode = ...
+
+    def __init__(self, value: int = 0) -> None:
+        """Initialize the filter with a bitmask value.
+
+        Args:
+            value: Initial bitmask value (defaults to 0)
+        """
+
+    @classmethod
+    def all(cls) -> FilterMode:
+        """Create a FilterMode with all filter flags enabled.
+
+        Returns:
+            FilterMode: A filter that blocks all message types
+        """
+
+    def __or__(self, other: FilterMode) -> FilterMode:
+        """Combine filters using bitwise OR.
+
+        Args:
+            other: Another FilterMode value
+
+        Returns:
+            FilterMode: New combined filter
+        """
+
+    def __and__(self, other: FilterMode) -> FilterMode:
+        """Intersect filters using bitwise AND.
+
+        Args:
+            other: Another FilterMode value
+
+        Returns:
+            FilterMode: New intersected filter
+        """
+
+    def __contains__(self, other: FilterMode) -> bool:
+        """Check if this filter contains all flags of another filter.
+
+        Args:
+            other: FilterMode to test against
+
+        Returns:
+            bool: True if all flags in other are set in this filter
+        """
+
+    def __repr__(self) -> str:
+        """Return a string representation of the filter.
+
+        Returns:
+            str: String showing hex value and active flags
+        """
+
+    def mask_data(self, market_data: MarketData) -> bool:
+        """Check if market data passes through this filter.
+
+        Args:
+            market_data: Market data object to check
+
+        Returns:
+            bool: True if data should pass through filter
+        """
