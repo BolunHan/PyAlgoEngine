@@ -1,23 +1,23 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../">
+<html class="writer-html5" lang="en" data-content_root="../../../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.base.market_utils_posix &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+  <title>algo_engine.base.native_market_data.market_utils_posix &mdash; PyAlgoEngine 0.8.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
 
   
-      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../../../_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=7f96dc5e"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -28,11 +28,11 @@
 
           
           
-          <a href="../../../index.html" class="icon icon-home">
+          <a href="../../../../index.html" class="icon icon-home">
             PyAlgoEngine
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -41,9 +41,9 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../apis.html">APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../apis.html">APIs</a></li>
 </ul>
 
         </div>
@@ -52,16 +52,16 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">PyAlgoEngine</a>
+          <a href="../../../../index.html">PyAlgoEngine</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
-      <li class="breadcrumb-item active">algo_engine.base.market_utils_posix</li>
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">algo_engine.base.native_market_data.market_utils_posix</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -70,7 +70,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>Source code for algo_engine.base.market_utils_posix</h1><div class="highlight"><pre>
+  <h1>Source code for algo_engine.base.native_market_data.market_utils_posix</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
@@ -87,7 +87,8 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">PROFILE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE</span>
 
 <span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;MarketUtils&#39;</span><span class="p">)</span>
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;TransactionSide&#39;</span><span class="p">,</span> <span class="s1">&#39;OrderType&#39;</span><span class="p">,</span>
@@ -117,7 +118,7 @@
 
 
 <div class="viewcode-block" id="TransactionSide">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionSide">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionSide">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TransactionSide</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">ShortOrder</span> <span class="o">=</span> <span class="n">AskOrder</span> <span class="o">=</span> <span class="n">Offer_to_Short</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span>
     <span class="n">ShortOpen</span> <span class="o">=</span> <span class="n">Sell_to_Short</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span>
@@ -151,7 +152,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">UNKNOWN</span>
 
 <div class="viewcode-block" id="TransactionSide.from_offset">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionSide.from_offset">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionSide.from_offset">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_offset</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -314,7 +315,7 @@
 
 
 <div class="viewcode-block" id="OrderType">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderType">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderType">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderType</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="o">-</span><span class="mi">20</span>
     <span class="n">CancelOrder</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10</span>
@@ -329,10 +330,10 @@
 
 
 <div class="viewcode-block" id="MarketData">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MarketData</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
 <div class="viewcode-block" id="MarketData.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span> <span class="o">=</span> <span class="n">encoding</span>
@@ -365,13 +366,13 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">),)</span>
 
 <div class="viewcode-block" id="MarketData.copy">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.copy">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.copy">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__copy__</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="MarketData.to_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.to_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.to_json">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="n">data_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
@@ -390,7 +391,7 @@
 
 
 <div class="viewcode-block" id="MarketData.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -419,7 +420,7 @@
 
 
 <div class="viewcode-block" id="MarketData.parse_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.parse_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.parse_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Union</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span><span class="p">:</span>
         <span class="n">dtype_int</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">dtype</span>
@@ -443,7 +444,7 @@
 
 
 <div class="viewcode-block" id="MarketData.cast_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.cast_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.cast_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cast_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Union</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="n">dtype_int</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">dtype</span>
@@ -474,7 +475,7 @@
 
 
 <div class="viewcode-block" id="MarketData.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="n">dtype_int</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">dtype</span>
@@ -498,7 +499,7 @@
 
 
 <div class="viewcode-block" id="MarketData.from_bytes">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketData.from_bytes">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketData.from_bytes">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_bytes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="n">dtype_int</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -791,7 +792,7 @@
 
 
 <div class="viewcode-block" id="OrderBook">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderBook</span><span class="p">(</span><span class="n">MarketData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class representing an order book, which tracks bid and ask orders for a financial instrument.</span>
@@ -801,7 +802,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="OrderBook.Book">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book">[docs]</a>
     <span class="k">class</span><span class="w"> </span><span class="nc">Book</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class representing a side of the order book (either bid or ask).</span>
@@ -814,7 +815,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="OrderBook.Book.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.__init__">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Initialize the order book for a specific side.</span>
@@ -962,7 +963,7 @@
             <span class="k">return</span> <span class="n">diff</span>
 
 <div class="viewcode-block" id="OrderBook.Book.get">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.get">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.get">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Retrieve an entry by price or level, with flexibility for keyword arguments.</span>
@@ -1007,7 +1008,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.pop">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.pop">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.pop">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Remove and return an entry at the specified price.</span>
@@ -1030,7 +1031,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.remove">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.remove">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.remove">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Remove a specific entry from the order book.</span>
@@ -1049,7 +1050,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.at_price">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.at_price">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.at_price">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">at_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get the entry at a specific price.</span>
@@ -1067,7 +1068,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.at_level">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.at_level">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.at_level">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">at_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get the entry at a specific level.</span>
@@ -1082,7 +1083,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.update">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.update">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.update">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Update or add an entry in the order book.</span>
@@ -1112,7 +1113,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.add">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.add">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.add">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Add a new entry to the order book.</span>
@@ -1128,7 +1129,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.loc_volume">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.loc_volume">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.loc_volume">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">loc_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">p1</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Calculate the total volume between two price levels. Inclusive of the 2 given price.</span>
@@ -1153,7 +1154,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.Book.sort">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.Book.sort">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.Book.sort">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Sort the order book by price in the appropriate order (descending for bids, ascending for asks).</span>
@@ -1193,7 +1194,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">bid</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ask</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize an OrderBook instance with market data.</span>
@@ -1337,7 +1338,7 @@
         <span class="o">...</span>
 
 <div class="viewcode-block" id="OrderBook.parse">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.parse">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.parse">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse bid and ask data into the OrderBook.</span>
@@ -1358,7 +1359,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1414,7 +1415,7 @@
 
 
 <div class="viewcode-block" id="OrderBook.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderBook.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderBook.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
@@ -1561,7 +1562,7 @@
 
 
 <div class="viewcode-block" id="BarData">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.BarData">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.BarData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BarData</span><span class="p">(</span><span class="n">MarketData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a single bar of market data for a specific ticker within a given time frame.</span>
@@ -1599,7 +1600,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="BarData.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.BarData.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.BarData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
             <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1691,7 +1692,7 @@
         <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&gt;([</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1">, open=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">open_price</span><span class="si">}</span><span class="s1">, close=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">close_price</span><span class="si">}</span><span class="s1">, high=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">high_price</span><span class="si">}</span><span class="s1">, low=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">low_price</span><span class="si">}</span><span class="s1">)&#39;</span>
 
 <div class="viewcode-block" id="BarData.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.BarData.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.BarData.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1720,7 +1721,7 @@
 
 
 <div class="viewcode-block" id="BarData.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.BarData.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.BarData.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
@@ -1915,7 +1916,7 @@
 
 
 <div class="viewcode-block" id="DailyBar">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.DailyBar">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.DailyBar">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DailyBar</span><span class="p">(</span><span class="n">BarData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents a daily bar of market data for a specific ticker.</span>
@@ -1961,7 +1962,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="DailyBar.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.DailyBar.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.DailyBar.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
             <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2042,7 +2043,7 @@
 
 
 <div class="viewcode-block" id="DailyBar.__repr__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.DailyBar.__repr__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.DailyBar.__repr__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a string representation of the `DailyBar` instance.</span>
@@ -2056,7 +2057,7 @@
 
 
 <div class="viewcode-block" id="DailyBar.to_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.DailyBar.to_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.DailyBar.to_json">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts the `DailyBar` instance to a JSON string or dictionary.</span>
@@ -2083,7 +2084,7 @@
 
 
 <div class="viewcode-block" id="DailyBar.from_list">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.DailyBar.from_list">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.DailyBar.from_list">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_list</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2195,7 +2196,7 @@
 
 
 <div class="viewcode-block" id="TickData">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TickData">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TickData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TickData</span><span class="p">(</span><span class="n">MarketData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents tick data for a specific ticker.</span>
@@ -2239,7 +2240,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TickData.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TickData.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TickData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
             <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2313,7 +2314,7 @@
 
 
 <div class="viewcode-block" id="TickData.__repr__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TickData.__repr__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TickData.__repr__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a string representation of the `TickData` instance.</span>
@@ -2327,7 +2328,7 @@
 
 
 <div class="viewcode-block" id="TickData.to_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TickData.to_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TickData.to_json">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="n">data_dict</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -2343,7 +2344,7 @@
 
 
 <div class="viewcode-block" id="TickData.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TickData.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TickData.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2376,7 +2377,7 @@
 
 
 <div class="viewcode-block" id="TickData.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TickData.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TickData.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
@@ -2522,7 +2523,7 @@
 
 
 <div class="viewcode-block" id="TransactionData">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionData">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TransactionData</span><span class="p">(</span><span class="n">MarketData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Represents transaction data for a specific market.</span>
@@ -2565,7 +2566,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TransactionData.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionData.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
             <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2622,7 +2623,7 @@
 
 
 <div class="viewcode-block" id="TransactionData.__repr__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionData.__repr__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionData.__repr__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a string representation of the `TransactionData` instance.</span>
@@ -2663,7 +2664,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid id type for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="TransactionData.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionData.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionData.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2692,7 +2693,7 @@
 
 
 <div class="viewcode-block" id="TransactionData.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionData.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionData.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
@@ -2706,7 +2707,7 @@
 
 
 <div class="viewcode-block" id="TransactionData.merge">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TransactionData.merge">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TransactionData.merge">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">trade_data_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Self</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Self</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2868,7 +2869,7 @@
 
 
 <div class="viewcode-block" id="TradeData">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TradeData">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TradeData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TradeData</span><span class="p">(</span><span class="n">TransactionData</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Alias for `TransactionData` with alternate property names for trade price and volume.</span>
@@ -2889,7 +2890,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TradeData.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TradeData.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TradeData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initializes a new instance of `TradeData`.</span>
@@ -2928,7 +2929,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">volume</span>
 
 <div class="viewcode-block" id="TradeData.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TradeData.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TradeData.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2947,14 +2948,14 @@
 
 
 <div class="viewcode-block" id="TradeData.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TradeData.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TradeData.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TradeData</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">from_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TradeData.from_bytes">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.TradeData.from_bytes">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.TradeData.from_bytes">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_bytes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TradeData</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
@@ -2963,10 +2964,10 @@
 
 
 <div class="viewcode-block" id="OrderData">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderData">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderData">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderData</span><span class="p">(</span><span class="n">MarketData</span><span class="p">):</span>
 <div class="viewcode-block" id="OrderData.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderData.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderData.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
             <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3004,7 +3005,7 @@
         <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;OrderData&gt;([</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">side_name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1">, price=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">price</span><span class="si">}</span><span class="s1">, volume=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="si">}</span><span class="s1">)&#39;</span>
 
 <div class="viewcode-block" id="OrderData.from_json">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderData.from_json">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderData.from_json">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">bytearray</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -3021,7 +3022,7 @@
 
 
 <div class="viewcode-block" id="OrderData.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.OrderData.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.OrderData.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="nb">memoryview</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
@@ -3067,18 +3068,18 @@
 
 
 <div class="viewcode-block" id="MarketDataBuffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MarketDataBuffer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="n">ctype_buffer</span> <span class="o">=</span> <span class="n">_BUFFER_CONSTRUCTOR</span><span class="o">.</span><span class="n">new_market_data_buffer</span><span class="p">()</span>
 
 <div class="viewcode-block" id="MarketDataBuffer.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">ctypes</span><span class="o">.</span><span class="n">Structure</span> <span class="o">|</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Union</span> <span class="o">|</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">RawValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctype_buffer</span><span class="p">)</span> <span class="k">if</span> <span class="n">buffer</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">buffer</span></div>
 
 
 <div class="viewcode-block" id="MarketDataBuffer.to_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.to_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.to_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -3097,7 +3098,7 @@
 
 
 <div class="viewcode-block" id="MarketDataBuffer.from_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.from_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.from_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderBook</span> <span class="o">|</span> <span class="n">BarData</span> <span class="o">|</span> <span class="n">DailyBar</span> <span class="o">|</span> <span class="n">TickData</span> <span class="o">|</span> <span class="n">TransactionData</span> <span class="o">|</span> <span class="n">TradeData</span> <span class="o">|</span> <span class="n">MarketData</span><span class="p">:</span>
         <span class="n">buffer</span> <span class="o">=</span> <span class="n">MarketData</span><span class="o">.</span><span class="n">parse_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span>
@@ -3106,7 +3107,7 @@
 
 
 <div class="viewcode-block" id="MarketDataBuffer.cast_buffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.cast_buffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.cast_buffer">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cast_buffer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderBook</span> <span class="o">|</span> <span class="n">BarData</span> <span class="o">|</span> <span class="n">DailyBar</span> <span class="o">|</span> <span class="n">TickData</span> <span class="o">|</span> <span class="n">TransactionData</span> <span class="o">|</span> <span class="n">TradeData</span> <span class="o">|</span> <span class="n">MarketData</span><span class="p">:</span>
         <span class="n">md</span> <span class="o">=</span> <span class="n">MarketData</span><span class="o">.</span><span class="n">cast_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">)</span>
@@ -3114,7 +3115,7 @@
 
 
 <div class="viewcode-block" id="MarketDataBuffer.from_bytes">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.from_bytes">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.from_bytes">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_bytes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderBook</span> <span class="o">|</span> <span class="n">BarData</span> <span class="o">|</span> <span class="n">DailyBar</span> <span class="o">|</span> <span class="n">TickData</span> <span class="o">|</span> <span class="n">TransactionData</span> <span class="o">|</span> <span class="n">TradeData</span> <span class="o">|</span> <span class="n">MarketData</span><span class="p">:</span>
         <span class="n">md</span> <span class="o">=</span> <span class="n">MarketData</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
@@ -3122,13 +3123,13 @@
 
 
 <div class="viewcode-block" id="MarketDataBuffer.update">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.update">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.update">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span> <span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MarketDataBuffer.to_market_data">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataBuffer.to_market_data">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataBuffer.to_market_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_market_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderBook</span> <span class="o">|</span> <span class="n">BarData</span> <span class="o">|</span> <span class="n">DailyBar</span> <span class="o">|</span> <span class="n">TickData</span> <span class="o">|</span> <span class="n">TransactionData</span> <span class="o">|</span> <span class="n">TradeData</span> <span class="o">|</span> <span class="n">MarketData</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cast_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span></div>
 
@@ -3140,10 +3141,10 @@
 
 
 <div class="viewcode-block" id="MarketDataRingBuffer">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MarketDataRingBuffer</span><span class="p">(</span><span class="n">MarketDataBuffer</span><span class="p">):</span>
 <div class="viewcode-block" id="MarketDataRingBuffer.__init__">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">block</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;block&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -3194,7 +3195,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">internal_index</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MarketDataRingBuffer.get">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer.get">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raise_on_empty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketData</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">raise_on_empty</span><span class="p">:</span>
@@ -3226,7 +3227,7 @@
         <span class="n">buffer</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">market_data</span><span class="o">=</span><span class="n">market_data</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MarketDataRingBuffer.put">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer.put">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer.put">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">raise_on_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        the put method is not thread safe, and should only be called in one single thread.</span>
@@ -3252,7 +3253,7 @@
 
 
 <div class="viewcode-block" id="MarketDataRingBuffer.at">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer.at">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer.at">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MarketDataBuffer</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_at</span><span class="p">(</span><span class="n">index</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span></div>
 
@@ -3261,7 +3262,7 @@
         <span class="k">return</span> <span class="n">MarketDataBuffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
 
 <div class="viewcode-block" id="MarketDataRingBuffer.is_full">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer.is_full">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer.is_full">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_full</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">_tail_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tail</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="n">_head_next_circle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span>
@@ -3274,7 +3275,7 @@
 
 
 <div class="viewcode-block" id="MarketDataRingBuffer.is_empty">
-<a class="viewcode-back" href="../../../algo_engine.base.html#algo_engine.base.market_utils_nt.MarketDataRingBuffer.is_empty">[docs]</a>
+<a class="viewcode-back" href="../../../../algo_engine.base.native_market_data.html#algo_engine.base.native_market_data.market_utils_nt.MarketDataRingBuffer.is_empty">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">idx_tail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tail</span>
         <span class="n">idx_head</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span>

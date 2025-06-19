@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.profile package &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+  <title>algo_engine.profile package &mdash; PyAlgoEngine 0.8.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=78239c4e"></script>
+      <script src="_static/documentation_options.js?v=7f96dc5e"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -119,7 +119,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.profile.cn.ProfileCN.trade_days_between">
-<span class="sig-name descname"><span class="pre">trade_days_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.date(2025,</span> <span class="pre">5,</span> <span class="pre">7)</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/algo_engine/profile/cn.html#ProfileCN.trade_days_between"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.profile.cn.ProfileCN.trade_days_between" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">trade_days_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">date</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.date(2025,</span> <span class="pre">6,</span> <span class="pre">19)</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/algo_engine/profile/cn.html#ProfileCN.trade_days_between"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.profile.cn.ProfileCN.trade_days_between" title="Link to this definition"></a></dt>
 <dd><p>Returns the number of trade days between the given date, which is the pre-open of the start_date to the pre-open of the end_date.
 :param start_date: the given trade date
 :param end_date: the given trade date
@@ -242,6 +242,12 @@
 <dt class="sig sig-object py" id="algo_engine.profile.Profile.range_break">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">range_break</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#algo_engine.profile.Profile.range_break" title="Link to this definition"></a></dt>
 <dd><p>an range break designed for plotly.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="algo_engine.profile.Profile.session_length">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">session_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#algo_engine.profile.Profile.session_length" title="Link to this definition"></a></dt>
+<dd><p>return the total seconds of a typical market session</p>
 </dd></dl>
 
 </dd></dl>

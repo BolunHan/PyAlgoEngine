@@ -1,0 +1,69 @@
+algo\_engine.base.c\_market\_data package
+=========================================
+
+Submodules
+----------
+
+algo\_engine.base.c\_market\_data.buffer\_test module
+-----------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.buffer_test
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_candlestick module
+-------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_candlestick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_market\_data module
+--------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_market_data
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_market\_data\_buffer module
+----------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_market_data_buffer
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_tick module
+------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_tick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_trade\_utils module
+--------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_trade_utils
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_transaction module
+-------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_transaction
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.base.c_market_data
+   :members:
+   :show-inheritance:
+   :undoc-members:

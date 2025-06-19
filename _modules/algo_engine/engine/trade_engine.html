@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.engine.trade_engine &mdash; PyAlgoEngine 0.8.0.post5 documentation</title>
+  <title>algo_engine.engine.trade_engine &mdash; PyAlgoEngine 0.8.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=78239c4e"></script>
+      <script src="../../../_static/documentation_options.js?v=7f96dc5e"></script>
       <script src="../../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
@@ -61,6 +61,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../engine.html">algo_engine.engine</a></li>
       <li class="breadcrumb-item active">algo_engine.engine.trade_engine</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -88,9 +89,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">Singleton</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.algo_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALGO_ENGINE</span><span class="p">,</span> <span class="n">AlgoTemplate</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.market_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketDataService</span><span class="p">,</span> <span class="n">Singleton</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.market_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketDataService</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransactionSide</span><span class="p">,</span> <span class="n">TransactionDirection</span> <span class="k">as</span> <span class="n">Direction</span><span class="p">,</span> <span class="n">TransactionOffset</span> <span class="k">as</span> <span class="n">Offset</span><span class="p">,</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">OrderState</span><span class="p">,</span> <span class="n">TradeReport</span>
 
 <span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;TradeEngine&#39;</span><span class="p">)</span>
