@@ -69,6 +69,7 @@ class Profile(object, metaclass=abc.ABCMeta):
         """
         if days <= 0:
             raise ValueError("days must be positive")
+        assert isinstance(market_date, datetime.date), 'market_date must be an instance of datetime.date'
 
         # Calculate how many years we need to go back (250 trading days ≈ 1 year)
         years_back = (days // 250) + 1
@@ -104,6 +105,7 @@ class Profile(object, metaclass=abc.ABCMeta):
         """
         if days <= 0:
             raise ValueError("days must be positive")
+        assert isinstance(market_date, datetime.date), 'market_date must be an instance of datetime.date'
 
         # Calculate how many years we need to look ahead (250 trading days ≈ 1 year)
         years_ahead = (days // 250) + 1
