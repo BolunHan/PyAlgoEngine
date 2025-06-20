@@ -270,4 +270,4 @@ cdef class FilterMode:
     cdef public uint32_t value
 
     @staticmethod
-    cdef bint c_mask_data(object market_data, uint32_t filter_mode)
+    cdef inline bint c_mask_data(uintptr_t data_addr, uint32_t filter_mode)

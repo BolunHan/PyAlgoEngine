@@ -4,7 +4,6 @@ import abc
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
-from libc.stdint cimport uint8_t
 from libc.string cimport memcpy
 
 from algo_engine.profile import PROFILE
@@ -232,8 +231,7 @@ cdef class FilterMode:
         return f"<FilterMode {self.value:#0x}: {' | '.join(flags) or 'None'}>"
 
     @staticmethod
-    cdef bint c_mask_data(object market_data, uint32_t filter_mode):
-        cdef uintptr_t data_addr = market_data._data_addr
+    cdef inline bint c_mask_data(uintptr_t data_addr, uint32_t filter_mode):
         cdef _MarketDataBuffer* market_data_ptr = <_MarketDataBuffer*> data_addr
         cdef uint8_t dtype = market_data_ptr.MetaInfo.dtype
         cdef double timestamp = market_data_ptr.MetaInfo.timestamp
@@ -269,7 +267,8 @@ cdef class FilterMode:
         return True
 
     def mask_data(self, market_data: object) -> bool:
-        return FilterMode.c_mask_data(market_data, self.value)
+        cdef uintptr_t data_addr = <uintptr_t> market_data._data_addr
+        return FilterMode.c_mask_data(data_addr, self.value)
 
 
 from .c_tick cimport TickData, TickDataLite
