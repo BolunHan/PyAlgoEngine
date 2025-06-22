@@ -1,4 +1,4 @@
-from cpython.datetime cimport timedelta, datetime_from_timestamp, time_hour, time_minute, time_second, time_microsecond
+from cpython.datetime cimport timedelta, time_hour, time_minute, time_second, time_microsecond
 from libc.math cimport fmod
 from libc.stdlib cimport malloc, free
 
@@ -221,14 +221,14 @@ cdef class ProfileDispatcher:
         cdef datetime st, et
 
         if isinstance(start_time, (float, int)):
-            st = datetime_from_timestamp(start_time, tz=self.time_zone)
+            st = datetime.fromtimestamp(start_time, tz=self.time_zone)
             assert self.c_timestamp_in_market_session(<double> start_time), f'{start_time} not in trading session'
         else:
             st = <datetime> start_time
             assert self.c_time_in_market_session(<time> st.time()), f'{start_time} not in trading session'
 
         if isinstance(end_time, (float, int)):
-            et = datetime_from_timestamp(end_time, tz=self.time_zone)
+            et = datetime.fromtimestamp(end_time, tz=self.time_zone)
             assert self.c_timestamp_in_market_session(<double> end_time), f'{end_time} not in trading session'
         else:
             et = <datetime> end_time

@@ -3,7 +3,6 @@ cimport cython
 import abc
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.datetime cimport datetime_from_timestamp
 from libc.string cimport memcpy
 
 from algo_engine.profile.c_base cimport C_PROFILE
@@ -43,7 +42,7 @@ cdef class _MarketDataVirtualBase:
 
     @staticmethod
     cdef datetime c_to_dt(double timestamp):
-        return datetime_from_timestamp(timestamp, tz=C_PROFILE.time_zone)
+        return datetime.fromtimestamp(timestamp, tz=C_PROFILE.time_zone)
 
 
 class MarketData(metaclass=abc.ABCMeta):
