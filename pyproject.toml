@@ -36,6 +36,8 @@ Issues = "https://github.com/BolunHan/PyAlgoEngine/issues"
 
 [tool.setuptools]
 ext-modules = [
+    { name = "algo_engine.profile.c_base", sources = ["algo_engine/profile/c_base.pyx"]},
+    { name = "algo_engine.profile.c_cn", sources = ["algo_engine/profile/c_cn.pyx"]},
     { name = "algo_engine.base.c_market_data.c_market_data", sources = ["algo_engine/base/c_market_data/c_market_data.pyx"]},
     { name = "algo_engine.base.c_market_data.c_transaction", sources = ["algo_engine/base/c_market_data/c_transaction.pyx"]},
     { name = "algo_engine.base.c_market_data.c_candlestick", sources = ["algo_engine/base/c_market_data/c_candlestick.pyx"]},
@@ -51,11 +53,13 @@ ext-modules = [
 ]
 
 [tool.setuptools.package-data]
+"algo_engine.profile" = ["*.pxd"]
 "algo_engine.base.c_market_data" = ["*.pxd", "market_data_external.c"]
 #"algo_engine.base.c_market_data_buffer_supported" = ["*.pxd"]
 
 [tool.setuptools.packages.find]
 exclude = [
+    "algo_engine.profile._*",
     "algo_engine.base.native_market_data",
 #    "algo_engine.base.c_market_data",
     "algo_engine.base.c_market_data_buffer_supported*",
