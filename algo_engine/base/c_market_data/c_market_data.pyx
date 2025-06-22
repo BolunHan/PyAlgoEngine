@@ -3,10 +3,10 @@ cimport cython
 import abc
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.datetime cimport datetime
+from cpython.datetime cimport datetime_from_timestamp
 from libc.string cimport memcpy
 
-from algo_engine.profile import PROFILE
+from algo_engine.profile.c_base cimport C_PROFILE
 
 
 cdef class _MarketDataVirtualBase:
@@ -43,7 +43,7 @@ cdef class _MarketDataVirtualBase:
 
     @staticmethod
     cdef datetime c_to_dt(double timestamp):
-        return datetime.fromtimestamp(timestamp, tz=PROFILE.time_zone)
+        return datetime_from_timestamp(timestamp, tz=C_PROFILE.time_zone)
 
 
 class MarketData(metaclass=abc.ABCMeta):
@@ -249,7 +249,7 @@ cdef class FilterMode:
                     return False
 
         if _FilterMode.NO_AUCTION & filter_mode:
-            if not PROFILE.is_market_session(timestamp=timestamp):
+            if not C_PROFILE.c_timestamp_in_market_session(t=timestamp):
                 return False
 
         if _FilterMode.NO_ORDER & filter_mode:
