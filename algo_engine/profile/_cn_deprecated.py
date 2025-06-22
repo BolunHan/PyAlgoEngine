@@ -1,7 +1,7 @@
 import datetime
 import functools
 
-from . import Profile
+from ._base_deprecated import Profile
 
 
 class ProfileCN(Profile):
