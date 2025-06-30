@@ -13,7 +13,7 @@ def set_logger(logger: logging.Logger):
 
     algo_engine.LOGGER = logger.getChild('AlgoEngine')
     event_engine.EVENT_ENGINE.logger = logger.getChild('EventEngine')
-    market_engine.LOGGER = logger.getChild('MarketEngine')
+    c_market_engine.LOGGER = logger.getChild('MarketEngine')
     trade_engine.LOGGER = logger.getChild('TradeEngine')
 
 
@@ -27,7 +27,8 @@ class Singleton(type):
 
 
 from .event_engine import EVENT_ENGINE, TOPIC
-from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
+# from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
+from .c_market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
 from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .trade_engine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile
 
