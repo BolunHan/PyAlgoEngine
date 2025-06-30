@@ -248,6 +248,15 @@ cdef class _MarketDataVirtualBase:
     cdef size_t c_get_size(uint8_t dtype)
 
     @staticmethod
+    cdef str c_dtype_name(uint8_t dtype)
+
+    @staticmethod
+    cdef object c_ptr_to_data(_MarketDataBuffer* data_ptr)
+
+    @staticmethod
+    cdef bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr)
+
+    @staticmethod
     cdef size_t c_max_size()
 
     @staticmethod

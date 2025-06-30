@@ -33,6 +33,88 @@ cdef class _MarketDataVirtualBase:
             raise ValueError(f'Unknown data type {dtype}')
 
     @staticmethod
+    cdef str c_dtype_name(uint8_t dtype):
+        if dtype == DataType.DTYPE_INTERNAL:
+            return 'InternalData'
+        elif dtype == DataType.DTYPE_TRANSACTION:
+            return 'TransactionData'
+        elif dtype == DataType.DTYPE_ORDER:
+            return 'OrderData'
+        elif dtype == DataType.DTYPE_TICK_LITE:
+            return 'TickDataLite'
+        elif dtype == DataType.DTYPE_TICK:
+            return 'TickData'
+        elif dtype == DataType.DTYPE_BAR:
+            return 'BarData'
+        elif dtype == DataType.DTYPE_REPORT:
+            return 'TradeReport'
+        elif dtype == DataType.DTYPE_TRANSACTION:
+            return 'TradeInstruction'
+        elif dtype == DataType.DTYPE_MARKET_DATA or dtype == DataType.DTYPE_UNKNOWN:
+            return 'GenericMarketData'
+        else:
+            raise ValueError(f'Unknown data type {dtype}')
+
+    @staticmethod
+    cdef object c_ptr_to_data(_MarketDataBuffer* data_ptr):
+        cdef _MetaInfo* meta_info = <_MetaInfo*> data_ptr
+        cdef uint8_t dtype = meta_info.dtype
+        cdef size_t length = _MarketDataVirtualBase.c_get_size(dtype)
+
+        cdef InternalData internal_data
+        cdef TransactionData transaction_data
+        cdef OrderData order_data
+        cdef TickDataLite tick_data_lite
+        cdef TickData tick_data
+        cdef BarData bar_data
+        cdef TradeReport trade_report
+        cdef TradeInstruction trade_order
+
+        if dtype == DataType.DTYPE_INTERNAL:
+            internal_data = InternalData.__new__(InternalData)
+            memcpy(<char*> internal_data._data_ptr, <const char*> data_ptr, length)
+            return internal_data
+        elif dtype == DataType.DTYPE_TRANSACTION:
+            transaction_data = TransactionData.__new__(TransactionData)
+            memcpy(<char*> transaction_data._data_ptr, <const char*> data_ptr, length)
+            return transaction_data
+        elif dtype == DataType.DTYPE_ORDER:
+            order_data = OrderData.__new__(OrderData)
+            memcpy(<char*> order_data._data_ptr, <const char*> data_ptr, length)
+            return order_data
+        elif dtype == DataType.DTYPE_TICK_LITE:
+            tick_data_lite = TickDataLite.__new__(TickDataLite)
+            memcpy(<char*> tick_data_lite._data_ptr, <const char*> data_ptr, length)
+            return tick_data_lite
+        elif dtype == DataType.DTYPE_TICK:
+            tick_data = TickData.__new__(TickData)
+            memcpy(<char*> tick_data._data_ptr, <const char*> data_ptr, length)
+            tick_data._init_order_book()
+            return tick_data
+        elif dtype == DataType.DTYPE_BAR:
+            bar_data = BarData.__new__(BarData)
+            memcpy(<char*> bar_data._data_ptr, <const char*> data_ptr, length)
+            return bar_data
+        elif dtype == DataType.DTYPE_REPORT:
+            trade_report = TradeReport.__new__(TradeReport)
+            memcpy(<char*> trade_report._data_ptr, <const char*> data_ptr, length)
+            return trade_report
+        elif dtype == DataType.DTYPE_INSTRUCTION:
+            trade_order = TradeInstruction.__new__(TradeInstruction)
+            memcpy(<char*> trade_order._data_ptr, <const char*> data_ptr, length)
+            return trade_order
+        else:
+            raise ValueError(f'Unknown data type {dtype}')
+
+    @staticmethod
+    cdef bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr):
+        cdef _MetaInfo* meta_info = <_MetaInfo*> data_ptr
+        cdef uint8_t dtype = meta_info.dtype
+        cdef size_t length = _MarketDataVirtualBase.c_get_size(dtype)
+        cdef bytes data = PyBytes_FromStringAndSize(<const char*> data_ptr, length)
+        return data
+
+    @staticmethod
     cdef size_t c_max_size():
         return max(sizeof(_TransactionDataBuffer), sizeof(_TickDataBuffer), sizeof(_CandlestickBuffer))
 
@@ -273,6 +355,7 @@ cdef class FilterMode:
 from .c_tick cimport TickData, TickDataLite
 from .c_transaction cimport TransactionData, OrderData, TransactionHelper
 from .c_candlestick cimport BarData
+from .c_trade_utils cimport TradeReport, TradeInstruction
 
 MarketData.register(InternalData)
 MarketData.register(TickData)
