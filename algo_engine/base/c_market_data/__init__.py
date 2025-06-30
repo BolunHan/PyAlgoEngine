@@ -6,13 +6,7 @@ from .c_market_data_buffer import MarketDataBuffer, MarketDataRingBuffer, Market
 from .c_trade_utils import OrderState, TradeInstruction, TradeReport
 
 
-def get_include():
-    import os
-    return os.path.dirname(__file__)
-
-
 __all__ = [
-    'get_include',
     "MarketData", "DataType", "OrderType", "InternalData", "FilterMode",
     "TransactionDirection", "TransactionOffset", "TransactionSide",
     "TransactionData", "TradeData", "OrderData",
