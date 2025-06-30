@@ -44,6 +44,7 @@ ext-modules = [
     { name = "algo_engine.base.c_market_data.c_tick", sources = ["algo_engine/base/c_market_data/c_tick.pyx"]},
     { name = "algo_engine.base.c_market_data.c_market_data_buffer", sources = ["algo_engine/base/c_market_data/c_market_data_buffer.pyx"]},
     { name = "algo_engine.base.c_market_data.c_trade_utils", sources = ["algo_engine/base/c_market_data/c_trade_utils.pyx"]},
+    { name = "algo_engine.engine.c_market_engine", sources = ["algo_engine/engine/c_market_engine.pyx"]},
 #    { name = "algo_engine.base.c_market_data_buffer_supported.market_data", sources = ["algo_engine/base/c_market_data_buffer_supported/market_data.pyx"]},
 #    { name = "algo_engine.base.c_market_data_buffer_supported.transaction", sources = ["algo_engine/base/c_market_data_buffer_supported/transaction.pyx"]},
 #    { name = "algo_engine.base.c_market_data_buffer_supported.candlestick", sources = ["algo_engine/base/c_market_data_buffer_supported/candlestick.pyx"]},
@@ -55,6 +56,7 @@ ext-modules = [
 [tool.setuptools.package-data]
 "algo_engine.profile" = ["*.pxd"]
 "algo_engine.base.c_market_data" = ["*.pxd", "market_data_external.c"]
+"algo_engine.engine" = ["*.pxd"]
 #"algo_engine.base.c_market_data_buffer_supported" = ["*.pxd"]
 
 [tool.setuptools.packages.find]
