@@ -48,8 +48,7 @@ cdef class MonitorManager:
         self.monitor = {}
 
     cdef void c_on_market_data(self, _MarketDataBuffer* data_ptr):
-        for monitor_id in self.monitor:
-            self._work(monitor_id=monitor_id, market_data=_MarketDataVirtualBase.c_ptr_to_data(data_ptr))
+        self.__call__(market_data=_MarketDataVirtualBase.c_ptr_to_data(data_ptr))
 
     def __call__(self, market_data: MarketData):
         for monitor_id in self.monitor:
@@ -201,7 +200,8 @@ cdef class MarketDataService:
         return self._n
 
     def __call__(self, object market_data):
-        self.on_market_data(market_data=market_data)
+        cdef uintptr_t data_addr = market_data._data_addr
+        self.c_on_market_data(data_ptr=<_MarketDataBuffer*> data_addr)
 
     def __getitem__(self, monitor_id: str) -> MarketDataMonitor:
         return self._monitor[monitor_id]
@@ -272,7 +272,7 @@ cdef class MarketDataService:
         cdef bytes ticker_bytes
         cdef dict result = {}
 
-        for idx, ticker_bytes in self.mapping.items():
+        for ticker_bytes, idx in self.mapping.items():
             result[ticker_bytes.decode('utf-8')] = self._market_price[idx]
 
         return result
@@ -309,5 +309,17 @@ cdef class MarketDataService:
 
         self._monitor_manager = <MonitorManager> manager
 
+        LOGGER.info(f'MDS monitor manager override by {self._monitor_manager}')
+
         for monitor in self._monitor.values():
             self._monitor_manager.add_monitor(monitor=monitor)
+
+    @property
+    def subscriptions(self) -> list[str]:
+        cdef list result = []
+        cdef bytes ticker_bytes
+
+        for ticker_bytes in self.mapping:
+            result.append(ticker_bytes.decode('utf-8'))
+
+        return result
