@@ -1,5 +1,4 @@
-from ..engine import MDS
-from ..engine.market_engine import MarketDataMonitor as Monitor
+from ..engine import MDS, MarketDataMonitor as Monitor
 
 
 def add_synthetic_orderbook():
@@ -7,7 +6,8 @@ def add_synthetic_orderbook():
     monitor = SyntheticOrderBookMonitor(mds=MDS)
     MDS.add_monitor(monitor=monitor)
     # override current orderbook
-    MDS._order_book = monitor.order_book
+    MDS.bid = monitor.bid
+    MDS.ask = monitor.ask
 
 
 from .advanced_data_interface import *
