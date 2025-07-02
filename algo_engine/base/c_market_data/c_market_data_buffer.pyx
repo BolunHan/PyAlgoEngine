@@ -193,43 +193,8 @@ cdef class MarketDataBuffer:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {self._header.ptr_tail}')
 
         cdef uint64_t data_offset = self._ptr_array[idx]
-        cdef _MetaInfo* ptr = <_MetaInfo*> (<void*> self._data_array + data_offset)
-        cdef uint8_t dtype = ptr.dtype
-        cdef size_t length = _MarketDataVirtualBase.c_get_size(dtype)
-        cdef InternalData internal_data
-        cdef TransactionData transaction_data
-        cdef OrderData order_data
-        cdef TickDataLite tick_data_lite
-        cdef TickData tick_data
-        cdef BarData bar_data
-
-        if dtype == DataType.DTYPE_INTERNAL:
-            internal_data = InternalData.__new__(InternalData)
-            memcpy(<char*> internal_data._data_ptr, <const char*> self._data_array + data_offset, length)
-            return internal_data
-        elif dtype == DataType.DTYPE_TRANSACTION:
-            transaction_data = TransactionData.__new__(TransactionData)
-            memcpy(<char*> transaction_data._data_ptr, <const char*> self._data_array + data_offset, length)
-            return transaction_data
-        elif dtype == DataType.DTYPE_ORDER:
-            order_data = OrderData.__new__(OrderData)
-            memcpy(<char*> order_data._data_ptr, <const char*> self._data_array + data_offset, length)
-            return order_data
-        elif dtype == DataType.DTYPE_TICK_LITE:
-            tick_data_lite = TickDataLite.__new__(TickDataLite)
-            memcpy(<char*> tick_data_lite._data_ptr, <const char*> self._data_array + data_offset, length)
-            return tick_data_lite
-        elif dtype == DataType.DTYPE_TICK:
-            tick_data = TickData.__new__(TickData)
-            memcpy(<char*> tick_data._data_ptr, <const char*> self._data_array + data_offset, length)
-            tick_data._init_order_book()
-            return tick_data
-        elif dtype == DataType.DTYPE_BAR:
-            bar_data = BarData.__new__(BarData)
-            memcpy(<char*> bar_data._data_ptr, <const char*> self._data_array + data_offset, length)
-            return bar_data
-        else:
-            raise ValueError(f'Unknown data type {dtype}')
+        cdef void* ptr = <void*> self._data_array + data_offset
+        return _MarketDataVirtualBase.c_ptr_to_data(<_MarketDataBuffer*> ptr)
 
     @staticmethod
     cdef void _set_internal_fields(void* buffer, uint32_t code):
