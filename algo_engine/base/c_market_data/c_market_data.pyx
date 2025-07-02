@@ -10,7 +10,7 @@ from algo_engine.profile.c_base cimport C_PROFILE
 
 cdef class _MarketDataVirtualBase:
     @staticmethod
-    cdef size_t c_get_size(uint8_t dtype):
+    cdef inline size_t c_get_size(uint8_t dtype):
         if dtype == DataType.DTYPE_INTERNAL:
             return sizeof(_InternalBuffer)
         elif dtype == DataType.DTYPE_TRANSACTION:
@@ -33,7 +33,7 @@ cdef class _MarketDataVirtualBase:
             raise ValueError(f'Unknown data type {dtype}')
 
     @staticmethod
-    cdef str c_dtype_name(uint8_t dtype):
+    cdef inline str c_dtype_name(uint8_t dtype):
         if dtype == DataType.DTYPE_INTERNAL:
             return 'InternalData'
         elif dtype == DataType.DTYPE_TRANSACTION:
@@ -56,7 +56,7 @@ cdef class _MarketDataVirtualBase:
             raise ValueError(f'Unknown data type {dtype}')
 
     @staticmethod
-    cdef object c_ptr_to_data(_MarketDataBuffer* data_ptr):
+    cdef inline object c_ptr_to_data(_MarketDataBuffer* data_ptr):
         cdef _MetaInfo* meta_info = <_MetaInfo*> data_ptr
         cdef uint8_t dtype = meta_info.dtype
         cdef size_t length = _MarketDataVirtualBase.c_get_size(dtype)
@@ -107,7 +107,7 @@ cdef class _MarketDataVirtualBase:
             raise ValueError(f'Unknown data type {dtype}')
 
     @staticmethod
-    cdef bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr):
+    cdef inline bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr):
         cdef _MetaInfo* meta_info = <_MetaInfo*> data_ptr
         cdef uint8_t dtype = meta_info.dtype
         cdef size_t length = _MarketDataVirtualBase.c_get_size(dtype)
@@ -115,15 +115,15 @@ cdef class _MarketDataVirtualBase:
         return data
 
     @staticmethod
-    cdef size_t c_max_size():
+    cdef inline size_t c_max_size():
         return max(sizeof(_TransactionDataBuffer), sizeof(_TickDataBuffer), sizeof(_CandlestickBuffer))
 
     @staticmethod
-    cdef size_t c_min_size():
+    cdef inline size_t c_min_size():
         return min(sizeof(_OrderDataBuffer), sizeof(_TickDataLiteBuffer), sizeof(_CandlestickBuffer))
 
     @staticmethod
-    cdef datetime c_to_dt(double timestamp):
+    cdef inline datetime c_to_dt(double timestamp):
         return datetime.fromtimestamp(timestamp, tz=C_PROFILE.time_zone)
 
 

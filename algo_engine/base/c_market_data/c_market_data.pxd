@@ -245,25 +245,25 @@ cdef class _MarketDataVirtualBase:
     cdef _MarketDataBuffer* _data_ptr
 
     @staticmethod
-    cdef size_t c_get_size(uint8_t dtype)
+    cdef inline size_t c_get_size(uint8_t dtype)
 
     @staticmethod
-    cdef str c_dtype_name(uint8_t dtype)
+    cdef inline str c_dtype_name(uint8_t dtype)
 
     @staticmethod
-    cdef object c_ptr_to_data(_MarketDataBuffer* data_ptr)
+    cdef inline object c_ptr_to_data(_MarketDataBuffer* data_ptr)
 
     @staticmethod
-    cdef bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr)
+    cdef inline bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr)
 
     @staticmethod
-    cdef size_t c_max_size()
+    cdef inline size_t c_max_size()
 
     @staticmethod
-    cdef size_t c_min_size()
+    cdef inline size_t c_min_size()
 
     @staticmethod
-    cdef datetime c_to_dt(double timestamp)
+    cdef inline datetime c_to_dt(double timestamp)
 
 
 cdef enum _FilterMode:
