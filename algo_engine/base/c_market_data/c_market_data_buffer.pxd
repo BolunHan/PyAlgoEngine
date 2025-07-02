@@ -1,7 +1,7 @@
 # cython: language_level=3
 from libc.stdint cimport uint8_t, uint32_t, uint64_t
 
-from .c_market_data cimport _MarketDataVirtualBase, _MarketDataBuffer
+from .c_market_data cimport _MarketDataBuffer
 
 
 cdef packed struct _BufferHeader:
@@ -159,6 +159,10 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef void c_put(self, _MarketDataBuffer* market_data_ptr)
 
-    cdef object c_get(self, uint32_t idx)
+    cdef void c_put_raw(self, _MarketDataBuffer* market_data_ptr)
+
+    cdef inline object c_get(self, uint32_t idx)
 
     cdef object c_listen(self, uint32_t worker_id, bint block=*, double timeout=*)
+
+    cdef inline object c_listen_raw(self, uint32_t worker_id)

@@ -6,9 +6,9 @@ from libc.string cimport memcpy, memset
 from libc.stdint cimport uint8_t, INT8_MAX, uint32_t, uint64_t, uintptr_t
 from libc.time cimport time, time_t, difftime
 
-from .c_market_data cimport compare_md_ptr, _MarketDataVirtualBase, InternalData, DataType, _MetaInfo, _InternalBuffer, _MarketDataBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE, Side, platform_usleep
+from .c_market_data cimport compare_md_ptr, _MarketDataVirtualBase, InternalData, DataType, _MetaInfo, _InternalBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE, platform_usleep
 from .c_transaction cimport TransactionData, OrderData, TransactionHelper
-from .c_tick cimport TickData, TickDataLite, OrderBook
+from .c_tick cimport TickData, TickDataLite
 from .c_candlestick cimport BarData
 
 
@@ -997,7 +997,12 @@ cdef class MarketDataConcurrentBuffer:
         cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
         self.c_write(data=<const char*> market_data_ptr, length=length)
 
-    cdef object c_get(self, uint32_t idx):
+    cdef void c_put_raw(self, _MarketDataBuffer* market_data_ptr):
+        cdef uint8_t dtype = market_data_ptr.MetaInfo.dtype
+        cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
+        self.c_write(data=<const char*> market_data_ptr, length=length)
+
+    cdef inline object c_get(self, uint32_t idx):
         cdef uint64_t data_offset = self._ptr_array[idx]
         # print(f'[getter]\t(ptr_idx={idx}, data_offset={data_offset}) parsing pointer...')
         cdef const char* market_data_ptr = <char*> self._data_array + data_offset
@@ -1015,7 +1020,7 @@ cdef class MarketDataConcurrentBuffer:
         # Create appropriate MarketData object
         if dtype == DataType.DTYPE_INTERNAL:
             internal_data = InternalData.__new__(InternalData)
-            memcpy(<char*> internal_data._data_ptr, <const char*> self._data_array + data_offset, length)
+            self.c_read(data_offset=data_offset, length=length, output=<char*> internal_data._data_ptr)
             return internal_data
         elif dtype == DataType.DTYPE_TRANSACTION:
             transaction_data = TransactionData.__new__(TransactionData)
@@ -1051,6 +1056,7 @@ cdef class MarketDataConcurrentBuffer:
         cdef uint32_t sleep_us = 0
         cdef bint use_timeout = timeout > 0
         cdef uint32_t idx = self._worker_header_array[worker_id]
+        cdef object md
 
         if worker_id >= self.n_workers:
             raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
@@ -1064,7 +1070,7 @@ cdef class MarketDataConcurrentBuffer:
             # Check for data - direct struct field access
             if idx != self._header.ptr_tail:
                 # print(f'[listener]\t(worker_id={worker_id}, ptr_idx={idx}, ptr_next={idx + 1}) getting data...')
-                md = self.c_get(idx=idx)
+                md = self.c_get(idx)
                 self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
                 return md
 
@@ -1091,6 +1097,15 @@ cdef class MarketDataConcurrentBuffer:
             if sleep_us > 0:
                 platform_usleep(sleep_us)
             spin_count += 1
+
+    cdef inline object c_listen_raw(self, uint32_t worker_id):
+        cdef uint32_t idx = self._worker_header_array[worker_id]
+        if idx == self._header.ptr_tail:
+            return None
+
+        cdef object md = self.c_get(idx)
+        self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
+        return md
 
     # --- python interface ---
 
