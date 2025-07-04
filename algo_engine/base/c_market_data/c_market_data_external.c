@@ -14,8 +14,20 @@
 typedef enum {
     DIRECTION_SHORT = 0,
     DIRECTION_UNKNOWN = 1,
-    DIRECTION_LONG = 2
+    DIRECTION_LONG = 2,
+    DIRECTION_NEUTRAL = 3
 } Direction;
+
+static const int8_t SIGN_LUT[4] = {
+    -1,  // 0b00 → -1
+    0,   // 0b01 → 0
+    1,   // 0b10 → 1
+    0,   // 0b11 → 0
+};
+
+inline int8_t direction_to_sign(uint8_t x) {
+    return SIGN_LUT[x & 0b11];  // Mask to 2 bits and lookup
+}
 
 typedef enum {
     OFFSET_CANCEL = 0,
@@ -25,15 +37,19 @@ typedef enum {
 } Offset;
 
 typedef enum {
-    // Long Side
+    // Long Side transaction, that buy party initiate the transaction
     SIDE_LONG_OPEN = DIRECTION_LONG + OFFSET_OPEN,
     SIDE_LONG_CLOSE = DIRECTION_LONG + OFFSET_CLOSE,
     SIDE_LONG_CANCEL = DIRECTION_LONG + OFFSET_CANCEL,
 
-    // Short Side
+    // Short Side transaction, that sell party initiate the transaction
     SIDE_SHORT_OPEN = DIRECTION_SHORT + OFFSET_OPEN,
     SIDE_SHORT_CLOSE = DIRECTION_SHORT + OFFSET_CLOSE,
     SIDE_SHORT_CANCEL = DIRECTION_SHORT + OFFSET_CANCEL,
+
+    // NEUTRAL transaction, mostly happens during a auction. that neither party initiate the transaction
+    SIDE_NEUTRAL_OPEN = DIRECTION_NEUTRAL + OFFSET_OPEN,
+    SIDE_NEUTRAL_CLOSE = DIRECTION_NEUTRAL + OFFSET_CLOSE,
 
     // Order
     SIDE_BID = DIRECTION_LONG + OFFSET_ORDER,
