@@ -83,7 +83,7 @@ cdef class MarketDataBuffer:
     cdef void _set_order_fields(void* buffer, double price, double volume, uint8_t side, object order_id=*, uint8_t order_type=*)
 
     @staticmethod
-    cdef void _set_tick_lite_fields(void* buffer, double last_price, double bid_price, double bid_volume, double ask_price, double ask_volume, double total_traded_volume=*, double total_traded_notional=*, uint32_t total_trade_count=*)
+    cdef void _set_tick_lite_fields(void* buffer, double last_price, double bid_price, double bid_volume, double ask_price, double ask_volume, double open_price=*, double prev_close=*, double total_traded_volume=*, double total_traded_notional=*, uint64_t total_trade_count=*)
 
     @staticmethod
     cdef void _set_tick_fields(void* buffer)

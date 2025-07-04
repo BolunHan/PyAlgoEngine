@@ -1,6 +1,7 @@
 # cython: language_level=3
 from cpython.buffer cimport PyBUF_SIMPLE, PyObject_GetBuffer, PyBuffer_Release
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from libc.math cimport NAN
 from libc.stdlib cimport malloc, free, qsort
 from libc.string cimport memcpy, memset
 from libc.stdint cimport uint8_t, INT8_MAX, uint32_t, uint64_t, uintptr_t
@@ -232,7 +233,7 @@ cdef class MarketDataBuffer:
         TransactionHelper.set_id(id_ptr=&data.order_id, id_value=order_id)
 
     @staticmethod
-    cdef void _set_tick_lite_fields(void* buffer, double last_price, double bid_price, double bid_volume, double ask_price, double ask_volume, double total_traded_volume=0.0, double total_traded_notional=0.0, uint32_t total_trade_count=0):
+    cdef void _set_tick_lite_fields(void* buffer, double last_price, double bid_price, double bid_volume, double ask_price, double ask_volume, double open_price=NAN, double prev_close=NAN, double total_traded_volume=0.0, double total_traded_notional=0.0, uint64_t total_trade_count=0):
         cdef _TickDataLiteBuffer* data = <_TickDataLiteBuffer*> buffer
 
         data.last_price = last_price
@@ -240,6 +241,8 @@ cdef class MarketDataBuffer:
         data.bid_volume = bid_volume
         data.ask_price = ask_price
         data.ask_volume = ask_volume
+        data.open_price = open_price
+        data.prev_close = prev_close
         data.total_traded_volume = total_traded_volume
         data.total_traded_notional = total_traded_notional
         data.total_trade_count = total_trade_count
@@ -380,6 +383,8 @@ cdef class MarketDataBuffer:
                 bid_volume=kwargs['bid_volume'],
                 ask_price=kwargs['ask_price'],
                 ask_volume=kwargs['ask_volume'],
+                open_price=kwargs.get('open_price', NAN),
+                prev_close=kwargs.get('prev_close', NAN),
                 total_traded_volume=kwargs.get('total_traded_volume', 0.0),
                 total_traded_notional=kwargs.get('total_traded_notional', 0.0),
                 total_trade_count=kwargs.get('total_trade_count', 0)
