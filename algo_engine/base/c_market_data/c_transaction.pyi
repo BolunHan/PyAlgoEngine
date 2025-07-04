@@ -30,10 +30,10 @@ class TransactionDirection(enum.IntEnum):
         DIRECTION_LONG: Buy party initiated transaction (buying)
         DIRECTION_NEUTRAL: Neither party initiated transaction, commonly in auction session (neutral)
     """
-    DIRECTION_UNKNOWN: TransactionDirection = 1
-    DIRECTION_SHORT: TransactionDirection = 0
-    DIRECTION_LONG: TransactionDirection = 2
-    DIRECTION_NEUTRAL: TransactionDirection = 3
+    DIRECTION_UNKNOWN: TransactionDirection
+    DIRECTION_SHORT: TransactionDirection
+    DIRECTION_LONG: TransactionDirection
+    DIRECTION_NEUTRAL: TransactionDirection
 
     def __or__(self, offset: TransactionOffset) -> TransactionSide:
         """
