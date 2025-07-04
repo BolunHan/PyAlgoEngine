@@ -4,7 +4,20 @@ from typing import Any, Literal
 
 from typing_extensions import deprecated
 
-from .c_market_data import MarketData, OrderType
+from .c_market_data import MarketData
+
+
+class OrderType(enum.IntEnum):
+    """Enum representing different order types."""
+    ORDER_UNKNOWN: OrderType
+    ORDER_CANCEL: OrderType
+    ORDER_GENERIC: OrderType
+    ORDER_LIMIT: OrderType
+    ORDER_LIMIT_MAKER: OrderType
+    ORDER_MARKET: OrderType
+    ORDER_FOK: OrderType
+    ORDER_FAK: OrderType
+    ORDER_IOC: OrderType
 
 
 class TransactionDirection(enum.IntEnum):
@@ -13,12 +26,14 @@ class TransactionDirection(enum.IntEnum):
 
     Attributes:
         DIRECTION_UNKNOWN: Unknown transaction direction
-        DIRECTION_SHORT: Short position direction (selling)
-        DIRECTION_LONG: Long position direction (buying)
+        DIRECTION_SHORT: Sell party initiated transaction (selling)
+        DIRECTION_LONG: Buy party initiated transaction (buying)
+        DIRECTION_NEUTRAL: Neither party initiated transaction, commonly in auction session (neutral)
     """
-    DIRECTION_UNKNOWN: int = ...
-    DIRECTION_SHORT: int = ...
-    DIRECTION_LONG: int = ...
+    DIRECTION_UNKNOWN: TransactionDirection = 1
+    DIRECTION_SHORT: TransactionDirection = 0
+    DIRECTION_LONG: TransactionDirection = 2
+    DIRECTION_NEUTRAL: TransactionDirection = 3
 
     def __or__(self, offset: TransactionOffset) -> TransactionSide:
         """
@@ -38,7 +53,7 @@ class TransactionDirection(enum.IntEnum):
         Returns:
             - 1 for long (buy)
             - -1 for short (sell)
-            - 0 for cancel/unknown
+            - 0 for cancel/unknown/neutral
         """
         ...
 
@@ -53,10 +68,10 @@ class TransactionOffset(enum.IntEnum):
         OFFSET_OPEN: Opening a new position
         OFFSET_CLOSE: Closing an existing position
     """
-    OFFSET_CANCEL: int = ...
-    OFFSET_ORDER: int = ...
-    OFFSET_OPEN: int = ...
-    OFFSET_CLOSE: int = ...
+    OFFSET_CANCEL: TransactionOffset
+    OFFSET_ORDER: TransactionOffset
+    OFFSET_OPEN: TransactionOffset
+    OFFSET_CLOSE: TransactionOffset
 
     def __or__(self, direction: TransactionDirection) -> TransactionSide:
         """
@@ -76,38 +91,40 @@ class TransactionSide(enum.IntEnum):
     Combines direction and offset to describe complete transaction types.
     Includes deprecated legacy names for backward compatibility.
     """
-    SIDE_LONG_OPEN: int = ...
-    SIDE_LONG_CLOSE: int = ...
-    SIDE_LONG_CANCEL: int = ...
-    SIDE_SHORT_OPEN: int = ...
-    SIDE_SHORT_CLOSE: int = ...
-    SIDE_SHORT_CANCEL: int = ...
-    SIDE_BID: int = ...
-    SIDE_ASK: int = ...
-    SIDE_CANCEL: int = ...
-    SIDE_UNKNOWN: int = ...
-    SIDE_LONG: int = ...
-    SIDE_SHORT: int = ...
-    SIDE_FAULTY: int = ...
+    SIDE_LONG_OPEN: TransactionSide
+    SIDE_LONG_CLOSE: TransactionSide
+    SIDE_LONG_CANCEL: TransactionSide
+    SIDE_SHORT_OPEN: TransactionSide
+    SIDE_SHORT_CLOSE: TransactionSide
+    SIDE_NEUTRAL_OPEN: TransactionSide
+    SIDE_NEUTRAL_CLOSE: TransactionSide
+    SIDE_SHORT_CANCEL: TransactionSide
+    SIDE_BID: TransactionSide
+    SIDE_ASK: TransactionSide
+    SIDE_CANCEL: TransactionSide
+    SIDE_UNKNOWN: TransactionSide
+    SIDE_LONG: TransactionSide
+    SIDE_SHORT: TransactionSide
+    SIDE_FAULTY: TransactionSide
 
     # Deprecated aliases
-    ShortOrder: deprecated('Use SIDE_ASK instead')(int) = ...
-    AskOrder: deprecated('Use SIDE_ASK instead')(int) = ...
-    Ask: deprecated('Use SIDE_ASK instead')(int) = ...
-    LongOrder: deprecated('Use SIDE_BID instead')(int) = ...
-    BidOrder: deprecated('Use SIDE_BID instead')(int) = ...
-    Bid: deprecated('Use SIDE_BID instead')(int) = ...
-    ShortFilled: deprecated('Use SIDE_SHORT instead')(int) = ...
-    Unwind: deprecated('Use SIDE_SHORT_CLOSE instead')(int) = ...
-    Sell: deprecated('Use SIDE_SHORT_CLOSE instead')(int) = ...
-    LongFilled: deprecated('Use SIDE_LONG_OPEN instead')(int) = ...
-    LongOpen: deprecated('Use SIDE_LONG_OPEN instead')(int) = ...
-    Buy: deprecated('Use SIDE_LONG_OPEN instead')(int) = ...
-    ShortOpen: deprecated('Use SIDE_SHORT_OPEN instead')(int) = ...
-    Short: deprecated('Use SIDE_SHORT_OPEN instead')(int) = ...
-    Cover: deprecated('Use SIDE_LONG_CLOSE instead')(int) = ...
-    UNKNOWN: deprecated('Use SIDE_UNKNOWN instead')(int) = ...
-    CANCEL: deprecated('Use SIDE_CANCEL instead')(int) = ...
+    ShortOrder: deprecated('Use SIDE_ASK instead')(TransactionSide)
+    AskOrder: deprecated('Use SIDE_ASK instead')(TransactionSide)
+    Ask: deprecated('Use SIDE_ASK instead')(TransactionSide)
+    LongOrder: deprecated('Use SIDE_BID instead')(TransactionSide)
+    BidOrder: deprecated('Use SIDE_BID instead')(TransactionSide)
+    Bid: deprecated('Use SIDE_BID instead')(TransactionSide)
+    ShortFilled: deprecated('Use SIDE_SHORT instead')(TransactionSide)
+    Unwind: deprecated('Use SIDE_SHORT_CLOSE instead')(TransactionSide)
+    Sell: deprecated('Use SIDE_SHORT_CLOSE instead')(TransactionSide)
+    LongFilled: deprecated('Use SIDE_LONG_OPEN instead')(TransactionSide)
+    LongOpen: deprecated('Use SIDE_LONG_OPEN instead')(TransactionSide)
+    Buy: deprecated('Use SIDE_LONG_OPEN instead')(TransactionSide)
+    ShortOpen: deprecated('Use SIDE_SHORT_OPEN instead')(TransactionSide)
+    Short: deprecated('Use SIDE_SHORT_OPEN instead')(TransactionSide)
+    Cover: deprecated('Use SIDE_LONG_CLOSE instead')(TransactionSide)
+    UNKNOWN: deprecated('Use SIDE_UNKNOWN instead')(TransactionSide)
+    CANCEL: deprecated('Use SIDE_CANCEL instead')(TransactionSide)
 
     @property
     def sign(self) -> Literal[-1, 0, 1]:
@@ -303,7 +320,7 @@ class OrderData(MarketData):
             volume: Order volume
             side: Order side (see TransactionSide)
             order_id: Unique order identifier
-            order_type: Order type (see OrderType)
+            order_type: Order type (see OrderType from c_market_data)
             **kwargs: Additional order attributes
         """
         ...
@@ -388,7 +405,7 @@ class TradeData(TransactionData):
             trade_volume: Trade volume
             side: Trade side (see TransactionSide)
             order_id: Related order identifier
-            order_type: Order type (see OrderType)
+            order_type: Order type (see OrderType from c_market_data for details)
             **kwargs: Additional trade attributes
         """
         ...

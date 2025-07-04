@@ -10,7 +10,19 @@ from libc.stdint cimport uint8_t, int8_t
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset, memcmp
 
-from .c_market_data cimport _MarketDataVirtualBase, _MarketDataBuffer, TICKER_SIZE, _TransactionDataBuffer, _OrderDataBuffer, _ID, DataType, ID_SIZE, Direction, Offset, Side, OrderType
+from .c_market_data cimport direction_to_sign, _MarketDataVirtualBase, _MarketDataBuffer, TICKER_SIZE, _TransactionDataBuffer, _OrderDataBuffer, _ID, DataType, ID_SIZE, Direction, Offset, Side, OrderType as E_OrderType
+
+
+class OrderType(enum.IntEnum):
+    ORDER_UNKNOWN = E_OrderType.ORDER_UNKNOWN
+    ORDER_CANCEL = E_OrderType.ORDER_CANCEL
+    ORDER_GENERIC = E_OrderType.ORDER_GENERIC
+    ORDER_LIMIT = E_OrderType.ORDER_LIMIT
+    ORDER_LIMIT_MAKER = E_OrderType.ORDER_LIMIT_MAKER
+    ORDER_MARKET = E_OrderType.ORDER_MARKET
+    ORDER_FOK = E_OrderType.ORDER_FOK
+    ORDER_FAK = E_OrderType.ORDER_FAK
+    ORDER_IOC = E_OrderType.ORDER_IOC
 
 
 # Python wrapper for Direction enum
@@ -21,6 +33,7 @@ class TransactionDirection(enum.IntEnum):
     DIRECTION_UNKNOWN = Direction.DIRECTION_UNKNOWN  # 1
     DIRECTION_SHORT = Direction.DIRECTION_SHORT  # 0
     DIRECTION_LONG = Direction.DIRECTION_LONG  # 2
+    DIRECTION_NEUTRAL = Direction.DIRECTION_NEUTRAL  # 3
 
     def __or__(self, offset):
         """
@@ -45,7 +58,7 @@ class TransactionDirection(enum.IntEnum):
 
     @property
     def sign(self):
-        return self.value - 1
+        return direction_to_sign(self.value)
 
 
 # Python wrapper for Offset enum
@@ -95,6 +108,10 @@ class TransactionSide(enum.IntEnum):
     SIDE_SHORT_CLOSE = Side.SIDE_SHORT_CLOSE  # 0 + 16 = 16
     SIDE_SHORT_CANCEL = Side.SIDE_SHORT_CANCEL  # 0 + 0 = 0
 
+    # Neutral Side
+    SIDE_NEUTRAL_OPEN = Side.SIDE_NEUTRAL_OPEN  # 3 + 8 = 11
+    SIDE_NEUTRAL_CLOSE = Side.SIDE_NEUTRAL_CLOSE  # 3 + 16 = 19
+
     # Order
     SIDE_BID = Side.SIDE_BID  # 2 + 4 = 6
     SIDE_ASK = Side.SIDE_ASK  # 0 + 4 = 4
@@ -118,7 +135,7 @@ class TransactionSide(enum.IntEnum):
     Cover = SIDE_LONG_CLOSE
 
     UNKNOWN = CANCEL = SIDE_CANCEL
-    FAULTY = -1
+    FAULTY = 255
 
     def __neg__(self) -> TransactionSide:
         """
@@ -161,11 +178,11 @@ class TransactionSide(enum.IntEnum):
         return trade_side
 
     @property
-    def sign(self) -> int:
+    def sign(self) -> Literal[-1 ,0, 1]:
         """
         Get the sign of the transaction side.
         """
-        return TransactionHelper.get_sign(self.value)
+        return direction_to_sign(self.value)
 
     @property
     def offset(self) -> TransactionOffset:
@@ -293,8 +310,7 @@ cdef class TransactionHelper:
         """
         Get the sign of the transaction side.
         """
-        cdef int direction = side & 0x03
-        return direction - 1
+        return direction_to_sign(side)
 
     @staticmethod
     cdef uint8_t get_offset(uint8_t side):
@@ -327,6 +343,10 @@ cdef class TransactionHelper:
             return "sell"
         elif side == Side.SIDE_SHORT_CANCEL:
             return "cancel ask"
+        elif side == Side.SIDE_NEUTRAL_OPEN:
+            return "open"
+        elif side == Side.SIDE_NEUTRAL_CLOSE:
+            return "close"
         elif side == Side.SIDE_BID:
             return "bid"
         elif side == Side.SIDE_ASK:
@@ -341,23 +361,23 @@ cdef class TransactionHelper:
         """
         Get the string representation of the order type.
         """
-        if order_type == OrderType.ORDER_UNKNOWN:
+        if order_type == E_OrderType.ORDER_UNKNOWN:
             return "unknown"
-        elif order_type == OrderType.ORDER_CANCEL:
+        elif order_type == E_OrderType.ORDER_CANCEL:
             return "cancel"
-        elif order_type == OrderType.ORDER_GENERIC:
+        elif order_type == E_OrderType.ORDER_GENERIC:
             return "generic"
-        elif order_type == OrderType.ORDER_LIMIT:
+        elif order_type == E_OrderType.ORDER_LIMIT:
             return "limit"
-        elif order_type == OrderType.ORDER_LIMIT_MAKER:
+        elif order_type == E_OrderType.ORDER_LIMIT_MAKER:
             return "limit_maker"
-        elif order_type == OrderType.ORDER_MARKET:
+        elif order_type == E_OrderType.ORDER_MARKET:
             return "market"
-        elif order_type == OrderType.ORDER_FOK:
+        elif order_type == E_OrderType.ORDER_FOK:
             return "fok"
-        elif order_type == OrderType.ORDER_FAK:
+        elif order_type == E_OrderType.ORDER_FAK:
             return "fak"
-        elif order_type == OrderType.ORDER_IOC:
+        elif order_type == E_OrderType.ORDER_IOC:
             return "ioc"
         else:
             return f"unknown({order_type})".encode('utf-8')
@@ -373,6 +393,8 @@ cdef class TransactionHelper:
             return "short"
         elif direction == Direction.DIRECTION_LONG:
             return "long"
+        elif direction == Direction.DIRECTION_NEUTRAL:
+            return 'neutral'
         else:
             return "unknown"
 
@@ -399,8 +421,8 @@ cdef class TransactionHelper:
         return TransactionHelper.get_opposite(side=side)
 
     @classmethod
-    def pyget_sign(cls, int side) -> int:
-        return TransactionHelper.get_sign(side=side)
+    def pyget_sign(cls, int side) -> Literal[-1, 0, 1]:
+        return direction_to_sign(side)
 
     @classmethod
     def pyget_direction(cls, int side) -> int:
@@ -424,6 +446,10 @@ cdef class TransactionHelper:
             return "sell"
         elif side == Side.SIDE_SHORT_CANCEL:
             return "cancel ask"
+        elif side == Side.SIDE_NEUTRAL_OPEN:
+            return "open"
+        elif side == Side.SIDE_NEUTRAL_CLOSE:
+            return "close"
         elif side == Side.SIDE_BID:
             return "bid"
         elif side == Side.SIDE_ASK:
@@ -435,23 +461,23 @@ cdef class TransactionHelper:
 
     @classmethod
     def pyget_order_type_name(cls, int order_type) -> str:
-        if order_type == OrderType.ORDER_UNKNOWN:
+        if order_type == E_OrderType.ORDER_UNKNOWN:
             return "unknown"
-        elif order_type == OrderType.ORDER_CANCEL:
+        elif order_type == E_OrderType.ORDER_CANCEL:
             return "cancel"
-        elif order_type == OrderType.ORDER_GENERIC:
+        elif order_type == E_OrderType.ORDER_GENERIC:
             return "generic"
-        elif order_type == OrderType.ORDER_LIMIT:
+        elif order_type == E_OrderType.ORDER_LIMIT:
             return "limit"
-        elif order_type == OrderType.ORDER_LIMIT_MAKER:
+        elif order_type == E_OrderType.ORDER_LIMIT_MAKER:
             return "limit_maker"
-        elif order_type == OrderType.ORDER_MARKET:
+        elif order_type == E_OrderType.ORDER_MARKET:
             return "market"
-        elif order_type == OrderType.ORDER_FOK:
+        elif order_type == E_OrderType.ORDER_FOK:
             return "fok"
-        elif order_type == OrderType.ORDER_FAK:
+        elif order_type == E_OrderType.ORDER_FAK:
             return "fak"
-        elif order_type == OrderType.ORDER_IOC:
+        elif order_type == E_OrderType.ORDER_IOC:
             return "ioc"
         else:
             return f"unknown({order_type})"
@@ -464,6 +490,8 @@ cdef class TransactionHelper:
             return "short"
         elif direction == Direction.DIRECTION_LONG:
             return "long"
+        elif direction == Direction.DIRECTION_NEUTRAL:
+            return "neutral"
         else:
             return "unknown"
 
@@ -598,7 +626,7 @@ cdef class TransactionData:
                 timestamp = td.timestamp
 
         # Determine trade parameters using copysign and fabs
-        trade_side = Side.SIDE_LONG if sum_volume > 0 else Side.SIDE_SHORT if sum_volume < 0 else Side.SIDE_UNKNOWN
+        trade_side = Side.SIDE_LONG if sum_volume > 0 else Side.SIDE_SHORT if sum_volume < 0 else Side.SIDE_NEUTRAL_OPEN
         trade_volume = fabs(sum_volume)
         trade_notional = fabs(sum_notional)
 
@@ -655,7 +683,7 @@ cdef class TransactionData:
 
     @property
     def side_sign(self) -> Literal[-1, 0, 1]:
-        return TransactionHelper.get_sign(self._data.side)
+        return direction_to_sign(self._data.side)
 
     @property
     def side(self) -> TransactionSide:
@@ -690,13 +718,15 @@ cdef class TransactionData:
 
     @property
     def volume_flow(self) -> float:
-        cdef int sign = TransactionHelper.get_sign(self._data.side)
-        return sign * self._data.volume
+        cdef uint8_t sign = direction_to_sign(self._data.side)
+        cdef double flow = self._data.volume * sign
+        return flow
 
     @property
     def notional_flow(self) -> float:
-        cdef int sign = TransactionHelper.get_sign(self._data.side)
-        return sign * self._data.notional
+        cdef uint8_t sign = direction_to_sign(self._data.side)
+        cdef double notional = self._data.notional *  sign
+        return notional
 
 
 @cython.freelist(128)
@@ -795,7 +825,7 @@ cdef class OrderData:
 
     @property
     def side_sign(self) -> Literal[-1, 0, 1]:
-        return TransactionHelper.get_sign(self._data.side)
+        return direction_to_sign(self._data.side)
 
     @property
     def side(self) -> TransactionSide:
@@ -819,7 +849,7 @@ cdef class OrderData:
 
     @property
     def flow(self) -> float:
-        cdef int sign = TransactionHelper.get_sign(self._data.side)
+        cdef int8_t sign = direction_to_sign(self._data.side)
         return sign * self._data.volume
 
 
