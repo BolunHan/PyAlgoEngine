@@ -232,6 +232,10 @@ class TickData(MarketData):
             total_traded_volume: float = 0.0,
             total_traded_notional: float = 0.0,
             total_trade_count: int = 0,
+            total_bid_volume: float = 0.0,
+            total_ask_volume: float = 0.0,
+            weighted_bid_price: float = nan,
+            weighted_ask_price: float = nan,
             **kwargs: Any
     ) -> None:
         """
@@ -244,6 +248,10 @@ class TickData(MarketData):
             total_traded_volume: Cumulative traded volume
             total_traded_notional: Cumulative traded notional value
             total_trade_count: Total number of trades
+            total_bid_volume: Total queued volume of bid side
+            total_ask_volume: Total queued volume of ask side
+            weighted_bid_price: Weighted average bid price
+            weighted_ask_price: Weighted average ask price
             **kwargs: Additional market data including order book details
         """
         ...
@@ -303,19 +311,29 @@ class TickData(MarketData):
         ...
 
     @property
-    def total_bid_volume(self):
-        """Get the total queued volume of bid side."""
+    def total_bid_volume(self) -> float:
+        """
+        Get the total queued volume of bid side.
+
+        Note that this might differ from the sum of self.bid.volume.
+        As the bid OrderBook is limited.
+        """
 
     @property
-    def total_ask_volume(self):
-        """Get the total queued volume of ask side."""
+    def total_ask_volume(self) -> float:
+        """
+        Get the total queued volume of ask side.
+
+        Note that this might differ from the sum of self.ask.volume.
+        As the bid OrderBook is limited.
+        """
 
     @property
-    def weighted_bid_price(self):
+    def weighted_bid_price(self) -> float:
         """Get the weighted average bid price."""
 
     @property
-    def weighted_ask_price(self):
+    def weighted_ask_price(self) -> float:
         """Get the weighted average ask price."""
 
     @property
