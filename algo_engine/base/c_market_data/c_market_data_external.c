@@ -25,7 +25,7 @@ static const int8_t SIGN_LUT[4] = {
     0,   // 0b11 → 0
 };
 
-inline int8_t direction_to_sign(uint8_t x) {
+static int8_t direction_to_sign(uint8_t x) {
     return SIGN_LUT[x & 0b11];  // Mask to 2 bits and lookup
 }
 
