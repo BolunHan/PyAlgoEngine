@@ -6,7 +6,7 @@ from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime, date, timedelta
 from libc.math cimport NAN
 from libc.string cimport memcpy
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint64_t
 
 from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, _CandlestickBuffer, DataType
 
@@ -17,7 +17,7 @@ cdef class BarData:
         self._data_ptr = <_MarketDataBuffer*> &self._data
         self._data_addr = <uintptr_t> self._data_ptr
 
-    def __init__(self, *, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
+    def __init__(self, *, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint64_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
         # Initialize base class fields
         cdef bytes ticker_bytes = ticker.encode('utf-8')
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
@@ -214,7 +214,7 @@ cdef class BarData:
 
 
 class DailyBar(BarData):
-    def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint32_t trade_count=0, int bar_span=1, **kwargs):
+    def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint64_t trade_count=0, int bar_span=1, **kwargs):
         timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
 
         super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
