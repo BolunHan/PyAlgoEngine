@@ -1,11 +1,29 @@
 # cython: language_level=3
-cimport cython
 import abc
+import enum
+cimport cython
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from libc.string cimport memcpy
 
 from algo_engine.profile.c_base cimport C_PROFILE
+
+
+PyDataType = enum.IntEnum(
+    'DataType',
+    {
+        'DTYPE_UNKNOWN': DataType.DTYPE_UNKNOWN,
+        'DTYPE_INTERNAL': DataType.DTYPE_INTERNAL,
+        'DTYPE_MARKET_DATA': DataType.DTYPE_MARKET_DATA,
+        'DTYPE_TRANSACTION': DataType.DTYPE_TRANSACTION,
+        'DTYPE_ORDER': DataType.DTYPE_ORDER,
+        'DTYPE_TICK_LITE': DataType.DTYPE_TICK_LITE,
+        'DTYPE_TICK': DataType.DTYPE_TICK,
+        'DTYPE_BAR': DataType.DTYPE_BAR,
+        'DTYPE_REPORT': DataType.DTYPE_REPORT,
+        'DTYPE_INSTRUCTION': DataType.DTYPE_INSTRUCTION
+    }
+)
 
 
 cdef class _MarketDataVirtualBase:

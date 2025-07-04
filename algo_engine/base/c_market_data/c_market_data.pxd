@@ -1,9 +1,10 @@
 # cython: language_level=3
 from cpython.datetime cimport datetime
-from libc.stdint cimport uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
+from libc.stdint cimport int8_t, uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
 
 # Declare external constants
-cdef extern from "market_data_external.c":
+cdef extern from "c_market_data_external.c":
+    inline int8_t direction_to_sign(uint8_t x) nogil
     int compare_md(const void* a, const void* b) nogil
     int compare_md_ptr(const void* a, const void* b) nogil
     int compare_entries_bid(const void* a, const void* b) nogil
@@ -19,6 +20,7 @@ cdef extern from "market_data_external.c":
         DIRECTION_UNKNOWN
         DIRECTION_SHORT
         DIRECTION_LONG
+        DIRECTION_NEUTRAL
 
     ctypedef enum Offset:
         OFFSET_CANCEL
@@ -33,6 +35,8 @@ cdef extern from "market_data_external.c":
         SIDE_SHORT_OPEN
         SIDE_SHORT_CLOSE
         SIDE_SHORT_CANCEL
+        SIDE_NEUTRAL_OPEN
+        SIDE_NEUTRAL_CLOSE
         SIDE_BID
         SIDE_ASK
         SIDE_CANCEL
@@ -41,7 +45,7 @@ cdef extern from "market_data_external.c":
         SIDE_SHORT
 
 
-cpdef public enum OrderType:
+cdef enum OrderType:
     ORDER_UNKNOWN = 2
     ORDER_CANCEL = 1
     ORDER_GENERIC = 0
@@ -67,7 +71,7 @@ cdef enum OrderState:
 
 
 # Data type mapping
-cpdef public enum DataType:
+cdef enum DataType:
     DTYPE_UNKNOWN = 0
     DTYPE_INTERNAL = 1
     DTYPE_MARKET_DATA = 10

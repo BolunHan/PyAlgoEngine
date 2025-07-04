@@ -11,25 +11,25 @@ from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport uint8_t
 from libc.string cimport memcpy
 
-from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, DataType, OrderType, OrderState as OrderStateCython, _TradeReportBuffer, _TradeInstructionBuffer
+from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, DataType, OrderType as E_OrderType, OrderState as E_OrderState, _TradeReportBuffer, _TradeInstructionBuffer
 from .c_transaction cimport TransactionData, TransactionHelper
-from .c_transaction import TransactionSide
+from .c_transaction import TransactionSide, OrderType as PyOrderType
 
 from algo_engine.base import LOGGER
 
 
 # Python wrapper for Direction enum
 class OrderState(enum.IntEnum):
-    STATE_UNKNOWN = OrderStateCython.STATE_UNKNOWN
-    STATE_REJECTED = OrderStateCython.STATE_REJECTED     # order rejected
-    STATE_INVALID = OrderStateCython.STATE_INVALID       # invalid order
-    STATE_PENDING = OrderStateCython.STATE_PENDING       # order not sent
-    STATE_SENT = OrderStateCython.STATE_SENT             # order sent (to exchange)
-    STATE_PLACED = OrderStateCython.STATE_PLACED         # order placed in exchange
-    STATE_PARTFILLED = OrderStateCython.STATE_PARTFILLED # order partial filled
-    STATE_FILLED = OrderStateCython.STATE_FILLED         # order fully filled
-    STATE_CANCELING = OrderStateCython.STATE_CANCELING   # order canceling
-    STATE_CANCELED = OrderStateCython.STATE_CANCELED     # order stopped and canceled
+    STATE_UNKNOWN = E_OrderState.STATE_UNKNOWN
+    STATE_REJECTED = E_OrderState.STATE_REJECTED     # order rejected
+    STATE_INVALID = E_OrderState.STATE_INVALID       # invalid order
+    STATE_PENDING = E_OrderState.STATE_PENDING       # order not sent
+    STATE_SENT = E_OrderState.STATE_SENT             # order sent (to exchange)
+    STATE_PLACED = E_OrderState.STATE_PLACED         # order placed in exchange
+    STATE_PARTFILLED = E_OrderState.STATE_PARTFILLED # order partial filled
+    STATE_FILLED = E_OrderState.STATE_FILLED         # order fully filled
+    STATE_CANCELING = E_OrderState.STATE_CANCELING   # order canceling
+    STATE_CANCELED = E_OrderState.STATE_CANCELED     # order stopped and canceled
 
     # Alias for compatibility
     UNKNOWN = STATE_UNKNOWN
@@ -56,39 +56,39 @@ class OrderState(enum.IntEnum):
 
     @property
     def state_name(self) -> str:
-        if self.value == OrderStateCython.STATE_UNKNOWN:
+        if self.value == E_OrderState.STATE_UNKNOWN:
             return 'unknown'
-        elif self.value == OrderStateCython.STATE_REJECTED:
+        elif self.value == E_OrderState.STATE_REJECTED:
             return 'rejected'
-        elif self.value == OrderStateCython.STATE_INVALID:
+        elif self.value == E_OrderState.STATE_INVALID:
             return 'invalid'
-        elif self.value == OrderStateCython.STATE_PENDING:
+        elif self.value == E_OrderState.STATE_PENDING:
             return 'pending'
-        elif self.value == OrderStateCython.STATE_SENT:
+        elif self.value == E_OrderState.STATE_SENT:
             return 'sent'
-        elif self.value == OrderStateCython.STATE_PLACED:
+        elif self.value == E_OrderState.STATE_PLACED:
             return 'placed'
-        elif self.value == OrderStateCython.STATE_PARTFILLED:
+        elif self.value == E_OrderState.STATE_PARTFILLED:
             return 'part-filled'
-        elif self.value == OrderStateCython.STATE_FILLED:
+        elif self.value == E_OrderState.STATE_FILLED:
             return 'filled'
-        elif self.value == OrderStateCython.STATE_CANCELING:
+        elif self.value == E_OrderState.STATE_CANCELING:
             return 'canceling'
-        elif self.value == OrderStateCython.STATE_CANCELED:
+        elif self.value == E_OrderState.STATE_CANCELED:
             return 'canceled'
 
 
 cdef class OrderStateHelper:
     @staticmethod
     cdef bint is_working(int order_state):
-        if order_state == OrderStateCython.STATE_SENT or order_state == OrderStateCython.STATE_PLACED or order_state == OrderStateCython.STATE_PARTFILLED or order_state == OrderStateCython.STATE_CANCELING:
+        if order_state == E_OrderState.STATE_SENT or order_state == E_OrderState.STATE_PLACED or order_state == E_OrderState.STATE_PARTFILLED or order_state == E_OrderState.STATE_CANCELING:
             return True
 
         return False
 
     @staticmethod
     cdef bint is_done(int order_state):
-        if order_state == OrderStateCython.STATE_FILLED or order_state == OrderStateCython.STATE_CANCELED or order_state == OrderStateCython.STATE_REJECTED or order_state == OrderStateCython.STATE_INVALID:
+        if order_state == E_OrderState.STATE_FILLED or order_state == E_OrderState.STATE_CANCELED or order_state == E_OrderState.STATE_REJECTED or order_state == E_OrderState.STATE_INVALID:
             return True
 
         return False
@@ -323,7 +323,7 @@ cdef class TradeInstruction:
         else:
             TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=order_id)
 
-        self._data.order_state = OrderStateCython.STATE_PENDING
+        self._data.order_state = E_OrderState.STATE_PENDING
         self._data.filled_volume = 0.
         self._data.filled_notional = 0.
         self._data.fee = 0.
@@ -344,7 +344,7 @@ cdef class TradeInstruction:
         side_name = TransactionHelper.get_side_name(self._data.side).decode('utf-8')
         order_type_name = TransactionHelper.get_order_type_name(self._data.order_type).decode('utf-8')
 
-        if self.limit_price is None or self.order_type_int == OrderType.ORDER_MARKET:
+        if self.limit_price is None or self.order_type_int == E_OrderType.ORDER_MARKET:
             return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
         else:
             return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
@@ -384,7 +384,7 @@ cdef class TradeInstruction:
     cpdef TradeInstruction reset(self):
         self.trades.clear()
 
-        self._data.order_state = OrderStateCython.STATE_PENDING
+        self._data.order_state = E_OrderState.STATE_PENDING
         self._data.filled_volume = 0.
         self._data.filled_notional = 0.
         self._data.fee = 0.
@@ -410,11 +410,11 @@ cdef class TradeInstruction:
 
         self._data.order_state = order_state
 
-        if order_state == OrderStateCython.STATE_PLACED:
+        if order_state == E_OrderState.STATE_PLACED:
             self._data.ts_placed = timestamp
-        elif order_state == OrderStateCython.STATE_FILLED:
+        elif order_state == E_OrderState.STATE_FILLED:
             self._data.ts_finished = timestamp
-        elif order_state == OrderStateCython.STATE_CANCELED:
+        elif order_state == E_OrderState.STATE_CANCELED:
             self._data.ts_canceled = timestamp
 
         return self
@@ -452,10 +452,10 @@ cdef class TradeInstruction:
 
         # Update order state
         if self._data.filled_volume == self.volume:
-            self.set_order_state(order_state=OrderStateCython.STATE_FILLED, timestamp=trade_report._data.timestamp)
+            self.set_order_state(order_state=E_OrderState.STATE_FILLED, timestamp=trade_report._data.timestamp)
             self._data.ts_finished = trade_report._data.timestamp
         elif self._data.filled_volume > 0:
-            self.set_order_state(order_state=OrderStateCython.STATE_PARTFILLED)
+            self.set_order_state(order_state=E_OrderState.STATE_PARTFILLED)
 
         # Add to trades dictionary
         self.trades[trade_report.trade_id] = trade_report
@@ -468,19 +468,19 @@ cdef class TradeInstruction:
         self._data.filled_notional += fabs(trade_report._data.notional)
 
         if self.filled_volume == self.volume:
-            self.set_order_state(order_state=OrderStateCython.STATE_FILLED, timestamp=trade_report._data.timestamp)
+            self.set_order_state(order_state=E_OrderState.STATE_FILLED, timestamp=trade_report._data.timestamp)
         elif self.filled_volume > 0:
-            self.set_order_state(order_state=OrderStateCython.STATE_PARTFILLED)
+            self.set_order_state(order_state=E_OrderState.STATE_PARTFILLED)
 
         self.trades[trade_report.trade_id] = trade_report
         return self
 
     cpdef TradeInstruction cancel_order(self, double timestamp=NAN):
-        self.set_order_state(order_state=OrderStateCython.STATE_CANCELING, timestamp=timestamp)
+        self.set_order_state(order_state=E_OrderState.STATE_CANCELING, timestamp=timestamp)
         return self
 
     cpdef TradeInstruction canceled(self, double timestamp=NAN):
-        self.set_order_state(order_state=OrderStateCython.STATE_CANCELED, timestamp=timestamp)
+        self.set_order_state(order_state=E_OrderState.STATE_CANCELED, timestamp=timestamp)
         return self
 
     @property
@@ -537,8 +537,8 @@ cdef class TradeInstruction:
         return self._data.order_type
 
     @property
-    def order_type(self) -> OrderType:
-        return OrderType(self.order_type_int)
+    def order_type(self) -> PyOrderType:
+        return PyOrderType(self.order_type_int)
 
     @property
     def order_state_int(self) -> int:
