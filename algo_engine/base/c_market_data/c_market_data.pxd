@@ -4,7 +4,7 @@ from libc.stdint cimport int8_t, uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
 
 # Declare external constants
 cdef extern from "c_market_data_external.c":
-    inline int8_t direction_to_sign(uint8_t x) nogil
+    int8_t direction_to_sign(uint8_t x) nogil
     int compare_md(const void* a, const void* b) nogil
     int compare_md_ptr(const void* a, const void* b) nogil
     int compare_entries_bid(const void* a, const void* b) nogil
@@ -129,7 +129,7 @@ cdef packed struct _CandlestickBuffer:
     double close_price
     double volume
     double notional
-    uint32_t trade_count
+    uint64_t trade_count
 
 
 # TickDataLite structure
@@ -142,15 +142,20 @@ cdef packed struct _TickDataLiteBuffer:
     double ask_price
     double ask_volume
     double last_price
+    double open_price
     double prev_close
     double total_traded_volume
     double total_traded_notional
-    uint32_t total_trade_count
+    uint64_t total_trade_count
 
 
 # TickData structure
 cdef packed struct _TickDataBuffer:
     _TickDataLiteBuffer lite
+    double total_bid_volume
+    double total_ask_volume
+    double weighted_bid_price
+    double weighted_ask_price
     _OrderBookBuffer bid
     _OrderBookBuffer ask
 

@@ -5,7 +5,7 @@ cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from libc.math cimport NAN
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint64_t
 from libc.stdlib cimport qsort
 from libc.string cimport memcpy, memset
 
@@ -27,10 +27,11 @@ cdef class TickDataLite:
             double bid_volume,
             double ask_price,
             double ask_volume,
+            double open_price=NAN,
             double prev_close=NAN,
             double total_traded_volume=0.0,
             double total_traded_notional=0.0,
-            uint32_t total_trade_count=0,
+            uint64_t total_trade_count=0,
             **kwargs
     ):
         # Initialize base class fields
@@ -47,6 +48,7 @@ cdef class TickDataLite:
         self._data.bid_volume = bid_volume
         self._data.ask_price = ask_price
         self._data.ask_volume = ask_volume
+        self._data.open_price = open_price
         self._data.prev_close = prev_close
         self._data.total_traded_volume = total_traded_volume
         self._data.total_traded_notional = total_traded_notional
@@ -127,6 +129,10 @@ cdef class TickDataLite:
     @property
     def ask_volume(self):
         return self._data.ask_volume
+
+    @property
+    def open_price(self):
+        return self._data.open_price
 
     @property
     def prev_close(self):
@@ -384,9 +390,15 @@ cdef class TickData:
             str ticker,
             double timestamp,
             double last_price,
+            double open_price=NAN,
+            double prev_close=NAN,
             double total_traded_volume=0.0,
             double total_traded_notional=0.0,
-            uint32_t total_trade_count=0,
+            uint64_t total_trade_count=0,
+            double total_bid_volume=0.0,
+            double total_ask_volume=0.0,
+            double weighted_bid_price=NAN,
+            double weighted_ask_price=NAN,
             **kwargs
     ):
         # Initialize MarketData base
@@ -403,11 +415,15 @@ cdef class TickData:
         self._data.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
         self._data.lite.ask_price = kwargs.get('ask_price_1', NAN)
         self._data.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
-        self._data.lite.prev_close = kwargs.get('prev_close', NAN)
+        self._data.lite.open_price = open_price
+        self._data.lite.prev_close = prev_close
         self._data.lite.total_traded_volume = total_traded_volume
         self._data.lite.total_traded_notional = total_traded_notional
         self._data.lite.total_trade_count = total_trade_count
-
+        self._data.total_bid_volume = total_bid_volume
+        self._data.total_ask_volume = total_ask_volume
+        self._data.weighted_bid_price = weighted_bid_price
+        self._data.weighted_ask_price = weighted_ask_price
         # Initialize bid and ask books
         self._init_order_book()
 
@@ -613,6 +629,10 @@ cdef class TickData:
         return self._data.lite.ask_volume
 
     @property
+    def open_price(self):
+        return self._data.lite.open_price
+
+    @property
     def prev_close(self):
         return self._data.lite.prev_close
 
@@ -627,6 +647,22 @@ cdef class TickData:
     @property
     def total_trade_count(self):
         return self._data.lite.total_trade_count
+
+    @property
+    def total_bid_volume(self):
+        return self._data.total_bid_volume
+
+    @property
+    def total_ask_volume(self):
+        return self._data.total_ask_volume
+
+    @property
+    def weighted_bid_price(self):
+        return self._data.weighted_bid_price
+
+    @property
+    def weighted_ask_price(self):
+        return self._data.weighted_ask_price
 
     @property
     def mid_price(self):

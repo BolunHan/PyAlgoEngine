@@ -1,4 +1,5 @@
 from collections.abc import Sequence, Iterator
+from math import nan
 from typing import Any, Optional
 
 from .c_market_data import MarketData
@@ -23,6 +24,8 @@ class TickDataLite(MarketData):
             bid_volume: float,
             ask_price: float,
             ask_volume: float,
+            open_price: float = nan,
+            prev_close: float = nan,
             total_traded_volume: float = 0.0,
             total_traded_notional: float = 0.0,
             total_trade_count: int = 0,
@@ -39,6 +42,8 @@ class TickDataLite(MarketData):
             bid_volume: Volume at best bid
             ask_price: Best ask price
             ask_volume: Volume at best ask
+            open_price: The open price of this market session
+            prev_close: The close price of last market session
             total_traded_volume: Cumulative traded volume
             total_traded_notional: Cumulative traded notional value
             total_trade_count: Cumulative number of trades
@@ -72,8 +77,13 @@ class TickDataLite(MarketData):
         ...
 
     @property
+    def open_price(self) -> float:
+        """Get the open price of this market session."""
+        ...
+
+    @property
     def prev_close(self) -> float:
-        """Get the previous close price."""
+        """Get the previous close price (close price of last market session)."""
         ...
 
     @property
@@ -217,6 +227,8 @@ class TickData(MarketData):
             ticker: str,
             timestamp: float,
             last_price: float,
+            open_price: float = nan,
+            prev_close: float = nan,
             total_traded_volume: float = 0.0,
             total_traded_notional: float = 0.0,
             total_trade_count: int = 0,
@@ -266,8 +278,13 @@ class TickData(MarketData):
         ...
 
     @property
+    def open_price(self) -> float:
+        """Get the open price of this market session."""
+        ...
+
+    @property
     def prev_close(self) -> float:
-        """Get the previous close price."""
+        """Get the previous close price (close price of last market session)."""
         ...
 
     @property
@@ -284,6 +301,22 @@ class TickData(MarketData):
     def total_trade_count(self) -> int:
         """Get the total number of trades."""
         ...
+
+    @property
+    def total_bid_volume(self):
+        """Get the total queued volume of bid side."""
+
+    @property
+    def total_ask_volume(self):
+        """Get the total queued volume of ask side."""
+
+    @property
+    def weighted_bid_price(self):
+        """Get the weighted average bid price."""
+
+    @property
+    def weighted_ask_price(self):
+        """Get the weighted average ask price."""
 
     @property
     def mid_price(self) -> float:
