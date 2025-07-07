@@ -35,7 +35,7 @@ def check_cython_module(cython_module) -> bool:
 
 from .finance_decimal import FinancialDecimal
 
-from .c_market_data import MarketData, DataType, OrderType, InternalData, FilterMode
+from .c_market_data import MarketData, DataType, OrderType, InternalData, FilterMode, C_CONFIG
 from .c_market_data import TransactionDirection, TransactionOffset, TransactionSide, TransactionData, TradeData, OrderData
 from .c_market_data import TickDataLite, OrderBook, TickData
 from .c_market_data import BarData, DailyBar
