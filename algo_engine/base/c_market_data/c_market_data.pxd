@@ -2,6 +2,14 @@
 from cpython.datetime cimport datetime
 from libc.stdint cimport int8_t, uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
 
+
+cdef extern from "c_market_data_config.h":
+    const int TICKER_SIZE
+    const int BOOK_SIZE
+    const int ID_SIZE
+    const int MAX_WORKERS
+
+
 # Declare external constants
 cdef extern from "c_market_data_external.c":
     int8_t direction_to_sign(uint8_t x) nogil
@@ -10,11 +18,6 @@ cdef extern from "c_market_data_external.c":
     int compare_entries_bid(const void* a, const void* b) nogil
     int compare_entries_ask(const void* a, const void* b) nogil
     void platform_usleep(unsigned int usec) nogil
-
-    const int TICKER_SIZE
-    const int BOOK_SIZE
-    const int ID_SIZE
-    const int MAX_WORKERS
 
     ctypedef enum Direction:
         DIRECTION_UNKNOWN
