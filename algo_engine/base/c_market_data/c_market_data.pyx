@@ -1,6 +1,8 @@
 # cython: language_level=3
 import abc
 import enum
+from collections import namedtuple
+
 cimport cython
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
@@ -316,6 +318,19 @@ cdef class FilterMode:
     def __and__(self, FilterMode other):
         return FilterMode.__new__(FilterMode, self.value & other.value)
 
+    def __invert__(self):
+        """Bitwise NOT operator (~)"""
+        # Invert all bits except those beyond our known flags
+        inverted_value = ~self.value & (
+            _FilterMode.NO_INTERNAL |
+            _FilterMode.NO_CANCEL |
+            _FilterMode.NO_AUCTION |
+            _FilterMode.NO_ORDER |
+            _FilterMode.NO_TRADE |
+            _FilterMode.NO_TICK
+        )
+        return FilterMode.__new__(FilterMode, inverted_value)
+
     def __contains__(self, FilterMode other):
         return (self.value & other.value) == other.value
 
@@ -381,3 +396,10 @@ MarketData.register(TickDataLite)
 MarketData.register(TransactionData)
 MarketData.register(OrderData)
 MarketData.register(BarData)
+
+C_CONFIG = namedtuple('CONFIG', ['TICKER_SIZE', 'BOOK_SIZE', 'ID_SIZE', 'MAX_WORKERS'])(
+    TICKER_SIZE=TICKER_SIZE,
+    BOOK_SIZE=BOOK_SIZE,
+    ID_SIZE=ID_SIZE,
+    MAX_WORKERS=MAX_WORKERS
+)

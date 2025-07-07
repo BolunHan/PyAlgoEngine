@@ -227,6 +227,14 @@ class FilterMode:
             FilterMode: New intersected filter
         """
 
+    def __invert__(self):
+        """
+        Bitwise NOT operator (~)
+
+        Returns:
+            FilterMode: a new inverted filter.
+        """
+
     def __contains__(self, other: FilterMode) -> bool:
         """Check if this filter contains all flags of another filter.
 
