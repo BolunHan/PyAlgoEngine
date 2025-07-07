@@ -1,10 +1,5 @@
 #include <stdlib.h>
 
-#define TICKER_SIZE 32
-#define BOOK_SIZE 10
-#define ID_SIZE 16
-#define MAX_WORKERS 128
-
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
