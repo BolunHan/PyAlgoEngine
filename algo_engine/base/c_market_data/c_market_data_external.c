@@ -1,99 +1,29 @@
-#include <stdlib.h>
+#include "c_market_data_config.h"
+#include "c_market_data_external.h"
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
-
-typedef enum {
-    DIRECTION_SHORT = 0,
-    DIRECTION_UNKNOWN = 1,
-    DIRECTION_LONG = 2,
-    DIRECTION_NEUTRAL = 3
-} Direction;
-
-static const int8_t SIGN_LUT[4] = {
+// Lookup table definition
+const int8_t SIGN_LUT[4] = {
     -1,  // 0b00 → -1
     0,   // 0b01 → 0
     1,   // 0b10 → 1
-    0,   // 0b11 → 0
+    0    // 0b11 → 0
 };
 
-static int8_t direction_to_sign(uint8_t x) {
-    return SIGN_LUT[x & 0b11];  // Mask to 2 bits and lookup
+// Convert Direction enum to signed int
+static inline int8_t direction_to_sign(uint8_t x) {
+    return SIGN_LUT[x & 0b11];  // Mask to 2 bits
 }
 
-typedef enum {
-    OFFSET_CANCEL = 0,
-    OFFSET_ORDER = 4,
-    OFFSET_OPEN = 8,
-    OFFSET_CLOSE = 16
-} Offset;
-
-typedef enum {
-    // Long Side transaction, that buy party initiate the transaction
-    SIDE_LONG_OPEN = DIRECTION_LONG + OFFSET_OPEN,
-    SIDE_LONG_CLOSE = DIRECTION_LONG + OFFSET_CLOSE,
-    SIDE_LONG_CANCEL = DIRECTION_LONG + OFFSET_CANCEL,
-
-    // Short Side transaction, that sell party initiate the transaction
-    SIDE_SHORT_OPEN = DIRECTION_SHORT + OFFSET_OPEN,
-    SIDE_SHORT_CLOSE = DIRECTION_SHORT + OFFSET_CLOSE,
-    SIDE_SHORT_CANCEL = DIRECTION_SHORT + OFFSET_CANCEL,
-
-    // NEUTRAL transaction, mostly happens during a auction. that neither party initiate the transaction
-    SIDE_NEUTRAL_OPEN = DIRECTION_NEUTRAL + OFFSET_OPEN,
-    SIDE_NEUTRAL_CLOSE = DIRECTION_NEUTRAL + OFFSET_CLOSE,
-
-    // Order
-    SIDE_BID = DIRECTION_LONG + OFFSET_ORDER,
-    SIDE_ASK = DIRECTION_SHORT + OFFSET_ORDER,
-
-    // Generic Cancel
-    SIDE_CANCEL = DIRECTION_UNKNOWN + OFFSET_CANCEL,
-
-    // Alias
-    SIDE_UNKNOWN = SIDE_CANCEL,
-    SIDE_LONG = SIDE_LONG_OPEN,
-    SIDE_SHORT = SIDE_SHORT_OPEN
-} Side;
-
-typedef struct {
-    uint8_t dtype;
-    char ticker[TICKER_SIZE];
-    double timestamp;
-} __attribute__((packed)) MetaInfo;
-
-typedef struct {
-    double price;
-    double volume;
-    uint64_t n_orders;
-} __attribute__((packed)) Entry;
-
+// Cross-platform sleep in microseconds
 static inline void platform_usleep(unsigned int usec) {
-    #if defined(_WIN32) || defined(_WIN64)
-    Sleep(usec / 1000);  // Windows Sleep uses milliseconds
-    #else
-    usleep(usec);         // POSIX usleep uses microseconds
-    #endif
+#if defined(_WIN32) || defined(_WIN64)
+    Sleep(usec / 1000);  // Windows: Sleep in milliseconds
+#else
+    usleep(usec);        // POSIX: Sleep in microseconds
+#endif
 }
 
-// Compare function for sorting market data by timestamp
-int compare_md(const void* a, const void* b) {
-    // The input is a pointer to a pointer to MetaInfo
-    const MetaInfo* data_a = *((const MetaInfo**)a);
-    const MetaInfo* data_b = *((const MetaInfo**)b);
-
-    if (data_a->timestamp < data_b->timestamp) {
-        return -1;
-    } else if (data_a->timestamp > data_b->timestamp) {
-        return 1;
-    }
-    return 0;
-}
-
-// Compare function for sorting market data pointers by timestamp
+// Compare function for sorting MetaInfo pointers by timestamp
 int compare_md_ptr(const void *a, const void *b) {
     const MetaInfo *md_a = *(const MetaInfo **)a;
     const MetaInfo *md_b = *(const MetaInfo **)b;
@@ -103,52 +33,24 @@ int compare_md_ptr(const void *a, const void *b) {
     return 0;
 }
 
-int compare_entries_bid(const void* a, const void* b) {
-    Entry* entry_a = (Entry*) a;
-    Entry* entry_b = (Entry*) b;
+// Shared comparator logic for Entry sorting
+static inline int compare_entry_common(const Entry *a, const Entry *b, int descending) {
+    if (a->price < b->price) return descending ? 1 : -1;
+    if (a->price > b->price) return descending ? -1 : 1;
 
-    // If both have n_orders == 0, they are equal
-    if (entry_a->n_orders == 0 && entry_b->n_orders == 0) {
-        return 0;
-    }
-    // If only entry_b has n_orders == 0, entry_a should be considered larger
-    if (entry_b->n_orders == 0) {
-        return -1;
-    }
-    // If only entry_a has n_orders == 0, entry_b should be considered larger
-    if (entry_a->n_orders == 0) {
-        return 1;
-    }
+    // Secondary tie-breaker by n_orders
+    if (a->n_orders == 0 && b->n_orders > 0) return 1;
+    if (a->n_orders > 0 && b->n_orders == 0) return -1;
 
-    if (entry_a->price < entry_b->price) {
-        return 1;
-    } else if (entry_a->price > entry_b->price) {
-        return -1;
-    }
     return 0;
 }
 
-int compare_entries_ask(const void* a, const void* b) {
-    Entry* entry_a = (Entry*) a;
-    Entry* entry_b = (Entry*) b;
+// Descending order for bids (high price first)
+int compare_entries_bid(const void *a, const void *b) {
+    return compare_entry_common((const Entry *)a, (const Entry *)b, 1);
+}
 
-    // If both have n_orders == 0, they are equal
-    if (entry_a->n_orders == 0 && entry_b->n_orders == 0) {
-        return 0;
-    }
-    // If only entry_b has n_orders == 0, entry_a should be considered larger
-    if (entry_b->n_orders == 0) {
-        return -1;
-    }
-    // If only entry_a has n_orders == 0, entry_b should be considered larger
-    if (entry_a->n_orders == 0) {
-        return 1;
-    }
-
-    if (entry_a->price < entry_b->price) {
-        return -1;
-    } else if (entry_a->price > entry_b->price) {
-        return 1;
-    }
-    return 0;
+// Ascending order for asks (low price first)
+int compare_entries_ask(const void *a, const void *b) {
+    return compare_entry_common((const Entry *)a, (const Entry *)b, 0);
 }

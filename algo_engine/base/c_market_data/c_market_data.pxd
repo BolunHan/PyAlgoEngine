@@ -11,9 +11,8 @@ cdef extern from "c_market_data_config.h":
 
 
 # Declare external constants
-cdef extern from "c_market_data_external.c":
+cdef extern from "c_market_data_external.h":
     int8_t direction_to_sign(uint8_t x) nogil
-    int compare_md(const void* a, const void* b) nogil
     int compare_md_ptr(const void* a, const void* b) nogil
     int compare_entries_bid(const void* a, const void* b) nogil
     int compare_entries_ask(const void* a, const void* b) nogil
