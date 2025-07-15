@@ -1030,7 +1030,7 @@ cdef class MarketDataConcurrentBuffer:
         cdef const char* market_data_ptr = <char*> self._data_array + data_offset
         cdef uint8_t dtype = market_data_ptr[0]
         cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
-        cdef bint is_wrapped = self.c_is_wrapped()
+        cdef bint is_wrapped = (data_offset + length) > self._data_capacity
 
         if not is_wrapped:
             return <_MarketDataBuffer*> market_data_ptr
@@ -1119,9 +1119,9 @@ cdef class MarketDataConcurrentBuffer:
         self._header.ptr_tail = 0
         self._header.data_tail = 0
 
-        memset(<void *> self._worker_header_array, 0, worker_header_size)
-        memset(<void *> self._ptr_array, 0, ptr_array_size)
-        memset(<void *> self._data_array, 0, data_capacity)
+        memset(<void*> self._worker_header_array, 0, worker_header_size)
+        memset(<void*> self._ptr_array, 0, ptr_array_size)
+        memset(<void*> self._data_array, 0, self._data_capacity)
         return 0
 
     # --- python interface ---
