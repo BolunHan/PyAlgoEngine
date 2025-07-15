@@ -136,6 +136,7 @@ cdef class MarketDataConcurrentBuffer:
     cdef size_t _estimated_entry_size
     cdef uint64_t _data_capacity
     cdef char* _data_array
+    cdef _MarketDataBuffer* _tmp_space
 
     cdef uint32_t c_get_worker_head(self, uint32_t worker_id) except -1
 
@@ -155,14 +156,22 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef void c_read(self, uint64_t data_offset, uint64_t length, char* output)
 
+    cdef bint c_is_wrapped(self, uint64_t data_offset, uint64_t length)
+
     cdef bytes c_to_bytes(self, uint64_t data_offset, uint64_t length)
 
     cdef void c_put(self, _MarketDataBuffer* market_data_ptr)
 
     cdef void c_put_raw(self, _MarketDataBuffer* market_data_ptr)
 
-    cdef inline object c_get(self, uint32_t idx)
+    cdef object c_get(self, uint32_t idx)
+
+    cdef _MarketDataBuffer* c_get_ptr(self, uint32_t idx)
 
     cdef object c_listen(self, uint32_t worker_id, bint block=*, double timeout=*)
 
-    cdef inline object c_listen_raw(self, uint32_t worker_id)
+    cdef object c_listen_raw(self, uint32_t worker_id)
+
+    cdef _MarketDataBuffer* c_listen_ptr(self, uint32_t worker_id)
+
+    cdef int c_reset(self)

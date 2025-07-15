@@ -806,6 +806,9 @@ cdef class MarketDataConcurrentBuffer:
             PyBuffer_Release(&self._view)
             self._view_obtained = False
 
+        if self._tmp_space != NULL:
+            free(self._tmp_space)
+
     cdef uint32_t c_get_worker_head(self, uint32_t worker_id) except -1:
         if worker_id >= self.n_workers:
             return -1
@@ -948,6 +951,11 @@ cdef class MarketDataConcurrentBuffer:
             memcpy(<char*> output, <const char*> self._data_array + data_offset, first_part)
             memcpy(<char*> output + first_part, <const char*> self._data_array, second_part)
 
+    cdef inline bint c_is_wrapped(self, uint64_t data_offset, uint64_t length):
+        if data_offset + length > self._data_capacity:
+            return True
+        return True
+
     cdef bytes c_to_bytes(self, uint64_t data_offset, uint64_t length):
         cdef uint64_t first_part = self._data_capacity - data_offset
         cdef uint64_t second_part
@@ -1017,6 +1025,21 @@ cdef class MarketDataConcurrentBuffer:
             # print(f'[reader]\t(data={self.c_to_bytes(data_offset=data_offset, length=length)}')
             raise ValueError(f'Unknown data type {dtype}')
 
+    cdef inline _MarketDataBuffer* c_get_ptr(self, uint32_t idx):
+        cdef uint64_t data_offset = self._ptr_array[idx]
+        cdef const char* market_data_ptr = <char*> self._data_array + data_offset
+        cdef uint8_t dtype = market_data_ptr[0]
+        cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
+        cdef bint is_wrapped = self.c_is_wrapped()
+
+        if not is_wrapped:
+            return <_MarketDataBuffer*> market_data_ptr
+        else:
+            if self._tmp_space == NULL:
+                self._tmp_space = <_MarketDataBuffer*> malloc(self._estimated_entry_size)
+            self.c_read(data_offset=data_offset, length=length, output=<char*> self._tmp_space)
+            return self._tmp_space
+
     cdef object c_listen(self, uint32_t worker_id, bint block=True, double timeout=-1.0):
         cdef uint32_t spin_per_check = 1000
         cdef time_t start_time = 0
@@ -1076,6 +1099,30 @@ cdef class MarketDataConcurrentBuffer:
         cdef object md = self.c_get(idx)
         self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
         return md
+
+    cdef inline _MarketDataBuffer* c_listen_ptr(self, uint32_t worker_id):
+        cdef uint32_t idx = self._worker_header_array[worker_id]
+        if idx == self._header.ptr_tail:
+            return NULL
+
+        cdef _MarketDataBuffer* ptr = self.c_get_ptr(idx)
+        self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
+        return ptr
+
+    cdef inline int c_reset(self):
+        if not self.c_is_empty():
+            return -1
+
+        cdef size_t worker_header_size = sizeof(_WorkerHeader) * self.n_workers
+        cdef size_t ptr_array_size = sizeof(uint64_t) * self._ptr_capacity
+
+        self._header.ptr_tail = 0
+        self._header.data_tail = 0
+
+        memset(<void *> self._worker_header_array, 0, worker_header_size)
+        memset(<void *> self._ptr_array, 0, ptr_array_size)
+        memset(<void *> self._data_array, 0, data_capacity)
+        return 0
 
     # --- python interface ---
 
@@ -1137,6 +1184,12 @@ cdef class MarketDataConcurrentBuffer:
 
     def listen(self, worker_id: int, block: bool = True, timeout: float = -1.0):
         return self.c_listen(worker_id=worker_id, block=block, timeout=timeout)
+
+    def reset(self):
+        cdef int ret_code = self.c_reset()
+
+        if ret_code == -1:
+            raise ValueError('Buffer not empty, can not reset!')
 
     def collect_header_info(self) -> dict:
         """
