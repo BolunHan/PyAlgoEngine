@@ -29,7 +29,7 @@ cdef class MarketDataBuffer:
 
         # step 2.1: --- pointer array ---
         self._header.ptr_offset = header_size
-        self._ptr_array = <uint64_t*> (<void*> self._header + self._header.ptr_offset)
+        self._ptr_array = <uint64_t*> (self._buffer + self._header.ptr_offset)
         cdef uint64_t total_size = self._view.len
         cdef size_t pointer_size = sizeof(uint64_t)
         cdef size_t estimated_entry_size = _MarketDataVirtualBase.c_max_size()
@@ -46,7 +46,7 @@ cdef class MarketDataBuffer:
         # step 2.2:--- data array ---
         cdef uint64_t data_capacity = total_size - header_size - ptr_array_size
         self._header.data_offset = header_size + ptr_array_size
-        self._data_array = <char*> self._header + self._header.data_offset
+        self._data_array = self._buffer + self._header.data_offset
         self._header.data_capacity = data_capacity
         self._data_capacity = data_capacity
 
@@ -457,7 +457,7 @@ cdef class MarketDataRingBuffer:
 
         # step 2.1: --- pointer array ---
         self._header.ptr_offset = header_size
-        self._ptr_array = <uint64_t*> (<void*> self._header + self._header.ptr_offset)
+        self._ptr_array = <uint64_t*> (self._buffer + self._header.ptr_offset)
         cdef uint64_t total_size = self._view.len
         cdef size_t pointer_size = sizeof(uint64_t)
         cdef size_t estimated_entry_size = _MarketDataVirtualBase.c_max_size()
@@ -474,7 +474,7 @@ cdef class MarketDataRingBuffer:
         # step 2.2:--- data array ---
         cdef uint64_t data_capacity = total_size - header_size - ptr_array_size
         self._header.data_offset = header_size + ptr_array_size
-        self._data_array = <char*> self._header + self._header.data_offset
+        self._data_array = self._buffer + self._header.data_offset
         self._header.data_capacity = data_capacity
         self._data_capacity = data_capacity
 
@@ -764,12 +764,12 @@ cdef class MarketDataConcurrentBuffer:
 
         # step 2.1: --- worker header ---
         self._header.worker_header_offset = header_size
-        self._worker_header_array = <_WorkerHeader*> (<void*> self._header + self._header.worker_header_offset)
+        self._worker_header_array = <_WorkerHeader*> (self._buffer + self._header.worker_header_offset)
         cdef size_t worker_header_size = sizeof(_WorkerHeader) * n_workers
 
         # step 2.2: --- pointer array ---
         self._header.ptr_offset = header_size + worker_header_size
-        self._ptr_array = <uint64_t*> (<void*> self._header + self._header.ptr_offset)
+        self._ptr_array = <uint64_t*> (self._buffer + self._header.ptr_offset)
         cdef size_t total_size = self._view.len
         cdef size_t pointer_size = sizeof(uint64_t)
         cdef size_t estimated_entry_size = _MarketDataVirtualBase.c_max_size()
@@ -786,7 +786,7 @@ cdef class MarketDataConcurrentBuffer:
         # step 2.3:--- data array ---
         cdef uint64_t data_capacity = total_size - header_size - worker_header_size - ptr_array_size
         self._header.data_offset = header_size + worker_header_size + ptr_array_size
-        self._data_array = <char*> self._header + self._header.data_offset
+        self._data_array = self._buffer + self._header.data_offset
         self._header.data_capacity = data_capacity
         self._data_capacity = data_capacity
 

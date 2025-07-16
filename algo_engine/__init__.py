@@ -41,7 +41,11 @@ except ImportError:
 
 def get_include():
     import os
-    return os.path.dirname(__file__)
+    from .base import C_CONFIG
+
+    res_dir = os.path.dirname(__file__)
+    LOGGER.info(f'Building with <PyAlgoEngine> version:{__version__}, resource directory: {res_dir}, config: {C_CONFIG}.', stacklevel=2)
+    return res_dir
 
 
 __all__ = [
