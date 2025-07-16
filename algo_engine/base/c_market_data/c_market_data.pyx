@@ -109,7 +109,7 @@ cdef class _MarketDataVirtualBase:
         elif dtype == DataType.DTYPE_TICK:
             tick_data = TickData.__new__(TickData)
             memcpy(<char*> tick_data._data_ptr, <const char*> data_ptr, length)
-            tick_data._init_order_book()
+            tick_data.c_init_order_book()
             return tick_data
         elif dtype == DataType.DTYPE_BAR:
             bar_data = BarData.__new__(BarData)

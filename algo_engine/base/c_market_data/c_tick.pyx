@@ -425,7 +425,7 @@ cdef class TickData:
         self._data.weighted_bid_price = weighted_bid_price
         self._data.weighted_ask_price = weighted_ask_price
         # Initialize bid and ask books
-        self._init_order_book()
+        self.c_init_order_book()
 
         # Parse kwargs to initialize the order books
         if kwargs:
@@ -444,10 +444,10 @@ cdef class TickData:
     def __copy__(self):
         cdef TickData instance = TickData.__new__(TickData)
         memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TickDataBuffer))
-        instance._init_order_book()
+        instance.c_init_order_book()
         return instance
 
-    cdef _init_order_book(self):
+    cdef c_init_order_book(self):
         # Initialize bid and ask books
         self._bid_book = OrderBook.__new__(OrderBook)
         self._bid_book._data = &self._data.bid
@@ -546,7 +546,7 @@ cdef class TickData:
     cdef TickData c_from_bytes(bytes data):
         cdef TickData instance = TickData.__new__(TickData)
         memcpy(<void*> &instance._data, <const char*> data, sizeof(_TickDataBuffer))
-        instance._init_order_book()
+        instance.c_init_order_book()
         return instance
 
     def to_bytes(self) -> bytes:

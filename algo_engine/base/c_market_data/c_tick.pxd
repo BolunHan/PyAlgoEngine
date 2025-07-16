@@ -41,7 +41,7 @@ cdef class TickData:
     cdef OrderBook _bid_book
     cdef OrderBook _ask_book
 
-    cdef _init_order_book(self)
+    cdef c_init_order_book(self)
 
     cdef bytes c_to_bytes(self)
 
