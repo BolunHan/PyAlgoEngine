@@ -1,5 +1,5 @@
 # cython: language_level=3
-from libc.stdint cimport uint8_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, uint64_t
 
 from .c_market_data cimport _MarketDataBuffer
 
@@ -30,7 +30,7 @@ cdef packed struct _WorkerHeader:
 
 
 cdef struct _ConcurrentBufferHeader:
-    uint8_t n_workers              # number of workers
+    uint16_t n_workers              # number of workers
     uint32_t worker_header_offset  # Offset to find the worker header section
     uint32_t ptr_capacity
     uint32_t ptr_offset
@@ -129,8 +129,8 @@ cdef class MarketDataConcurrentBuffer:
     cdef char* _buffer
     cdef Py_buffer _view
     cdef bint _view_obtained
-    cdef uint8_t n_workers
-    cdef uint32_t* _worker_header_array
+    cdef uint16_t n_workers
+    cdef _WorkerHeader* _worker_header_array
     cdef uint32_t _ptr_capacity
     cdef uint64_t* _ptr_array
     cdef size_t _estimated_entry_size
@@ -138,7 +138,9 @@ cdef class MarketDataConcurrentBuffer:
     cdef char* _data_array
     cdef _MarketDataBuffer* _tmp_space
 
-    cdef uint32_t c_get_worker_head(self, uint32_t worker_id) except -1
+    cdef _WorkerHeader* c_get_worker_header(self, uint16_t worker_id)
+
+    cdef void c_set_worker_header(self, uint16_t worker_id, uint32_t ptr_head)
 
     cdef uint32_t c_get_ptr_distance(self, uint32_t ptr_idx)
 
@@ -146,7 +148,7 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef uint64_t c_get_data_head(self)
 
-    cdef bint c_is_worker_empty(self, uint32_t worker_id) except -1
+    cdef bint c_is_worker_empty(self, uint16_t worker_id)
 
     cdef bint c_is_empty(self)
 
@@ -168,10 +170,30 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef _MarketDataBuffer* c_get_ptr(self, uint32_t idx)
 
-    cdef object c_listen(self, uint32_t worker_id, bint block=*, double timeout=*)
+    cdef object c_listen(self, uint16_t worker_id, bint block=*, double timeout=*)
 
-    cdef object c_listen_raw(self, uint32_t worker_id)
+    cdef object c_listen_raw(self, uint16_t worker_id)
 
-    cdef _MarketDataBuffer* c_listen_ptr(self, uint32_t worker_id)
+    cdef _MarketDataBuffer* c_listen_ptr(self, uint16_t worker_id)
 
     cdef int c_reset(self)
+
+    cpdef uint32_t ptr_head(self, uint16_t worker_id)
+
+    cpdef uint64_t data_head(self, uint16_t worker_id)
+
+    cpdef bint is_full(self)
+
+    cpdef bint is_empty(self)
+
+    cpdef bytes read(self, uint32_t idx)
+
+    cpdef void put(self, object market_data)
+
+    cpdef object get(self, uint32_t idx)
+
+    cpdef object listen(self, uint16_t worker_id, bint block=*, double timeout=*)
+
+    cpdef void reset(self)
+
+    cpdef dict collect_header_info(self)

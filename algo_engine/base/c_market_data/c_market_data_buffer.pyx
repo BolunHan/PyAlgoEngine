@@ -4,7 +4,7 @@ from cpython.bytes cimport PyBytes_FromStringAndSize
 from libc.math cimport NAN
 from libc.stdlib cimport malloc, free, qsort
 from libc.string cimport memcpy, memset
-from libc.stdint cimport uint8_t, INT8_MAX, uint32_t, uint64_t, uintptr_t
+from libc.stdint cimport uint8_t, INT16_MAX, uint32_t, uint64_t, uintptr_t
 from libc.time cimport time, time_t, difftime
 
 from .c_market_data cimport compare_md_ptr, _MarketDataVirtualBase, InternalData, DataType, _MetaInfo, _InternalBuffer, _TransactionDataBuffer, _OrderDataBuffer, _TickDataLiteBuffer, _TickDataBuffer, _CandlestickBuffer, TICKER_SIZE, platform_usleep
@@ -647,7 +647,6 @@ cdef class MarketDataRingBuffer:
         while True:
             # Check for data - direct struct field access
             if idx != self._header.ptr_tail:
-                # print(f'[listener]\t(worker_id={worker_id}, ptr_idx={idx}, ptr_next={idx + 1}) getting data...')
                 md = self.c_get(idx=idx)
                 self._header.ptr_head = (idx + 1) % self._ptr_capacity
                 return md
@@ -683,7 +682,7 @@ cdef class MarketDataRingBuffer:
 
     def __call__(self, timeout: float = -1.0):
         class _Listener:
-            def __init__(_self, outer, worker_id, timeout):
+            def __init__(_self, outer, timeout):
                 _self.outer = outer
                 _self.timeout = timeout
                 _self._running = True
@@ -748,9 +747,9 @@ cdef class MarketDataRingBuffer:
 
 
 cdef class MarketDataConcurrentBuffer:
-    def __cinit__(self, object buffer, uint32_t n_workers, int capacity=0):
-        if n_workers > INT8_MAX:
-            raise ValueError("Maximum number of workers is 255")
+    def __cinit__(self, object buffer, int n_workers, int capacity=0):
+        if 0 > n_workers > INT16_MAX:
+            raise ValueError(f"Maximum number of workers is {INT16_MAX}")
 
         # step 1: obtain a buffer view and pointer from the given python buffer object
         PyObject_GetBuffer(buffer, &self._view, PyBUF_SIMPLE)
@@ -765,13 +764,13 @@ cdef class MarketDataConcurrentBuffer:
 
         # step 2.1: --- worker header ---
         self._header.worker_header_offset = header_size
-        self._worker_header_array = <uint32_t*> (<void*> self._header + self._header.worker_header_offset)
+        self._worker_header_array = <_WorkerHeader*> (<void*> self._header + self._header.worker_header_offset)
         cdef size_t worker_header_size = sizeof(_WorkerHeader) * n_workers
 
         # step 2.2: --- pointer array ---
         self._header.ptr_offset = header_size + worker_header_size
         self._ptr_array = <uint64_t*> (<void*> self._header + self._header.ptr_offset)
-        cdef uint64_t total_size = self._view.len
+        cdef size_t total_size = self._view.len
         cdef size_t pointer_size = sizeof(uint64_t)
         cdef size_t estimated_entry_size = _MarketDataVirtualBase.c_max_size()
         self._estimated_entry_size = estimated_entry_size
@@ -809,10 +808,12 @@ cdef class MarketDataConcurrentBuffer:
         if self._tmp_space != NULL:
             free(self._tmp_space)
 
-    cdef uint32_t c_get_worker_head(self, uint32_t worker_id) except -1:
-        if worker_id >= self.n_workers:
-            return -1
-        return self._worker_header_array[worker_id]
+    cdef _WorkerHeader* c_get_worker_header(self, uint16_t worker_id):
+        return self._worker_header_array + worker_id
+
+    cdef void c_set_worker_header(self, uint16_t worker_id, uint32_t ptr_head):
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
+        worker_header.ptr_head = ptr_head
 
     cdef uint32_t c_get_ptr_distance(self, uint32_t ptr_idx):
         cdef uint32_t ptr_capacity = self._ptr_capacity
@@ -827,70 +828,81 @@ cdef class MarketDataConcurrentBuffer:
         return ptr_distance
 
     cdef uint32_t c_get_ptr_head(self):
-        cdef uint32_t ptr_head = self._worker_header_array[0]
+        cdef uint32_t ptr_head = self._worker_header_array[0].ptr_head
         cdef uint32_t ptr_distance = 0
         cdef uint32_t ptr_tail = self._header.ptr_tail
         cdef uint32_t ptr_capacity = self._ptr_capacity
-        cdef uint32_t worker_head
         cdef uint32_t worker_distance
+        cdef uint16_t worker_id
+        cdef _WorkerHeader* worker_header
+        cdef uint32_t worker_ptr_head
 
-        for i in range(self.n_workers):
-            worker_head = self._worker_header_array[i]
+        while worker_id < self.n_workers:
+            worker_header = self._worker_header_array + worker_id
+            worker_ptr_head = worker_header.ptr_head
 
-            if worker_head <= ptr_tail:
-                worker_distance = ptr_tail - worker_head
+            if worker_ptr_head <= ptr_tail:
+                worker_distance = ptr_tail - worker_ptr_head
             else:
-                worker_distance = ptr_capacity - worker_head + ptr_tail
+                worker_distance = ptr_capacity - worker_ptr_head + ptr_tail
 
             if worker_distance >= ptr_distance:
-                ptr_head = worker_head
+                ptr_head = worker_ptr_head
                 ptr_distance = worker_distance
 
+            worker_id += 1
         return ptr_head
 
     cdef uint64_t c_get_data_head(self):
         cdef uint32_t ptr_head = self.c_get_ptr_head()
         return self._ptr_array[ptr_head]
 
-    cdef bint c_is_worker_empty(self, uint32_t worker_id) except -1:
-        if worker_id >= self.n_workers:
-            raise -1
-        return self._worker_header_array[worker_id] == self._header.ptr_tail
+    cdef bint c_is_worker_empty(self, uint16_t worker_id):
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
+        return worker_header.ptr_head == self._header.ptr_tail
 
     cdef bint c_is_empty(self):
-        cdef size_t worker_id
+        cdef uint16_t worker_id
+        cdef _WorkerHeader* worker_header
 
-        for worker_id in range(self.n_workers):
-            if self._worker_header_array[worker_id] < self._header.ptr_tail:
+        while worker_id < self.n_workers:
+            worker_header = self._worker_header_array + worker_id
+            if worker_header.ptr_head != self._header.ptr_tail:
                 return False
+            worker_id += 1
         return True
 
     cdef bint c_is_full(self):
-        cdef uint32_t ptr_head = self._worker_header_array[0]
+        cdef uint32_t ptr_head = self._worker_header_array[0].ptr_head
         cdef uint32_t ptr_distance = 0
         cdef uint32_t ptr_tail = self._header.ptr_tail
         cdef uint32_t ptr_capacity = self._ptr_capacity
-        cdef uint32_t worker_head
+        cdef _WorkerHeader* worker_header
+        cdef uint32_t worker_ptr_head
         cdef uint32_t worker_distance
         cdef uint32_t ptr_next = (ptr_tail + 1) % ptr_capacity
+        cdef uint16_t worker_id
 
         # step 1: check if the pointer array is full
-        for i in range(self.n_workers):
-            worker_head = self._worker_header_array[i]
+        while worker_id < self.n_workers:
+            worker_header = self._worker_header_array + worker_id
+            worker_ptr_head = worker_header.ptr_head
             # print(f'[checker]\t(worker_id={i}, worker_head={worker_head} ptr_next={ptr_next}) checking pointer array')
 
-            if worker_head == ptr_next:
+            if worker_ptr_head == ptr_next:
                 # print(f'[checker]\t(worker_id={i}, worker_head={worker_head} ptr_tail={self._header.ptr_tail}) checker report ptr array is full')
                 return True
 
-            if worker_head <= ptr_tail:
-                worker_distance = ptr_tail - worker_head
+            if worker_ptr_head <= ptr_tail:
+                worker_distance = ptr_tail - worker_ptr_head
             else:
-                worker_distance = ptr_capacity - worker_head + ptr_tail
+                worker_distance = ptr_capacity - worker_ptr_head + ptr_tail
 
             if worker_distance >= ptr_distance:
-                ptr_head = worker_head
+                ptr_head = worker_ptr_head
                 ptr_distance = worker_distance
+
+            worker_id += 1
 
         # step 2: check if the data array is full
         # print(f'[checker]\t(ptr_head={ptr_head}, ptr_tail={ptr_tail}, ptr_capacity={ptr_capacity}) report {ptr_capacity - self.c_get_ptr_distance(ptr_head)} available slot in pointer array')
@@ -1033,14 +1045,14 @@ cdef class MarketDataConcurrentBuffer:
         cdef bint is_wrapped = (data_offset + length) > self._data_capacity
 
         if not is_wrapped:
-            return <_MarketDataBuffer*> market_data_ptr
+            return <_MarketDataBuffer*> (self._data_array + data_offset)
         else:
             if self._tmp_space == NULL:
                 self._tmp_space = <_MarketDataBuffer*> malloc(self._estimated_entry_size)
             self.c_read(data_offset=data_offset, length=length, output=<char*> self._tmp_space)
             return self._tmp_space
 
-    cdef object c_listen(self, uint32_t worker_id, bint block=True, double timeout=-1.0):
+    cdef object c_listen(self, uint16_t worker_id, bint block=True, double timeout=-1.0):
         cdef uint32_t spin_per_check = 1000
         cdef time_t start_time = 0
         cdef time_t current_time
@@ -1048,23 +1060,23 @@ cdef class MarketDataConcurrentBuffer:
         cdef uint32_t spin_count = 0
         cdef uint32_t sleep_us = 0
         cdef bint use_timeout = timeout > 0
-        cdef uint32_t idx = self._worker_header_array[worker_id]
-        cdef object md
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
 
-        if worker_id >= self.n_workers:
-            raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
-
-        if (not block) and idx == self._header.ptr_tail:
+        if (not block) and worker_header.ptr_head == self._header.ptr_tail:
             raise BufferError(f'Buffer is empty for worker {worker_id}')
 
         time(&start_time)
 
+        cdef uint32_t idx
+        cdef object md
+
         while True:
             # Check for data - direct struct field access
+            idx = worker_header.ptr_head
             if idx != self._header.ptr_tail:
                 # print(f'[listener]\t(worker_id={worker_id}, ptr_idx={idx}, ptr_next={idx + 1}) getting data...')
                 md = self.c_get(idx)
-                self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
+                worker_header.ptr_head = (idx + 1) % self._ptr_capacity
                 return md
 
             # Timeout check
@@ -1091,23 +1103,25 @@ cdef class MarketDataConcurrentBuffer:
                 platform_usleep(sleep_us)
             spin_count += 1
 
-    cdef inline object c_listen_raw(self, uint32_t worker_id):
-        cdef uint32_t idx = self._worker_header_array[worker_id]
+    cdef inline object c_listen_raw(self, uint16_t worker_id):
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
+        cdef uint32_t idx = worker_header.ptr_head
         if idx == self._header.ptr_tail:
             return None
 
         cdef object md = self.c_get(idx)
-        self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
+        worker_header.ptr_head = (idx + 1) % self._ptr_capacity
         return md
 
-    cdef inline _MarketDataBuffer* c_listen_ptr(self, uint32_t worker_id):
-        cdef uint32_t idx = self._worker_header_array[worker_id]
+    cdef inline _MarketDataBuffer* c_listen_ptr(self, uint16_t worker_id):
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
+        cdef uint32_t idx = worker_header.ptr_head
         if idx == self._header.ptr_tail:
             return NULL
 
-        cdef _MarketDataBuffer* ptr = self.c_get_ptr(idx)
-        self._worker_header_array[worker_id] = (idx + 1) % self._ptr_capacity
-        return ptr
+        cdef _MarketDataBuffer* data_ptr = self.c_get_ptr(idx)
+        worker_header.ptr_head = (idx + 1) % self._ptr_capacity
+        return data_ptr
 
     cdef inline int c_reset(self):
         if not self.c_is_empty():
@@ -1120,8 +1134,8 @@ cdef class MarketDataConcurrentBuffer:
         self._header.data_tail = 0
 
         memset(<void*> self._worker_header_array, 0, worker_header_size)
-        memset(<void*> self._ptr_array, 0, ptr_array_size)
-        memset(<void*> self._data_array, 0, self._data_capacity)
+        # memset(<void*> self._ptr_array, 0, ptr_array_size)
+        # memset(<void*> self._data_array, 0, self._data_capacity)
         return 0
 
     # --- python interface ---
@@ -1155,43 +1169,53 @@ cdef class MarketDataConcurrentBuffer:
 
         return _Listener(self, worker_id, timeout)
 
-    def ptr_head(self, worker_id: int) -> int:
-        return self._worker_header_array[worker_id]
+    cpdef uint32_t ptr_head(self, uint16_t worker_id):
+        if worker_id >= self.n_workers:
+            raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
+        cdef uint32_t ptr_head = worker_header.ptr_head
+        return ptr_head
 
-    def data_head(self, worker_id: int) -> int:
-        return self._ptr_array[self._worker_header_array[worker_id]]
+    cpdef uint64_t data_head(self, uint16_t worker_id):
+        if worker_id >= self.n_workers:
+            raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
+        cdef _WorkerHeader* worker_header = self._worker_header_array + worker_id
+        cdef uint32_t ptr_head = worker_header.ptr_head
+        return self._ptr_array[ptr_head]
 
-    def is_full(self) -> bool:
+    cpdef bint is_full(self):
         return self.c_is_full()
 
-    def is_empty(self) -> bool:
+    cpdef bint is_empty(self):
         return self.c_is_empty()
 
-    def read(self, idx: int) -> bytes:
+    cpdef bytes read(self, uint32_t idx):
         cdef uint64_t data_offset = self._ptr_array[idx]
         cdef const char* market_data_ptr = <char*> self._data_array + data_offset
         cdef uint8_t dtype = market_data_ptr[0]
         cdef uint64_t length = <uint64_t> _MarketDataVirtualBase.c_get_size(dtype)
-        return self.c_to_bytes(data_offset=data_offset, length=length)
+        cdef bytes out = self.c_to_bytes(data_offset=data_offset, length=length)
+        return out
 
-    def put(self, object market_data):
+    cpdef void put(self, object market_data):
         cdef uintptr_t data_addr = market_data._data_addr
         # return self.c_put(market_data_ptr=(<_MarketDataVirtualBase> market_data)._data_ptr)
-        return self.c_put(market_data_ptr=<_MarketDataBuffer*> data_addr)
+        self.c_put(market_data_ptr=<_MarketDataBuffer*> data_addr)
 
-    def get(self, idx: int):
-        return self.c_get(idx=idx)
+    cpdef object get(self, uint32_t idx):
+        return self.c_get(idx)
 
-    def listen(self, worker_id: int, block: bool = True, timeout: float = -1.0):
+    cpdef object listen(self, uint16_t worker_id, bint block=True, double timeout=-1.0):
+        if worker_id >= self.n_workers:
+            raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
         return self.c_listen(worker_id=worker_id, block=block, timeout=timeout)
 
-    def reset(self):
+    cpdef void reset(self):
         cdef int ret_code = self.c_reset()
-
         if ret_code == -1:
             raise ValueError('Buffer not empty, can not reset!')
 
-    def collect_header_info(self) -> dict:
+    cpdef dict collect_header_info(self):
         """
         uint8_t n_workers              # number of workers
         uint32_t worker_header_offset  # Offset to find the worker header section
