@@ -4,6 +4,7 @@ from Cython.Build import cythonize
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
+
 class BuildExtWithConfig(build_ext):
     def build_extensions(self):
         macros = []
