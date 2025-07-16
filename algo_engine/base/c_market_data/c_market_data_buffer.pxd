@@ -18,7 +18,7 @@ cdef packed struct _BufferHeader:
 cdef packed struct _RingBufferHeader:
     uint32_t ptr_capacity
     uint32_t ptr_offset
-    uint32_t ptr_head              # Index of oldest element
+    uint32_t ptr_head               # Index of oldest element
     uint32_t ptr_tail
     uint64_t data_capacity
     uint64_t data_offset
@@ -26,12 +26,13 @@ cdef packed struct _RingBufferHeader:
 
 
 cdef packed struct _WorkerHeader:
-    uint32_t ptr_head              # Index of the next pointer to read
+    uint32_t ptr_head               # Index of the next pointer to read
+    bint enabled                    # whether the worker is enabled or not
 
 
 cdef struct _ConcurrentBufferHeader:
     uint16_t n_workers              # number of workers
-    uint32_t worker_header_offset  # Offset to find the worker header section
+    uint32_t worker_header_offset   # Offset to find the worker header section
     uint32_t ptr_capacity
     uint32_t ptr_offset
     uint32_t ptr_tail
@@ -47,10 +48,10 @@ cdef struct _ConcurrentBufferHeader:
 
 
 cdef class MarketDataBuffer:
-    cdef _BufferHeader* _header    # Pointer to the header section
-    cdef char* _buffer             # Pointer to the buffer
-    cdef Py_buffer _view           # Buffer view
-    cdef bint _view_obtained       # Flag to track if buffer view was obtained
+    cdef _BufferHeader* _header     # Pointer to the header section
+    cdef char* _buffer              # Pointer to the buffer
+    cdef Py_buffer _view            # Buffer view
+    cdef bint _view_obtained        # Flag to track if buffer view was obtained
     cdef uint32_t _ptr_capacity
     cdef uint64_t* _ptr_array
     cdef size_t _estimated_entry_size
@@ -176,7 +177,9 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef _MarketDataBuffer* c_listen_ptr(self, uint16_t worker_id)
 
-    cdef int c_reset(self)
+    cdef int c_reset_worker(self, uint16_t worker_id, bint check_empty=*) except -1
+
+    cdef int c_reset(self, bint check_empty=*) except -1
 
     cpdef uint32_t ptr_head(self, uint16_t worker_id)
 
@@ -194,6 +197,8 @@ cdef class MarketDataConcurrentBuffer:
 
     cpdef object listen(self, uint16_t worker_id, bint block=*, double timeout=*)
 
-    cpdef void reset(self)
+    cpdef void reset_worker(self, uint16_t worker_id, bint check_empty=*)
+
+    cpdef void reset(self, bint check_empty=*)
 
     cpdef dict collect_header_info(self)

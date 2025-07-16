@@ -620,7 +620,7 @@ cdef class MarketDataRingBuffer:
         elif dtype == DataType.DTYPE_TICK:
             tick_data = TickData.__new__(TickData)
             self.c_read(data_offset=data_offset, length=length, output=<char*> tick_data._data_ptr)
-            tick_data._init_order_book()
+            tick_data.c_init_order_book()
             return tick_data
         elif dtype == DataType.DTYPE_BAR:
             bar_data = BarData.__new__(BarData)
@@ -1027,7 +1027,7 @@ cdef class MarketDataConcurrentBuffer:
         elif dtype == DataType.DTYPE_TICK:
             tick_data = TickData.__new__(TickData)
             self.c_read(data_offset=data_offset, length=length, output=<char*> tick_data._data_ptr)
-            tick_data._init_order_book()
+            tick_data.c_init_order_book()
             return tick_data
         elif dtype == DataType.DTYPE_BAR:
             bar_data = BarData.__new__(BarData)
@@ -1049,7 +1049,7 @@ cdef class MarketDataConcurrentBuffer:
         else:
             if self._tmp_space == NULL:
                 self._tmp_space = <_MarketDataBuffer*> malloc(self._estimated_entry_size)
-            self.c_read(data_offset=data_offset, length=length, output=<char*> self._tmp_space)
+            self.c_read(data_offset, length, <char*> self._tmp_space)
             return self._tmp_space
 
     cdef object c_listen(self, uint16_t worker_id, bint block=True, double timeout=-1.0):
@@ -1123,17 +1123,21 @@ cdef class MarketDataConcurrentBuffer:
         worker_header.ptr_head = (idx + 1) % self._ptr_capacity
         return data_ptr
 
-    cdef inline int c_reset(self):
-        if not self.c_is_empty():
+    cdef inline int c_reset_worker(self, uint16_t worker_id, bint check_empty=True) except -1:
+        if check_empty and not self.c_is_worker_empty(worker_id):
             return -1
-
         cdef size_t worker_header_size = sizeof(_WorkerHeader) * self.n_workers
-        cdef size_t ptr_array_size = sizeof(uint64_t) * self._ptr_capacity
+        memset(<void*> worker_header_size, 0, sizeof(_WorkerHeader))
+        return 0
 
+    cdef inline int c_reset(self, bint check_empty=False) except -1:
+        if check_empty and not self.c_is_empty():
+            return -1
         self._header.ptr_tail = 0
         self._header.data_tail = 0
-
-        memset(<void*> self._worker_header_array, 0, worker_header_size)
+        # cdef size_t worker_header_size = sizeof(_WorkerHeader) * self.n_workers
+        # cdef size_t ptr_array_size = sizeof(uint64_t) * self._ptr_capacity
+        # memset(<void*> self._worker_header_array, 0, worker_header_size)
         # memset(<void*> self._ptr_array, 0, ptr_array_size)
         # memset(<void*> self._data_array, 0, self._data_capacity)
         return 0
@@ -1210,8 +1214,15 @@ cdef class MarketDataConcurrentBuffer:
             raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
         return self.c_listen(worker_id=worker_id, block=block, timeout=timeout)
 
-    cpdef void reset(self):
-        cdef int ret_code = self.c_reset()
+    cpdef void reset_worker(self, uint16_t worker_id, bint check_empty=True):
+        if worker_id >= self.n_workers:
+            raise IndexError(f'worker_id exceeds total workers {self.n_workers}')
+        cdef int ret_code = self.c_reset_worker(worker_id, check_empty)
+        if ret_code == -1:
+            raise ValueError('Buffer not empty, can not reset!')
+
+    cpdef void reset(self, bint check_empty=False):
+        cdef int ret_code = self.c_reset(check_empty)
         if ret_code == -1:
             raise ValueError('Buffer not empty, can not reset!')
 
