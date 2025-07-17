@@ -1,5 +1,6 @@
 __version__ = "0.8.6.alpha2"
 
+import functools
 import logging
 import os
 import traceback
@@ -39,12 +40,13 @@ except ImportError:
     LOGGER.debug(f'Install PyAlgoEngineAddons to use additional trading algos module\n{traceback.format_exc()}')
 
 
+@functools.cache
 def get_include():
     import os
     from .base import C_CONFIG
 
     res_dir = os.path.dirname(__file__)
-    LOGGER.info(f'Building with <PyAlgoEngine> version:{__version__}, resource directory: {res_dir}, config: {C_CONFIG}.', stacklevel=2)
+    LOGGER.info(f'Building with <PyAlgoEngine> version: "{__version__}", resource directory: "{res_dir}", config: "{C_CONFIG}".')
     return res_dir
 
 
