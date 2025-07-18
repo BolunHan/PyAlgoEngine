@@ -345,10 +345,9 @@ cdef class FilterMode:
         return f"<FilterMode {self.value:#0x}: {' | '.join(flags) or 'None'}>"
 
     @staticmethod
-    cdef inline bint c_mask_data(uintptr_t data_addr, uint32_t filter_mode):
-        cdef _MarketDataBuffer* market_data_ptr = <_MarketDataBuffer*> data_addr
-        cdef uint8_t dtype = market_data_ptr.MetaInfo.dtype
-        cdef double timestamp = market_data_ptr.MetaInfo.timestamp
+    cdef inline bint c_mask_data(_MetaInfo* data_addr, uint32_t filter_mode):
+        cdef uint8_t dtype = data_addr.dtype
+        cdef double timestamp = data_addr.timestamp
         cdef _TransactionDataBuffer* trade_data
 
         if _FilterMode.NO_INTERNAL & filter_mode:
@@ -381,8 +380,7 @@ cdef class FilterMode:
         return True
 
     def mask_data(self, market_data: object) -> bool:
-        cdef uintptr_t data_addr = <uintptr_t> market_data._data_addr
-        return FilterMode.c_mask_data(data_addr, self.value)
+        return FilterMode.c_mask_data(<_MetaInfo*> (<uintptr_t> market_data._data_addr), self.value)
 
 
 from .c_tick cimport TickData, TickDataLite

@@ -290,4 +290,4 @@ cdef class FilterMode:
     cdef public uint32_t value
 
     @staticmethod
-    cdef inline bint c_mask_data(uintptr_t data_addr, uint32_t filter_mode)
+    cdef inline bint c_mask_data(_MetaInfo* data_addr, uint32_t filter_mode)
