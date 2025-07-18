@@ -833,7 +833,7 @@ cdef class MarketDataConcurrentBuffer:
         cdef uint32_t ptr_tail = self._header.ptr_tail
         cdef uint32_t ptr_capacity = self._ptr_capacity
         cdef uint32_t worker_distance
-        cdef uint16_t worker_id
+        cdef uint16_t worker_id = 0
         cdef _WorkerHeader* worker_header
         cdef uint32_t worker_ptr_head
 
@@ -862,7 +862,7 @@ cdef class MarketDataConcurrentBuffer:
         return worker_header.ptr_head == self._header.ptr_tail
 
     cdef bint c_is_empty(self):
-        cdef uint16_t worker_id
+        cdef uint16_t worker_id = 0
         cdef _WorkerHeader* worker_header
 
         while worker_id < self.n_workers:
@@ -881,7 +881,7 @@ cdef class MarketDataConcurrentBuffer:
         cdef uint32_t worker_ptr_head
         cdef uint32_t worker_distance
         cdef uint32_t ptr_next = (ptr_tail + 1) % ptr_capacity
-        cdef uint16_t worker_id
+        cdef uint16_t worker_id = 0
 
         # step 1: check if the pointer array is full
         while worker_id < self.n_workers:
