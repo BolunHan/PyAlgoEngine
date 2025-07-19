@@ -28,16 +28,16 @@ cdef class TransactionHelper:
     cdef uint8_t get_offset(uint8_t side)
 
     @staticmethod
-    cdef const char* get_side_name(uint8_t side)
+    cdef bytes get_side_name(uint8_t side)
 
     @staticmethod
-    cdef const char* get_order_type_name(uint8_t order_type)
+    cdef bytes get_order_type_name(uint8_t order_type)
 
     @staticmethod
-    cdef const char* get_direction_name(uint8_t side)
+    cdef bytes get_direction_name(uint8_t side)
 
     @staticmethod
-    cdef const char* get_offset_name(uint8_t side)
+    cdef bytes get_offset_name(uint8_t side)
 
 
 cdef class TransactionData:

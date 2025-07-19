@@ -6,6 +6,7 @@ from typing import Literal
 cimport cython
 from cpython cimport PyList_Size, PyList_GET_ITEM
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
 from libc.stdint cimport uint8_t, int8_t
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset, memcmp
@@ -209,21 +210,21 @@ class TransactionSide(enum.IntEnum):
         """
         Get the name of the transaction side.
         """
-        return TransactionHelper.get_side_name(self.value).decode('utf-8')
+        return TransactionHelper.pyget_side_name(self.value)
 
     @property
     def offset_name(self) -> str:
         """
         Get the name of the offset.
         """
-        return TransactionHelper.get_offset_name(self.value).decode('utf-8')
+        return TransactionHelper.pyget_offset_name(self.value)
 
     @property
     def direction_name(self) -> str:
         """
         Get the name of the direction.
         """
-        return TransactionHelper.get_direction_name(self.value).decode('utf-8')
+        return TransactionHelper.pyget_direction_name(self.value)
 
 
 # Helper class for TransactionSide
@@ -249,7 +250,7 @@ cdef class TransactionHelper:
             memcpy(<void*> id_ptr.data, <const char*> id_bytes, ID_SIZE)
         elif isinstance(id_value, str):
             id_ptr.id_type = 2  # Str type
-            id_bytes = id_value.encode('utf-8')
+            id_bytes = PyUnicode_AsUTF8String(id_value)
             id_len = min(len(id_bytes), ID_SIZE)
             memset(<void*> id_ptr.data, 0, ID_SIZE)
             memcpy(<void*> id_ptr.data, <const char*> id_bytes, id_len)
@@ -274,7 +275,7 @@ cdef class TransactionHelper:
         elif id_ptr.id_type == 1:  # Int type
             return int.from_bytes(id_ptr.data[:ID_SIZE], byteorder='little', signed=True)
         elif id_ptr.id_type == 2:  # Str type
-            return id_ptr.data.decode('utf-8').rstrip('\0')
+            return PyUnicode_FromString(&id_ptr.data[0]).rstrip('\0')
         elif id_ptr.id_type == 3:  # Bytes type
             return PyBytes_FromStringAndSize(id_ptr.data, ID_SIZE).rstrip(b'\0')
         elif id_ptr.id_type == 4:  # UUID type
@@ -327,94 +328,94 @@ cdef class TransactionHelper:
         return side & 0x03  # Mask to get the direction bits (0x03 = 00000011)
 
     @staticmethod
-    cdef const char* get_side_name(uint8_t side):
+    cdef bytes get_side_name(uint8_t side):
         """
         Returns the name of the given side.
         """
         if side == Side.SIDE_LONG_OPEN:
-            return "buy"
+            return b"buy"
         elif side == Side.SIDE_LONG_CLOSE:
-            return "cover"
+            return b"cover"
         elif side == Side.SIDE_LONG_CANCEL:
-            return "cancel bid"
+            return b"cancel bid"
         elif side == Side.SIDE_SHORT_OPEN:
-            return "short"
+            return b"short"
         elif side == Side.SIDE_SHORT_CLOSE:
-            return "sell"
+            return b"sell"
         elif side == Side.SIDE_SHORT_CANCEL:
-            return "cancel ask"
+            return b"cancel ask"
         elif side == Side.SIDE_NEUTRAL_OPEN:
-            return "open"
+            return b"open"
         elif side == Side.SIDE_NEUTRAL_CLOSE:
-            return "close"
+            return b"close"
         elif side == Side.SIDE_BID:
-            return "bid"
+            return b"bid"
         elif side == Side.SIDE_ASK:
-            return "ask"
+            return b"ask"
         elif side == Side.SIDE_CANCEL:
-            return "cancel"
+            return b"cancel"
         else:
-            return f"unknown({side})".encode('utf-8')
+            return PyUnicode_AsUTF8String(f"unknown({side})")
 
     @staticmethod
-    cdef const char* get_order_type_name(uint8_t order_type):
+    cdef bytes get_order_type_name(uint8_t order_type):
         """
         Get the string representation of the order type.
         """
         if order_type == E_OrderType.ORDER_UNKNOWN:
-            return "unknown"
+            return b"unknown"
         elif order_type == E_OrderType.ORDER_CANCEL:
-            return "cancel"
+            return b"cancel"
         elif order_type == E_OrderType.ORDER_GENERIC:
-            return "generic"
+            return b"generic"
         elif order_type == E_OrderType.ORDER_LIMIT:
-            return "limit"
+            return b"limit"
         elif order_type == E_OrderType.ORDER_LIMIT_MAKER:
-            return "limit_maker"
+            return b"limit_maker"
         elif order_type == E_OrderType.ORDER_MARKET:
-            return "market"
+            return b"market"
         elif order_type == E_OrderType.ORDER_FOK:
-            return "fok"
+            return b"fok"
         elif order_type == E_OrderType.ORDER_FAK:
-            return "fak"
+            return b"fak"
         elif order_type == E_OrderType.ORDER_IOC:
-            return "ioc"
+            return b"ioc"
         else:
-            return f"unknown({order_type})".encode('utf-8')
+            return PyUnicode_AsUTF8String(f"unknown({order_type})")
 
     @staticmethod
-    cdef const char* get_direction_name(uint8_t side):
+    cdef bytes get_direction_name(uint8_t side):
         """
         Returns the name of the direction of the given side.
         """
         cdef uint8_t direction = TransactionHelper.get_direction(side)
 
         if direction == Direction.DIRECTION_SHORT:
-            return "short"
+            return b"short"
         elif direction == Direction.DIRECTION_LONG:
-            return "long"
+            return b"long"
         elif direction == Direction.DIRECTION_NEUTRAL:
-            return 'neutral'
+            return b'neutral'
         else:
-            return "unknown"
+            return b"unknown"
 
     @staticmethod
-    cdef const char* get_offset_name(uint8_t side):
+    cdef bytes get_offset_name(uint8_t side):
         """
         Returns the name of the offset of the given side.
         """
         cdef int offset = TransactionHelper.get_offset(side)
 
         if offset == Offset.OFFSET_CANCEL:
-            return "cancel"
+            return b"cancel"
         elif offset == Offset.OFFSET_ORDER:
-            return "order"
+            return b"order"
         elif offset == Offset.OFFSET_OPEN:
-            return "open"
+            return b"open"
         elif offset == Offset.OFFSET_CLOSE:
-            return "close"
+            return b"close"
         else:
-            return "unknown"
+            return b"unknown"
 
     @classmethod
     def pyget_opposite(cls, int side) -> int:
@@ -519,7 +520,7 @@ cdef class TransactionData:
 
     def __init__(self, *, ticker: str, double timestamp, double price, double volume, uint8_t side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
         self._data.timestamp = timestamp
@@ -544,7 +545,7 @@ cdef class TransactionData:
         TransactionHelper.set_id(id_ptr=&self._data.sell_id, id_value=sell_id)
 
     def __repr__(self) -> str:
-        side_name = TransactionHelper.get_side_name(self._data.side).decode('utf-8')
+        side_name = TransactionHelper.pyget_side_name(self._data.side)
         return f"<TransactionData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name})"
 
     def __reduce__(self):
@@ -650,7 +651,7 @@ cdef class TransactionData:
 
     @property
     def ticker(self) -> str:
-        return self._data.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -662,7 +663,7 @@ cdef class TransactionData:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property
@@ -737,7 +738,7 @@ cdef class OrderData:
 
     def __init__(self, *, str ticker, double timestamp, double price, double volume, uint8_t side, object order_id=None, uint8_t order_type=0, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
         self._data.timestamp = timestamp
@@ -754,8 +755,8 @@ cdef class OrderData:
         TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=order_id)
 
     def __repr__(self) -> str:
-        side_name = TransactionHelper.get_side_name(self._data.side).decode('utf-8')
-        order_type_name = TransactionHelper.get_order_type_name(self._data.order_type).decode('utf-8')
+        side_name = TransactionHelper.pyget_side_name(self._data.side)
+        order_type_name = TransactionHelper.pyget_order_type_name(self._data.order_type)
         return f"<OrderData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name}, order_type={order_type_name})"
 
     def __reduce__(self):
@@ -792,7 +793,7 @@ cdef class OrderData:
 
     @property
     def ticker(self) -> str:
-        return self._data.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -804,7 +805,7 @@ cdef class OrderData:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property

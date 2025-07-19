@@ -4,6 +4,7 @@ from collections.abc import Sequence
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
 from libc.math cimport NAN
 from libc.stdint cimport uint64_t
 from libc.stdlib cimport qsort
@@ -35,7 +36,7 @@ cdef class TickDataLite:
             **kwargs
     ):
         # Initialize base class fields
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
         self._data.timestamp = timestamp
@@ -91,7 +92,7 @@ cdef class TickDataLite:
 
     @property
     def ticker(self) -> str:
-        return self._data.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -103,7 +104,7 @@ cdef class TickDataLite:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property
@@ -402,7 +403,7 @@ cdef class TickData:
             **kwargs
     ):
         # Initialize MarketData base
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &self._data.lite.ticker, <const char*> ticker_bytes, ticker_len)
         self._data.lite.timestamp = timestamp
@@ -563,7 +564,7 @@ cdef class TickData:
 
     @property
     def ticker(self) -> str:
-        return self._data.lite.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.lite.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -575,7 +576,7 @@ cdef class TickData:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.lite.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.lite.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property

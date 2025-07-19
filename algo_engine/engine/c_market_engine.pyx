@@ -2,6 +2,7 @@ import abc
 import uuid
 
 from cpython.datetime cimport datetime
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
 from libc.math cimport NAN, isnan
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.stdlib cimport malloc, free
@@ -215,7 +216,7 @@ cdef class MarketDataService:
         self.c_on_market_data(data_ptr=<_MarketDataBuffer*> data_addr)
 
     cpdef double get_market_price(self, str ticker):
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
 
         if ticker_bytes not in self.mapping:
             return NAN
@@ -273,7 +274,7 @@ cdef class MarketDataService:
         cdef dict result = {}
 
         for ticker_bytes, idx in self.mapping.items():
-            result[ticker_bytes.decode('utf-8')] = self._market_price[idx]
+            result[PyUnicode_FromString(ticker_bytes)] = self._market_price[idx]
 
         return result
 
@@ -320,6 +321,6 @@ cdef class MarketDataService:
         cdef bytes ticker_bytes
 
         for ticker_bytes in self.mapping:
-            result.append(ticker_bytes.decode('utf-8'))
+            result.append(PyUnicode_FromString(ticker_bytes))
 
         return result

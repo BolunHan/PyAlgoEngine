@@ -7,6 +7,7 @@ from typing import Literal
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
 from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport uint8_t
 from libc.string cimport memcpy
@@ -104,7 +105,7 @@ cdef class TradeReport:
             raise ValueError("Volume must be non-negative.")
 
         # Initialize base class fields
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void *> &self._data.ticker, <const char *> ticker_bytes, ticker_len)
         self._data.timestamp = timestamp
@@ -146,7 +147,7 @@ cdef class TradeReport:
         return True
 
     def __repr__(self) -> str:
-        side_name = TransactionHelper.get_side_name(self._data.side).decode('utf-8')
+        side_name = TransactionHelper.pyget_side_name(self._data.side)
 
         return f"<TradeReport id={self.trade_id}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker} {side_name} {self.volume} at {self.price})"
 
@@ -211,7 +212,7 @@ cdef class TradeReport:
 
     @property
     def ticker(self) -> str:
-        return self._data.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -223,7 +224,7 @@ cdef class TradeReport:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property
@@ -303,7 +304,7 @@ cdef class TradeInstruction:
             raise ValueError("Volume must be positive")
 
         # Initialize base class fields
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
         self._data.timestamp = timestamp
@@ -341,8 +342,8 @@ cdef class TradeInstruction:
         return True
 
     def __repr__(self) -> str:
-        side_name = TransactionHelper.get_side_name(self._data.side).decode('utf-8')
-        order_type_name = TransactionHelper.get_order_type_name(self._data.order_type).decode('utf-8')
+        side_name = TransactionHelper.pyget_side_name(self._data.side)
+        order_type_name = TransactionHelper.pyget_order_type_name(self._data.order_type)
 
         if self.limit_price is None or self.order_type_int == E_OrderType.ORDER_MARKET:
             return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
@@ -485,7 +486,7 @@ cdef class TradeInstruction:
 
     @property
     def ticker(self) -> str:
-        return self._data.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -497,7 +498,7 @@ cdef class TradeInstruction:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property

@@ -4,6 +4,7 @@ from typing import Literal
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime, date, timedelta
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
 from libc.math cimport NAN
 from libc.string cimport memcpy
 from libc.stdint cimport uint64_t
@@ -19,7 +20,7 @@ cdef class BarData:
 
     def __init__(self, *, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint64_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = ticker.encode('utf-8')
+        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
         cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
         memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
         self._data.timestamp = timestamp
@@ -120,7 +121,7 @@ cdef class BarData:
 
     @property
     def ticker(self) -> str:
-        return self._data.ticker.decode('utf-8')
+        return PyUnicode_FromString(&self._data.ticker[0])
 
     @property
     def timestamp(self) -> float:
@@ -132,7 +133,7 @@ cdef class BarData:
 
     @property
     def topic(self) -> str:
-        ticker_str = self._data.ticker.decode('utf-8')
+        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
         return f'{ticker_str}.{self.__class__.__name__}'
 
     @property
