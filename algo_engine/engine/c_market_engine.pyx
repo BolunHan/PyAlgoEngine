@@ -19,9 +19,9 @@ MDS = C_MDS
 
 
 class MarketDataMonitor(object, metaclass=abc.ABCMeta):
-    def __init__(self, name: str, monitor_id: str = None):
+    def __init__(self, name: str, monitor_id: int = 0):
         self.name: str = name
-        self.monitor_id: str = uuid.uuid4().hex if monitor_id is None else monitor_id
+        self.monitor_id: int = monitor_id or uuid.uuid4().int
         self.enabled: bool = True
 
     @abc.abstractmethod
