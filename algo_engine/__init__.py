@@ -1,4 +1,4 @@
-__version__ = "0.8.6.alpha4"
+__version__ = "0.8.6"
 
 import functools
 import logging
