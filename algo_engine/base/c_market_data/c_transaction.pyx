@@ -6,7 +6,7 @@ from typing import Literal
 cimport cython
 from cpython cimport PyList_Size, PyList_GET_ITEM
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String, PyUnicode_AsUTF8AndSize
 from libc.stdint cimport uint8_t, int8_t
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset, memcmp
@@ -520,9 +520,9 @@ cdef class TransactionData:
 
     def __init__(self, *, ticker: str, double timestamp, double price, double volume, uint8_t side, double multiplier=1.0, double notional=0.0, object transaction_id=None, object buy_id=None, object sell_id=None, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
-        cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-        memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
+        cdef Py_ssize_t ticker_len
+        cdef const char * ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
+        memcpy(<void *> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
         self._data.timestamp = timestamp
         self._data.dtype = DataType.DTYPE_TRANSACTION
         if kwargs: self.__dict__.update(kwargs)
@@ -738,9 +738,9 @@ cdef class OrderData:
 
     def __init__(self, *, str ticker, double timestamp, double price, double volume, uint8_t side, object order_id=None, uint8_t order_type=0, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
-        cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-        memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
+        cdef Py_ssize_t ticker_len
+        cdef const char * ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
+        memcpy(<void *> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
         self._data.timestamp = timestamp
         self._data.dtype = DataType.DTYPE_ORDER
         if kwargs: self.__dict__.update(kwargs)

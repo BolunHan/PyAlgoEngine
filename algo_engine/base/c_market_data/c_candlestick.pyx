@@ -4,7 +4,7 @@ from typing import Literal
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime, date, timedelta
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
 from libc.math cimport NAN
 from libc.string cimport memcpy
 from libc.stdint cimport uint64_t
@@ -20,9 +20,9 @@ cdef class BarData:
 
     def __init__(self, *, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint64_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
-        cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-        memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
+        cdef Py_ssize_t ticker_len
+        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
+        memcpy(<void*> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
         self._data.timestamp = timestamp
         self._data.dtype = DataType.DTYPE_BAR
         if kwargs: self.__dict__.update(kwargs)

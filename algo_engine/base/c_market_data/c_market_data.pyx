@@ -5,7 +5,7 @@ from collections import namedtuple
 
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
 from libc.string cimport memcpy
 
 from algo_engine.profile.c_base cimport C_PROFILE
@@ -213,9 +213,9 @@ cdef class InternalData:
 
     def __init__(self, *, ticker: str, double timestamp, uint32_t code, **kwargs):
         # Initialize base class fields
-        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
-        cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-        memcpy(<void*> &self._data.ticker, <const char*> ticker_bytes, ticker_len)
+        cdef Py_ssize_t ticker_len
+        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
+        memcpy(<void*> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
         self._data.timestamp = timestamp
         self._data.dtype = DataType.DTYPE_INTERNAL
         if kwargs: self.__dict__.update(kwargs)

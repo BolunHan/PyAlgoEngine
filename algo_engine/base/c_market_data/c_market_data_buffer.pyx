@@ -1,7 +1,7 @@
 # cython: language_level=3
 from cpython.buffer cimport PyBUF_SIMPLE, PyObject_GetBuffer, PyBuffer_Release
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.unicode cimport PyUnicode_AsUTF8String
+from cpython.unicode cimport PyUnicode_AsUTF8AndSize
 from libc.math cimport NAN
 from libc.stdlib cimport malloc, free, qsort
 from libc.string cimport memcpy, memset
@@ -342,9 +342,9 @@ cdef class MarketDataBuffer:
             raise MemoryError(f"Not enough space in buffer for new entry, requested {entry_size}, remaining {self._header.data_capacity - self._header.data_tail}")
 
         cdef _MarketDataBuffer* data = <_MarketDataBuffer*> (<void*> self._data_array + self._header.data_tail)
-        cdef bytes ticker_bytes = PyUnicode_AsUTF8String(ticker)
-        cdef size_t ticker_len = min(len(ticker_bytes), TICKER_SIZE - 1)
-        memcpy(<void*> &data.MetaInfo.ticker, <const char*> ticker_bytes, ticker_len)
+        cdef Py_ssize_t ticker_len
+        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
+        memcpy(<void*> &data.MetaInfo.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
         data.MetaInfo.ticker[ticker_len] = 0
         data.MetaInfo.timestamp = timestamp
         data.MetaInfo.dtype = dtype
