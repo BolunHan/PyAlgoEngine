@@ -7,7 +7,7 @@ cimport cython
 from cpython cimport PyList_Size, PyList_GET_ITEM
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String, PyUnicode_AsUTF8AndSize
-from libc.stdint cimport uint8_t, int8_t
+from libc.stdint cimport uint8_t, int8_t, uint64_t, UINT64_MAX
 from libc.math cimport INFINITY, NAN, copysign, fabs
 from libc.string cimport memcpy, memset, memcmp
 
@@ -240,25 +240,37 @@ cdef class TransactionHelper:
         """
         cdef bytes id_bytes
         cdef int id_len
+        cdef uint64_t u64_val
 
         if id_value is None:
             id_ptr.id_type = 0  # None type
+
         elif isinstance(id_value, int):
-            id_ptr.id_type = 1  # Int type
-            id_bytes = id_value.to_bytes(ID_SIZE, byteorder='little', signed=True)
-            # memset(<void*> id_ptr.data, 0, ID_SIZE)
-            memcpy(<void*> id_ptr.data, <const char*> id_bytes, ID_SIZE)
+            if 0 <= id_value <= UINT64_MAX:
+                # uint64_t type
+                id_ptr.id_type = 64
+                u64_val = <uint64_t> id_value
+                memset(<void*> id_ptr.data, 0, ID_SIZE)
+                memcpy(<void*> id_ptr.data, &u64_val, sizeof(uint64_t))
+            else:
+                # signed int type
+                id_ptr.id_type = 1
+                id_bytes = id_value.to_bytes(ID_SIZE, byteorder='little', signed=True)
+                memcpy(<void*> id_ptr.data, <const char*> id_bytes, ID_SIZE)
+
         elif isinstance(id_value, str):
             id_ptr.id_type = 2  # Str type
             id_bytes = PyUnicode_AsUTF8String(id_value)
             id_len = min(len(id_bytes), ID_SIZE)
             memset(<void*> id_ptr.data, 0, ID_SIZE)
             memcpy(<void*> id_ptr.data, <const char*> id_bytes, id_len)
+
         elif isinstance(id_value, bytes):
             id_ptr.id_type = 3  # Bytes type
             id_len = min(len(id_value), ID_SIZE)
             memset(<void*> id_ptr.data, 0, ID_SIZE)
             memcpy(<void*> id_ptr.data, <const char*> id_value, id_len)
+
         elif isinstance(id_value, uuid.UUID):
             id_ptr.id_type = 4  # UUID type
             id_bytes = id_value.bytes_le
@@ -270,9 +282,14 @@ cdef class TransactionHelper:
         """
         Get an ID field from the transaction data.
         """
+        cdef uint64_t u64_val
+
         if id_ptr.id_type == 0:
             return None
-        elif id_ptr.id_type == 1:  # Int type
+        elif id_ptr.id_type == 64:  # uint64_t
+            memcpy(&u64_val, <const void*> id_ptr.data, sizeof(uint64_t))
+            return u64_val
+        elif id_ptr.id_type == 1:  # signed int
             return int.from_bytes(id_ptr.data[:ID_SIZE], byteorder='little', signed=True)
         elif id_ptr.id_type == 2:  # Str type
             return PyUnicode_FromString(&id_ptr.data[0]).rstrip('\0')
@@ -281,7 +298,7 @@ cdef class TransactionHelper:
         elif id_ptr.id_type == 4:  # UUID type
             return uuid.UUID(bytes_le=id_ptr.data[:16])
 
-        raise ValueError(f'Can not decode the id buffer with type {id_ptr.id_type}.')
+        raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
 
     @staticmethod
     cdef bint compare_id(const _ID* id1, const _ID* id2):
