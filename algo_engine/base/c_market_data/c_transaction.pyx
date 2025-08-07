@@ -282,13 +282,10 @@ cdef class TransactionHelper:
         """
         Get an ID field from the transaction data.
         """
-        cdef uint64_t u64_val
-
         if id_ptr.id_type == 0:
             return None
         elif id_ptr.id_type == 64:  # uint64_t
-            memcpy(&u64_val, <const void*> id_ptr.data, sizeof(uint64_t))
-            return u64_val
+            return (<uint64_t*> id_ptr.data)[0]
         elif id_ptr.id_type == 1:  # signed int
             return int.from_bytes(id_ptr.data[:ID_SIZE], byteorder='little', signed=True)
         elif id_ptr.id_type == 2:  # Str type
