@@ -4,7 +4,7 @@ import uuid
 from cpython.datetime cimport datetime
 from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8String
 from libc.math cimport NAN, isnan
-from libc.stdint cimport uint8_t, uintptr_t
+from libc.stdint cimport uint8_t, uint64_t, uintptr_t
 from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
@@ -54,6 +54,9 @@ cdef class MonitorManager:
     def __call__(self, market_data: MarketData):
         for monitor_id in self.monitor:
             self._work(monitor_id=monitor_id, market_data=market_data)
+
+    def __contains__(self, uint64_t monitor_id):
+        return monitor_id in self.monitor
 
     cpdef void add_monitor(self, object monitor):
         self.monitor[monitor.monitor_id] = monitor
