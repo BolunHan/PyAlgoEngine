@@ -1,6 +1,10 @@
 #ifndef C_MARKET_DATA_CONFIG_H
 #define C_MARKET_DATA_CONFIG_H
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 #ifndef TICKER_SIZE
 #define TICKER_SIZE 32
 #endif
