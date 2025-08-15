@@ -8,7 +8,7 @@ from setuptools.command.build_ext import build_ext
 class BuildExtWithConfig(build_ext):
     def build_extensions(self):
         macros = []
-        for macro in ["TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
+        for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
             val = os.environ.get(macro)
             if val:
                 print(f'Compile-time variable {macro} overridden with value {val}')
