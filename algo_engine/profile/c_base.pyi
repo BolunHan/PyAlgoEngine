@@ -90,6 +90,22 @@ class ProfileDispatcher:
             - This behavior is consistent with the corresponding Cython interface `c_timestamp_in_market_session(t)`.
         """
 
+    def is_auction_session(self, timestamp: float | int | datetime | time) -> bool:
+        """
+        Check whether the given timestamp is within in auction session.
+
+        Args:
+            timestamp (float | int | datetime | time): The timestamp to check.
+
+        Returns:
+            bool: True if the timestamp is within the auction session, False otherwise.
+
+        Notes:
+            - UNIX numeric timestamps always assume the date is a trading day to conserve computational resources.
+            - After all the UNIX numeric timestamp is most likely, if not always, comes from a MarketData. Which existence proofs this day is a trading day.
+            - This behavior is consistent with the corresponding Cython interface `c_timestamp_in_market_session(t)`.
+        """
+
     def trade_calendar(self, start_date: date, end_date: date) -> list[date]:
         """
         Generate a list of trading days within the specified range, inclusive.

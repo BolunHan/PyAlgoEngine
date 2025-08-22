@@ -50,6 +50,17 @@ cdef class ProfileCN(Profile):
             return False
 
     @staticmethod
+    cdef bint c_timestamp_in_auction_session(double t):
+        cdef double elapsed_seconds = fmod(t + C_PROFILE_CN.tz_offset, 86400.0)
+
+        if 33300.0 <= elapsed_seconds <= 33900.0:
+            return True
+        elif 53820.0 <= elapsed_seconds <= 54000.0:
+            return True
+        else:
+            return False
+
+    @staticmethod
     cdef bint c_time_in_market_session(time t):
         cdef double elapsed_seconds = (time_hour(t) * 60 + time_minute(t)) * 60 + time_second(t) + time_microsecond(t) / 1_000_000
 
@@ -77,6 +88,7 @@ cdef class ProfileCN(Profile):
 
         profile.c_trade_calendar = ProfileCN.c_trade_calendar
         profile.c_timestamp_in_market_session = ProfileCN.c_timestamp_in_market_session
+        profile.c_timestamp_in_auction_session = ProfileCN.c_timestamp_in_auction_session
         profile.c_time_in_market_session = ProfileCN.c_time_in_market_session
         profile.c_date_in_market_session = ProfileCN.c_date_in_market_session
 

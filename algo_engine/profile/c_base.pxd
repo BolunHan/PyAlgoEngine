@@ -8,6 +8,8 @@ ctypedef list c_trade_calendar(date start_date, date end_date)
 
 ctypedef bint c_timestamp_in_market_session(double t)
 
+ctypedef bint c_timestamp_in_auction_session(double t)
+
 ctypedef bint c_time_in_market_session(time t)
 
 ctypedef bint c_date_in_market_session(date t)
@@ -32,6 +34,7 @@ cdef class ProfileDispatcher:
 
     cdef c_trade_calendar* c_trade_calendar
     cdef c_timestamp_in_market_session* c_timestamp_in_market_session
+    cdef c_timestamp_in_auction_session* c_timestamp_in_auction_session
     cdef c_time_in_market_session* c_time_in_market_session
     cdef c_date_in_market_session* c_date_in_market_session
 
@@ -63,6 +66,8 @@ cdef class ProfileDispatcher:
 
     cpdef bint is_market_session(self, object timestamp)
 
+    cpdef bint is_auction_session(self, object timestamp)
+
     cpdef list trade_calendar(self, date start_date, date end_date)
 
     cpdef date trading_days_before(self, date market_date, int days)
@@ -88,6 +93,9 @@ cdef class Profile:
 
     @staticmethod
     cdef bint c_timestamp_in_market_session(double t)
+
+    @staticmethod
+    cdef bint c_timestamp_in_auction_session(double t)
 
     @staticmethod
     cdef bint c_time_in_market_session(time t)

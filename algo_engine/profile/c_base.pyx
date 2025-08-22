@@ -1,4 +1,4 @@
-from cpython.datetime cimport timedelta, time_hour, time_minute, time_second, time_microsecond
+from cpython.datetime cimport datetime, timedelta, time_hour, time_minute, time_second, time_microsecond
 from libc.math cimport fmod
 from libc.stdlib cimport malloc, free
 
@@ -23,6 +23,7 @@ cdef class ProfileDispatcher:
 
         self.c_trade_calendar = Profile.c_trade_calendar
         self.c_timestamp_in_market_session = Profile.c_timestamp_in_market_session
+        self.c_timestamp_in_auction_session = Profile.c_timestamp_in_auction_session
         self.c_time_in_market_session = Profile.c_time_in_market_session
         self.c_date_in_market_session = Profile.c_date_in_market_session
 
@@ -263,6 +264,23 @@ cdef class ProfileDispatcher:
 
         raise TypeError(f'Invalid timestamp type {type(timestamp)}, except a datetime, time or numeric.')
 
+    cpdef bint is_auction_session(self, object timestamp):
+        cdef double ts
+
+        if isinstance(timestamp, (float, int)):
+            ts = <double> timestamp
+            return self.c_timestamp_in_auction_session(ts)
+
+        if isinstance(timestamp, time):
+            ts = <double> datetime.combine(date.today(), <time> timestamp).timestamp()
+            return self.c_timestamp_in_auction_session(ts)
+
+        if isinstance(timestamp, datetime):
+            ts = <double> timestamp.timestamp()
+            return self.c_timestamp_in_auction_session(ts)
+
+        raise TypeError(f'Invalid timestamp type {type(timestamp)}, except a datetime, time or numeric.')
+
     cpdef list trade_calendar(self, date start_date, date end_date):
         return self.c_trade_calendar(start_date=start_date, end_date=end_date)
 
@@ -347,6 +365,10 @@ cdef class Profile:
         return True
 
     @staticmethod
+    cdef bint c_timestamp_in_auction_session(double t):
+        return False
+
+    @staticmethod
     cdef bint c_time_in_market_session(time t):
         return True
 
@@ -364,6 +386,7 @@ cdef class Profile:
     cdef void c_override_func_ptr(self, ProfileDispatcher profile):
         profile.c_trade_calendar = Profile.c_trade_calendar
         profile.c_timestamp_in_market_session = Profile.c_timestamp_in_market_session
+        profile.c_timestamp_in_auction_session = Profile.c_timestamp_in_auction_session
         profile.c_time_in_market_session = Profile.c_time_in_market_session
         profile.c_date_in_market_session = Profile.c_date_in_market_session
 
