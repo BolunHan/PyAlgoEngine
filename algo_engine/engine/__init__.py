@@ -26,7 +26,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-from .event_engine import EVENT_ENGINE, TOPIC
+from .c_event_engine import EVENT_ENGINE, TOPIC
 # from .market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
 from .c_market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
 from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
