@@ -4,6 +4,7 @@ from Cython.Build import cythonize
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
+import event_engine
 
 class BuildExtWithConfig(build_ext):
     def build_extensions(self):
@@ -63,6 +64,12 @@ extensions = [
     Extension(
         name="algo_engine.engine.c_market_engine",
         sources=["algo_engine/engine/c_market_engine.pyx"],
+        extra_compile_args=["-O3"]
+    ),
+    Extension(
+        name="algo_engine.engine.c_event_engine",
+        sources=["algo_engine/engine/c_event_engine.pyx"],
+        include_dirs=[event_engine.get_include()],
         extra_compile_args=["-O3"]
     )
 ]
