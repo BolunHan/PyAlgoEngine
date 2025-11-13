@@ -104,6 +104,11 @@ class MonitorManager(object):
             monitor_id (str): ID of the monitor to remove.
         """
 
+    def clear_monitors(self) -> None:
+        """
+        Clear all monitors
+        """
+
     def start(self):
         """
         Start the manager.

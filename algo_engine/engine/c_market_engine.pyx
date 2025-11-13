@@ -64,6 +64,9 @@ cdef class MonitorManager:
     cpdef void pop_monitor(self, str monitor_id):
         self.monitor.pop(monitor_id)
 
+    cpdef void clear_monitors(self):
+        self.monitor.clear()
+
     def _work(self, monitor_id: str, market_data: MarketData):
         monitor = self.monitor.get(monitor_id)
         if monitor is not None and monitor.enabled:

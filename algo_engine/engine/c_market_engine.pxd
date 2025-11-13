@@ -6,13 +6,15 @@ cdef MarketDataService C_MDS
 
 
 cdef class MonitorManager:
-    cdef public dict monitor
+    cdef readonly dict monitor
 
     cdef void c_on_market_data(self, _MarketDataBuffer* data_ptr)
 
     cpdef void add_monitor(self, object monitor)
 
     cpdef void pop_monitor(self, str monitor_id)
+
+    cpdef void clear_monitors(self)
 
 
 cdef class MarketDataService:
