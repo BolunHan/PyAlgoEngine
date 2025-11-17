@@ -4,7 +4,7 @@ on:
     push:
         tags:
             - 'v*.*.*'
-        workflow_dispatch:  # Allow manual run on latest commit
+    workflow_dispatch:  # Allow manual run on latest commit
 
 jobs:
     build:
