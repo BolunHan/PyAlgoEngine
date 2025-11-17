@@ -1,45 +1,46 @@
 name: Publish Python Package to PyPI
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+    push:
+        tags:
+            - 'v*.*.*'
+        workflow_dispatch:  # Allow manual run on latest commit
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+        steps:
+            -   name: Checkout repository
+                uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+            -   name: Set up Python
+                uses: actions/setup-python@v4
+                with:
+                    python-version: '3.x'
 
-      - name: Install cibuildwheel
-        run: python -m pip install --upgrade cibuildwheel
+            -   name: Install cibuildwheel
+                run: python -m pip install --upgrade cibuildwheel
 
-      - name: Install dependencies
-        env:
-          GITHUB_ACTIONS: "true"
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt  # Optional
+            -   name: Install dependencies
+                env:
+                    GITHUB_ACTIONS: "true"
+                run: |
+                    pip install --upgrade pip setuptools wheel
+                    pip install -r requirements.txt  # Optional
 
-      - name: Build wheels
-        run: |
-          python -m cibuildwheel --output-dir wheelhouse
-        env:
-          CIBW_SKIP: "pp*"  # Skip PyPy if not needed
-          CIBW_BUILD: "cp3*-manylinux*"  # optional, for only CPython manylinux
-          GITHUB_ACTIONS: "true"
+            -   name: Build wheels
+                run: |
+                    python -m cibuildwheel --output-dir wheelhouse
+                env:
+                    CIBW_SKIP: "pp*"  # Skip PyPy if not needed
+                    CIBW_BUILD: "cp3*-manylinux*"  # optional, for only CPython manylinux
+                    GITHUB_ACTIONS: "true"
 
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: "__token__"
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          pip install twine
-          twine upload wheelhouse/*
+            -   name: Publish to PyPI
+                env:
+                    TWINE_USERNAME: "__token__"
+                    TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+                run: |
+                    pip install twine
+                    twine upload wheelhouse/*
