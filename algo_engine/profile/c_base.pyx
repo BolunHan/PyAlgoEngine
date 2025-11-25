@@ -205,7 +205,9 @@ cdef class ProfileDispatcher:
     # --- python interface ---
 
     def __repr__(self):
-        return f'<Profile {self.profile_id}>({id(self)})'
+        if self.profile_id:
+            return f'<Profile {self.profile_id}>({id(self)})'
+        return f'<Profile DEFAULT>({id(self)})'
 
     cpdef double time_to_seconds(self, time t, bint break_adjusted=True):
         assert self.c_time_in_market_session(t), f'{t} not in trading session'
