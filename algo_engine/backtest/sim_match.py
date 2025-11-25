@@ -5,7 +5,7 @@ import numpy as np
 
 from . import LOGGER
 from ..base import OrderType, MarketData, BarData, TransactionData, TradeData, TickData, TickDataLite, OrderState, OrderData, TradeReport, TradeInstruction, TransactionSide, TransactionDirection
-from ..engine.event_engine import TOPIC, EVENT_ENGINE
+from ..engine import TOPIC, EVENT_ENGINE
 from ..profile import PROFILE
 
 LOGGER = LOGGER.getChild('SimMatch')
