@@ -1,5 +1,5 @@
-# cython: language_level=3
 import enum
+import json
 import time
 import uuid
 from typing import Literal
@@ -84,14 +84,18 @@ cdef class OrderStateHelper:
     cdef bint is_working(int order_state):
         if order_state == E_OrderState.STATE_SENT or order_state == E_OrderState.STATE_PLACED or order_state == E_OrderState.STATE_PARTFILLED or order_state == E_OrderState.STATE_CANCELING:
             return True
+        return False
 
+    @staticmethod
+    cdef bint is_placed(int order_state):
+        if order_state == E_OrderState.STATE_PLACED or order_state == E_OrderState.STATE_PARTFILLED or order_state == E_OrderState.STATE_CANCELING:
+            return True
         return False
 
     @staticmethod
     cdef bint is_done(int order_state):
         if order_state == E_OrderState.STATE_FILLED or order_state == E_OrderState.STATE_CANCELED or order_state == E_OrderState.STATE_REJECTED or order_state == E_OrderState.STATE_INVALID:
             return True
-
         return False
 
 
@@ -194,6 +198,55 @@ cdef class TradeReport:
     @classmethod
     def from_bytes(cls, bytes data):
         return TradeReport.c_from_bytes(data)
+
+    cdef dict c_to_json(self):
+        cdef dict json_dict = {
+            'ticker': self.ticker,
+            'timestamp': self.timestamp,
+            'price': self.price,
+            'volume': self.volume,
+            'side': self.side_int,
+            'notional': self.notional,
+            'multiplier': self.multiplier,
+            'fee': self.fee,
+            'order_id': self.order_id,
+            'trade_id': self.trade_id
+        }
+        return json_dict
+
+    @staticmethod
+    cdef TradeReport c_from_json(dict json_dict):
+        cdef TradeReport instance = TradeReport.__new__(
+            TradeReport,
+            ticker=json_dict['ticker'],
+            timestamp=json_dict['timestamp'],
+            price=json_dict['price'],
+            volume=json_dict['volume'],
+            side=json_dict['side'],
+            notional=json_dict.get('notional', 0.),
+            multiplier=json_dict.get('multiplier', 1.),
+            fee=json_dict.get('fee', 0.),
+            order_id=json_dict.get('order_id', None),
+            trade_id=json_dict.get('trade_id', None)
+        )
+        return instance
+
+    def to_json(self, str fmt='str', **kwargs) -> object:
+        cdef dict json_dict = self.c_to_json()
+
+        if fmt == 'dict':
+            return json_dict
+        elif fmt == 'str':
+            return json.dumps(json_dict, **kwargs)
+        else:
+            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
+
+    @classmethod
+    def from_json(cls, object json_data):
+        if isinstance(json_data, dict):
+            return TradeReport.c_from_json(json_data)
+        cdef dict json_dict = json.loads(json_data)
+        return TradeReport.c_from_json(json_data)
 
     def copy(self):
         return self.__copy__()
@@ -382,6 +435,50 @@ cdef class TradeInstruction:
     def from_bytes(cls, bytes data):
         return TradeInstruction.c_from_bytes(data)
 
+    cdef dict c_to_json(self):
+        cdef dict json_dict = {
+            'ticker': self.ticker,
+            'timestamp': self.timestamp,
+            'side': self.side_int,
+            'volume': self.volume,
+            'order_type': self.order_type_int,
+            'limit_price': self.limit_price,
+            'multiplier': self.multiplier,
+            'order_id': self.order_id,
+        }
+        return json_dict
+
+    @staticmethod
+    cdef TradeInstruction c_from_json(dict json_dict):
+        cdef TradeInstruction instance = TradeInstruction.__new__(
+            TradeInstruction,
+            ticker=json_dict['ticker'],
+            timestamp=json_dict['timestamp'],
+            side=json_dict['side'],
+            volume=json_dict['volume'],
+            order_type=json_dict.get('order_type', 0),
+            limit_price=json_dict.get('limit_price', NAN),
+            multiplier=json_dict.get('multiplier', 1.),
+            order_id=json_dict.get('order_id', None)
+        )
+        return instance
+
+    def to_json(self, str fmt='str', **kwargs) -> object:
+        cdef dict json_dict = self.c_to_json()
+        if fmt == 'dict':
+            return json_dict
+        elif fmt == 'str':
+            return json.dumps(json_dict, **kwargs)
+        else:
+            raise ValueError(f'Invalid format {fmt}, except "dict" or "str".')
+
+    @classmethod
+    def from_json(cls, object json_data):
+        if isinstance(json_data, dict):
+            return TradeInstruction.c_from_json(json_data)
+        cdef dict json_dict = json.loads(json_data)
+        return TradeInstruction.c_from_json(json_dict)
+
     cpdef TradeInstruction reset(self):
         self.trades.clear()
 
@@ -510,6 +607,10 @@ cdef class TradeInstruction:
         return OrderStateHelper.is_working(order_state=self._data.order_state)
 
     @property
+    def is_placed(self) -> bool:
+        return OrderStateHelper.is_placed(order_state=self._data.order_state)
+
+    @property
     def is_done(self) -> bool:
         return OrderStateHelper.is_done(order_state=self._data.order_state)
 
@@ -583,6 +684,18 @@ cdef class TradeInstruction:
     @property
     def start_time(self) -> datetime:
         return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+
+    @property
+    def placed_ts(self) -> float:
+        return self._data.ts_placed
+
+    @property
+    def canceled_ts(self) -> float:
+        return self._data.ts_canceled
+
+    @property
+    def finished_ts(self) -> float:
+        return self._data.ts_finished
 
     @property
     def placed_time(self) -> datetime | None:

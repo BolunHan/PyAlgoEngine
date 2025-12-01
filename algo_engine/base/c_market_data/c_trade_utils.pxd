@@ -10,6 +10,9 @@ cdef class OrderStateHelper:
     cdef bint is_working(int order_state)
 
     @staticmethod
+    cdef bint is_placed(int order_state)
+
+    @staticmethod
     cdef bint is_done(int order_state)
 
 
@@ -28,6 +31,11 @@ cdef class TradeReport:
 
     @staticmethod
     cdef TradeReport c_from_bytes(bytes data)
+
+    cdef dict c_to_json(self)
+
+    @staticmethod
+    cdef TradeReport c_from_json(dict json_dict)
 
 
 cdef class TradeInstruction:
@@ -54,3 +62,8 @@ cdef class TradeInstruction:
 
     @staticmethod
     cdef TradeInstruction c_from_bytes(bytes data)
+
+    cdef dict c_to_json(self)
+
+    @staticmethod
+    cdef TradeInstruction c_from_json(dict json_dict)

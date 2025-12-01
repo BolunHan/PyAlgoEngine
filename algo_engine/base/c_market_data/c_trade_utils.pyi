@@ -5,8 +5,7 @@ from typing import Any, Literal, Optional, Union
 
 from typing_extensions import deprecated
 
-from .c_market_data import OrderType
-from .c_transaction import TransactionSide, TransactionData
+from .c_transaction import OrderType, TransactionSide, TransactionData
 
 
 class OrderState(enum.IntEnum):
@@ -47,6 +46,16 @@ class OrderState(enum.IntEnum):
 
         Returns:
             True for SENT, PLACED, PARTFILLED, or CANCELING states
+        """
+        ...
+
+    @property
+    def is_placed(self) -> bool:
+        """
+        Check if order has been placed, require confirmation from exchange.
+
+        Returns:
+            True for PLACED, PARTFILLED, FILLED, or CANCELING states
         """
         ...
 
@@ -156,9 +165,22 @@ class TradeReport:
         """
         ...
 
+    def to_bytes(self) -> bytes:
+        """Serialize to byte data."""
+        ...
+
     @classmethod
     def from_bytes(cls, data: bytes) -> TradeReport:
         """Deserialize from byte data."""
+        ...
+
+    def to_json(self, fmt: str = 'str', **kwargs) -> dict[str, Any] | str:
+        """Serialize to JSON format."""
+        ...
+
+    @classmethod
+    def from_json(cls, json_dict: dict[str, Any] | str | bytes) -> TradeReport:
+        """Deserialize from JSON format."""
         ...
 
     def copy(self) -> TradeReport:
@@ -167,6 +189,44 @@ class TradeReport:
 
     def to_trade(self) -> TransactionData:
         """Convert to TransactionData format."""
+        ...
+
+    @property
+    def ticker(self) -> str:
+        """Get the financial instrument identifier."""
+        ...
+
+    @property
+    def timestamp(self) -> float:
+        """
+        Get the Unix timestamp of this market data.
+
+        Note: Represents the "last time" (not start time) to prevent future data issues.
+        """
+        ...
+
+    @property
+    def dtype(self) -> int:
+        """Get the DataType int value for this market data class."""
+        ...
+
+    @property
+    def topic(self) -> str:
+        """
+        Get the topic string identifying this market data.
+
+        Example: "000016.SH.TickData"
+        """
+        ...
+
+    @property
+    def market_time(self) -> datetime:
+        """
+        Get the timestamp as a Python datetime object.
+
+        The market_time is subjected to the timezone info. If necessary, set the tz in PROFILE.
+
+        """
         ...
 
     @property
@@ -286,9 +346,22 @@ class TradeInstruction:
         """Get string representation of the instruction."""
         ...
 
+    def to_bytes(self) -> bytes:
+        """Serialize to byte data."""
+        ...
+
     @classmethod
     def from_bytes(cls, data: bytes) -> TradeInstruction:
         """Deserialize from byte data."""
+        ...
+
+    def to_json(self, fmt: str = 'str', **kwargs) -> dict[str, Any] | str:
+        """Serialize to JSON format."""
+        ...
+
+    @classmethod
+    def from_json(cls, json_dict: dict[str, Any] | str | bytes) -> TradeInstruction:
+        """Deserialize from JSON format."""
         ...
 
     def __copy__(self) -> TradeInstruction:
@@ -349,12 +422,60 @@ class TradeInstruction:
         ...
 
     @property
+    def ticker(self) -> str:
+        """Get the financial instrument identifier."""
+        ...
+
+    @property
+    def timestamp(self) -> float:
+        """
+        Get the Unix timestamp of this market data.
+
+        Note: Represents the "last time" (not start time) to prevent future data issues.
+        """
+        ...
+
+    @property
+    def dtype(self) -> int:
+        """Get the DataType int value for this market data class."""
+        ...
+
+    @property
+    def topic(self) -> str:
+        """
+        Get the topic string identifying this market data.
+
+        Example: "000016.SH.TickData"
+        """
+        ...
+
+    @property
+    def market_time(self) -> datetime:
+        """
+        Get the timestamp as a Python datetime object.
+
+        The market_time is subjected to the timezone info. If necessary, set the tz in PROFILE.
+
+        """
+        ...
+
+    @property
     def is_working(self) -> bool:
         """
         Check if order is active/working.
 
         Returns:
             True for SENT, PLACED, PARTFILLED or CANCELING states
+        """
+        ...
+
+    @property
+    def is_placed(self) -> bool:
+        """
+        Check if order has been placed, require confirmation from exchange.
+
+        Returns:
+            True for PLACED, PARTFILLED, FILLED, or CANCELING states
         """
         ...
 
@@ -452,6 +573,18 @@ class TradeInstruction:
     def start_time(self) -> datetime:
         """Get creation time as datetime."""
         ...
+
+    @property
+    def placed_ts(self) -> float:
+        """Get order placement timestamp (if placed)."""
+
+    @property
+    def canceled_ts(self) -> float:
+        """Get cancellation timestamp (if canceled)."""
+
+    @property
+    def finished_ts(self) -> float:
+        """Get completion timestamp (if done)."""
 
     @property
     def placed_time(self) -> Optional[datetime]:
