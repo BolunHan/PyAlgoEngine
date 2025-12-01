@@ -5,7 +5,7 @@ import functools
 import json
 import threading
 import uuid
-from typing import Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -16,6 +16,8 @@ from ..base import TransactionSide, TradeInstruction, MarketData, TradeReport, O
 LOGGER = LOGGER.getChild('AlgoEngine')
 if TYPE_CHECKING:
     from .trade_engine import DirectMarketAccess
+
+order_id_t: type = Union[str | bytes | int | uuid]
 
 __all__ = ['AlgoTemplate', 'AlgoRegistry', 'AlgoEngine', 'ALGO_ENGINE', 'ALGO_REGISTRY']
 
@@ -61,8 +63,8 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
         self._lock = threading.Lock()
         self._thread = threading.Thread(target=self.work)
 
-        self.working_order: dict[str, TradeInstruction] = {}
-        self.order: dict[str, TradeInstruction] = {}
+        self.working_order: dict[order_id_t, TradeInstruction] = {}
+        self.order: dict[order_id_t, TradeInstruction] = {}
 
         self.is_active = False
 
@@ -87,7 +89,7 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
             self.logger.warning(f'[Failed to fill] {self} has no matching for working order {report.order_id}')
             return 0
 
-    def on_canceled(self, order_id: str = None, **kwargs):
+    def on_canceled(self, order_id: order_id_t = None, **kwargs):
         if order_id in self.working_order:
             self._canceled(order=self.working_order[order_id], **kwargs)
             return 1
@@ -517,18 +519,22 @@ class Passive(AlgoTemplate):
         LOGGER.info(f'{self} launching {order_type} {self.ticker} {self.side.name} {volume}')
 
         if volume:
+            order_id = uuid.uuid4()
+            order_id_local = f'{self.__class__.__name__}.{self.ticker}.{self.side.side_name}.{order_id.hex}'
             order = TradeInstruction(
                 ticker=self.ticker,
                 side=self.side,
                 order_type=order_type,
                 volume=volume,
                 limit_price=limit,
-                order_id=f'{self.__class__.__name__}.{self.ticker}.{self.side.side_name}.{uuid.uuid4().hex}',
+                order_id=order_id,
                 timestamp=self.dma.timestamp
             )
 
-            self.working_order[order.order_id] = order
-            self.order[order.order_id] = order
+            order.order_id_local = order_id_local
+
+            self.working_order[order_id] = order
+            self.order[order_id] = order
             self.ts_started = self.dma.timestamp
             self._launch(order=order, **kwargs)
 
@@ -857,7 +863,7 @@ class AlgoRegistry(object, metaclass=Singleton):
         self.passive_timeout = 'passive_timeout'
         self.limit_range = 'limit_range'
 
-    def add_algo(self, name: str, *alias, handler: Type[AlgoTemplate]):
+    def add_algo(self, name: str, *alias, handler: type[AlgoTemplate]):
         self.registry[name] = handler
 
         for _alias in alias:
