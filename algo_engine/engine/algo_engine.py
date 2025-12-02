@@ -17,7 +17,7 @@ LOGGER = LOGGER.getChild('AlgoEngine')
 if TYPE_CHECKING:
     from .trade_engine import DirectMarketAccess
 
-order_id_t: type = Union[str | bytes | int | uuid]
+order_id_t = Union[str | bytes | int | uuid.UUID]
 
 __all__ = ['AlgoTemplate', 'AlgoRegistry', 'AlgoEngine', 'ALGO_ENGINE', 'ALGO_REGISTRY']
 
