@@ -6,6 +6,7 @@ from setuptools.command.build_ext import build_ext
 
 import event_engine
 
+
 class BuildExtWithConfig(build_ext):
     def build_extensions(self):
         macros = []
@@ -73,6 +74,16 @@ extensions = [
         extra_compile_args=["-O3"]
     )
 ]
+
+if os.name == 'posix':
+    extensions.extend([
+        Extension(
+            name="algo_engine.base.c_shm_allocator",
+            sources=["algo_engine/base/c_shm_allocator.pyx"],
+            extra_compile_args=["-O3"],
+            extra_link_args=["-luuid"]
+        )
+    ])
 
 setup(
     name="algo_engine",
