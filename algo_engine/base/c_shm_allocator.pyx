@@ -18,6 +18,13 @@ cdef class SharedMemoryPage:
             return f"<{self.__class__.__name__}>(name={self.name}, capacity={self.capacity:,}, occupied={self.occupied:,})>"
         return f"<{self.__class__.__name__}>(uninitialized)"
 
+    @classmethod
+    def from_buffer(cls, uintptr_t buffer_addr) -> SharedMemoryPage:
+        cdef SharedMemoryPage instance = SharedMemoryPage.__new__(SharedMemoryPage, 0)
+        instance.ctx = <shm_page_ctx*> (<char*> buffer_addr - sizeof(shm_page_ctx))
+        instance.owner = False
+        return instance
+
     def allocated(self):
         cdef shm_memory_block* block = self.ctx.shm_page.allocated
         while block:
@@ -95,6 +102,19 @@ cdef class SharedMemoryBlock:
                 return SharedMemoryBlock.c_from_header(self.block.next_allocated, False)
             return None
 
+    property buffer:
+        def __get__(self):
+            if not self.block:
+                return None
+            cdef size_t size = self.block.size
+            return <char[:size]> self.block.buffer
+
+    property address:
+        def __get__(self):
+            if not self.block:
+                return None
+            return f'{<uintptr_t> self.block.buffer:#0x}'
+
 
 cdef class SharedMemoryAllocator:
     def __cinit__(self, size_t region_size=0, bint owner=True):
@@ -149,6 +169,11 @@ cdef class SharedMemoryAllocator:
             return f"<{self.__class__.__name__}>(name={self.name}, pid={self.pid}, mapped_addr={<uintptr_t> self.ctx.shm_allocator.region}>"
         return f"<{self.__class__.__name__}>(uninitialized)"
 
+    @classmethod
+    def get_pid(cls, str shm_name):
+        cdef bytes shm_name_bytes = shm_name.encode('utf-8')
+        return c_shm_pid(<char*> shm_name_bytes)
+
     cpdef SharedMemoryPage extend(self, size_t capacity=0, bint with_lock=True):
         if not self.ctx:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
@@ -185,6 +210,8 @@ cdef class SharedMemoryAllocator:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         cdef pthread_mutex_t* lock = &self.ctx.shm_allocator.lock if with_lock else NULL
         c_shm_free(<void*> buffer.block.buffer, lock)
+        buffer.owner = False
+        buffer.block = NULL
 
     cpdef void reclaim(self, bint with_lock=True):
         if not self.ctx:
@@ -255,6 +282,18 @@ cdef class SharedMemoryAllocator:
             yield SharedMemoryPage.c_from_header(page)
             page = page.prev
 
+    def allocated(self):
+        if not self.ctx:
+            raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
+        cdef shm_page_ctx* page = self.ctx.active_page
+        cdef shm_memory_block* block
+        while page:
+            block = page.shm_page.allocated
+            while block:
+                yield SharedMemoryBlock.c_from_header(block, False)
+                block = block.next_allocated
+            page = page.prev
+
     def free_list(self):
         if not self.ctx:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
@@ -285,7 +324,7 @@ cdef class SharedMemoryAllocator:
         def __get__(self):
             if not self.ctx or not self.ctx.shm_allocator:
                 return None
-            return f'{<uintptr_t> self.ctx.shm_allocator.region}:#0x'
+            return f'{<uintptr_t> self.ctx.shm_allocator.region:#0x}'
 
     property region_size:
         def __get__(self):
@@ -315,6 +354,13 @@ cdef class SharedMemoryAllocator:
 cdef SharedMemoryAllocator ALLOCATOR = SharedMemoryAllocator(SHM_ALLOCATOR_DEFAULT_REGION_SIZE, True)
 globals()['ALLOCATOR'] = ALLOCATOR
 
+globals()['DEFAULT_AUTOPAGE_CAPACITY'] = DEFAULT_AUTOPAGE_CAPACITY
+globals()['MAX_AUTOPAGE_CAPACITY'] = MAX_AUTOPAGE_CAPACITY
+globals()['DEFAULT_AUTOPAGE_ALIGNMENT'] = DEFAULT_AUTOPAGE_ALIGNMENT
+globals()['SHM_ALLOCATOR_PREFIX'] = PyUnicode_FromString(SHM_ALLOCATOR_PREFIX)
+globals()['SHM_PAGE_PREFIX'] = PyUnicode_FromString(SHM_PAGE_PREFIX)
+globals()['SHM_NAME_LEN'] = SHM_NAME_LEN
+globals()['SHM_ALLOCATOR_DEFAULT_REGION_SIZE'] = SHM_ALLOCATOR_DEFAULT_REGION_SIZE
 
 def cleanup():
     global ALLOCATOR

@@ -24,7 +24,7 @@ consumers; the runtime values come from the compiled extension.
 - SHM_ALLOCATOR_DEFAULT_REGION_SIZE: 128 << 30      # 128 GiB default reserved region
 """
 import ctypes
-from collections.abc import Iterator
+from collections.abc import Generator
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -59,12 +59,31 @@ class SharedMemoryBlock(object):
         This constructor is primarily a typing helper for callers; the
         runtime C extension returns real wrappers. Fields are informational.
 
+        Notes:
+            The block address must point to the start of the block header.
+            If you wish to reconstruct a block from its buffer address, use the ``from_buffer`` classmethod.
+
         Args:
             block (int): The virtual address of the block header.
             owner (bool): Whether this wrapper owns the block.
         """
 
     def __repr__(self) -> str: ...
+
+    @classmethod
+    def from_buffer(cls, buffer_addr: uintptr_t) -> SharedMemoryPage:
+        """Create a block wrapper from a buffer address.
+
+        Notes:
+            The buffer address must point to the start of the user-visible buffer area of a block.
+            The method computes the block header address by subtracting the header size.
+            If you wish to reconstruct a block from its header address, use the constructor directly.
+
+        Args:
+            buffer_addr (int): The virtual address of the block buffer.
+        Returns:
+            SharedMemoryBlock: The block wrapper.
+        """
 
     @property
     def size(self) -> int:
@@ -98,6 +117,22 @@ class SharedMemoryBlock(object):
             SharedMemoryBlock | None: The next allocated block on the page or None.
         """
 
+    @property
+    def buffer(self) -> memoryview:
+        """The raw memory buffer of the block.
+
+        Returns:
+            memoryview: A memoryview of the block buffer. None if uninitialized.
+        """
+
+    @property
+    def address(self) -> str | None:
+        """The virtual address of the block buffer (as hex string).
+
+        Returns:
+            str | None: The block buffer address in hex or None if uninitialized.
+        """
+
 
 class SharedMemoryPage(object):
     """Represents a mapped shared-memory page.
@@ -118,14 +153,14 @@ class SharedMemoryPage(object):
 
     def __repr__(self) -> str: ...
 
-    def allocated(self) -> Iterator[SharedMemoryBlock]:
+    def allocated(self) -> Generator[SharedMemoryBlock]:
         """Iterate allocated blocks on this page, latest-first (LIFO).
 
         Notes:
             The buffers reused by allocator request method, will not update their position.
 
         Yields:
-            Iterator[SharedMemoryBlock]: Allocated blocks (block headers wrapped).
+            Generator[SharedMemoryBlock]: Allocated blocks (block headers wrapped).
         """
 
     def reclaim(self) -> None:
@@ -194,6 +229,17 @@ class SharedMemoryAllocator(object):
         """
 
     def __repr__(self) -> str: ...
+
+    @classmethod
+    def get_pid(cls, shm_name: str) -> int:
+        """Get the creator PID of a given allocator or page SHM object.
+
+        Args:
+            shm_name (str): The SHM object name (with leading '/').
+
+        Returns:
+            int: The creator PID.
+        """
 
     def extend(self, capacity: int = 0, with_lock: bool = True) -> SharedMemoryPage:
         """Extend the allocator with a new page and return a page wrapper.
@@ -291,19 +337,25 @@ class SharedMemoryAllocator(object):
         implementation's `c_shm_clear_dangling` helper.
         """
 
-    # Iterators / views
-    def pages(self) -> Iterator[SharedMemoryPage]:
+    def pages(self) -> Generator[SharedMemoryPage]:
         """Iterate mapped pages from newest to oldest.
 
         Yields:
-            Iterator[SharedMemoryPage]: Page wrappers in newest-first order.
+            Generator[SharedMemoryPage]: Page wrappers in newest-first order.
         """
 
-    def free_list(self) -> Iterator[SharedMemoryBlock]:
+    def allocated(self) -> Generator[SharedMemoryBlock]:
+        """Iterate all allocated blocks across all pages.
+
+        Yields:
+            Generator[SharedMemoryBlock]: Allocated blocks across all pages.
+        """
+
+    def free_list(self) -> Generator[SharedMemoryBlock]:
         """Iterate the allocator-level free list (recyclable blocks).
 
         Yields:
-            Iterator[SharedMemoryBlock]: Free blocks available for reuse.
+            Generator[SharedMemoryBlock]: Free blocks available for reuse.
         """
 
     # Metadata
