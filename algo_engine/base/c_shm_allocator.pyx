@@ -352,8 +352,10 @@ cdef class SharedMemoryAllocator:
 
 
 cdef SharedMemoryAllocator ALLOCATOR = SharedMemoryAllocator(SHM_ALLOCATOR_DEFAULT_REGION_SIZE, True)
-globals()['ALLOCATOR'] = ALLOCATOR
+cdef shm_allocator_ctx* C_ALLOCATOR = ALLOCATOR.ctx
 
+
+globals()['ALLOCATOR'] = ALLOCATOR
 globals()['DEFAULT_AUTOPAGE_CAPACITY'] = DEFAULT_AUTOPAGE_CAPACITY
 globals()['MAX_AUTOPAGE_CAPACITY'] = MAX_AUTOPAGE_CAPACITY
 globals()['DEFAULT_AUTOPAGE_ALIGNMENT'] = DEFAULT_AUTOPAGE_ALIGNMENT
@@ -362,9 +364,11 @@ globals()['SHM_PAGE_PREFIX'] = PyUnicode_FromString(SHM_PAGE_PREFIX)
 globals()['SHM_NAME_LEN'] = SHM_NAME_LEN
 globals()['SHM_ALLOCATOR_DEFAULT_REGION_SIZE'] = SHM_ALLOCATOR_DEFAULT_REGION_SIZE
 
+
 def cleanup():
-    global ALLOCATOR
+    global ALLOCATOR, C_ALLOCATOR
     globals()['ALLOCATOR'] = ALLOCATOR = None
+    C_ALLOCATOR = NULL
     c_shm_clear_dangling()
 
 

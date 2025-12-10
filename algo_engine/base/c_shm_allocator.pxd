@@ -132,3 +132,4 @@ cdef class SharedMemoryAllocator:
 
 
 cdef SharedMemoryAllocator ALLOCATOR
+cdef shm_allocator_ctx* C_ALLOCATOR

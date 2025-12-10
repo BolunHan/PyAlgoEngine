@@ -1,6 +1,7 @@
-# cython: language_level=3
 from cpython.datetime cimport datetime
-from libc.stdint cimport int8_t, uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
+from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
+
+from ..c_shm_allocator cimport shm_allocator_ctx
 
 
 cdef extern from "c_market_data_config.h":
@@ -14,6 +15,18 @@ cdef extern from "c_market_data_config.h":
 
 # Declare external constants
 cdef extern from "c_market_data.h":
+    const char* internal_dtype_name
+    const char* transaction_dtype_name
+    const char* order_dtype_name
+    const char* tick_lite_dtype_name
+    const char* tick_dtype_name
+    const char* bar_dtype_name
+    const char* report_dtype_name
+    const char* instruction_dtype_name
+    const char* generic_dtype_name
+
+    const size_t DTYPE_MIN_SIZE
+    const size_t DTYPE_MAX_SIZE
 
     ctypedef enum direction_t:
         DIRECTION_UNKNOWN
@@ -106,7 +119,7 @@ cdef extern from "c_market_data.h":
         id_type_t id_type
         char data[LONG_ID_SIZE]
 
-    ctypedef struct internal_buffer_t:
+    ctypedef struct internal_t:
         meta_info_t meta_info
         uint32_t code
 
@@ -115,10 +128,10 @@ cdef extern from "c_market_data.h":
         double volume
         uint64_t n_orders
 
-    ctypedef struct order_book_buffer_t:
+    ctypedef struct order_book_t:
         order_book_entry_t entries[BOOK_SIZE]
 
-    ctypedef struct candlestick_buffer_t:
+    ctypedef struct candlestick_t:
         meta_info_t meta_info
         double bar_span
         double high_price
@@ -129,7 +142,7 @@ cdef extern from "c_market_data.h":
         double notional
         uint64_t trade_count
 
-    ctypedef struct tick_data_lite_buffer_t:
+    ctypedef struct tick_data_lite_t:
         meta_info_t meta_info
         double bid_price
         double bid_volume
@@ -142,16 +155,16 @@ cdef extern from "c_market_data.h":
         double total_traded_notional
         uint64_t total_trade_count
 
-    ctypedef struct tick_data_buffer_t:
-        tick_data_lite_buffer_t lite
+    ctypedef struct tick_data_t:
+        tick_data_lite_t lite
         double total_bid_volume
         double total_ask_volume
         double weighted_bid_price
         double weighted_ask_price
-        order_book_buffer_t bid
-        order_book_buffer_t ask
+        order_book_t bid
+        order_book_t ask
 
-    ctypedef struct transaction_data_buffer_t:
+    ctypedef struct transaction_data_t:
         meta_info_t meta_info
         double price
         double volume
@@ -162,7 +175,7 @@ cdef extern from "c_market_data.h":
         id_t buy_id
         id_t sell_id
 
-    ctypedef struct order_data_buffer_t:
+    ctypedef struct order_data_t:
         meta_info_t meta_info
         double price
         double volume
@@ -170,7 +183,7 @@ cdef extern from "c_market_data.h":
         id_t order_id
         order_type_t order_type
 
-    ctypedef struct trade_report_buffer_t:
+    ctypedef struct trade_report_t:
         meta_info_t meta_info
         double price
         double volume
@@ -181,7 +194,7 @@ cdef extern from "c_market_data.h":
         long_id_t order_id
         long_id_t trade_id
 
-    ctypedef struct trade_instruction_buffer_t:
+    ctypedef struct trade_instruction_t:
         meta_info_t meta_info
         double limit_price
         double volume
@@ -197,53 +210,54 @@ cdef extern from "c_market_data.h":
         double ts_canceled
         double ts_finished
 
-    ctypedef union market_data_buffer_t:
+    ctypedef union market_data_t:
         meta_info_t meta_info
-        internal_buffer_t internal
-        transaction_data_buffer_t transaction_data
-        order_data_buffer_t order_data
-        candlestick_buffer_t bar_data
-        tick_data_lite_buffer_t tick_data_lite
-        tick_data_buffer_t tick_data_full
-        trade_report_buffer_t trade_report
-        trade_instruction_buffer_t trade_instruction
+        internal_t internal
+        transaction_data_t transaction_data
+        order_data_t order_data
+        candlestick_t bar_data
+        tick_data_lite_t tick_data_lite
+        tick_data_t tick_data_full
+        trade_report_t trade_report
+        trade_instruction_t trade_instruction
 
-    int8_t direction_to_sign(direction_t x) noexcept nogil
-    void platform_usleep(unsigned int usec) noexcept nogil
-    int compare_md_ptr(const void* a, const void* b) noexcept nogil
-    int compare_entries_bid(const void* a, const void* b) noexcept nogil
-    int compare_entries_ask(const void* a, const void* b) noexcept nogil
+    void c_usleep(unsigned int usec) noexcept nogil
+    market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* allocator, int with_lock)
+    void c_md_free(market_data_t* market_data, shm_allocator_ctx* allocator, int with_lock)
+    double c_md_get_price(const market_data_t* market_data) noexcept nogil
+    offset_t c_md_get_offset(side_t side) noexcept nogil
+    direction_t c_md_get_direction(side_t side) noexcept nogil
+    int8_t c_md_get_sign(direction_t x) noexcept nogil
+    size_t c_md_get_size(data_type_t dtype) noexcept nogil
+    const char* c_md_dtype_name(data_type_t dtype) noexcept nogil
+    size_t c_md_serialized_size(const market_data_t* market_data)
+    size_t c_md_serialize(const market_data_t* market_data, char* out)
+    int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
+    int c_md_compare_bid(const void* a, const void* b) noexcept nogil
+    int c_md_compare_ask(const void* a, const void* b) noexcept nogil
 
 
 # Declare MarketData class
-cdef class _MarketDataVirtualBase:
+cdef class MarketData:
     cdef dict __dict__
-    cdef market_data_buffer_t* _data_ptr
+    cdef readonly uintptr_t data_addr
+
+    cdef market_data_t* header
 
     @staticmethod
-    cdef inline size_t c_get_size(uint8_t dtype)
+    cdef inline object c_from_header(market_data_t* market_data)
 
-    @staticmethod
-    cdef inline str c_dtype_name(uint8_t dtype)
+    cdef inline size_t c_get_size(self)
 
-    @staticmethod
-    cdef inline object c_ptr_to_data(market_data_buffer_t* data_ptr)
+    cdef inline str c_dtype_name(self)
 
-    @staticmethod
-    cdef inline bytes c_ptr_to_bytes(market_data_buffer_t* data_ptr)
-
-    @staticmethod
-    cdef inline size_t c_max_size()
-
-    @staticmethod
-    cdef inline size_t c_min_size()
-
-    @staticmethod
-    cdef inline datetime c_to_dt(double timestamp)
+    cdef inline bytes c_to_bytes(self)
 
 
 cdef class FilterMode:
-    cdef public uint32_t value
+    cdef public filter_mode_t value
 
     @staticmethod
-    cdef inline bint c_mask_data(meta_info_t* data_addr, uint32_t filter_mode)
+    cdef inline bint c_mask_data(meta_info_t* data_addr, filter_mode_t filter_mode)
+
+    cpdef bint mask_data(self, MarketData market_data)
