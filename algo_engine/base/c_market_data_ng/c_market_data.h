@@ -90,6 +90,14 @@ typedef enum order_state_t {
     STATE_CANCELED      = 9
 } order_state_t;
 
+typedef enum id_type_t {
+    ID_UNKNOWN          = 0,
+    ID_INT              = 1,
+    ID_STRING           = 2,
+    ID_BYTE             = 3,
+    ID_UUID             = 4
+} id_type_t;
+
 typedef enum data_type_t {
     DTYPE_UNKNOWN       = 0,
     DTYPE_INTERNAL      = 1,
@@ -115,25 +123,23 @@ typedef enum filter_mode_t {
 // ========== Structs ==========
 
 typedef struct meta_info_t {
-    uint8_t dtype;
+    data_type_t dtype;
     char* ticker;
     double timestamp;
 } meta_info_t;
 
 typedef struct id_t {
-    uint8_t id_type;
+    id_type_t id_type;
     char data[ID_SIZE];
 } id_t;
 
 typedef struct long_id_t {
-    uint8_t id_type;
+    id_type_t id_type;
     char data[LONG_ID_SIZE];
 } long_id_t;
 
 typedef struct internal_buffer_t {
-    uint8_t dtype;
-    char ticker[TICKER_SIZE];
-    double timestamp;
+    meta_info_t meta_info;
     uint32_t code;
 } internal_buffer_t;
 
@@ -187,7 +193,7 @@ typedef struct transaction_data_buffer_t {
     meta_info_t meta_info;
     double price;
     double volume;
-    uint8_t side;
+    side_t side;
     double multiplier;
     double notional;
     id_t transaction_id;
@@ -199,16 +205,16 @@ typedef struct order_data_buffer_t {
     meta_info_t meta_info;
     double price;
     double volume;
-    uint8_t side;
+    side_t side;
     id_t order_id;
-    uint8_t order_type;
+    order_type_t order_type;
 } order_data_buffer_t;
 
 typedef struct trade_report_buffer_t {
     meta_info_t meta_info;
     double price;
     double volume;
-    uint8_t side;
+    side_t side;
     double multiplier;
     double notional;
     double fee;
@@ -220,11 +226,11 @@ typedef struct trade_instruction_buffer_t {
     meta_info_t meta_info;
     double limit_price;
     double volume;
-    uint8_t side;
+    side_t side;
     long_id_t order_id;
-    int32_t order_type;
+    order_type_t order_type;
     double multiplier;
-    uint8_t order_state;
+    order_state_t order_state;
     double filled_volume;
     double filled_notional;
     double fee;
@@ -247,7 +253,7 @@ typedef union market_data_buffer_t {
 
 // ========== Utility Functions ==========
 
-static inline int8_t direction_to_sign(uint8_t x) {
+static inline int8_t direction_to_sign(direction_t x) {
     return sign_lut[x & 0b11];
 }
 

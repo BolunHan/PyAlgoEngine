@@ -17,6 +17,10 @@
 #define ID_SIZE 16
 #endif
 
+#ifndef LONG_ID_SIZE
+#define LONG_ID_SIZE 128
+#endif
+
 #ifndef MAX_WORKERS
 #define MAX_WORKERS 128
 #endif
