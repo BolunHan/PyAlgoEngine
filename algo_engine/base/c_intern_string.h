@@ -67,12 +67,28 @@ static inline void c_istr_map_free(istr_map* map);
 static inline int c_istr_map_extend(istr_map* map, size_t new_capacity);
 
 /*
+* @brief Lookup an interned string in the map without locking.
+* @param map Pointer to the istr_map.
+* @param key Input string to lookup.
+* @return Pointer to the istr_entry if found, or NULL if not found.
+*/
+static inline const istr_entry* c_istr_map_lookup(istr_map* map, const char* key);
+
+/*
+* @brief Lookup an interned string in the map with locking.
+* @param map Pointer to the istr_map.
+* @param key Input string to lookup.
+* @return Pointer to the istr_entry if found, or NULL if not found.
+*/
+static inline const istr_entry* c_istr_map_lookup_synced(istr_map* map, const char* key);
+
+/*
 * @brief Intern a string, returning a pointer to the internalized copy, lock free.
 * @param map Pointer to the istr_map.
 * @param key Input string to intern.
 * @return Pointer to the interned string, or NULL on failure.
 */
-static inline char* c_istr(istr_map* map, const char* key);
+static inline const char* c_istr(istr_map* map, const char* key);
 
 /*
 * @brief Intern a string, returning a pointer to the internalized copy, with locking.
@@ -80,7 +96,7 @@ static inline char* c_istr(istr_map* map, const char* key);
 * @param key Input string to intern.
 * @return Pointer to the interned string, or NULL on failure.
 */
-static inline char* c_istr_synced(istr_map* map, const char* key);
+static inline const char* c_istr_synced(istr_map* map, const char* key);
 
 // ========== Utility Functions ==========
 
@@ -246,7 +262,60 @@ fail_and_return:
     return -1;
 }
 
-static inline char* c_istr(istr_map* map, const char* key) {
+static inline const istr_entry* c_istr_map_lookup(istr_map* map, const char* key) {
+    if (!map || !map->capacity || !key) return NULL;
+
+    // Step 1: Compute hash and index
+    size_t key_length = strlen(key);
+    uint64_t hash = fnv1a_hash(key, key_length);
+    size_t capacity = map->capacity;
+    uint64_t idx = hash % capacity;
+    istr_entry* pool = map->pool;
+    istr_entry* entry = pool + idx;
+
+    // Step 2: Search for existing entry
+    while (entry->internalized) {
+        if (strcmp(entry->internalized, key) == 0) {
+            return entry;
+        }
+        idx++;
+        if (idx == capacity) idx = 0;
+        entry = pool + idx;
+    }
+
+    return NULL;
+}
+
+static inline const istr_entry* c_istr_map_lookup_synced(istr_map* map, const char* key) {
+    if (!map || !map->capacity || !key) return NULL;
+
+    pthread_mutex_t* lock = map->lock;
+    pthread_mutex_lock(lock);
+
+    // Step 1: Compute hash and index
+    size_t key_length = strlen(key);
+    uint64_t hash = fnv1a_hash(key, key_length);
+    size_t capacity = map->capacity;
+    uint64_t idx = hash % capacity;
+    istr_entry* pool = map->pool;
+    istr_entry* entry = pool + idx;
+
+    // Step 2: Search for existing entry
+    while (entry->internalized) {
+        if (strcmp(entry->internalized, key) == 0) {
+            pthread_mutex_unlock(lock);
+            return entry;
+        }
+        idx++;
+        if (idx == capacity) idx = 0;
+        entry = pool + idx;
+    }
+
+    pthread_mutex_unlock(lock);
+    return NULL;
+}
+
+static inline const char* c_istr(istr_map* map, const char* key) {
     if (!map || !map->capacity || !key) return NULL;
 
     // Step 1: Compute hash and index
@@ -298,7 +367,7 @@ static inline char* c_istr(istr_map* map, const char* key) {
     return interned_copy;
 }
 
-static inline char* c_istr_synced(istr_map* map, const char* key) {
+static inline const char* c_istr_synced(istr_map* map, const char* key) {
     if (!map || !map->capacity || !key) return NULL;
 
     // Step 1: Compute hash and index
