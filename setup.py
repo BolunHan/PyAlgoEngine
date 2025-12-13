@@ -80,8 +80,12 @@ if os.name == 'posix':
         Extension(
             name="algo_engine.base.c_shm_allocator",
             sources=["algo_engine/base/c_shm_allocator.pyx"],
-            extra_compile_args=["-O3"],
-            extra_link_args=["-luuid"]
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.base.c_intern_string",
+            sources=["algo_engine/base/c_intern_string.pyx"],
+            extra_compile_args=["-O3"]
         )
     ])
 
