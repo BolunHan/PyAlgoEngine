@@ -18,7 +18,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <uuid/uuid.h>
 
 // Configuration
 #ifndef DEFAULT_AUTOPAGE_CAPACITY
@@ -109,13 +108,6 @@ static size_t c_page_roundup(size_t size);
 static size_t c_block_roundup(size_t size);
 
 /**
- * @brief Build a SHM name with prefix, pid, and uuid.
- * @param prefix SHM name prefix (may include leading '/').
- * @param out Output buffer of length SHM_NAME_LEN.
- */
-static inline void c_shm_name(const char* prefix, char* out);
-
-/**
  * @brief Scan /dev/shm for an entry matching prefix.
  * @param prefix Prefix to match (may include leading '/').
  * @param out Output buffer to receive the found name (with leading '/').
@@ -125,10 +117,11 @@ static inline int c_shm_scan(const char* prefix, char* out);
 
 /**
  * @brief Allocate a new shared-memory page metadata + fd (not yet mapped).
+ * @param allocator Allocator metadata (shared) or NULL.
  * @param page_capacity Total bytes including metadata.
  * @return Page context or NULL on failure.
  */
-static inline shm_page_ctx* c_shm_page_new(size_t page_capacity);
+static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t page_capacity);
 
 /**
  * @brief Map a page into the allocator's reserved region at the next offset.
@@ -243,13 +236,18 @@ static size_t c_block_roundup(size_t size) {
     return (size + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
 }
 
-static inline void c_shm_name(const char* prefix, char* out) {
-    uuid_t u;
-    char us[37];
-    uuid_generate(u);
-    uuid_unparse_lower(u, us);
+static inline void c_shm_allocator_name(const void* region, char* out) {
     pid_t pid = getpid();
-    snprintf(out, SHM_NAME_LEN, "%s_%d_%s", prefix, (int) pid, us);
+    // The shm name should be in format of {prefix}_{pid}_{region_hex}
+    snprintf(out, SHM_NAME_LEN, "%s_%d_%lx", SHM_ALLOCATOR_PREFIX, (int) pid, (uintptr_t) region);
+
+}
+
+static inline void c_shm_page_name(shm_allocator_t* allocator, char* out) {
+    pid_t pid = getpid();
+    size_t page_idx = allocator->mapped_pages;
+    // The shm name should be in format of {prefix}_{pid}_{6 digit page_idx}
+    snprintf(out, SHM_NAME_LEN, "%s_%d_%06zu", SHM_PAGE_PREFIX, (int) pid, page_idx);
 }
 
 static inline int c_shm_scan(const char* prefix, char* out) {
@@ -299,7 +297,7 @@ static inline int c_shm_scan(const char* prefix, char* out) {
     return 0;
 }
 
-static inline shm_page_ctx* c_shm_page_new(size_t page_capacity) {
+static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t page_capacity) {
     shm_page_ctx* ctx = (shm_page_ctx*) calloc(1, sizeof(shm_page_ctx));
     if (!ctx) {
         return NULL;
@@ -316,7 +314,7 @@ static inline shm_page_ctx* c_shm_page_new(size_t page_capacity) {
     meta->occupied = sizeof(shm_page_t);
     meta->offset = 0;
 
-    c_shm_name(SHM_PAGE_PREFIX, meta->shm_name);
+    c_shm_page_name(allocator, meta->shm_name);
 
     int fd = shm_open(meta->shm_name, O_CREAT | O_RDWR | O_EXCL, 0600);
     if (fd == -1) {
@@ -479,7 +477,7 @@ static inline shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_
     }
 
     // Step 2: Create new page
-    shm_page_ctx* page_ctx = c_shm_page_new(capacity);
+    shm_page_ctx* page_ctx = c_shm_page_new(allocator, capacity);
     if (!page_ctx) {
         if (locked) pthread_mutex_unlock(lock);
         return NULL;
@@ -514,33 +512,7 @@ static inline shm_allocator_ctx* c_shm_allocator_new(size_t region_size) {
         region_size = SHM_ALLOCATOR_DEFAULT_REGION_SIZE; // 128 GiB
     }
 
-    // Step 1: Create SHM object for allocator metadata
-    char meta_shm_name[SHM_NAME_LEN];
-    c_shm_name(SHM_ALLOCATOR_PREFIX, meta_shm_name);
-
-    int meta_fd = shm_open(meta_shm_name, O_CREAT | O_RDWR | O_EXCL, 0600);
-    if (meta_fd == -1) {
-        free(ctx);
-        return NULL;
-    }
-
-    if (ftruncate(meta_fd, sizeof(shm_allocator_t)) != 0) {
-        close(meta_fd);
-        shm_unlink(meta_shm_name);
-        free(ctx);
-        return NULL;
-    }
-
-    // Step 2: Map allocator metadata into memory
-    shm_allocator_t* meta = (shm_allocator_t*) mmap(NULL, sizeof(shm_allocator_t), PROT_READ | PROT_WRITE, MAP_SHARED, meta_fd, 0);
-    if (meta == MAP_FAILED) {
-        close(meta_fd);
-        shm_unlink(meta_shm_name);
-        free(ctx);
-        return NULL;
-    }
-
-    // Step 3: Reserve virtual address space for the 128 GiB page region
+    // Step 1: Reserve virtual address space for the 128 GiB page region
     void* virtual_region = mmap(
         NULL, region_size,
         PROT_NONE,
@@ -548,9 +520,35 @@ static inline shm_allocator_ctx* c_shm_allocator_new(size_t region_size) {
         -1, 0
     );
     if (virtual_region == MAP_FAILED) {
-        munmap(meta, sizeof(shm_allocator_t));
+        free(ctx);
+        return NULL;
+    }
+
+    // Step 2: Create SHM object for allocator metadata
+    char meta_shm_name[SHM_NAME_LEN];
+    c_shm_allocator_name(virtual_region, meta_shm_name);
+
+    int meta_fd = shm_open(meta_shm_name, O_CREAT | O_RDWR | O_EXCL, 0600);
+    if (meta_fd == -1) {
+        munmap(virtual_region, region_size);
+        free(ctx);
+        return NULL;
+    }
+
+    if (ftruncate(meta_fd, sizeof(shm_allocator_t)) != 0) {
         close(meta_fd);
         shm_unlink(meta_shm_name);
+        munmap(virtual_region, region_size);
+        free(ctx);
+        return NULL;
+    }
+
+    // Step 3: Map allocator metadata into memory
+    shm_allocator_t* meta = (shm_allocator_t*) mmap(NULL, sizeof(shm_allocator_t), PROT_READ | PROT_WRITE, MAP_SHARED, meta_fd, 0);
+    if (meta == MAP_FAILED) {
+        close(meta_fd);
+        shm_unlink(meta_shm_name);
+        munmap(virtual_region, region_size);
         free(ctx);
         return NULL;
     }

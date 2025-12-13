@@ -62,7 +62,8 @@ cdef extern from "c_shm_allocator.h":
 
     size_t c_page_roundup(size_t size)
     size_t c_block_roundup(size_t size)
-    void c_shm_name(const char* prefix, char* out)
+    void c_shm_allocator_name(const void* region, char* out)
+    void c_shm_page_name(shm_allocator_t* allocator, char* out)
     int c_shm_scan(const char* prefix, char* out)
     shm_page_ctx* c_shm_page_new(size_t page_capacity)
     int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_ctx)
