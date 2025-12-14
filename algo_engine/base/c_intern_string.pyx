@@ -88,9 +88,13 @@ cdef class InternStringPool:
             return None
 
 
-cdef InternStringPool POOL = InternStringPool()
+cdef istr_map* C_POOL = c_istr_map_new(0, C_ALLOCATOR)
+cdef InternStringPool POOL = InternStringPool.c_from_header(C_POOL, True)
 globals()['POOL'] = POOL
-cdef istr_map* C_POOL = POOL.pool
+
+cdef istr_map* C_INTRA_POOL = c_istr_map_new(0, NULL)
+cdef InternStringPool INTER_POOL = InternStringPool.c_from_header(C_INTRA_POOL, True)
+globals()['INTER_POOL'] = INTER_POOL
 
 
 cdef class InternString:

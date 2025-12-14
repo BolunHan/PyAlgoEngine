@@ -50,8 +50,10 @@ cdef class InternStringPool:
     cpdef InternString istr(self, str string, bint with_lock=*)
 
 
-cdef InternStringPool POOL
 cdef istr_map* C_POOL
+cdef InternStringPool POOL
+cdef istr_map* C_INTRA_POOL
+cdef InternStringPool INTER_POOL
 
 
 cdef class InternString:
