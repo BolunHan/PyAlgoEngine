@@ -2,7 +2,7 @@ import time
 import unittest
 
 from algo_engine.base import c_intern_string as cis
-from algo_engine.base.c_intern_string import InternStringPool, InternString, POOL
+from algo_engine.base.c_intern_string import InternStringPool, InternString, POOL, INTRA_POOL
 
 
 class TestCInternString(unittest.TestCase):
@@ -94,6 +94,17 @@ class TestCInternString(unittest.TestCase):
         POOL.istr('dog')
         p.join()
         self.assertEqual(p.exitcode, 0)
+
+    def test_local_pool(self):
+        s1 = INTRA_POOL.istr('local1')
+        s2 = INTRA_POOL.istr('local2')
+        self.assertIsNotNone(s1)
+        self.assertIsNotNone(s2)
+
+        s1_inter = INTRA_POOL.istr('local1')
+        self.assertEqual(s1.address, s1_inter.address)
+        self.assertIn(s1.string, [_.string for _ in INTRA_POOL.internalized()])
+        self.assertIn(s2.string, [_.string for _ in INTRA_POOL.internalized()])
 
 
 if __name__ == '__main__':

@@ -109,5 +109,5 @@ class InternString(object):
 POOL: InternStringPool
 """The global singleton multi-process InternStringPool instance for general use."""
 
-INTER_POOL: InternStringPool
+INTRA_POOL: InternStringPool
 """The global singleton local thread InternStringPool instance for general use."""
