@@ -4,7 +4,9 @@
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "c_market_data_config.h"
+#include "c_heap_allocator.h"
 #include "c_shm_allocator.h"
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -106,13 +108,13 @@ typedef enum order_state_t {
     STATE_CANCELED      = 9
 } order_state_t;
 
-typedef enum id_type_t {
-    ID_UNKNOWN          = 0,
-    ID_INT              = 1,
-    ID_STRING           = 2,
-    ID_BYTE             = 3,
-    ID_UUID             = 4
-} id_type_t;
+typedef enum mid_type_t {
+    MID_UNKNOWN         = 0,
+    MID_INT             = 1,
+    MID_STRING          = 2,
+    MID_BYTE            = 3,
+    MID_UUID            = 4
+} mid_type_t;
 
 typedef enum data_type_t {
     DTYPE_UNKNOWN       = 0,
@@ -140,19 +142,21 @@ typedef enum filter_mode_t {
 
 typedef struct meta_info_t {
     data_type_t dtype;
-    char* ticker;
+    const char* ticker;
     double timestamp;
+    shm_allocator_t* shm_allocator;
+    heap_allocator_t* heap_allocator;
 } meta_info_t;
 
-typedef struct id_t {
-    id_type_t id_type;
+typedef struct mid_t {
+    mid_type_t id_type;
     char data[ID_SIZE];
-} id_t;
+} mid_t;
 
-typedef struct long_id_t {
-    id_type_t id_type;
+typedef struct long_mid_t {
+    mid_type_t id_type;
     char data[LONG_ID_SIZE];
-} long_id_t;
+} long_mid_t;
 
 typedef struct internal_t {
     meta_info_t meta_info;
@@ -212,9 +216,9 @@ typedef struct transaction_data_t {
     side_t side;
     double multiplier;
     double notional;
-    id_t transaction_id;
-    id_t buy_id;
-    id_t sell_id;
+    mid_t transaction_id;
+    mid_t buy_id;
+    mid_t sell_id;
 } transaction_data_t;
 
 typedef struct order_data_t {
@@ -222,7 +226,7 @@ typedef struct order_data_t {
     double price;
     double volume;
     side_t side;
-    id_t order_id;
+    mid_t order_id;
     order_type_t order_type;
 } order_data_t;
 
@@ -234,8 +238,8 @@ typedef struct trade_report_t {
     double multiplier;
     double notional;
     double fee;
-    long_id_t order_id;
-    long_id_t trade_id;
+    long_mid_t order_id;
+    long_mid_t trade_id;
 } trade_report_t;
 
 typedef struct trade_instruction_t {
@@ -243,7 +247,7 @@ typedef struct trade_instruction_t {
     double limit_price;
     double volume;
     side_t side;
-    long_id_t order_id;
+    long_mid_t order_id;
     order_type_t order_type;
     double multiplier;
     order_state_t order_state;
@@ -267,6 +271,122 @@ typedef union market_data_t {
     trade_instruction_t trade_instruction;
 } market_data_t;
 
+// ========== Forward Declarations (Public API) ==========
+
+/**
+ * @brief Sleep for a number of microseconds (cross-platform).
+ * @param usec Microseconds to sleep.
+ */
+static inline void c_usleep(unsigned int usec);
+
+/**
+ * @brief Allocate a new market_data buffer of the specified dtype.
+ * @param dtype Concrete data type to allocate.
+ * @param shm_allocator Shared-memory allocator context, or NULL.
+ * @param heap_allocator Heap allocator, or NULL.
+ * @param with_lock Whether to lock allocator during allocation.
+ * @return Pointer to allocated `market_data_t`, or NULL on failure.
+ */
+static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock);
+
+/**
+ * @brief Free or recycle a previously allocated market_data buffer.
+ * @param market_data Pointer returned by `c_md_new`.
+ * @param with_lock Whether to lock allocator during free.
+ */
+static inline void c_md_free(market_data_t* market_data, int with_lock);
+
+/**
+ * @brief Get the representative price from a market_data union.
+ * @param market_data The data buffer.
+ * @return Extracted price or 0.0 if unavailable.
+ */
+static inline double c_md_get_price(const market_data_t* market_data);
+
+/**
+ * @brief Extract the offset bits from a composed `side_t`.
+ * @param side Composed side value.
+ * @return `offset_t` component.
+ */
+static inline offset_t c_md_get_offset(side_t side);
+
+/**
+ * @brief Extract the direction bits from a composed `side_t`.
+ * @param side Composed side value.
+ * @return `direction_t` component.
+ */
+static inline direction_t c_md_get_direction(side_t side);
+
+/**
+ * @brief Map a direction to its sign (-1, 0, 1).
+ * @param x Direction value.
+ * @return Sign as int8_t.
+ */
+static inline int8_t c_md_get_sign(direction_t x);
+
+/**
+ * @brief Get the size in bytes of a concrete dtype.
+ * @param dtype Data type.
+ * @return Size of the corresponding struct/union.
+ */
+static inline size_t c_md_get_size(data_type_t dtype);
+
+/**
+ * @brief Get the human-readable name of a dtype.
+ * @param dtype Data type.
+ * @return Constant string name, or NULL if unknown.
+ */
+static inline const char* c_md_dtype_name(data_type_t dtype);
+
+/**
+ * @brief Compute serialized size of a market_data buffer.
+ * @param market_data Buffer to measure.
+ * @return Total bytes required for serialization.
+ */
+static inline size_t c_md_serialized_size(const market_data_t* market_data);
+
+/**
+ * @brief Serialize market_data into a contiguous buffer.
+ * @param market_data Source buffer.
+ * @param out Destination byte buffer (preallocated).
+ * @return Number of bytes written.
+ */
+static inline size_t c_md_serialize(const market_data_t* market_data, char* out);
+
+/**
+ * @brief Deserialize market_data from a contiguous buffer.
+ * @param src Source byte buffer.
+ * @param shm_allocator Shared allocator context, or NULL.
+ * @param heap_allocator Heap allocator, or NULL.
+ * @param with_lock Whether to lock allocator during allocation.
+ * @return Newly allocated `market_data_t*`, or NULL on failure.
+ */
+static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock);
+
+/**
+ * @brief Compare two meta_info pointers by timestamp (ascending).
+ * @param a Pointer to pointer of meta_info_t.
+ * @param b Pointer to pointer of meta_info_t.
+ * @return -1, 0, or 1 like strcmp semantics.
+ */
+static inline int c_md_compare_ptr(const void* a, const void* b);
+
+/**
+ * @brief Order-book comparator for bids (descending price, non-empty first).
+ * @param a Pointer to order_book_entry_t.
+ * @param b Pointer to order_book_entry_t.
+ * @return -1, 0, or 1 for sorting.
+ */
+static inline int c_md_compare_bid(const void* a, const void* b);
+
+/**
+ * @brief Order-book comparator for asks (ascending price, non-empty first).
+ * @param a Pointer to order_book_entry_t.
+ * @param b Pointer to order_book_entry_t.
+ * @return -1, 0, or 1 for sorting.
+ */
+static inline int c_md_compare_ask(const void* a, const void* b);
+
 // ========== Utility Functions ==========
 
 static inline void c_usleep(unsigned int usec) {
@@ -277,27 +397,44 @@ static inline void c_usleep(unsigned int usec) {
 #endif
 }
 
-static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* allocator, int with_lock) {
+static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) {
     size_t size = c_md_get_size(dtype);
     if (size == 0) return NULL;
 
-    if (allocator) {
-        pthread_mutex_t* lock = with_lock ? &allocator->shm_allocator->lock : NULL;
-        market_data_t* market_data = (market_data_t*) c_shm_request(allocator, size, 0, lock);
+    if (shm_allocator) {
+        pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
+        market_data_t* market_data = (market_data_t*) c_shm_request(shm_allocator, size, 0, lock);
+        market_data->meta_info.dtype = dtype;
+        market_data->meta_info.shm_allocator = shm_allocator->shm_allocator;
+        return market_data;
+    }
+    else if (heap_allocator) {
+        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
+        market_data_t* market_data = (market_data_t*) c_heap_request(heap_allocator, size, 0, lock);
+        market_data->meta_info.dtype = dtype;
+        market_data->meta_info.heap_allocator = heap_allocator;
         return market_data;
     }
     else {
-        market_data_t* market_data = (market_data_t*) malloc(size);
+        market_data_t* market_data = (market_data_t*) calloc(1, size);
+        market_data->meta_info.dtype = dtype;
         return market_data;
     }
 }
 
-static inline void c_md_free(market_data_t* market_data, shm_allocator_ctx* allocator, int with_lock) {
+static inline void c_md_free(market_data_t* market_data, int with_lock) {
     if (!market_data) return;
 
-    if (allocator) {
-        pthread_mutex_t* lock = with_lock ? &allocator->shm_allocator->lock : NULL;
+    shm_allocator_t* shm_allocator = market_data->meta_info.shm_allocator;
+    heap_allocator_t* heap_allocator = market_data->meta_info.heap_allocator;
+
+    if (shm_allocator) {
+        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
         c_shm_free((void*) market_data, lock);
+    }
+    else if (heap_allocator) {
+        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
+        c_heap_free((void*) market_data, lock);
     }
     else {
         free((void*) market_data);
@@ -419,11 +556,11 @@ static inline size_t c_md_serialized_size(const market_data_t* market_data) {
             break;
     }
 
-    return sizeof(uint8_t)        /* dtype */
-        + sizeof(double)         /* timestamp */
-        + sizeof(uint32_t)       /* ticker length */
-        + ticker_len             /* ticker bytes */
-        + payload_size;          /* payload without meta_info */
+    return sizeof(uint8_t)      /* dtype */
+        + sizeof(double)        /* timestamp */
+        + sizeof(uint32_t)      /* ticker length */
+        + ticker_len  + 1       /* ticker bytes with nul terminator*/
+        + payload_size;         /* payload without meta_info */
 }
 
 static inline size_t c_md_serialize(const market_data_t* market_data, char* out) {
@@ -438,18 +575,22 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
 
     const uint8_t dtype_byte = (uint8_t) meta->dtype;
     memcpy(cursor, &dtype_byte, sizeof(dtype_byte));
-    cursor += sizeof(dtype_byte);
+    cursor += sizeof(uint8_t);
 
     memcpy(cursor, &meta->timestamp, sizeof(meta->timestamp));
-    cursor += sizeof(meta->timestamp);
+    cursor += sizeof(double);
 
     memcpy(cursor, &ticker_len, sizeof(ticker_len));
-    cursor += sizeof(ticker_len);
+    cursor += sizeof(uint32_t);
 
     if (ticker_len) {
         memcpy(cursor, ticker, ticker_len);
         cursor += ticker_len;
     }
+
+    // Null-terminate ticker
+    cursor[0] = '\0';
+    cursor++;
 
 #define WRITE_PAYLOAD(member_type, member_name) \
     do { \
@@ -476,6 +617,61 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
 
 #undef WRITE_PAYLOAD
     return (size_t) (cursor - out);
+}
+
+static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) {
+    if (!src) return NULL;
+
+    const char* cursor = src;
+
+    // Step 1: Read dtype
+    data_type_t dtype = (data_type_t) cursor[0];
+    cursor += sizeof(uint8_t);
+
+    // Step 2: Allocate market_data_t
+    market_data_t* market_data = c_md_new(dtype, shm_allocator, heap_allocator, with_lock);
+    if (!market_data) return NULL;
+
+    // Step 3: Deserialize meta_info
+    meta_info_t* meta = &market_data->meta_info;
+    // dtype already assigned
+    // meta->dtype = dtype;
+    memcpy(&meta->timestamp, cursor, sizeof(double));
+    cursor += sizeof(double);
+
+    uint32_t ticker_len = 0;
+    memcpy(&ticker_len, cursor, sizeof(uint32_t));
+    cursor += sizeof(uint32_t);
+
+    // Use a borrowed ptr for ticker, if it needs to be owned, user should intern or strdup it later.
+    const char* ticker = cursor;
+    meta->ticker = ticker_len > 0 ? ticker : NULL;
+    cursor += ticker_len + 1;
+
+    // Step 4: Deserialize payload
+#define READ_PAYLOAD(member_type, member_name) \
+    do { \
+        member_type* p = &market_data->member_name; \
+        memcpy(((char*) p) + sizeof(meta_info_t), cursor, sizeof(member_type) - sizeof(meta_info_t)); \
+        cursor += sizeof(member_type) - sizeof(meta_info_t); \
+    } while (0)
+    switch (meta->dtype) {
+        case DTYPE_INTERNAL:      READ_PAYLOAD(internal_t, internal); break;
+        case DTYPE_TRANSACTION:   READ_PAYLOAD(transaction_data_t, transaction_data); break;
+        case DTYPE_ORDER:         READ_PAYLOAD(order_data_t, order_data); break;
+        case DTYPE_TICK_LITE:     READ_PAYLOAD(tick_data_lite_t, tick_data_lite); break;
+        case DTYPE_TICK:          READ_PAYLOAD(tick_data_t, tick_data_full); break;
+        case DTYPE_BAR:           READ_PAYLOAD(candlestick_t, bar_data); break;
+        case DTYPE_REPORT:        READ_PAYLOAD(trade_report_t, trade_report); break;
+        case DTYPE_INSTRUCTION:   READ_PAYLOAD(trade_instruction_t, trade_instruction); break;
+        case DTYPE_UNKNOWN:
+        case DTYPE_MARKET_DATA:
+        default:
+            // Nothing else to copy for unknown/aggregate.
+            break;
+    }
+#undef READ_PAYLOAD
+    return market_data;
 }
 
 static inline int c_md_compare_ptr(const void* a, const void* b) {

@@ -77,6 +77,7 @@ extensions = [
 
 if os.name == 'posix':
     extensions.extend([
+        # === Base Cython Extensions ===
         Extension(
             name="algo_engine.base.c_shm_allocator",
             sources=["algo_engine/base/c_shm_allocator.pyx"],
@@ -91,7 +92,21 @@ if os.name == 'posix':
             name="algo_engine.base.c_intern_string",
             sources=["algo_engine/base/c_intern_string.pyx"],
             extra_compile_args=["-O3"]
-        )
+        ),
+
+        # === Market Data Cython Extensions ===
+        Extension(
+            name="algo_engine.base.c_market_data_ng.c_market_data",
+            sources=["algo_engine/base/c_market_data_ng/c_market_data.pyx"],
+            include_dirs=["algo_engine/base"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.base.c_market_data_ng.c_internal",
+            sources=["algo_engine/base/c_market_data_ng/c_internal.pyx"],
+            include_dirs=["algo_engine/base"],
+            extra_compile_args=["-O3"]
+        ),
     ])
 
 setup(

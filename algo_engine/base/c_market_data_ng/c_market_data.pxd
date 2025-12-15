@@ -1,7 +1,8 @@
 from cpython.datetime cimport datetime
 from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
 
-from ..c_shm_allocator cimport shm_allocator_ctx
+from ..c_heap_allocator cimport heap_allocator_t
+from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator_t
 
 
 cdef extern from "c_market_data_config.h":
@@ -79,12 +80,12 @@ cdef extern from "c_market_data.h":
         STATE_CANCELING
         STATE_CANCELED
 
-    ctypedef enum id_type_t:
-        ID_UNKNOWN
-        ID_INT
-        ID_STRING
-        ID_BYTE
-        ID_UUID
+    ctypedef enum mid_type_t:
+        MID_UNKNOWN
+        MID_INT
+        MID_STRING
+        MID_BYTE
+        MID_UUID
 
     ctypedef enum data_type_t:
         DTYPE_UNKNOWN
@@ -108,15 +109,17 @@ cdef extern from "c_market_data.h":
 
     ctypedef struct meta_info_t:
         data_type_t dtype
-        char* ticker
+        const char* ticker
         double timestamp
+        shm_allocator_t* shm_allocator
+        heap_allocator_t* heap_allocator
 
-    ctypedef struct id_t:
-        id_type_t id_type
+    ctypedef struct mid_t:
+        mid_type_t id_type
         char data[ID_SIZE]
 
-    ctypedef struct long_id_t:
-        id_type_t id_type
+    ctypedef struct long_mid_t:
+        mid_type_t id_type
         char data[LONG_ID_SIZE]
 
     ctypedef struct internal_t:
@@ -171,16 +174,16 @@ cdef extern from "c_market_data.h":
         side_t side
         double multiplier
         double notional
-        id_t transaction_id
-        id_t buy_id
-        id_t sell_id
+        mid_t transaction_id
+        mid_t buy_id
+        mid_t sell_id
 
     ctypedef struct order_data_t:
         meta_info_t meta_info
         double price
         double volume
         side_t side
-        id_t order_id
+        mid_t order_id
         order_type_t order_type
 
     ctypedef struct trade_report_t:
@@ -191,15 +194,15 @@ cdef extern from "c_market_data.h":
         double multiplier
         double notional
         double fee
-        long_id_t order_id
-        long_id_t trade_id
+        long_mid_t order_id
+        long_mid_t trade_id
 
     ctypedef struct trade_instruction_t:
         meta_info_t meta_info
         double limit_price
         double volume
         side_t side
-        long_id_t order_id
+        long_mid_t order_id
         order_type_t order_type
         double multiplier
         order_state_t order_state
@@ -222,8 +225,8 @@ cdef extern from "c_market_data.h":
         trade_instruction_t trade_instruction
 
     void c_usleep(unsigned int usec) noexcept nogil
-    market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* allocator, int with_lock)
-    void c_md_free(market_data_t* market_data, shm_allocator_ctx* allocator, int with_lock)
+    market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock)
+    void c_md_free(market_data_t* market_data, int with_lock)
     double c_md_get_price(const market_data_t* market_data) noexcept nogil
     offset_t c_md_get_offset(side_t side) noexcept nogil
     direction_t c_md_get_direction(side_t side) noexcept nogil
@@ -232,9 +235,37 @@ cdef extern from "c_market_data.h":
     const char* c_md_dtype_name(data_type_t dtype) noexcept nogil
     size_t c_md_serialized_size(const market_data_t* market_data)
     size_t c_md_serialize(const market_data_t* market_data, char* out)
+    market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock)
     int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
     int c_md_compare_bid(const void* a, const void* b) noexcept nogil
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil
+
+
+cdef bint MD_CFG_LOCKED
+cdef bint MD_CFG_SHARED
+cdef bint MD_CFG_FREELIST
+
+
+cdef class EnvConfigContext:
+    cdef dict overrides
+    cdef dict originals
+
+    cdef void c_activate(self)
+
+    cdef void c_deactivate(self)
+
+
+cdef EnvConfigContext CONFIG_SHARED
+cdef EnvConfigContext MD_LOCAL
+cdef EnvConfigContext MD_LOCKED
+cdef EnvConfigContext MD_UNLOCKED
+
+
+cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, double timestamp)
+
+cdef inline market_data_t* c_deserialize_buffer(const char* src)
+
+cdef inline void c_recycle_buffer(market_data_t* market_data)
 
 
 # Declare MarketData class
@@ -243,21 +274,25 @@ cdef class MarketData:
     cdef readonly uintptr_t data_addr
 
     cdef market_data_t* header
+    cdef bint owner
 
     @staticmethod
-    cdef inline object c_from_header(market_data_t* market_data)
+    cdef inline object c_from_header(market_data_t* market_data, bint owner=*)
 
     cdef inline size_t c_get_size(self)
 
     cdef inline str c_dtype_name(self)
 
-    cdef inline bytes c_to_bytes(self)
+    cdef inline void c_to_bytes(self, char* out)
+
+    @staticmethod
+    cdef inline market_data_t* c_from_bytes(bytes data)
 
 
 cdef class FilterMode:
     cdef public filter_mode_t value
 
     @staticmethod
-    cdef inline bint c_mask_data(meta_info_t* data_addr, filter_mode_t filter_mode)
+    cdef inline bint c_mask_data(market_data_t* market_data, filter_mode_t filter_mode)
 
     cpdef bint mask_data(self, MarketData market_data)
