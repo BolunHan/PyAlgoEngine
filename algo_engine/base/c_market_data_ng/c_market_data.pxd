@@ -1,8 +1,9 @@
-from cpython.datetime cimport datetime
+from cpython.unicode cimport PyUnicode_FromString
 from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
 
-from ..c_heap_allocator cimport heap_allocator_t
-from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator_t
+from ..c_heap_allocator cimport heap_allocator_t, C_ALLOCATOR as HEAP_ALLOCATOR
+from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator_t, C_ALLOCATOR as SHM_ALLOCATOR
+from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
 
 
 cdef extern from "c_market_data_config.h":
@@ -255,26 +256,98 @@ cdef class EnvConfigContext:
     cdef void c_deactivate(self)
 
 
-cdef EnvConfigContext CONFIG_SHARED
-cdef EnvConfigContext MD_LOCAL
+cdef EnvConfigContext MD_SHARED
 cdef EnvConfigContext MD_LOCKED
-cdef EnvConfigContext MD_UNLOCKED
+cdef EnvConfigContext MD_FREELIST
+
+cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, double timestamp):
+    cdef market_data_t* market_data
+
+    if MD_CFG_SHARED:
+        market_data = c_md_new(dtype, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
+    elif MD_CFG_FREELIST:
+        market_data = c_md_new(dtype, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
+    else:
+        market_data = c_md_new(dtype, NULL, NULL, 0)
+
+    if not market_data:
+        raise MemoryError(f'Failed to allocate shared memory for {PyUnicode_FromString(c_md_dtype_name(dtype))}')
+    cdef meta_info_t* meta_data = <meta_info_t*> market_data
+
+    if MD_CFG_SHARED:
+        if MD_CFG_LOCKED:
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(SHM_POOL, ticker)
+    else:
+        if MD_CFG_LOCKED:
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(HEAP_POOL, ticker)
+
+    if not meta_data.ticker:
+        raise MemoryError('Failed to intern ticker string')
+
+    meta_data.dtype = dtype
+    meta_data.timestamp = timestamp
+    return market_data
 
 
-cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, double timestamp)
+cdef inline market_data_t* c_deserialize_buffer(const char* src):
+    if MD_CFG_SHARED:
+        market_data = c_md_deserialize(src, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
+    elif MD_CFG_FREELIST:
+        market_data = c_md_deserialize(src, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
+    else:
+        market_data = c_md_deserialize(src, NULL, NULL, 0)
 
-cdef inline market_data_t* c_deserialize_buffer(const char* src)
+    if not market_data:
+        raise MemoryError('Failed to deserialize market data from bytes')
+    cdef meta_info_t* meta_data = <meta_info_t*> market_data
 
-cdef inline void c_recycle_buffer(market_data_t* market_data)
+    cdef const char* ticker = meta_data.ticker
+    if not ticker:
+        raise ValueError('Deserialized market data has null ticker string')
+
+    if MD_CFG_SHARED:
+        if MD_CFG_LOCKED:
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(SHM_POOL, ticker)
+    else:
+        if MD_CFG_LOCKED:
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(HEAP_POOL, ticker)
+
+    if not meta_data.ticker:
+        raise MemoryError('Failed to intern ticker string')
+
+    return market_data
 
 
-# Declare MarketData class
+cdef inline void c_recycle_buffer(market_data_t* market_data):
+    c_md_free(market_data, <int> MD_CFG_LOCKED)
+
+
+ctypedef object (*c_from_header_func)(market_data_t* market_data, bint owner)
+
+cdef c_from_header_func internal_from_header
+cdef c_from_header_func transaction_from_header
+cdef c_from_header_func order_from_header
+cdef c_from_header_func tick_lite_from_header
+cdef c_from_header_func tick_from_header
+cdef c_from_header_func bar_from_header
+cdef c_from_header_func report_from_header
+cdef c_from_header_func instruction_from_header
+
+
 cdef class MarketData:
     cdef dict __dict__
     cdef readonly uintptr_t data_addr
+    cdef readonly bint owner
 
     cdef market_data_t* header
-    cdef bint owner
 
     @staticmethod
     cdef inline object c_from_header(market_data_t* market_data, bint owner=*)

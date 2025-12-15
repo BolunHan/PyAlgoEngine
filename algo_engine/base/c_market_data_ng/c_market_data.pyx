@@ -2,12 +2,9 @@ import enum
 from collections import namedtuple
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.unicode cimport PyUnicode_FromString
+from cpython.datetime cimport datetime
 from libc.string cimport memcpy
 
-from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
-from ..c_heap_allocator cimport C_ALLOCATOR as HEAP_ALLOCATOR
-from ..c_shm_allocator cimport C_ALLOCATOR as SHM_ALLOCATOR
 from ...profile.c_base cimport C_PROFILE
 
 
@@ -105,76 +102,6 @@ globals()['MD_LOCKED'] = MD_LOCKED
 globals()['MD_FREELIST'] = MD_FREELIST
 
 
-cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, double timestamp):
-    cdef market_data_t* market_data
-
-    if MD_CFG_SHARED:
-        market_data = c_md_new(dtype, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
-    elif MD_CFG_FREELIST:
-        market_data = c_md_new(dtype, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
-    else:
-        market_data = c_md_new(dtype, NULL, NULL, 0)
-
-    if not market_data:
-        raise MemoryError(f'Failed to allocate shared memory for {PyUnicode_FromString(c_md_dtype_name(dtype))}')
-    cdef meta_info_t* meta_data = <meta_info_t*> market_data
-
-    if MD_CFG_SHARED:
-        if MD_CFG_LOCKED:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker)
-    else:
-        if MD_CFG_LOCKED:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker)
-
-    if not meta_data.ticker:
-        raise MemoryError('Failed to intern ticker string')
-
-    meta_data.dtype = dtype
-    meta_data.timestamp = timestamp
-    return market_data
-
-
-cdef inline market_data_t* c_deserialize_buffer(const char* src):
-    if MD_CFG_SHARED:
-        market_data = c_md_deserialize(src, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
-    elif MD_CFG_FREELIST:
-        market_data = c_md_deserialize(src, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
-    else:
-        market_data = c_md_deserialize(src, NULL, NULL, 0)
-
-    if not market_data:
-        raise MemoryError('Failed to deserialize market data from bytes')
-    cdef meta_info_t* meta_data = <meta_info_t*> market_data
-
-    cdef const char* ticker = meta_data.ticker
-    if not ticker:
-        raise ValueError('Deserialized market data has null ticker string')
-
-    if MD_CFG_SHARED:
-        if MD_CFG_LOCKED:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker)
-    else:
-        if MD_CFG_LOCKED:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker)
-
-    if not meta_data.ticker:
-        raise MemoryError('Failed to intern ticker string')
-
-    return market_data
-
-
-cdef inline void c_recycle_buffer(market_data_t* market_data):
-    c_md_free(market_data, <int> MD_CFG_LOCKED)
-
-
 cdef class MarketData:
 
     def __dealloc__(self):
@@ -204,32 +131,25 @@ cdef class MarketData:
     @staticmethod
     cdef inline object c_from_header(market_data_t* market_data, bint owner=False):
         cdef data_type_t dtype = market_data.meta_info.dtype
-        cdef MarketData instance
 
         if dtype == data_type_t.DTYPE_INTERNAL:
-            instance = <MarketData> InternalData.__new__(InternalData)
-            instance.header = market_data
-            instance.owner = owner
-        # elif dtype == data_type_t.DTYPE_TRANSACTION:
-        #     instance = <MarketData> TransactionData.__new__(TransactionData)
-        # elif dtype == data_type_t.DTYPE_ORDER:
-        #     instance = <MarketData> OrderData.__new__(OrderData)
-        # elif dtype == data_type_t.DTYPE_TICK_LITE:
-        #     instance = <MarketData> TickDataLite.__new__(TickDataLite)
-        # elif dtype == data_type_t.DTYPE_TICK:
-        #     instance = <MarketData> TickData.__new__(TickData)
-        # elif dtype == data_type_t.DTYPE_BAR:
-        #     bar_data = BarData.__new__(BarData)
-        # elif dtype == data_type_t.DTYPE_REPORT:
-        #     trade_report = TradeReport.__new__(TradeReport)
-        # elif dtype == data_type_t.DTYPE_INSTRUCTION:
-        #     trade_order = TradeInstruction.__new__(TradeInstruction)
+            return internal_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_TRANSACTION:
+            return transaction_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_ORDER:
+            return order_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_TICK_LITE:
+            return tick_lite_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_TICK:
+            return tick_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_BAR:
+            return bar_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_REPORT:
+            return report_from_header(market_data, owner)
+        elif dtype == data_type_t.DTYPE_INSTRUCTION:
+            return instruction_from_header(market_data, owner)
         else:
-            raise ValueError(f'Unknown data type {dtype}')
-
-        # if dtype == data_type_t.DTYPE_TICK:
-        #     (<TickData> instance).c_init_order_book()
-        return instance
+            raise NotImplementedError()
 
     cdef inline size_t c_get_size(self):
         cdef data_type_t dtype = self.header.meta_info.dtype
@@ -261,7 +181,10 @@ cdef class MarketData:
     @classmethod
     def from_bytes(cls, bytes data):
         cdef market_data_t* header = MarketData.c_from_bytes(data)
-        return MarketData.c_from_header(header, True)
+        cdef MarketData instance = <MarketData> cls.__new__(cls)
+        instance.header = header
+        instance.owner = True
+        return instance
 
     property ticker:
         def __get__(self):
@@ -386,13 +309,7 @@ cdef class FilterMode:
         return FilterMode.c_mask_data(market_data.header, self.value)
 
 
-from .c_internal cimport InternalData
-# from .c_tick cimport TickData, TickDataLite
-# from .c_transaction cimport TransactionData, OrderData, TransactionHelper
-# from .c_candlestick cimport BarData
-# from .c_trade_utils cimport TradeReport, TradeInstruction
-
-C_CONFIG = namedtuple('CONFIG', ['TICKER_SIZE', 'BOOK_SIZE', 'ID_SIZE', 'MAX_WORKERS'])(
+C_CONFIG = namedtuple('CONFIG', ['DEBUG', 'TICKER_SIZE', 'BOOK_SIZE', 'ID_SIZE', 'LONG_ID_SIZE', 'MAX_WORKERS'])(
     DEBUG=DEBUG,
     TICKER_SIZE=TICKER_SIZE,
     BOOK_SIZE=BOOK_SIZE,

@@ -403,22 +403,22 @@ static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_
 
     if (shm_allocator) {
         pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-        market_data_t* market_data = (market_data_t*) c_shm_request(shm_allocator, size, 0, lock);
-        market_data->meta_info.dtype = dtype;
-        market_data->meta_info.shm_allocator = shm_allocator->shm_allocator;
-        return market_data;
+        meta_info_t* meta = (meta_info_t*) c_shm_request(shm_allocator, size, 0, lock);
+        meta->dtype = dtype;
+        meta->shm_allocator = shm_allocator->shm_allocator;
+        return (market_data_t*) meta;
     }
     else if (heap_allocator) {
         pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        market_data_t* market_data = (market_data_t*) c_heap_request(heap_allocator, size, 0, lock);
-        market_data->meta_info.dtype = dtype;
-        market_data->meta_info.heap_allocator = heap_allocator;
-        return market_data;
+        meta_info_t* meta = (meta_info_t*) c_heap_request(heap_allocator, size, 0, lock);
+        meta->dtype = dtype;
+        meta->heap_allocator = heap_allocator;
+        return (market_data_t*) meta;
     }
     else {
-        market_data_t* market_data = (market_data_t*) calloc(1, size);
-        market_data->meta_info.dtype = dtype;
-        return market_data;
+        meta_info_t* meta = (meta_info_t*) calloc(1, size);
+        meta->dtype = dtype;
+        return (market_data_t*) meta;
     }
 }
 
