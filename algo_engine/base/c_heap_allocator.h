@@ -119,7 +119,7 @@ static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, 
         }
         else {
             size_t prev_cap = allocator->active_page->capacity;
-            size_t payload_capacity = prev_cap * 2;
+            payload_capacity = prev_cap * 2;
             if (payload_capacity < DEFAULT_AUTOPAGE_CAPACITY) {
                 payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
             }

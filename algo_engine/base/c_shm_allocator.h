@@ -348,17 +348,18 @@ static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_
         return -1;
     }
 
-    size_t capacity = page_ctx->shm_page->capacity;
+    size_t payload_capacity = page_ctx->shm_page->capacity;
+    size_t total_capacity = payload_capacity + sizeof(shm_page_t);
     size_t offset = allocator->mapped_size;
 
-    if (offset + capacity > allocator->region_size) {
+    if (offset + total_capacity > allocator->region_size) {
         errno = ENOMEM;
         return -1;
     }
 
     /* compute target address from integer region base */
     void* target_addr = (void*) ((char*) (uintptr_t) allocator->region + offset);
-    void* mapped = mmap(target_addr, capacity, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, page_ctx->shm_fd, 0);
+    void* mapped = mmap(target_addr, total_capacity, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, page_ctx->shm_fd, 0);
     if (mapped == MAP_FAILED) {
         return -1;
     }
@@ -384,7 +385,7 @@ static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_
     }
 
     // Step 4: Update allocator state
-    allocator->mapped_size += capacity;
+    allocator->mapped_size += total_capacity;
     strncpy(allocator->active_page, page_meta->shm_name, SHM_NAME_LEN - 1);
     allocator->active_page[SHM_NAME_LEN - 1] = '\0';
     allocator->mapped_pages++;
@@ -450,7 +451,6 @@ static inline shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_
         locked = 1;
     }
 
-
     // Step 1: Determine new page capacity
     size_t payload_capacity = 0;
     if (capacity == 0) {
@@ -458,8 +458,8 @@ static inline shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_
             payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
         }
         else {
-            size_t prev_cap = ctx->active_page->shm_page->capacity - sizeof(shm_page_t);
-            size_t payload_capacity = prev_cap * 2;
+            size_t prev_cap = ctx->active_page->shm_page->capacity;
+            payload_capacity = prev_cap * 2;
             if (payload_capacity < DEFAULT_AUTOPAGE_CAPACITY) {
                 payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
             }
@@ -718,7 +718,7 @@ static inline void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mu
     // Step 2: Extend the allocator if there is no active_page or insufficient space
     if (page_meta->occupied + cap_total > page_meta->capacity) {
         // Step 2.1: Determine new page capacity
-        size_t target_cap = page_meta->capacity - sizeof(shm_page_t);
+        size_t target_cap = page_meta->capacity;
 
         if (target_cap < DEFAULT_AUTOPAGE_CAPACITY) {
             target_cap = DEFAULT_AUTOPAGE_CAPACITY;
@@ -838,7 +838,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
             }
         }
         else {
-            size_t prev_cap = current->shm_page->capacity - sizeof(shm_page_t);
+            size_t prev_cap = current->shm_page->capacity;
             size_t new_cap = prev_cap;
 
             if (new_cap < DEFAULT_AUTOPAGE_CAPACITY) {
