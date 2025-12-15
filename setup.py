@@ -83,6 +83,11 @@ if os.name == 'posix':
             extra_compile_args=["-O3"]
         ),
         Extension(
+            name="algo_engine.base.c_heap_allocator",
+            sources=["algo_engine/base/c_heap_allocator.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
             name="algo_engine.base.c_intern_string",
             sources=["algo_engine/base/c_intern_string.pyx"],
             extra_compile_args=["-O3"]
