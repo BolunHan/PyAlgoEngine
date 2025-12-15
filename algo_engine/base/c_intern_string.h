@@ -353,7 +353,7 @@ static inline const char* c_istr(istr_map* map, const char* key) {
         if (!interned_copy) return NULL;
     }
     else {
-        interned_copy = (char*) malloc(total_size);
+        interned_copy = (char*) calloc(1, total_size);
         if (!interned_copy) return NULL;
     }
     memcpy(interned_copy, key, total_size);
@@ -410,7 +410,7 @@ static inline const char* c_istr_synced(istr_map* map, const char* key) {
         if (!interned_copy) goto unlock_and_return;
     }
     else {
-        interned_copy = (char*) malloc(total_size);
+        interned_copy = (char*) calloc(1, total_size);
         if (!interned_copy) goto unlock_and_return;
     }
     memcpy(interned_copy, key, total_size);
