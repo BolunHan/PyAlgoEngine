@@ -50,13 +50,16 @@ typedef struct heap_allocator_t {
 } heap_allocator_t;
 
 // ========== Utility Functions ==========
-static size_t c_page_roundup(size_t size) {
+#ifndef C_COMMON_ROUNDUP_UTILS_DEFINED
+#define C_COMMON_ROUNDUP_UTILS_DEFINED
+static inline size_t c_page_roundup(size_t size) {
     return (size + DEFAULT_AUTOPAGE_ALIGNMENT - 1) & ~(DEFAULT_AUTOPAGE_ALIGNMENT - 1);
 }
 
-static size_t c_block_roundup(size_t size) {
+static inline size_t c_block_roundup(size_t size) {
     return (size + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
 }
+#endif /* C_COMMON_ROUNDUP_UTILS_DEFINED */
 
 static inline void c_heap_page_reclaim(heap_allocator_t* allocator, heap_page_t* page) {
     if (!allocator || !page) {
