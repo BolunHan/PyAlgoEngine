@@ -75,7 +75,7 @@ cdef extern from "c_shm_allocator.h":
     void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mutex_t* lock)
     void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_all_pages, pthread_mutex_t* lock)
     void c_shm_free(void* ptr, pthread_mutex_t* lock)
-    void c_shm_claim(shm_allocator_ctx* ctx, pthread_mutex_t* lock)
+    void c_shm_reclaim(shm_allocator_ctx* ctx, pthread_mutex_t* lock)
     int c_shm_scan_allocator(char* shm_name)
     int c_shm_scan_page(char* shm_name)
     pid_t c_shm_pid(char* shm_name)

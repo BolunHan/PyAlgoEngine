@@ -1,6 +1,7 @@
+import os
+
 from cpython.unicode cimport PyUnicode_FromString
 from libc.errno cimport errno
-import os
 
 
 cdef class SharedMemoryPage:
@@ -20,12 +21,14 @@ cdef class SharedMemoryPage:
 
     @classmethod
     def from_buffer(cls, uintptr_t buffer_addr) -> SharedMemoryPage:
-        cdef SharedMemoryPage instance = SharedMemoryPage.__new__(SharedMemoryPage, 0)
+        cdef SharedMemoryPage instance = cls.__new__(cls, 0)
         instance.ctx = <shm_page_ctx*> (<char*> buffer_addr - sizeof(shm_page_ctx))
-        instance.owner = False
         return instance
 
     def allocated(self):
+        if not self.ctx or not self.ctx.shm_page:
+            return
+
         cdef shm_memory_block* block = self.ctx.shm_page.allocated
         while block:
             yield SharedMemoryBlock.c_from_header(block, False)
@@ -217,7 +220,7 @@ cdef class SharedMemoryAllocator:
         if not self.ctx:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         cdef pthread_mutex_t* lock = &self.ctx.shm_allocator.lock if with_lock else NULL
-        c_shm_claim(self.ctx, lock)
+        c_shm_reclaim(self.ctx, lock)
 
     cpdef list dangling(self):
         cdef list out = []

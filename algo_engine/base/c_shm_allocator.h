@@ -49,8 +49,8 @@
 #endif
 
 typedef struct shm_page_t {
-    size_t capacity;
-    size_t occupied;
+    size_t capacity;  // total capacity, excluding metadata
+    size_t occupied;  // bytes occupied, excluding metadata
     size_t offset;
     struct shm_allocator_t* allocator;
     struct shm_memory_block* allocated;
@@ -191,7 +191,7 @@ static inline void c_shm_free(void* ptr, pthread_mutex_t* lock);
  * @param ctx Allocator context.
  * @param lock Optional mutex controlling reclaim.
  */
-static inline void c_shm_claim(shm_allocator_ctx* ctx, pthread_mutex_t* lock);
+static inline void c_shm_reclaim(shm_allocator_ctx* ctx, pthread_mutex_t* lock);
 
 /**
  * @brief Scan for an allocator SHM name.
@@ -310,8 +310,8 @@ static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t pa
     }
     ctx->shm_page = meta;
 
-    meta->capacity = page_capacity;
-    meta->occupied = sizeof(shm_page_t);
+    meta->capacity = page_capacity - sizeof(shm_page_t);
+    meta->occupied = 0;
     meta->offset = 0;
 
     c_shm_page_name(allocator, meta->shm_name);
@@ -449,35 +449,35 @@ static inline shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_
 
 
     // Step 1: Determine new page capacity
+    size_t payload_capacity = 0;
     if (capacity == 0) {
         if (!ctx->active_page) {
-            capacity = DEFAULT_AUTOPAGE_CAPACITY;
+            payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
         }
         else {
             size_t prev_cap = ctx->active_page->shm_page->capacity - sizeof(shm_page_t);
-            size_t target_cap = prev_cap * 2;
-            if (target_cap < DEFAULT_AUTOPAGE_CAPACITY) {
-                target_cap = DEFAULT_AUTOPAGE_CAPACITY;
+            size_t payload_capacity = prev_cap * 2;
+            if (payload_capacity < DEFAULT_AUTOPAGE_CAPACITY) {
+                payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
             }
-            else if (target_cap > MAX_AUTOPAGE_CAPACITY) {
-                target_cap = MAX_AUTOPAGE_CAPACITY;
+            else if (payload_capacity > MAX_AUTOPAGE_CAPACITY) {
+                payload_capacity = MAX_AUTOPAGE_CAPACITY;
             }
-            capacity = target_cap + sizeof(shm_page_t);
         }
     }
     else {
-        capacity += sizeof(shm_page_t);
+        payload_capacity = capacity;
     }
-    capacity = c_page_roundup(capacity);
+    size_t total_capacity = c_page_roundup(payload_capacity + sizeof(shm_page_t));
 
-    if (capacity + allocator->mapped_size > allocator->region_size) {
+    if (total_capacity + allocator->mapped_size > allocator->region_size) {
         if (locked) pthread_mutex_unlock(lock);
         errno = ENOMEM;
         return NULL;
     }
 
     // Step 2: Create new page
-    shm_page_ctx* page_ctx = c_shm_page_new(allocator, capacity);
+    shm_page_ctx* page_ctx = c_shm_page_new(allocator, total_capacity);
     if (!page_ctx) {
         if (locked) pthread_mutex_unlock(lock);
         return NULL;
@@ -796,6 +796,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
             free_blk->next_free = NULL;
             free_blk->size = size;
             if (locked) pthread_mutex_unlock(lock);
+            memset(free_blk + 1, 0, cap_net);
             return (void*) free_blk->buffer;
         }
         prevp = &free_blk->next_free;
@@ -873,6 +874,8 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
     page_meta->occupied += cap_total;
 
     if (locked) pthread_mutex_unlock(lock);
+
+    memset(block + 1, 0, cap_net);
     return (void*) block->buffer;
 }
 
@@ -908,7 +911,7 @@ static inline void c_shm_free(void* ptr, pthread_mutex_t* lock) {
     if (locked) pthread_mutex_unlock(lock);
 }
 
-static inline void c_shm_claim(shm_allocator_ctx* ctx, pthread_mutex_t* lock) {
+static inline void c_shm_reclaim(shm_allocator_ctx* ctx, pthread_mutex_t* lock) {
     if (!ctx || !ctx->shm_allocator) {
         errno = EINVAL;
         return;
