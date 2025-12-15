@@ -24,18 +24,58 @@ static const int8_t sign_lut[4] = {
     0    // 0b11 -> 0
 };
 
-static const char internal_dtype_name[]     = "InternalData";
-static const char transaction_dtype_name[]  = "TransactionData";
-static const char order_dtype_name[]        = "OrderData";
-static const char tick_lite_dtype_name[]    = "TickDataLite";
-static const char tick_dtype_name[]         = "TickData";
-static const char bar_dtype_name[]          = "BarData";
-static const char report_dtype_name[]       = "TradeReport";
-static const char instruction_dtype_name[]  = "TradeInstruction";
-static const char generic_dtype_name[]      = "GenericMarketData";
+static const char dtype_name_internal[]     = "InternalData";
+static const char dtype_name_transaction[]  = "TransactionData";
+static const char dtype_name_order[]        = "OrderData";
+static const char dtype_name_tick_lite[]    = "TickDataLite";
+static const char dtype_name_tick[]         = "TickData";
+static const char dtype_name_bar[]          = "BarData";
+static const char dtype_name_report[]       = "TradeReport";
+static const char dtype_name_instruction[]  = "TradeInstruction";
+static const char dtype_name_generic[]      = "GenericMarketData";
+
+static const char side_name_open[]          = "buy";
+static const char side_name_close[]         = "sell";
+static const char side_name_short[]         = "short";
+static const char side_name_cover[]         = "cover";
+static const char side_name_bid[]           = "bid";
+static const char side_name_ask[]           = "ask";
+static const char side_name_cancel[]        = "cancel";
+static const char side_name_cancel_bid[]    = "cancel bid";
+static const char side_name_cancel_ask[]    = "cancel ask";
+static const char side_name_neutral_open[]  = "open";
+static const char side_name_neutral_close[] = "close";
+static const char side_name_unknown[]       = "unknown";
+
+static const char order_name_unknown[]      = "unknown";
+static const char order_name_cancel[]       = "cancel";
+static const char order_name_generic[]      = "generic";
+static const char order_name_limit[]        = "limit";
+static const char order_name_limit_maker[]  = "limit_maker";
+static const char order_name_market[]       = "market";
+static const char order_name_fok[]          = "fok";
+static const char order_name_fak[]          = "fak";
+static const char order_name_ioc[]          = "ioc";
+
+static const char direction_name_short[]    = "short";
+static const char direction_name_long[]     = "long";
+static const char direction_name_neutral[]  = "neutral";
+static const char direction_name_unknown[]  = "unknown";
+
+static const char offset_name_cancel[]      = "cancel";
+static const char offset_name_order[]       = "order";
+static const char offset_name_open[]        = "open";
+static const char offset_name_close[]       = "close";
+static const char offset_name_unknown[]     = "unknown";
 
 #define DTYPE_MIN_SIZE (sizeof(internal_t))
 #define DTYPE_MAX_SIZE (sizeof(market_data_t))
+
+typedef __int128_t int128_t;
+typedef __uint128_t uint128_t;
+
+static const uint128_t UINT128_MAX = (((uint128_t) 1) << 127) * 2 - 1;
+static const int128_t  INT128_MIN  = -((int128_t) (UINT128_MAX)) - 1;
 
 // ========== Enums ==========
 
@@ -110,10 +150,13 @@ typedef enum order_state_t {
 
 typedef enum mid_type_t {
     MID_UNKNOWN         = 0,
-    MID_INT             = 1,
-    MID_STRING          = 2,
-    MID_BYTE            = 3,
-    MID_UUID            = 4
+    MID_UINT128         = 1,
+    MID_INT128          = 2,
+    MID_UINT64          = 3,
+    MID_INT64           = 4,
+    MID_STRING          = 5,
+    MID_BYTE            = 6,
+    MID_UUID            = 7
 } mid_type_t;
 
 typedef enum data_type_t {
@@ -150,12 +193,12 @@ typedef struct meta_info_t {
 
 typedef struct mid_t {
     mid_type_t id_type;
-    char data[ID_SIZE];
+    char data[ID_SIZE + 1];
 } mid_t;
 
 typedef struct long_mid_t {
     mid_type_t id_type;
-    char data[LONG_ID_SIZE];
+    char data[LONG_ID_SIZE + 1];
 } long_mid_t;
 
 typedef struct internal_t {
@@ -308,21 +351,28 @@ static inline double c_md_get_price(const market_data_t* market_data);
  * @param side Composed side value.
  * @return `offset_t` component.
  */
-static inline offset_t c_md_get_offset(side_t side);
+static inline offset_t c_md_side_offset(side_t side);
 
 /**
  * @brief Extract the direction bits from a composed `side_t`.
  * @param side Composed side value.
  * @return `direction_t` component.
  */
-static inline direction_t c_md_get_direction(side_t side);
+static inline direction_t c_md_side_direction(side_t side);
+
+/**
+ * @brief Get the opposite side of a composed `side_t`.
+ * @param side Composed side value.
+ * @return Opposite `side_t` value.
+ */
+static inline side_t c_md_side_opposite(side_t side);
 
 /**
  * @brief Map a direction to its sign (-1, 0, 1).
- * @param x Direction value.
+ * @param side Side value.
  * @return Sign as int8_t.
  */
-static inline int8_t c_md_get_sign(direction_t x);
+static inline int8_t c_md_side_sign(side_t side);
 
 /**
  * @brief Get the size in bytes of a concrete dtype.
@@ -337,6 +387,34 @@ static inline size_t c_md_get_size(data_type_t dtype);
  * @return Constant string name, or NULL if unknown.
  */
 static inline const char* c_md_dtype_name(data_type_t dtype);
+
+/**
+ * @brief Get the human-readable name of a side.
+ * @param side Side value.
+ * @return Constant string name.
+ */
+static inline const char* c_md_side_name(side_t side);
+
+/**
+ * @brief Get the human-readable name of an order type.
+ * @param order_type Order type value.
+ * @return Constant string name.
+ */
+static inline const char* c_md_order_type_name(order_type_t order_type);
+
+/**
+ * @brief Get the human-readable name of a direction.
+ * @param side Side value.
+ * @return Constant string name.
+ */
+static inline const char* c_md_direction_name(side_t side);
+
+/**
+ * @brief Get the human-readable name of an offset.
+ * @param side Side value.
+ * @return Constant string name.
+ */
+static inline const char* c_md_offset_name(side_t side);
 
 /**
  * @brief Compute serialized size of a market_data buffer.
@@ -386,6 +464,22 @@ static inline int c_md_compare_bid(const void* a, const void* b);
  * @return -1, 0, or 1 for sorting.
  */
 static inline int c_md_compare_ask(const void* a, const void* b);
+
+/*
+ * @brief Compare two mid_t identifiers for equality.
+ * @param id1 Pointer to first mid_t.
+ * @param id2 Pointer to second mid_t.
+ * @return 1 if equal, 0 otherwise.
+ */
+static inline int c_md_compare_id(const mid_t* id1, const mid_t* id2);
+
+/*
+ * @brief Compare two long_mid_t identifiers for equality.
+ * @param id1 Pointer to first long_mid_t.
+ * @param id2 Pointer to second long_mid_t.
+ * @return 1 if equal, 0 otherwise.
+ */
+static inline int c_md_compare_long_id(const long_mid_t* id1, const long_mid_t* id2);
 
 // ========== Utility Functions ==========
 
@@ -468,16 +562,28 @@ static inline double c_md_get_price(const market_data_t* market_data) {
     }
 }
 
-static inline offset_t c_md_get_offset(side_t side) {
+static inline offset_t c_md_side_offset(side_t side) {
     return (offset_t) (side & 0xFC);
 }
 
-static inline direction_t c_md_get_direction(side_t side) {
+static inline direction_t c_md_side_direction(side_t side) {
     return (direction_t) (side & 0x03);
 }
 
-static inline int8_t c_md_get_sign(direction_t x) {
-    return sign_lut[x & 0b11];
+static inline side_t c_md_side_opposite(side_t side) {
+    offset_t offset         = (offset_t)    (side & 0xFC);  // Extract the offset bits      (0xFC = 11111100)
+    direction_t direction   = (direction_t) (side & 0x03);  // Extract the direction bits   (0x03 = 00000011)
+
+    if (direction == DIRECTION_LONG) {
+        direction = DIRECTION_SHORT;
+    } else if (direction == DIRECTION_SHORT) {
+        direction = DIRECTION_LONG;
+    }
+    return (side_t) (direction | offset);
+}
+
+static inline int8_t c_md_side_sign(side_t side) {
+    return sign_lut[side & 0b11];
 }
 
 static inline size_t c_md_get_size(data_type_t dtype) {
@@ -509,26 +615,110 @@ static inline size_t c_md_get_size(data_type_t dtype) {
 static inline const char* c_md_dtype_name(data_type_t dtype) {
     switch (dtype) {
         case DTYPE_INTERNAL:
-            return internal_dtype_name;
+            return dtype_name_internal;
         case DTYPE_TRANSACTION:
-            return transaction_dtype_name;
+            return dtype_name_transaction;
         case DTYPE_ORDER:
-            return order_dtype_name;
+            return dtype_name_order;
         case DTYPE_TICK_LITE:
-            return tick_lite_dtype_name;
+            return dtype_name_tick_lite;
         case DTYPE_TICK:
-            return tick_dtype_name;
+            return dtype_name_tick;
         case DTYPE_BAR:
-            return bar_dtype_name;
+            return dtype_name_bar;
         case DTYPE_REPORT:
-            return report_dtype_name;
+            return dtype_name_report;
         case DTYPE_INSTRUCTION:
-            return instruction_dtype_name;
+            return dtype_name_instruction;
         case DTYPE_UNKNOWN:
         case DTYPE_MARKET_DATA:
-            return generic_dtype_name;
+            return dtype_name_generic;
         default:
             return NULL;
+    }
+}
+
+static inline const char* c_md_side_name(side_t side) {
+    switch (side) {
+        case SIDE_LONG_OPEN:
+            return side_name_open;
+        case SIDE_LONG_CLOSE:
+            return side_name_cover;
+        case SIDE_LONG_CANCEL:
+            return side_name_cancel_bid;
+        case SIDE_SHORT_OPEN:
+            return side_name_short;
+        case SIDE_SHORT_CLOSE:
+            return side_name_close;
+        case SIDE_SHORT_CANCEL:
+            return side_name_cancel_ask;
+        case SIDE_NEUTRAL_OPEN:
+            return side_name_neutral_open;
+        case SIDE_NEUTRAL_CLOSE:
+            return side_name_neutral_close;
+        case SIDE_BID:
+            return side_name_bid;
+        case SIDE_ASK:
+            return side_name_ask;
+        case SIDE_CANCEL:
+            return side_name_cancel;
+        default:
+            return side_name_unknown;
+    }
+}
+
+static inline const char* c_md_order_type_name(order_type_t order_type) {
+    switch (order_type) {
+        case ORDER_CANCEL:
+            return order_name_cancel;
+        case ORDER_GENERIC:
+            return order_name_generic;
+        case ORDER_LIMIT:
+            return order_name_limit;
+        case ORDER_LIMIT_MAKER:
+            return order_name_limit_maker;
+        case ORDER_MARKET:
+            return order_name_market;
+        case ORDER_FOK:
+            return order_name_fok;
+        case ORDER_FAK:
+            return order_name_fak;
+        case ORDER_IOC:
+            return order_name_ioc;
+        case ORDER_UNKNOWN:
+        default:
+            return order_name_unknown;
+    }
+}
+
+static inline const char* c_md_direction_name(side_t side) {
+    direction_t direction = c_md_side_direction(side);
+    switch (direction) {
+        case DIRECTION_SHORT:
+            return direction_name_short;
+        case DIRECTION_LONG:
+            return direction_name_long;
+        case DIRECTION_NEUTRAL:
+            return direction_name_neutral;
+        case DIRECTION_UNKNOWN:
+        default:
+            return direction_name_unknown;
+    }
+}
+
+static inline const char* c_md_offset_name(side_t side) {
+    offset_t offset = c_md_side_offset(side);
+    switch (offset) {
+        case OFFSET_CANCEL:
+            return offset_name_cancel;
+        case OFFSET_ORDER:
+            return offset_name_order;
+        case OFFSET_OPEN:
+            return offset_name_open;
+        case OFFSET_CLOSE:
+            return offset_name_close;
+        default:
+            return offset_name_unknown;
     }
 }
 
@@ -707,6 +897,14 @@ static inline int c_md_compare_ask(const void* a, const void* b) {
     if (entry_a->price < entry_b->price) return -1;
     if (entry_a->price > entry_b->price) return 1;
     return 0;
+}
+
+static inline int c_md_compare_id(const mid_t* id1, const mid_t* id2) {
+    return memcmp(id1, id2, ID_SIZE) == 0;
+}
+
+static inline int c_md_compare_long_id(const long_mid_t* id1, const long_mid_t* id2) {
+    return memcmp(id1, id2, LONG_ID_SIZE) == 0;
 }
 
 #endif // C_MARKET_DATA_H

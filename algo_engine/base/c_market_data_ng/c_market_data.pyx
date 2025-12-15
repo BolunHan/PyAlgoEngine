@@ -270,7 +270,7 @@ cdef class FilterMode:
         if filter_mode_t.NO_CANCEL & filter_mode:
             if dtype == data_type_t.DTYPE_TRANSACTION:
                 side = (<transaction_data_t*> market_data).side
-                if c_md_get_offset(side) == offset_t.OFFSET_CANCEL:
+                if c_md_side_offset(side) == offset_t.OFFSET_CANCEL:
                     return False
 
         cdef double timestamp = market_data.meta_info.timestamp

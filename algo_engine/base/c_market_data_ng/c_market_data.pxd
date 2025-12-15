@@ -1,5 +1,9 @@
-from cpython.unicode cimport PyUnicode_FromString
-from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
+import uuid
+
+from cpython.bytes cimport PyBytes_FromStringAndSize
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
+from libc.stdint cimport int8_t, uint32_t, UINT64_MAX, INT64_MIN, int64_t, uint64_t, uintptr_t
+from libc.string cimport memset, memcpy, strcpy, strlen
 
 from ..c_heap_allocator cimport heap_allocator_t, C_ALLOCATOR as HEAP_ALLOCATOR
 from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator_t, C_ALLOCATOR as SHM_ALLOCATOR
@@ -14,21 +18,65 @@ cdef extern from "c_market_data_config.h":
     const size_t LONG_ID_SIZE
     const size_t MAX_WORKERS
 
+    const int MID_ALLOW_INT64
+    const int MID_ALLOW_INT128
+    const int LONG_MID_ALLOW_INT64
+    const int LONG_MID_ALLOW_INT128
+
 
 # Declare external constants
 cdef extern from "c_market_data.h":
-    const char* internal_dtype_name
-    const char* transaction_dtype_name
-    const char* order_dtype_name
-    const char* tick_lite_dtype_name
-    const char* tick_dtype_name
-    const char* bar_dtype_name
-    const char* report_dtype_name
-    const char* instruction_dtype_name
-    const char* generic_dtype_name
+    const char* dtype_name_internal
+    const char* dtype_name_transaction
+    const char* dtype_name_order
+    const char* dtype_name_tick_lite
+    const char* dtype_name_tick
+    const char* dtype_name_bar
+    const char* dtype_name_report
+    const char* dtype_name_instruction
+    const char* dtype_name_generic
+
+    const char* side_name_open
+    const char* side_name_close
+    const char* side_name_short
+    const char* side_name_cover
+    const char* side_name_bid
+    const char* side_name_ask
+    const char* side_name_cancel
+    const char* side_name_cancel_bid
+    const char* side_name_cancel_ask
+    const char* side_name_neutral_open
+    const char* side_name_neutral_close
+    const char* side_name_unknown
+
+    const char* order_name_unknown
+    const char* order_name_cancel
+    const char* order_name_generic
+    const char* order_name_limit
+    const char* order_name_limit_maker
+    const char* order_name_market
+    const char* order_name_fok
+    const char* order_name_fak
+    const char* order_name_ioc
+
+    const char* direction_name_short
+    const char* direction_name_long
+    const char* direction_name_neutral
+    const char* direction_name_unknown
+
+    const char* offset_name_cancel
+    const char* offset_name_order
+    const char* offset_name_open
+    const char* offset_name_close
+    const char* offset_name_unknown
 
     const size_t DTYPE_MIN_SIZE
     const size_t DTYPE_MAX_SIZE
+
+    ctypedef unsigned long long uint128_t
+    ctypedef long long int128_t
+    const int128_t INT128_MIN
+    const uint128_t UINT128_MAX
 
     ctypedef enum direction_t:
         DIRECTION_UNKNOWN
@@ -83,7 +131,10 @@ cdef extern from "c_market_data.h":
 
     ctypedef enum mid_type_t:
         MID_UNKNOWN
-        MID_INT
+        MID_UINT128
+        MID_INT128
+        MID_UINT64
+        MID_INT64
         MID_STRING
         MID_BYTE
         MID_UUID
@@ -117,11 +168,11 @@ cdef extern from "c_market_data.h":
 
     ctypedef struct mid_t:
         mid_type_t id_type
-        char data[ID_SIZE]
+        char data[ID_SIZE + 1]
 
     ctypedef struct long_mid_t:
         mid_type_t id_type
-        char data[LONG_ID_SIZE]
+        char data[LONG_ID_SIZE + 1]
 
     ctypedef struct internal_t:
         meta_info_t meta_info
@@ -229,17 +280,24 @@ cdef extern from "c_market_data.h":
     market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock)
     void c_md_free(market_data_t* market_data, int with_lock)
     double c_md_get_price(const market_data_t* market_data) noexcept nogil
-    offset_t c_md_get_offset(side_t side) noexcept nogil
-    direction_t c_md_get_direction(side_t side) noexcept nogil
-    int8_t c_md_get_sign(direction_t x) noexcept nogil
+    offset_t c_md_side_offset(side_t side) noexcept nogil
+    direction_t c_md_side_direction(side_t side) noexcept nogil
+    side_t c_md_side_opposite(side_t side) noexcept nogil
+    int8_t c_md_side_sign(side_t side) noexcept nogil
     size_t c_md_get_size(data_type_t dtype) noexcept nogil
     const char* c_md_dtype_name(data_type_t dtype) noexcept nogil
+    const char* c_md_side_name(side_t side) noexcept nogil
+    const char* c_md_order_type_name(order_type_t order_type) noexcept nogil
+    const char* c_md_direction_name(side_t side) noexcept nogil
+    const char* c_md_offset_name(side_t side) noexcept nogil
     size_t c_md_serialized_size(const market_data_t* market_data)
     size_t c_md_serialize(const market_data_t* market_data, char* out)
     market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock)
     int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
     int c_md_compare_bid(const void* a, const void* b) noexcept nogil
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil
+    int c_md_compare_id(const mid_t* id1, const mid_t* id2) noexcept nogil
+    int c_md_compare_long_id(const long_mid_t* id1, const long_mid_t* id2) noexcept nogil
 
 
 cdef bint MD_CFG_LOCKED
@@ -259,6 +317,7 @@ cdef class EnvConfigContext:
 cdef EnvConfigContext MD_SHARED
 cdef EnvConfigContext MD_LOCKED
 cdef EnvConfigContext MD_FREELIST
+
 
 cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, double timestamp):
     cdef market_data_t* market_data
@@ -328,6 +387,176 @@ cdef inline market_data_t* c_deserialize_buffer(const char* src):
 
 cdef inline void c_recycle_buffer(market_data_t* market_data):
     c_md_free(market_data, <int> MD_CFG_LOCKED)
+
+
+cdef inline void c_set_id(mid_t* id_ptr, object id_value):
+    cdef bytes id_bytes
+    cdef const char* id_chars
+    cdef Py_ssize_t id_len
+
+    memset(<void*> id_ptr.data, 0, ID_SIZE + 1)
+
+    if id_value is None:
+        # None type
+        id_ptr.id_type = mid_type_t.MID_UNKNOWN
+    elif isinstance(id_value, int):
+        if id_value >= 0:
+            if id_value < UINT64_MAX and MID_ALLOW_INT64:
+                # uint64_t type
+                id_ptr.id_type = mid_type_t.MID_UINT64
+                (<uint64_t*> &id_ptr.data[0])[0] = <uint64_t> id_value
+                return
+            elif id_value < UINT128_MAX and MID_ALLOW_INT128:
+                # uint128_t type
+                id_ptr.id_type = mid_type_t.MID_UINT128
+                (<uint128_t*> &id_ptr.data[0])[0] = <uint128_t> id_value
+                return
+            else:
+                raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
+        else:
+            if id_value > INT64_MIN and MID_ALLOW_INT64:
+                id_ptr.id_type = mid_type_t.MID_INT64
+                (<int64_t*> &id_ptr.data[0])[0] = <int64_t> id_value
+                return
+            elif id_value > INT128_MIN and MID_ALLOW_INT128:
+                id_ptr.id_type = mid_type_t.MID_INT128
+                (<int128_t*> &id_ptr.data[0])[0] = <int128_t> id_value
+                return
+            else:
+                raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
+    elif isinstance(id_value, str):
+        # str type
+        id_ptr.id_type = mid_type_t.MID_STRING
+        id_chars = PyUnicode_AsUTF8AndSize(id_value, &id_len)
+        if id_len <= ID_SIZE:
+            memcpy(<void*> id_ptr.data, id_chars, id_len)
+            return
+        else:
+            raise ValueError(f'String ID {id_value} is too long to fit in the ID buffer.')
+    elif isinstance(id_value, bytes):
+        # bytes type
+        id_ptr.id_type = mid_type_t.MID_BYTE
+        id_chars = <const char*> id_value
+        id_len = len(id_value)
+        if id_len <= ID_SIZE:
+            memcpy(<void*> id_ptr.data, id_chars, id_len)
+            return
+        else:
+            raise ValueError(f'Byte ID {id_value} is too long to fit in the ID buffer.')
+    elif isinstance(id_value, uuid.UUID):
+        # uuid type
+        id_ptr.id_type = mid_type_t.MID_UUID
+        id_bytes = id_value.bytes_le
+        if MID_ALLOW_INT128:
+            memcpy(<void*> id_ptr.data, <const char*> id_bytes, 16)
+            return
+        else:
+            raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
+
+
+cdef inline object c_get_id(mid_t* id_ptr):
+    if id_ptr.id_type == mid_type_t.MID_UNKNOWN:
+        return None
+    elif id_ptr.id_type == mid_type_t.MID_UINT64:
+        return (<uint64_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_INT64:
+        return (<int64_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_UINT128:
+        return (<uint128_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_INT128:
+        return (<int128_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_STRING:
+        return PyUnicode_FromString(&id_ptr.data[0])
+    elif id_ptr.id_type == mid_type_t.MID_BYTE:
+        return PyBytes_FromStringAndSize(&id_ptr.data[0], ID_SIZE).rstrip(b'\0')
+    elif id_ptr.id_type == mid_type_t.MID_UUID:
+        return uuid.UUID(bytes_le=id_ptr.data[:16])
+    raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
+
+
+cdef inline void c_set_long_id(long_mid_t* id_ptr, object id_value):
+    cdef bytes id_bytes
+    cdef const char* id_chars
+    cdef Py_ssize_t id_len
+
+    memset(<void*> id_ptr.data, 0, LONG_ID_SIZE + 1)
+
+    if id_value is None:
+        # None type
+        id_ptr.id_type = mid_type_t.MID_UNKNOWN
+    elif isinstance(id_value, int):
+        if id_value >= 0:
+            if id_value < UINT64_MAX and LONG_MID_ALLOW_INT64:
+                # uint64_t type
+                id_ptr.id_type = mid_type_t.MID_UINT64
+                (<uint64_t*> &id_ptr.data[0])[0] = <uint64_t> id_value
+                return
+            elif id_value < UINT128_MAX and LONG_MID_ALLOW_INT128:
+                # uint128_t type
+                id_ptr.id_type = mid_type_t.MID_UINT128
+                (<uint128_t*> &id_ptr.data[0])[0] = <uint128_t> id_value
+                return
+            else:
+                raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
+        else:
+            if id_value > INT64_MIN and LONG_MID_ALLOW_INT64:
+                id_ptr.id_type = mid_type_t.MID_INT64
+                (<int64_t*> &id_ptr.data[0])[0] = <int64_t> id_value
+                return
+            elif id_value > INT128_MIN and LONG_MID_ALLOW_INT128:
+                id_ptr.id_type = mid_type_t.MID_INT128
+                (<int128_t*> &id_ptr.data[0])[0] = <int128_t> id_value
+                return
+            else:
+                raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
+    elif isinstance(id_value, str):
+        # str type
+        id_ptr.id_type = mid_type_t.MID_STRING
+        id_chars = PyUnicode_AsUTF8AndSize(id_value, &id_len)
+        if id_len <= LONG_ID_SIZE:
+            memcpy(<void*> id_ptr.data, id_chars, id_len)
+            return
+        else:
+            raise ValueError(f'String ID {id_value} is too long to fit in the ID buffer.')
+    elif isinstance(id_value, bytes):
+        # bytes type
+        id_ptr.id_type = mid_type_t.MID_BYTE
+        id_chars = <const char*> id_value
+        id_len = len(id_value)
+        if id_len <= LONG_ID_SIZE:
+            memcpy(<void*> id_ptr.data, id_chars, id_len)
+            return
+        else:
+            raise ValueError(f'Byte ID {id_value} is too long to fit in the ID buffer.')
+    elif isinstance(id_value, uuid.UUID):
+        # uuid type
+        id_ptr.id_type = mid_type_t.MID_UUID
+        id_bytes = id_value.bytes_le
+        if LONG_MID_ALLOW_INT128:
+            memcpy(<void*> id_ptr.data, <const char*> id_bytes, 16)
+            return
+        else:
+            raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
+
+
+cdef inline object c_get_long_id(long_mid_t* id_ptr):
+    if id_ptr.id_type == mid_type_t.MID_UNKNOWN:
+        return None
+    elif id_ptr.id_type == mid_type_t.MID_UINT64:
+        return (<uint64_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_INT64:
+        return (<int64_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_UINT128:
+        return (<uint128_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_INT128:
+        return (<int128_t*> id_ptr.data)[0]
+    elif id_ptr.id_type == mid_type_t.MID_STRING:
+        return PyUnicode_FromString(&id_ptr.data[0])
+    elif id_ptr.id_type == mid_type_t.MID_BYTE:
+        return PyBytes_FromStringAndSize(&id_ptr.data[0], LONG_ID_SIZE).rstrip(b'\0')
+    elif id_ptr.id_type == mid_type_t.MID_UUID:
+        return uuid.UUID(bytes_le=id_ptr.data[:16])
+    raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
 
 
 ctypedef object (*c_from_header_func)(market_data_t* market_data, bint owner)

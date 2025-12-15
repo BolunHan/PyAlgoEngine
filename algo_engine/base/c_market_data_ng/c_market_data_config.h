@@ -25,4 +25,9 @@
 #define MAX_WORKERS 128
 #endif
 
+static const int MID_ALLOW_INT64 = ID_SIZE >= 7;
+static const int MID_ALLOW_INT128 = ID_SIZE >= 15;
+static const int LONG_MID_ALLOW_INT64 = LONG_ID_SIZE >= 7;
+static const int LONG_MID_ALLOW_INT128 = LONG_ID_SIZE >= 15;
+
 #endif // C_MARKET_DATA_CONFIG_H
