@@ -110,13 +110,15 @@ cdef class SharedMemoryBlock:
             if not self.block:
                 return None
             cdef size_t size = self.block.size
-            return <char[:size]> self.block.buffer
+            if size:
+                return <char[:size]> self.block.buffer
+            return None
 
     property address:
         def __get__(self):
-            if not self.block:
-                return None
-            return f'{<uintptr_t> self.block.buffer:#0x}'
+            if self.block:
+                return f'{<uintptr_t> self.block.buffer:#0x}'
+            return None
 
 
 cdef class SharedMemoryAllocator:
@@ -197,11 +199,11 @@ cdef class SharedMemoryAllocator:
         cdef shm_memory_block* block = <shm_memory_block*> (<char*> p - sizeof(shm_memory_block))
         return SharedMemoryBlock.c_from_header(block, True)
 
-    cpdef SharedMemoryBlock request(self, size_t size, bint with_lock=True):
+    cpdef SharedMemoryBlock request(self, size_t size, bint scan_all_pages=True, bint with_lock=True):
         if not self.ctx:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         cdef pthread_mutex_t* lock = &self.ctx.shm_allocator.lock if with_lock else NULL
-        cdef void* p = c_shm_request(self.ctx, size, 1, lock)
+        cdef void* p = c_shm_request(self.ctx, size, scan_all_pages, lock)
         if not p:
             raise OSError(errno, f'<{self.__class__.__name__}> failed to request new buffer')
 

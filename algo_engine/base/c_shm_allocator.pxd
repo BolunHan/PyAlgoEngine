@@ -121,7 +121,7 @@ cdef class SharedMemoryAllocator:
 
     cpdef SharedMemoryBlock calloc(self, size_t size, bint with_lock=*)
 
-    cpdef SharedMemoryBlock request(self, size_t size, bint with_lock=*)
+    cpdef SharedMemoryBlock request(self, size_t size, bint scan_all_pages=*, bint with_lock=*)
 
     cpdef void free(self, SharedMemoryBlock buffer, bint with_lock=*)
 

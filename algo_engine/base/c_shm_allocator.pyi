@@ -122,7 +122,7 @@ class SharedMemoryBlock(object):
         """The raw memory buffer of the block.
 
         Returns:
-            memoryview: A memoryview of the block buffer. None if uninitialized.
+            memoryview: A memoryview of the block buffer. None if uninitialized or zero-sized.
         """
 
     @property
@@ -277,7 +277,7 @@ class SharedMemoryAllocator(object):
             OSError: On allocation failure.
         """
 
-    def request(self, size: int, with_lock: bool = True) -> SharedMemoryBlock:
+    def request(self, size: int, scan_all_pages: bool = True, with_lock: bool = True) -> SharedMemoryBlock:
         """Request a free **zero-initialized** memory from the allocator.
 
         This method will first attempt to reuse blocks from the allocator free-list.
@@ -286,6 +286,7 @@ class SharedMemoryAllocator(object):
 
         Args:
             size (int): Number of user bytes requested.
+            scan_all_pages (bool): Whether to scan all mapped pages for available space before extending a new page.
             with_lock (bool): Whether to use the allocator's internal mutex.
 
         Returns:
