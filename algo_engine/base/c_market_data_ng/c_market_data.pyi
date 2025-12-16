@@ -162,6 +162,19 @@ class MarketData(object):
         """
         ...
 
+    @staticmethod
+    def buffer_size(dtype: DataType) -> size_t:
+        """
+        Get the size of the underlying buffer for a given DataType.
+
+        Args:
+            dtype: DataType enum value
+
+        Returns:
+            Size of the buffer in bytes
+        """
+        ...
+
     def to_bytes(self) -> bytes:
         """
         Serialize the market data instance to bytes.
@@ -181,6 +194,19 @@ class MarketData(object):
 
         Returns:
             Reconstructed market data instance
+        """
+        ...
+
+    @staticmethod
+    def from_ptr(ptr: uintptr_t) -> MarketData:  # undocumented
+        """
+        Reconstruct a MarketData instance from a raw pointer.
+
+        Args:
+            ptr: Pointer address to the underlying data buffer
+
+        Returns:
+            MarketData instance wrapping the buffer at the given pointer
         """
         ...
 
@@ -235,7 +261,12 @@ class MarketData(object):
 
     @property
     def price(self) -> float:
-        """ alias of market_price """
+        """alias of market_price"""
+
+    @property
+    def address(self) -> str | None:
+        """Get hex address of the underlying data buffer. None if not initialized."""
+        ...
 
 
 class FilterMode:

@@ -1,9 +1,6 @@
-import uuid
-
-from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
-from libc.stdint cimport int8_t, uint32_t, UINT64_MAX, INT64_MIN, int64_t, uint64_t, uintptr_t
-from libc.string cimport memset, memcpy, strcpy, strlen
+from cpython.unicode cimport PyUnicode_FromString
+from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
+from libc.string cimport memcpy
 
 from ..c_heap_allocator cimport heap_allocator_t, C_ALLOCATOR as HEAP_ALLOCATOR
 from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator_t, C_ALLOCATOR as SHM_ALLOCATOR
@@ -389,174 +386,30 @@ cdef inline void c_recycle_buffer(market_data_t* market_data):
     c_md_free(market_data, <int> MD_CFG_LOCKED)
 
 
-cdef inline void c_set_id(mid_t* id_ptr, object id_value):
-    cdef bytes id_bytes
-    cdef const char* id_chars
-    cdef Py_ssize_t id_len
-
-    memset(<void*> id_ptr.data, 0, ID_SIZE + 1)
-
-    if id_value is None:
-        # None type
-        id_ptr.id_type = mid_type_t.MID_UNKNOWN
-    elif isinstance(id_value, int):
-        if id_value >= 0:
-            if id_value < UINT64_MAX and MID_ALLOW_INT64:
-                # uint64_t type
-                id_ptr.id_type = mid_type_t.MID_UINT64
-                (<uint64_t*> &id_ptr.data[0])[0] = <uint64_t> id_value
-                return
-            elif id_value < UINT128_MAX and MID_ALLOW_INT128:
-                # uint128_t type
-                id_ptr.id_type = mid_type_t.MID_UINT128
-                (<uint128_t*> &id_ptr.data[0])[0] = <uint128_t> id_value
-                return
-            else:
-                raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
-        else:
-            if id_value > INT64_MIN and MID_ALLOW_INT64:
-                id_ptr.id_type = mid_type_t.MID_INT64
-                (<int64_t*> &id_ptr.data[0])[0] = <int64_t> id_value
-                return
-            elif id_value > INT128_MIN and MID_ALLOW_INT128:
-                id_ptr.id_type = mid_type_t.MID_INT128
-                (<int128_t*> &id_ptr.data[0])[0] = <int128_t> id_value
-                return
-            else:
-                raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
-    elif isinstance(id_value, str):
-        # str type
-        id_ptr.id_type = mid_type_t.MID_STRING
-        id_chars = PyUnicode_AsUTF8AndSize(id_value, &id_len)
-        if id_len <= ID_SIZE:
-            memcpy(<void*> id_ptr.data, id_chars, id_len)
-            return
-        else:
-            raise ValueError(f'String ID {id_value} is too long to fit in the ID buffer.')
-    elif isinstance(id_value, bytes):
-        # bytes type
-        id_ptr.id_type = mid_type_t.MID_BYTE
-        id_chars = <const char*> id_value
-        id_len = len(id_value)
-        if id_len <= ID_SIZE:
-            memcpy(<void*> id_ptr.data, id_chars, id_len)
-            return
-        else:
-            raise ValueError(f'Byte ID {id_value} is too long to fit in the ID buffer.')
-    elif isinstance(id_value, uuid.UUID):
-        # uuid type
-        id_ptr.id_type = mid_type_t.MID_UUID
-        id_bytes = id_value.bytes_le
-        if MID_ALLOW_INT128:
-            memcpy(<void*> id_ptr.data, <const char*> id_bytes, 16)
-            return
-        else:
-            raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
+cdef inline void c_write_uint128(void* data, uint128_t value):
+    memcpy(data, &value, 16)
 
 
-cdef inline object c_get_id(mid_t* id_ptr):
-    if id_ptr.id_type == mid_type_t.MID_UNKNOWN:
-        return None
-    elif id_ptr.id_type == mid_type_t.MID_UINT64:
-        return (<uint64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_INT64:
-        return (<int64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_UINT128:
-        return (<uint128_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_INT128:
-        return (<int128_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_STRING:
-        return PyUnicode_FromString(&id_ptr.data[0])
-    elif id_ptr.id_type == mid_type_t.MID_BYTE:
-        return PyBytes_FromStringAndSize(&id_ptr.data[0], ID_SIZE).rstrip(b'\0')
-    elif id_ptr.id_type == mid_type_t.MID_UUID:
-        return uuid.UUID(bytes_le=id_ptr.data[:16])
-    raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
+cdef inline uint128_t c_read_uint128(void* data):
+    cdef uint128_t value
+    memcpy(&value, data, 16)
+    return value
 
 
-cdef inline void c_set_long_id(long_mid_t* id_ptr, object id_value):
-    cdef bytes id_bytes
-    cdef const char* id_chars
-    cdef Py_ssize_t id_len
-
-    memset(<void*> id_ptr.data, 0, LONG_ID_SIZE + 1)
-
-    if id_value is None:
-        # None type
-        id_ptr.id_type = mid_type_t.MID_UNKNOWN
-    elif isinstance(id_value, int):
-        if id_value >= 0:
-            if id_value < UINT64_MAX and LONG_MID_ALLOW_INT64:
-                # uint64_t type
-                id_ptr.id_type = mid_type_t.MID_UINT64
-                (<uint64_t*> &id_ptr.data[0])[0] = <uint64_t> id_value
-                return
-            elif id_value < UINT128_MAX and LONG_MID_ALLOW_INT128:
-                # uint128_t type
-                id_ptr.id_type = mid_type_t.MID_UINT128
-                (<uint128_t*> &id_ptr.data[0])[0] = <uint128_t> id_value
-                return
-            else:
-                raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
-        else:
-            if id_value > INT64_MIN and LONG_MID_ALLOW_INT64:
-                id_ptr.id_type = mid_type_t.MID_INT64
-                (<int64_t*> &id_ptr.data[0])[0] = <int64_t> id_value
-                return
-            elif id_value > INT128_MIN and LONG_MID_ALLOW_INT128:
-                id_ptr.id_type = mid_type_t.MID_INT128
-                (<int128_t*> &id_ptr.data[0])[0] = <int128_t> id_value
-                return
-            else:
-                raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
-    elif isinstance(id_value, str):
-        # str type
-        id_ptr.id_type = mid_type_t.MID_STRING
-        id_chars = PyUnicode_AsUTF8AndSize(id_value, &id_len)
-        if id_len <= LONG_ID_SIZE:
-            memcpy(<void*> id_ptr.data, id_chars, id_len)
-            return
-        else:
-            raise ValueError(f'String ID {id_value} is too long to fit in the ID buffer.')
-    elif isinstance(id_value, bytes):
-        # bytes type
-        id_ptr.id_type = mid_type_t.MID_BYTE
-        id_chars = <const char*> id_value
-        id_len = len(id_value)
-        if id_len <= LONG_ID_SIZE:
-            memcpy(<void*> id_ptr.data, id_chars, id_len)
-            return
-        else:
-            raise ValueError(f'Byte ID {id_value} is too long to fit in the ID buffer.')
-    elif isinstance(id_value, uuid.UUID):
-        # uuid type
-        id_ptr.id_type = mid_type_t.MID_UUID
-        id_bytes = id_value.bytes_le
-        if LONG_MID_ALLOW_INT128:
-            memcpy(<void*> id_ptr.data, <const char*> id_bytes, 16)
-            return
-        else:
-            raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
+cdef inline void c_write_int128(void* data, int128_t value):
+    memcpy(data, &value, 16)
 
 
-cdef inline object c_get_long_id(long_mid_t* id_ptr):
-    if id_ptr.id_type == mid_type_t.MID_UNKNOWN:
-        return None
-    elif id_ptr.id_type == mid_type_t.MID_UINT64:
-        return (<uint64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_INT64:
-        return (<int64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_UINT128:
-        return (<uint128_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_INT128:
-        return (<int128_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_STRING:
-        return PyUnicode_FromString(&id_ptr.data[0])
-    elif id_ptr.id_type == mid_type_t.MID_BYTE:
-        return PyBytes_FromStringAndSize(&id_ptr.data[0], LONG_ID_SIZE).rstrip(b'\0')
-    elif id_ptr.id_type == mid_type_t.MID_UUID:
-        return uuid.UUID(bytes_le=id_ptr.data[:16])
-    raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
+cdef inline int128_t c_read_int128(void* data):
+    cdef int128_t value
+    memcpy(&value, data, 16)
+    return value
+
+
+cdef void c_set_id(mid_t* id_ptr, object id_value)
+cdef object c_get_id(mid_t* id_ptr)
+cdef void c_set_long_id(long_mid_t* id_ptr, object id_value)
+cdef object c_get_long_id(long_mid_t* id_ptr)
 
 
 ctypedef object (*c_from_header_func)(market_data_t* market_data, bint owner)
