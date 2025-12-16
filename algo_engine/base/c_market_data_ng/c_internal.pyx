@@ -5,21 +5,29 @@ from .c_market_data cimport c_init_buffer, data_type_t
 
 
 cdef class InternalData(MarketData):
-    def __init__(self, *, str ticker, double timestamp, uint32_t code, **kwargs):
+    def __init__(
+            self,
+            *,
+            str ticker,
+            double timestamp,
+            uint32_t code,
+            **kwargs
+    ):
         self.header = c_init_buffer(
             data_type_t.DTYPE_INTERNAL,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
-        self.data_addr = <uintptr_t> self.header
         self.header.internal.code = code
+
+        self.data_addr = <uintptr_t> self.header
         self.owner = True
 
         if kwargs:
             self.__dict__.update(kwargs)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, code={self.code})"
 
     property code:
