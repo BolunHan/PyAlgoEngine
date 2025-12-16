@@ -239,6 +239,12 @@ static inline size_t c_block_roundup(size_t size) {
 }
 #endif /* C_COMMON_ROUNDUP_UTILS_DEFINED */
 
+#ifndef C_SHM_OVERHEAD_CONSTANTS_DEFINED
+#define C_SHM_OVERHEAD_CONSTANTS_DEFINED
+static const size_t c_shm_page_overhead = (sizeof(shm_page_t) + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
+static const size_t c_shm_block_overhead = (sizeof(shm_memory_block) + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
+#endif /* C_SHM_OVERHEAD_CONSTANTS_DEFINED */
+
 static inline void c_shm_allocator_name(const void* region, char* out) {
     pid_t pid = getpid();
     // The shm name should be in format of {prefix}_{pid}_{region_hex}
@@ -306,15 +312,15 @@ static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t pa
         return NULL;
     }
 
-    shm_page_t* meta = (shm_page_t*) calloc(1, sizeof(shm_page_t));
+    shm_page_t* meta = (shm_page_t*) calloc(1, c_shm_page_overhead);
     if (!meta) {
         free(ctx);
         return NULL;
     }
     ctx->shm_page = meta;
 
-    meta->capacity = page_capacity - sizeof(shm_page_t);
-    meta->occupied = 0;
+    meta->capacity = page_capacity;
+    meta->occupied = c_shm_page_overhead;
     meta->offset = 0;
 
     c_shm_page_name(allocator, meta->shm_name);
@@ -348,28 +354,27 @@ static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_
         return -1;
     }
 
-    size_t payload_capacity = page_ctx->shm_page->capacity;
-    size_t total_capacity = payload_capacity + sizeof(shm_page_t);
+    size_t page_capacity = page_ctx->shm_page->capacity;
     size_t offset = allocator->mapped_size;
 
-    if (offset + total_capacity > allocator->region_size) {
+    if (offset + page_capacity > allocator->region_size) {
         errno = ENOMEM;
         return -1;
     }
 
     /* compute target address from integer region base */
     void* target_addr = (void*) ((char*) (uintptr_t) allocator->region + offset);
-    void* mapped = mmap(target_addr, total_capacity, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, page_ctx->shm_fd, 0);
+    void* mapped = mmap(target_addr, page_capacity, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, page_ctx->shm_fd, 0);
     if (mapped == MAP_FAILED) {
         return -1;
     }
 
     // Step 0: Point to metadata at start of page
     shm_page_t* page_meta = (shm_page_t*) mapped;
-    memcpy(page_meta, page_ctx->shm_page, sizeof(shm_page_t));
+    memcpy(page_meta, page_ctx->shm_page, c_shm_page_overhead);
     free(page_ctx->shm_page);
     page_ctx->shm_page = page_meta;
-    page_ctx->buffer = (char*) mapped + sizeof(shm_page_t);
+    page_ctx->buffer = (char*) mapped;  // occupied already included the overhead, so the buffer should start at mapped
 
     // Step 1: Set correct offset
     page_meta->offset = offset;
@@ -385,7 +390,7 @@ static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_
     }
 
     // Step 4: Update allocator state
-    allocator->mapped_size += total_capacity;
+    allocator->mapped_size += page_capacity;
     strncpy(allocator->active_page, page_meta->shm_name, SHM_NAME_LEN - 1);
     allocator->active_page[SHM_NAME_LEN - 1] = '\0';
     allocator->mapped_pages++;
@@ -424,7 +429,7 @@ static inline void c_shm_page_reclaim(shm_allocator_t* allocator, shm_page_ctx* 
         block->next_free = NULL;
 
         // Return occupied size back to page
-        size_t cap_total = block->capacity + sizeof(shm_memory_block);
+        size_t cap_total = block->capacity + c_shm_block_overhead;
         if (page->occupied >= cap_total) {
             page->occupied -= cap_total;
         }
@@ -452,35 +457,32 @@ static inline shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_
     }
 
     // Step 1: Determine new page capacity
-    size_t payload_capacity = 0;
     if (capacity == 0) {
         if (!ctx->active_page) {
-            payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
+            capacity = DEFAULT_AUTOPAGE_CAPACITY;
         }
         else {
             size_t prev_cap = ctx->active_page->shm_page->capacity;
-            payload_capacity = prev_cap * 2;
-            if (payload_capacity < DEFAULT_AUTOPAGE_CAPACITY) {
-                payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
+            capacity = prev_cap * 2;
+            if (capacity < DEFAULT_AUTOPAGE_CAPACITY) {
+                capacity = DEFAULT_AUTOPAGE_CAPACITY;
             }
-            else if (payload_capacity > MAX_AUTOPAGE_CAPACITY) {
-                payload_capacity = MAX_AUTOPAGE_CAPACITY;
+            else if (capacity > MAX_AUTOPAGE_CAPACITY) {
+                capacity = MAX_AUTOPAGE_CAPACITY;
             }
         }
     }
-    else {
-        payload_capacity = capacity;
-    }
-    size_t total_capacity = c_page_roundup(payload_capacity + sizeof(shm_page_t));
 
-    if (total_capacity + allocator->mapped_size > allocator->region_size) {
+    size_t aligned_capacity = c_page_roundup(capacity);
+
+    if (aligned_capacity + allocator->mapped_size > allocator->region_size) {
         if (locked) pthread_mutex_unlock(lock);
         errno = ENOMEM;
         return NULL;
     }
 
     // Step 2: Create new page
-    shm_page_ctx* page_ctx = c_shm_page_new(allocator, total_capacity);
+    shm_page_ctx* page_ctx = c_shm_page_new(allocator, aligned_capacity);
     if (!page_ctx) {
         if (locked) pthread_mutex_unlock(lock);
         return NULL;
@@ -669,8 +671,7 @@ static inline void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mu
 
     size_t cap_net = c_block_roundup(size);
     // the overhead is already aligned due to struct padding
-    size_t overhead = sizeof(shm_memory_block);
-    size_t cap_total = cap_net + overhead;
+    size_t cap_total = cap_net + c_shm_block_overhead;
     shm_allocator_t* allocator = ctx->shm_allocator;
 
     // Step 1: Lock allocator
@@ -702,7 +703,7 @@ static inline void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mu
     if (!page_ctx) {
         // Step 2.1: Roundup to nearest DEFAULT_AUTOPAGE_CAPACITY * 2^n, for the first page
         size_t target_cap = DEFAULT_AUTOPAGE_CAPACITY;
-        while (target_cap < cap_total) {
+        while (target_cap < cap_total + c_shm_page_overhead) {
             target_cap *= 2;
         }
 
@@ -728,7 +729,7 @@ static inline void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mu
         }
 
         // Step 2.1: Roundup to nearest DEFAULT_AUTOPAGE_CAPACITY * 2^n, for the first page
-        while (target_cap < cap_total) {
+        while (target_cap < cap_total + c_shm_page_overhead) {
             target_cap *= 2;
         }
         page_ctx = c_shm_allocator_extend(ctx, target_cap, child_lock);
@@ -768,8 +769,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
     }
 
     size_t cap_net = c_block_roundup(size);
-    size_t overhead = sizeof(shm_memory_block);
-    size_t cap_total = cap_net + overhead;
+    size_t cap_total = cap_net + c_shm_block_overhead;
     shm_allocator_t* allocator = ctx->shm_allocator;
 
     uint8_t locked = 0;
@@ -833,7 +833,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
 
         if (!current) {
             target_cap = DEFAULT_AUTOPAGE_CAPACITY;
-            while (target_cap < cap_total) {
+            while (target_cap < cap_total + c_shm_page_overhead) {
                 target_cap *= 2;
             }
         }
@@ -848,7 +848,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
                 new_cap *= 2;
             }
 
-            while (new_cap < cap_total) {
+            while (new_cap < cap_total + c_shm_page_overhead) {
                 new_cap *= 2;
             }
             target_cap = new_cap;
@@ -888,7 +888,7 @@ static inline void c_shm_free(void* ptr, pthread_mutex_t* lock) {
         return;
     }
 
-    shm_memory_block* block = (shm_memory_block*) ((char*) ptr - sizeof(shm_memory_block));
+    shm_memory_block* block = (shm_memory_block*) ((char*) ptr - c_shm_block_overhead);
     shm_page_t* page = block->parent_page;
     if (!page || !page->allocator) {
         errno = EINVAL;

@@ -20,6 +20,8 @@ cdef extern from "c_shm_allocator.h":
     const char* SHM_PAGE_PREFIX
     const size_t SHM_NAME_LEN
     const size_t SHM_ALLOCATOR_DEFAULT_REGION_SIZE
+    const size_t c_shm_page_overhead
+    const size_t c_shm_block_overhead
 
     ctypedef struct shm_page_t:
         size_t capacity

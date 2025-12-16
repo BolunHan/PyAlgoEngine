@@ -7,7 +7,7 @@ from algo_engine.base.c_shm_allocator import ALLOCATOR, SharedMemoryBlock
 
 
 class TestCShmAllocator(unittest.TestCase):
-    def test_constants_and_allocator_exists(self):
+    def test_00_constants_and_allocator_exists(self):
         self.assertTrue(hasattr(c_shm, 'SHM_ALLOCATOR_PREFIX'))
         self.assertTrue(hasattr(c_shm, 'SHM_PAGE_PREFIX'))
         self.assertTrue(hasattr(c_shm, 'SHM_ALLOCATOR_DEFAULT_REGION_SIZE'))
@@ -22,7 +22,7 @@ class TestCShmAllocator(unittest.TestCase):
         # ensure repr doesn't crash
         _ = repr(c_shm.ALLOCATOR)
 
-    def test_calloc_request_free_and_free_list(self):
+    def test_01_calloc_request_free_and_free_list(self):
         # calloc
         b1 = ALLOCATOR.calloc(1024)
         addr_1 = b1.address
@@ -58,7 +58,7 @@ class TestCShmAllocator(unittest.TestCase):
         ALLOCATOR.reclaim()
         self.assertEqual(ALLOCATOR.active_page.occupied, occupied)
 
-    def test_extend_page_and_allocated_iteration(self):
+    def test_02_extend_page_and_allocated_iteration(self):
         page = ALLOCATOR.extend(1 << 16)
         self.assertIsNotNone(page)
         self.assertTrue(hasattr(page, 'capacity'))
@@ -95,7 +95,7 @@ class TestCShmAllocator(unittest.TestCase):
             ALLOCATOR.free(bb)
         ALLOCATOR.reclaim()
 
-    def test_dangling_detection_and_cleanup(self):
+    def test_03_dangling_detection_and_cleanup(self):
         # Step 1: use os to create a new python process, import ALLOCATOR and exit
         import subprocess
         script = (
@@ -146,7 +146,7 @@ class TestCShmAllocator(unittest.TestCase):
             pid = ALLOCATOR.get_pid(shm_name)
             self.assertNotEqual(pid, subprocess_pid)
 
-    def test_multiprocessing_access(self):
+    def test_04_multiprocessing_access(self):
         # Step 1: measure the addr diff for 2 calloc buffer
         ALLOCATOR.extend(1 << 16)
         b1 = ALLOCATOR.calloc(1024)
@@ -175,6 +175,17 @@ class TestCShmAllocator(unittest.TestCase):
         b3.buffer[:16] = payload
         process.join()
         self.assertEqual(process.exitcode, 0, 'Multiprocessing access test failed.')
+
+    def test_05_auto_extend(self):
+        ALLOCATOR.extend(4 * 1024)
+        current_page = ALLOCATOR.active_page
+        buf_1 = ALLOCATOR.calloc(2048)
+        # buf_1 should be allocated in current_page
+        self.assertEqual(current_page.name, ALLOCATOR.active_page.name)
+        available_buffer = current_page.capacity - current_page.occupied
+        buf_2 = ALLOCATOR.calloc(available_buffer - 2)
+        # buf_2 should trigger auto-extend, as the overhead is far larger than 2 bytes
+        self.assertNotEqual(current_page.name, ALLOCATOR.active_page.name)
 
 
 if __name__ == '__main__':
