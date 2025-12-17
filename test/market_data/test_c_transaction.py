@@ -42,9 +42,9 @@ class TestTransactionEnums(unittest.TestCase):
         self.assertEqual(side.sign, 1)
         self.assertEqual(side.offset, TransactionOffset.OFFSET_OPEN)
         self.assertEqual(side.direction, TransactionDirection.DIRECTION_LONG)
-        self.assertIsInstance(side.side_name, str)
-        self.assertIsInstance(side.offset_name, str)
-        self.assertIsInstance(side.direction_name, str)
+        self.assertEqual(side.side_name, 'buy')
+        self.assertEqual(side.offset_name, 'open')
+        self.assertEqual(side.direction_name, 'long')
 
         side = TransactionSide.SIDE_SHORT_OPEN
         self.assertEqual(side.sign, -1)
@@ -81,6 +81,31 @@ class TestTransactionData(unittest.TestCase):
         self.assertEqual(data.side_sign, 1)
         self.assertEqual(data.volume_flow, 2.0)
         self.assertEqual(data.notional_flow, 40.0)
+        self.assertEqual(data.transaction_id, tx_id)
+        self.assertEqual(data.buy_id, buy_id)
+        self.assertEqual(data.sell_id, sell_id)
+
+        data = TransactionData(
+            ticker='600010.SH',
+            timestamp=123.456,
+            price=10.0,
+            volume=2.0,
+            notional=15,
+            side=TransactionSide.SIDE_SHORT_CLOSE,
+            multiplier=2.0,
+            transaction_id=tx_id,
+            buy_id=buy_id,
+            sell_id=sell_id,
+        )
+
+        self.assertEqual(data.price, 10.0)
+        self.assertEqual(data.volume, 2.0)
+        self.assertEqual(data.multiplier, 2.0)
+        self.assertEqual(data.notional, 15.0)
+        self.assertEqual(data.side, TransactionSide.SIDE_SHORT_CLOSE)
+        self.assertEqual(data.side_sign, -1)
+        self.assertEqual(data.volume_flow, -2.0)
+        self.assertEqual(data.notional_flow, -15.0)
         self.assertEqual(data.transaction_id, tx_id)
         self.assertEqual(data.buy_id, buy_id)
         self.assertEqual(data.sell_id, sell_id)
@@ -194,4 +219,3 @@ class TestTradeData(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

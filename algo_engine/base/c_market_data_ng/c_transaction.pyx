@@ -204,6 +204,8 @@ cdef class TransactionData(MarketData):
             self.__dict__.update(kwargs)
 
     def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
         cdef str side_name = PyUnicode_FromString(c_md_side_name(self.header.transaction_data.side))
         return f"<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name})"
 
@@ -350,6 +352,8 @@ cdef class OrderData(MarketData):
             self.__dict__.update(kwargs)
 
     def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
         cdef str side_name = PyUnicode_FromString(c_md_side_name(self.header.order_data.side))
         cdef str order_type_name = PyUnicode_FromString(c_md_order_type_name(self.header.order_data.order_type))
         return f"<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, price={self.price}, volume={self.volume}, side={side_name}, order_type={order_type_name})"
