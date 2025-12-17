@@ -119,6 +119,12 @@ if os.name == 'posix':
             include_dirs=["algo_engine/base"],
             extra_compile_args=["-O3"]
         ),
+        Extension(
+            name="algo_engine.base.c_market_data_ng.c_candlestick",
+            sources=["algo_engine/base/c_market_data_ng/c_candlestick.pyx"],
+            include_dirs=["algo_engine/base"],
+            extra_compile_args=["-O3"]
+        ),
     ])
 
 setup(
