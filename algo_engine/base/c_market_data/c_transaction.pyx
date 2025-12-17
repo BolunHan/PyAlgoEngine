@@ -733,13 +733,13 @@ cdef class TransactionData:
 
     @property
     def volume_flow(self) -> float:
-        cdef uint8_t sign = direction_to_sign(self._data.side)
+        cdef int8_t sign = direction_to_sign(self._data.side)
         cdef double flow = self._data.volume * sign
         return flow
 
     @property
     def notional_flow(self) -> float:
-        cdef uint8_t sign = direction_to_sign(self._data.side)
+        cdef int8_t sign = direction_to_sign(self._data.side)
         cdef double notional = self._data.notional *  sign
         return notional
 
