@@ -112,27 +112,23 @@ static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, 
         locked = 1;
     }
 
-    size_t payload_capacity = 0;
     if (capacity == 0) {
         if (!allocator->active_page) {
-            payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
+            capacity = DEFAULT_AUTOPAGE_CAPACITY;
         }
         else {
             size_t prev_cap = allocator->active_page->capacity;
-            payload_capacity = prev_cap * 2;
-            if (payload_capacity < DEFAULT_AUTOPAGE_CAPACITY) {
-                payload_capacity = DEFAULT_AUTOPAGE_CAPACITY;
+            capacity = prev_cap * 2;
+            if (capacity < DEFAULT_AUTOPAGE_CAPACITY) {
+                capacity = DEFAULT_AUTOPAGE_CAPACITY;
             }
-            else if (payload_capacity > MAX_AUTOPAGE_CAPACITY) {
-                payload_capacity = MAX_AUTOPAGE_CAPACITY;
+            else if (capacity > MAX_AUTOPAGE_CAPACITY) {
+                capacity = MAX_AUTOPAGE_CAPACITY;
             }
         }
     }
-    else {
-        payload_capacity = capacity;
-    }
 
-    size_t total_capacity = c_page_roundup(payload_capacity + sizeof(heap_page_t));
+    size_t total_capacity = c_page_roundup(capacity);
 
     heap_page_t* page = (heap_page_t*) calloc(1, total_capacity);
 
@@ -141,8 +137,8 @@ static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, 
         return NULL;
     }
 
-    page->capacity = payload_capacity;
-    page->occupied = 0;
+    page->capacity = capacity;
+    page->occupied = sizeof(heap_page_t);
     page->allocator = allocator;
     page->allocated = NULL;
     page->prev = allocator->active_page;
@@ -218,7 +214,7 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
     heap_page_t* page = allocator->active_page;
     if (!page) {
         size_t target_cap = DEFAULT_AUTOPAGE_CAPACITY;
-        while (target_cap < cap_total) {
+        while (target_cap < cap_total + sizeof(heap_page_t)) {
             target_cap *= 2;
         }
 
@@ -230,7 +226,7 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
     }
 
     if (page->occupied + cap_total > page->capacity) {
-        size_t target_cap = page->capacity - sizeof(heap_page_t);
+        size_t target_cap = page->capacity;
 
         if (target_cap < DEFAULT_AUTOPAGE_CAPACITY) {
             target_cap = DEFAULT_AUTOPAGE_CAPACITY;
@@ -239,7 +235,7 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
             target_cap *= 2;
         }
 
-        while (target_cap < cap_total) {
+        while (target_cap < cap_total + sizeof(heap_page_t)) {
             target_cap *= 2;
         }
         page = c_heap_allocator_extend(allocator, target_cap, child_lock);
@@ -250,7 +246,7 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
     }
 
     size_t offset = page->occupied;
-    heap_memory_block* block = (heap_memory_block*) (page->buffer + offset);
+    heap_memory_block* block = (heap_memory_block*) ((char*) page + offset);
     block->capacity = cap_net;
     block->size = size;
     block->next_free = NULL;
@@ -333,12 +329,12 @@ static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int
 
         if (!current) {
             target_cap = DEFAULT_AUTOPAGE_CAPACITY;
-            while (target_cap < cap_total) {
+            while (target_cap < cap_total + sizeof(heap_page_t)) {
                 target_cap *= 2;
             }
         }
         else {
-            size_t prev_cap = current->capacity - sizeof(heap_page_t);
+            size_t prev_cap = current->capacity;
             size_t new_cap = prev_cap;
 
             if (new_cap < DEFAULT_AUTOPAGE_CAPACITY) {
@@ -348,7 +344,7 @@ static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int
                 new_cap *= 2;
             }
 
-            while (new_cap < cap_total) {
+            while (new_cap < cap_total + sizeof(heap_page_t)) {
                 new_cap *= 2;
             }
             target_cap = new_cap;
@@ -362,7 +358,7 @@ static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int
     }
 
     size_t offset = target_page->occupied;
-    heap_memory_block* block = (heap_memory_block*) (target_page->buffer + offset);
+    heap_memory_block* block = (heap_memory_block*) ((char*) target_page + offset);
     block->capacity = cap_net;
     block->size = size;
     block->next_free = NULL;
