@@ -181,7 +181,13 @@ cdef extern from "c_market_data.h":
         uint64_t n_orders
 
     ctypedef struct order_book_t:
-        order_book_entry_t entries[BOOK_SIZE]
+        size_t capacity;
+        size_t size;
+        direction_t direction
+        int sorted
+        shm_allocator_t* shm_allocator
+        heap_allocator_t* heap_allocator
+        order_book_entry_t entries[]
 
     ctypedef struct candlestick_t:
         meta_info_t meta_info
@@ -213,8 +219,8 @@ cdef extern from "c_market_data.h":
         double total_ask_volume
         double weighted_bid_price
         double weighted_ask_price
-        order_book_t bid
-        order_book_t ask
+        order_book_t* bid
+        order_book_t* ask
 
     ctypedef struct transaction_data_t:
         meta_info_t meta_info
@@ -289,7 +295,10 @@ cdef extern from "c_market_data.h":
     const char* c_md_offset_name(side_t side) noexcept nogil
     size_t c_md_serialized_size(const market_data_t* market_data)
     size_t c_md_serialize(const market_data_t* market_data, char* out)
-    market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock)
+    market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) noexcept nogil
+    order_book_t* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) noexcept nogil
+    void c_md_orderbook_free(order_book_t* orderbook, int with_lock) noexcept nogil
+    int c_md_orderbook_sort(order_book_t* orderbook) noexcept nogil
     int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
     int c_md_compare_bid(const void* a, const void* b) noexcept nogil
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil
@@ -300,6 +309,7 @@ cdef extern from "c_market_data.h":
 cdef bint MD_CFG_LOCKED
 cdef bint MD_CFG_SHARED
 cdef bint MD_CFG_FREELIST
+cdef size_t MD_CFG_BOOK_SIZE
 
 
 cdef class EnvConfigContext:
@@ -314,6 +324,9 @@ cdef class EnvConfigContext:
 cdef EnvConfigContext MD_SHARED
 cdef EnvConfigContext MD_LOCKED
 cdef EnvConfigContext MD_FREELIST
+cdef EnvConfigContext MD_BOOK5
+cdef EnvConfigContext MD_BOOK10
+cdef EnvConfigContext MD_BOOK20
 
 
 cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, double timestamp):

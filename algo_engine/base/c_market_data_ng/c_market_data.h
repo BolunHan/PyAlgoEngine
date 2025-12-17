@@ -213,7 +213,13 @@ typedef struct order_book_entry_t {
 } order_book_entry_t;
 
 typedef struct order_book_t {
-    order_book_entry_t entries[BOOK_SIZE];
+    size_t capacity;
+    size_t size;
+    direction_t direction;
+    int sorted;
+    shm_allocator_t* shm_allocator;
+    heap_allocator_t* heap_allocator;
+    order_book_entry_t entries[];
 } order_book_t;
 
 typedef struct candlestick_t {
@@ -248,8 +254,8 @@ typedef struct tick_data_t {
     double total_ask_volume;
     double weighted_bid_price;
     double weighted_ask_price;
-    order_book_t bid;
-    order_book_t ask;
+    order_book_t* bid;
+    order_book_t* ask;
 } tick_data_t;
 
 typedef struct transaction_data_t {
@@ -442,6 +448,30 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
 static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock);
 
 /**
+ * @brief Create a new order book with specified size and direction.
+ * @param book_size Number of levels in the order book.
+ * @param shm_allocator Shared-memory allocator context, or NULL.
+ * @param heap_allocator Heap allocator, or NULL.
+ * @param with_lock Whether to lock allocator during allocation.
+ * @return Pointer to allocated `order_book_t`, or NULL on failure.
+ */
+static inline order_book_t* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock);
+
+/**
+ * @brief Free or recycle a previously allocated order book.
+ * @param orderbook Pointer returned by `c_md_orderbook_new`.
+ * @param with_lock Whether to lock allocator during free.
+ */
+static inline void c_md_orderbook_free(order_book_t* orderbook, int with_lock);
+
+/**
+ * @brief Sort the order book entries in place.
+ * @param orderbook Pointer to the order book.
+ * @return 0 on success, -1 on failure.
+ */
+static inline int c_md_orderbook_sort(order_book_t* orderbook);
+
+/**
  * @brief Compare two meta_info pointers by timestamp (ascending).
  * @param a Pointer to pointer of meta_info_t.
  * @param b Pointer to pointer of meta_info_t.
@@ -498,6 +528,7 @@ static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_
     if (shm_allocator) {
         pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
         meta_info_t* meta = (meta_info_t*) c_shm_request(shm_allocator, size, 0, lock);
+        if (!meta) return NULL;
         meta->dtype = dtype;
         meta->shm_allocator = shm_allocator->shm_allocator;
         return (market_data_t*) meta;
@@ -505,12 +536,14 @@ static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_
     else if (heap_allocator) {
         pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
         meta_info_t* meta = (meta_info_t*) c_heap_request(heap_allocator, size, 0, lock);
+        if (!meta) return NULL;
         meta->dtype = dtype;
         meta->heap_allocator = heap_allocator;
         return (market_data_t*) meta;
     }
     else {
         meta_info_t* meta = (meta_info_t*) calloc(1, size);
+        if (!meta) return NULL;
         meta->dtype = dtype;
         return (market_data_t*) meta;
     }
@@ -571,12 +604,13 @@ static inline direction_t c_md_side_direction(side_t side) {
 }
 
 static inline side_t c_md_side_opposite(side_t side) {
-    offset_t offset         = (offset_t)    (side & 0xFC);  // Extract the offset bits      (0xFC = 11111100)
-    direction_t direction   = (direction_t) (side & 0x03);  // Extract the direction bits   (0x03 = 00000011)
+    offset_t offset = (offset_t) (side & 0xFC);  // Extract the offset bits      (0xFC = 11111100)
+    direction_t direction = (direction_t) (side & 0x03);  // Extract the direction bits   (0x03 = 00000011)
 
     if (direction == DIRECTION_LONG) {
         direction = DIRECTION_SHORT;
-    } else if (direction == DIRECTION_SHORT) {
+    }
+    else if (direction == DIRECTION_SHORT) {
         direction = DIRECTION_LONG;
     }
     return (side_t) (direction | offset);
@@ -735,7 +769,38 @@ static inline size_t c_md_serialized_size(const market_data_t* market_data) {
         case DTYPE_TRANSACTION:   payload_size = sizeof(transaction_data_t) - sizeof(meta_info_t); break;
         case DTYPE_ORDER:         payload_size = sizeof(order_data_t) - sizeof(meta_info_t); break;
         case DTYPE_TICK_LITE:     payload_size = sizeof(tick_data_lite_t) - sizeof(meta_info_t); break;
-        case DTYPE_TICK:          payload_size = sizeof(tick_data_t) - sizeof(meta_info_t); break;
+        case DTYPE_TICK:
+        {
+            // Special-case: tick_data_t embeds tick_data_lite_t (with meta_info)
+            // and contains pointers to order books. We serialize:
+            // - tick_data_lite payload (without meta_info)
+            // - four doubles (totals/weighted prices)
+            // - bid order book: [uint8 has][capacity][size][uint8 direction][uint8 sorted][entries]
+            // - ask order book: same as bid
+            const tick_data_t* tick = &market_data->tick_data_full;
+            const size_t lite_payload = sizeof(tick_data_lite_t) - sizeof(meta_info_t);
+            const size_t fixed_fields = sizeof(double) * 4; // total_bid_volume, total_ask_volume, weighted_bid_price, weighted_ask_price
+
+            // Helper lambda-like macros for order book serialized size
+            size_t ob_payload = 0;
+            // Bid
+            ob_payload += sizeof(uint8_t);
+            if (tick->bid) {
+                ob_payload += (2 * sizeof(size_t))                 // capacity + size
+                    + (2 * sizeof(uint8_t))               // direction + sorted flags
+                    + (tick->bid->size * sizeof(order_book_entry_t));
+            }
+            // Ask
+            ob_payload += sizeof(uint8_t);
+            if (tick->ask) {
+                ob_payload += (2 * sizeof(size_t))
+                    + (2 * sizeof(uint8_t))
+                    + (tick->ask->size * sizeof(order_book_entry_t));
+            }
+
+            payload_size = lite_payload + fixed_fields + ob_payload;
+            break;
+        }
         case DTYPE_BAR:           payload_size = sizeof(candlestick_t) - sizeof(meta_info_t); break;
         case DTYPE_REPORT:        payload_size = sizeof(trade_report_t) - sizeof(meta_info_t); break;
         case DTYPE_INSTRUCTION:   payload_size = sizeof(trade_instruction_t) - sizeof(meta_info_t); break;
@@ -749,7 +814,7 @@ static inline size_t c_md_serialized_size(const market_data_t* market_data) {
     return sizeof(uint8_t)      /* dtype */
         + sizeof(double)        /* timestamp */
         + sizeof(uint32_t)      /* ticker length */
-        + ticker_len  + 1       /* ticker bytes with nul terminator*/
+        + ticker_len + 1       /* ticker bytes with nul terminator*/
         + payload_size;         /* payload without meta_info */
 }
 
@@ -794,7 +859,77 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
         case DTYPE_TRANSACTION:   WRITE_PAYLOAD(transaction_data_t, transaction_data); break;
         case DTYPE_ORDER:         WRITE_PAYLOAD(order_data_t, order_data); break;
         case DTYPE_TICK_LITE:     WRITE_PAYLOAD(tick_data_lite_t, tick_data_lite); break;
-        case DTYPE_TICK:          WRITE_PAYLOAD(tick_data_t, tick_data_full); break;
+        case DTYPE_TICK:
+        {
+            // Special-case serialization for tick_data_t
+            const tick_data_t* tick = &market_data->tick_data_full;
+            const tick_data_lite_t* lite = &tick->lite;
+
+            // 1) Serialize tick_data_lite payload (without meta_info)
+            memcpy(cursor, ((const char*) lite) + sizeof(meta_info_t), sizeof(tick_data_lite_t) - sizeof(meta_info_t));
+            cursor += sizeof(tick_data_lite_t) - sizeof(meta_info_t);
+
+            // 2) Serialize fixed tick fields
+            memcpy(cursor, &tick->total_bid_volume, sizeof(double));
+            cursor += sizeof(double);
+            memcpy(cursor, &tick->total_ask_volume, sizeof(double));
+            cursor += sizeof(double);
+            memcpy(cursor, &tick->weighted_bid_price, sizeof(double));
+            cursor += sizeof(double);
+            memcpy(cursor, &tick->weighted_ask_price, sizeof(double));
+            cursor += sizeof(double);
+
+            // 3) Serialize bid order book
+            {
+                const uint8_t has_bid = tick->bid ? 1 : 0;
+                memcpy(cursor, &has_bid, sizeof(uint8_t));
+                cursor += sizeof(uint8_t);
+                if (has_bid) {
+                    const order_book_t* ob = tick->bid;
+                    memcpy(cursor, &ob->capacity, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    memcpy(cursor, &ob->size, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    const uint8_t dir = (uint8_t) ob->direction;
+                    memcpy(cursor, &dir, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+                    const uint8_t sorted = (uint8_t) (ob->sorted ? 1 : 0);
+                    memcpy(cursor, &sorted, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+                    if (ob->size > 0) {
+                        const size_t entries_bytes = ob->size * sizeof(order_book_entry_t);
+                        memcpy(cursor, ob->entries, entries_bytes);
+                        cursor += entries_bytes;
+                    }
+                }
+            }
+
+            // 4) Serialize ask order book
+            {
+                const uint8_t has_ask = tick->ask ? 1 : 0;
+                memcpy(cursor, &has_ask, sizeof(uint8_t));
+                cursor += sizeof(uint8_t);
+                if (has_ask) {
+                    const order_book_t* ob = tick->ask;
+                    memcpy(cursor, &ob->capacity, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    memcpy(cursor, &ob->size, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    const uint8_t dir = (uint8_t) ob->direction;
+                    memcpy(cursor, &dir, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+                    const uint8_t sorted = (uint8_t) (ob->sorted ? 1 : 0);
+                    memcpy(cursor, &sorted, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+                    if (ob->size > 0) {
+                        const size_t entries_bytes = ob->size * sizeof(order_book_entry_t);
+                        memcpy(cursor, ob->entries, entries_bytes);
+                        cursor += entries_bytes;
+                    }
+                }
+            }
+            break;
+        }
         case DTYPE_BAR:           WRITE_PAYLOAD(candlestick_t, bar_data); break;
         case DTYPE_REPORT:        WRITE_PAYLOAD(trade_report_t, trade_report); break;
         case DTYPE_INSTRUCTION:   WRITE_PAYLOAD(trade_instruction_t, trade_instruction); break;
@@ -850,7 +985,112 @@ static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx
         case DTYPE_TRANSACTION:   READ_PAYLOAD(transaction_data_t, transaction_data); break;
         case DTYPE_ORDER:         READ_PAYLOAD(order_data_t, order_data); break;
         case DTYPE_TICK_LITE:     READ_PAYLOAD(tick_data_lite_t, tick_data_lite); break;
-        case DTYPE_TICK:          READ_PAYLOAD(tick_data_t, tick_data_full); break;
+        case DTYPE_TICK:
+        {
+            // Special-case deserialization for tick_data_t
+            tick_data_t* tick = &market_data->tick_data_full;
+
+            // 1) Read tick_data_lite payload (without meta_info)
+            memcpy(((char*) &tick->lite) + sizeof(meta_info_t), cursor, sizeof(tick_data_lite_t) - sizeof(meta_info_t));
+            cursor += sizeof(tick_data_lite_t) - sizeof(meta_info_t);
+
+            // 2) Read fixed tick fields
+            memcpy(&tick->total_bid_volume, cursor, sizeof(double));
+            cursor += sizeof(double);
+            memcpy(&tick->total_ask_volume, cursor, sizeof(double));
+            cursor += sizeof(double);
+            memcpy(&tick->weighted_bid_price, cursor, sizeof(double));
+            cursor += sizeof(double);
+            memcpy(&tick->weighted_ask_price, cursor, sizeof(double));
+            cursor += sizeof(double);
+
+            // 3) Read bid order book
+            {
+                uint8_t has_bid = 0;
+                memcpy(&has_bid, cursor, sizeof(uint8_t));
+                cursor += sizeof(uint8_t);
+                if (has_bid) {
+                    size_t capacity = 0, size = 0;
+                    uint8_t dir_byte = 0, sorted_byte = 0;
+                    memcpy(&capacity, cursor, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    memcpy(&size, cursor, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    memcpy(&dir_byte, cursor, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+                    memcpy(&sorted_byte, cursor, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+
+                    order_book_t* ob = c_md_orderbook_new(capacity, shm_allocator, heap_allocator, with_lock);
+                    if (!ob) {
+                        c_md_free(market_data, with_lock); return NULL;
+                    }
+                    ob->size = size;
+                    ob->direction = (direction_t) dir_byte;
+                    ob->sorted = (int) (sorted_byte ? 1 : 0);
+
+                    if (size > 0) {
+                        const size_t bytes_in_src = size * sizeof(order_book_entry_t);
+                        const size_t size_to_copy = (size > capacity) ? capacity : size;
+                        if (size_to_copy > 0) {
+                            memcpy(ob->entries, cursor, size_to_copy * sizeof(order_book_entry_t));
+                        }
+                        cursor += bytes_in_src;
+                        if (size > capacity) {
+                            ob->size = capacity; // clamp to capacity
+                        }
+                    }
+                    tick->bid = ob;
+                }
+                else {
+                    tick->bid = NULL;
+                }
+            }
+
+            // 4) Read ask order book
+            {
+                uint8_t has_ask = 0;
+                memcpy(&has_ask, cursor, sizeof(uint8_t));
+                cursor += sizeof(uint8_t);
+                if (has_ask) {
+                    size_t capacity = 0, size = 0;
+                    uint8_t dir_byte = 0, sorted_byte = 0;
+                    memcpy(&capacity, cursor, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    memcpy(&size, cursor, sizeof(size_t));
+                    cursor += sizeof(size_t);
+                    memcpy(&dir_byte, cursor, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+                    memcpy(&sorted_byte, cursor, sizeof(uint8_t));
+                    cursor += sizeof(uint8_t);
+
+                    order_book_t* ob = c_md_orderbook_new(capacity, shm_allocator, heap_allocator, with_lock);
+                    if (!ob) {
+                        c_md_free(market_data, with_lock); return NULL;
+                    }
+                    ob->size = size;
+                    ob->direction = (direction_t) dir_byte;
+                    ob->sorted = (int) (sorted_byte ? 1 : 0);
+
+                    if (size > 0) {
+                        const size_t bytes_in_src = size * sizeof(order_book_entry_t);
+                        const size_t size_to_copy = (size > capacity) ? capacity : size;
+                        if (size_to_copy > 0) {
+                            memcpy(ob->entries, cursor, size_to_copy * sizeof(order_book_entry_t));
+                        }
+                        cursor += bytes_in_src;
+                        if (size > capacity) {
+                            ob->size = capacity; // clamp to capacity
+                        }
+                    }
+                    tick->ask = ob;
+                }
+                else {
+                    tick->ask = NULL;
+                }
+            }
+            break;
+        }
         case DTYPE_BAR:           READ_PAYLOAD(candlestick_t, bar_data); break;
         case DTYPE_REPORT:        READ_PAYLOAD(trade_report_t, trade_report); break;
         case DTYPE_INSTRUCTION:   READ_PAYLOAD(trade_instruction_t, trade_instruction); break;
@@ -862,6 +1102,71 @@ static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx
     }
 #undef READ_PAYLOAD
     return market_data;
+}
+
+static inline order_book_t* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) {
+    size_t size = sizeof(order_book_t) + book_size * sizeof(order_book_entry_t);
+    if (size == 0) return NULL;
+
+    if (shm_allocator) {
+        pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
+        order_book_t* orderbook = (order_book_t*) c_shm_request(shm_allocator, size, 0, lock);
+        if (!orderbook) return NULL;
+        orderbook->capacity = book_size;
+        orderbook->shm_allocator = shm_allocator->shm_allocator;
+        return orderbook;
+    }
+    else if (heap_allocator) {
+        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
+        order_book_t* orderbook = (order_book_t*) c_heap_request(heap_allocator, size, 0, lock);
+        if (!orderbook) return NULL;
+        orderbook->capacity = book_size;
+        orderbook->heap_allocator = heap_allocator;
+        return orderbook;
+    }
+    else {
+        order_book_t* orderbook = (order_book_t*) calloc(1, size);
+        if (!orderbook) return NULL;
+        orderbook->capacity = book_size;
+        return orderbook;
+    }
+}
+
+static inline void c_md_orderbook_free(order_book_t* orderbook, int with_lock) {
+    if (!orderbook) return;
+
+    shm_allocator_t* shm_allocator = orderbook->shm_allocator;
+    heap_allocator_t* heap_allocator = orderbook->heap_allocator;
+
+    if (shm_allocator) {
+        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
+        c_shm_free((void*) orderbook, lock);
+    }
+    else if (heap_allocator) {
+        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
+        c_heap_free((void*) orderbook, lock);
+    }
+    else {
+        free((void*) orderbook);
+    }
+}
+
+static inline int c_md_orderbook_sort(order_book_t* orderbook) {
+    if (!orderbook || orderbook->size == 0 || orderbook->sorted) return 0;
+
+    if (orderbook->direction == DIRECTION_LONG) {
+        qsort(orderbook->entries, orderbook->size, sizeof(order_book_entry_t), c_md_compare_bid);
+    }
+    else if (orderbook->direction == DIRECTION_SHORT) {
+        qsort(orderbook->entries, orderbook->size, sizeof(order_book_entry_t), c_md_compare_ask);
+    }
+    else {
+        // Invalid direction
+        return -1;
+    }
+
+    orderbook->sorted = 1;
+    return 0;
 }
 
 static inline int c_md_compare_ptr(const void* a, const void* b) {

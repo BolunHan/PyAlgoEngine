@@ -27,6 +27,7 @@ class DataType(enum.IntEnum):
 cdef bint MD_CFG_LOCKED = False
 cdef bint MD_CFG_SHARED = True
 cdef bint MD_CFG_FREELIST = True
+cdef size_t MD_CFG_BOOK_SIZE = BOOK_SIZE
 
 
 cdef class EnvConfigContext:
@@ -50,6 +51,11 @@ cdef class EnvConfigContext:
             MD_CFG_FREELIST = self.overrides['freelist']
             self.originals['freelist'] = MD_CFG_FREELIST
 
+        if 'book_size' in self.overrides:
+            global MD_CFG_BOOK_SIZE
+            MD_CFG_BOOK_SIZE = self.overrides['book_size']
+            self.originals['book_size'] = MD_CFG_BOOK_SIZE
+
     cdef void c_deactivate(self):
         if 'locked' in self.originals:
             global MD_CFG_LOCKED
@@ -62,6 +68,10 @@ cdef class EnvConfigContext:
         if 'freelist' in self.originals:
             global MD_CFG_FREELIST
             MD_CFG_FREELIST = self.originals.pop('freelist')
+
+        if 'book_size' in self.originals:
+            global MD_CFG_BOOK_SIZE
+            MD_CFG_BOOK_SIZE = self.originals.pop('book_size')
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.overrides!r})'
@@ -83,7 +93,7 @@ cdef class EnvConfigContext:
     def __invert__(self):
         return EnvConfigContext.__new__(
             EnvConfigContext,
-            **{k: not v for k, v in self.overrides.items()}
+            **{k: not v if isinstance(v, bool) else v for k, v in self.overrides.items()}
         )
 
     def __call__(self, func):
@@ -95,14 +105,20 @@ cdef class EnvConfigContext:
         return wrapper
 
 
-cdef EnvConfigContext MD_SHARED = EnvConfigContext(shared=True)
-cdef EnvConfigContext MD_LOCKED = EnvConfigContext(locked=True)
-cdef EnvConfigContext MD_FREELIST = EnvConfigContext(freelist=True)
+cdef EnvConfigContext MD_SHARED     = EnvConfigContext(shared=True)
+cdef EnvConfigContext MD_LOCKED     = EnvConfigContext(locked=True)
+cdef EnvConfigContext MD_FREELIST   = EnvConfigContext(freelist=True)
+cdef EnvConfigContext MD_BOOK5      = EnvConfigContext(book_size=5)
+cdef EnvConfigContext MD_BOOK10     = EnvConfigContext(book_size=10)
+cdef EnvConfigContext MD_BOOK20     = EnvConfigContext(book_size=20)
 
 
 globals()['MD_SHARED'] = MD_SHARED
 globals()['MD_LOCKED'] = MD_LOCKED
 globals()['MD_FREELIST'] = MD_FREELIST
+globals()['MD_BOOK5'] = MD_BOOK5
+globals()['MD_BOOK10'] = MD_BOOK10
+globals()['MD_BOOK20'] = MD_BOOK20
 
 
 cdef void c_set_id(mid_t* id_ptr, object id_value):
@@ -299,7 +315,7 @@ cdef class MarketData:
         cdef object cls = self.__class__
         cdef MarketData instance = <MarketData> cls.__new__(cls)
         cdef data_type_t dtype = self.header.meta_info.dtype
-        cdef market_data_t* header = c_md_new(dtype, NULL, NULL, 0)
+        cdef market_data_t* header = c_md_new(dtype, NULL, NULL, <int> MD_CFG_LOCKED)
         cdef size_t size = c_md_get_size(self.header.meta_info.dtype)
         memcpy(<void*> instance.header, <const char*> self.header, size)
         instance.__dict__.update(self.__dict__)
