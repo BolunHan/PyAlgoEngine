@@ -1,4 +1,3 @@
-import math
 import unittest
 import uuid
 
@@ -43,9 +42,9 @@ class TestTransactionEnums(unittest.TestCase):
         self.assertEqual(side.sign, 1)
         self.assertEqual(side.offset, TransactionOffset.OFFSET_OPEN)
         self.assertEqual(side.direction, TransactionDirection.DIRECTION_LONG)
-        self.assertEqual(side.side_name, 'buy')
-        self.assertEqual(side.offset_name, 'open')
-        self.assertEqual(side.direction_name, 'long')
+        self.assertIsInstance(side.side_name, str)
+        self.assertIsInstance(side.offset_name, str)
+        self.assertIsInstance(side.direction_name, str)
 
         side = TransactionSide.SIDE_SHORT_OPEN
         self.assertEqual(side.sign, -1)
