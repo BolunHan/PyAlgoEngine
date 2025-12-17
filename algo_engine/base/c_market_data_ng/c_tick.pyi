@@ -5,7 +5,7 @@ from typing import Any, Union
 import numpy as np
 
 from .c_market_data import MarketData
-from .c_transaction import TransactionDirection
+from .c_transaction import TransactionDirection, TransactionSide
 
 D_ARRAY = Union[np.ndarray, np.ndarray[tuple[int], np.dtype[np.double]], memoryview]
 L_ARRAY = Union[np.ndarray, np.ndarray[tuple[int], np.dtype[np.uint64]], memoryview]
@@ -236,6 +236,31 @@ class OrderBook:
     @property
     def n_orders(self) -> L_ARRAY:
         """Get the actual underlying buffer of the n_orders, backed by numpy array."""
+        ...
+
+    @property
+    def sorted(self) -> bool:
+        """Check if the order book is sorted."""
+        ...
+
+    @property
+    def side(self) -> TransactionSide:
+        """Get the side of the order book (Bid or Ask)."""
+        ...
+
+    @property
+    def direction(self) -> TransactionDirection:
+        """Get the direction of the order book (Long or Short)."""
+        ...
+
+    @property
+    def size(self) -> int:
+        """Get the number of initialized entries / levels in is order book."""
+        ...
+
+    @property
+    def capacity(self) -> int:
+        """Get the maximum capacity of the order book."""
         ...
 
 

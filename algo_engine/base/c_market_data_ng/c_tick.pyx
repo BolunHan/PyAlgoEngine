@@ -1,6 +1,5 @@
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.unicode cimport PyUnicode_AsUTF8
-from cpython cimport memoryview
 from libc.math cimport NAN
 from libc.stdint cimport uint64_t, uintptr_t
 from libc.stdlib cimport calloc, free
@@ -8,11 +7,11 @@ from libc.string cimport memcpy
 
 from .c_market_data cimport (
     SHM_ALLOCATOR, HEAP_ALLOCATOR,
-    data_type_t, order_type_t, direction_t, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_CFG_BOOK_SIZE,
+    data_type_t, direction_t, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_CFG_BOOK_SIZE,
     order_book_entry_t, c_md_orderbook_sort,
     c_init_buffer, c_md_orderbook_new, c_md_orderbook_free
 )
-from .c_transaction import TransactionDirection
+from .c_transaction import TransactionDirection, TransactionOffset
 
 
 cdef class TickDataLite(MarketData):
@@ -58,6 +57,8 @@ cdef class TickDataLite(MarketData):
             self.__dict__.update(kwargs)
 
     def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
         return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
     property last_price:
@@ -411,6 +412,10 @@ cdef class OrderBook:
         def __get__(self):
             return self.header.sorted
 
+    property side:
+        def __get__(self):
+            return TransactionDirection(self.header.direction) | TransactionOffset.OFFSET_ORDER
+
     property direction:
         def __get__(self):
             return TransactionDirection(self.header.direction)
@@ -469,11 +474,15 @@ cdef class TickData(MarketData):
         self.header.tick_data_full.bid = self.bid.header
         self.header.tick_data_full.ask = self.ask.header
 
-        # Parse kwargs to initialize the order books
+        self.data_addr = <uintptr_t> self.header
+        self.owner = True
+
         if kwargs:
             self.parse(kwargs)
 
     def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
         return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
     def __copy__(self):

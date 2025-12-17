@@ -7,7 +7,7 @@ from algo_engine.base.c_market_data_ng.c_tick import (
     TickDataLite,
 )
 
-from algo_engine.base.c_market_data_ng.c_transaction import TransactionDirection
+from algo_engine.base.c_market_data_ng.c_transaction import TransactionDirection, TransactionSide
 from algo_engine.base.c_market_data_ng.c_market_data import MarketData
 
 
@@ -83,6 +83,11 @@ class TestOrderBook(unittest.TestCase):
         self.assertEqual(levels[-1][1], 10.0)
         self.assertEqual(book[1][0], 99.5)
         self.assertEqual(book[0][0], 99.0)
+
+        self.assertEqual(book.direction, TransactionDirection.DIRECTION_SHORT)
+        self.assertEqual(book.side, TransactionSide.Ask)
+        self.assertEqual(book.capacity, 10)
+        self.assertEqual(book.size, 3)
 
     def test_at_price_and_at_level(self):
         book = build_order_book(direction=TransactionDirection.DIRECTION_SHORT)
