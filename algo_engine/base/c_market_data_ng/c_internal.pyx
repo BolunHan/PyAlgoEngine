@@ -36,4 +36,4 @@ cdef class InternalData(MarketData):
 
 
 from . cimport c_market_data
-c_market_data.internal_from_header = c_from_header
+c_market_data.internal_from_header = internal_from_header
