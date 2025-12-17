@@ -69,6 +69,17 @@ cdef extern from "c_market_data.h":
     const char* offset_name_close
     const char* offset_name_unknown
 
+    const char* state_name_unknown
+    const char* state_name_rejected
+    const char* state_name_invalid
+    const char* state_name_pending
+    const char* state_name_sent
+    const char* state_name_placed
+    const char* state_name_partfilled
+    const char* state_name_filled
+    const char* state_name_canceling
+    const char* state_name_canceled
+
     const size_t DTYPE_MIN_SIZE
     const size_t DTYPE_MAX_SIZE
 
@@ -295,12 +306,16 @@ cdef extern from "c_market_data.h":
     const char* c_md_order_type_name(order_type_t order_type) noexcept nogil
     const char* c_md_direction_name(side_t side) noexcept nogil
     const char* c_md_offset_name(side_t side) noexcept nogil
+    const char* c_md_state_name(order_state_t side) noexcept nogil
     size_t c_md_serialized_size(const market_data_t* market_data)
     size_t c_md_serialize(const market_data_t* market_data, char* out)
     market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) noexcept nogil
     order_book_t* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) noexcept nogil
     void c_md_orderbook_free(order_book_t* orderbook, int with_lock) noexcept nogil
     int c_md_orderbook_sort(order_book_t* orderbook) noexcept nogil
+    int c_md_state_working(order_state_t state) noexcept nogil
+    int c_md_state_placed(order_state_t state) noexcept nogil
+    int c_md_state_done(order_state_t state) noexcept nogil
     int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
     int c_md_compare_bid(const void* a, const void* b) noexcept nogil
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil

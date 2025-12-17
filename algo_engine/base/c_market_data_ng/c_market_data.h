@@ -68,6 +68,17 @@ static const char offset_name_open[]        = "open";
 static const char offset_name_close[]       = "close";
 static const char offset_name_unknown[]     = "unknown";
 
+static const char state_name_unknown[]      = "unknown";
+static const char state_name_rejected[]     = "rejected";
+static const char state_name_invalid[]      = "invalid";
+static const char state_name_pending[]      = "pending";
+static const char state_name_sent[]         = "sent";
+static const char state_name_placed[]       = "placed";
+static const char state_name_partfilled[]   = "part-filled";
+static const char state_name_filled[]       = "filled";
+static const char state_name_canceling[]    = "canceling";
+static const char state_name_canceled[]     = "canceled";
+
 #define DTYPE_MIN_SIZE (sizeof(internal_t))
 #define DTYPE_MAX_SIZE (sizeof(market_data_t))
 
@@ -423,6 +434,13 @@ static inline const char* c_md_direction_name(side_t side);
 static inline const char* c_md_offset_name(side_t side);
 
 /**
+ * @brief Get the human-readable name of an order state.
+ * @param state Order state value.
+ * @return Constant string name.
+ */
+static inline const char* c_md_state_name(order_state_t state);
+
+/**
  * @brief Compute serialized size of a market_data buffer.
  * @param market_data Buffer to measure.
  * @return Total bytes required for serialization.
@@ -470,6 +488,27 @@ static inline void c_md_orderbook_free(order_book_t* orderbook, int with_lock);
  * @return 0 on success, -1 on failure.
  */
 static inline int c_md_orderbook_sort(order_book_t* orderbook);
+
+/**
+ * @brief Check if an order_state is a working state.
+ * @param state Order state to check.
+ * @return 1 if working, 0 otherwise.
+ */
+static inline int c_md_state_working(order_state_t state);
+
+/**
+ * @brief Check if an order_state is a placed state.
+ * @param state Order state to check.
+ * @return 1 if placed, 0 otherwise.
+ */
+static inline int c_md_state_placed(order_state_t state);
+
+/**
+ * @brief Check if an order_state is a done state.
+ * @param state Order state to check.
+ * @return 1 if done, 0 otherwise.
+ */
+static inline int c_md_state_done(order_state_t state);
 
 /**
  * @brief Compare two meta_info pointers by timestamp (ascending).
@@ -753,6 +792,32 @@ static inline const char* c_md_offset_name(side_t side) {
             return offset_name_close;
         default:
             return offset_name_unknown;
+    }
+}
+
+static inline const char* c_md_state_name(order_state_t state) {
+    switch (state) {
+        case STATE_REJECTED:
+            return state_name_rejected;
+        case STATE_INVALID:
+            return state_name_invalid;
+        case STATE_PENDING:
+            return state_name_pending;
+        case STATE_SENT:
+            return state_name_sent;
+        case STATE_PLACED:
+            return state_name_placed;
+        case STATE_PARTFILLED:
+            return state_name_partfilled;
+        case STATE_FILLED:
+            return state_name_filled;
+        case STATE_CANCELING:
+            return state_name_canceling;
+        case STATE_CANCELED:
+            return state_name_canceled;
+        case STATE_UNKNOWN:
+        default:
+            return state_name_unknown;
     }
 }
 
@@ -1167,6 +1232,41 @@ static inline int c_md_orderbook_sort(order_book_t* orderbook) {
 
     orderbook->sorted = 1;
     return 0;
+}
+
+static inline int c_md_state_working(order_state_t state) {
+    switch (state) {
+        case STATE_SENT:
+        case STATE_PLACED:
+        case STATE_PARTFILLED:
+        case STATE_CANCELING:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static inline int c_md_state_placed(order_state_t state) {
+    switch (state) {
+        case STATE_PLACED:
+        case STATE_PARTFILLED:
+        case STATE_CANCELING:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static inline int c_md_state_done(order_state_t state) {
+    switch (state) {
+        case STATE_FILLED:
+        case STATE_CANCELED:
+        case STATE_REJECTED:
+        case STATE_INVALID:
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 static inline int c_md_compare_ptr(const void* a, const void* b) {
