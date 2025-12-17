@@ -6,6 +6,8 @@ from ..c_heap_allocator cimport heap_allocator_t, C_ALLOCATOR as HEAP_ALLOCATOR
 from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator_t, C_ALLOCATOR as SHM_ALLOCATOR
 from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
 
+from ...profile.c_base cimport C_PROFILE
+
 
 cdef extern from "c_market_data_config.h":
     const bint DEBUG

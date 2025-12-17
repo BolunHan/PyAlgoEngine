@@ -8,8 +8,6 @@ from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_AsUTF8
 from libc.stdint cimport UINT64_MAX, INT64_MIN, int64_t
 from libc.string cimport memset, memcpy
 
-from ...profile.c_base cimport C_PROFILE
-
 
 class DataType(enum.IntEnum):
     DTYPE_UNKNOWN = data_type_t.DTYPE_UNKNOWN
