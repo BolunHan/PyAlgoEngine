@@ -107,6 +107,18 @@ if os.name == 'posix':
             include_dirs=["algo_engine/base"],
             extra_compile_args=["-O3"]
         ),
+        Extension(
+            name="algo_engine.base.c_market_data_ng.c_transaction",
+            sources=["algo_engine/base/c_market_data_ng/c_transaction.pyx"],
+            include_dirs=["algo_engine/base"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.base.c_market_data_ng.c_tick",
+            sources=["algo_engine/base/c_market_data_ng/c_tick.pyx"],
+            include_dirs=["algo_engine/base"],
+            extra_compile_args=["-O3"]
+        ),
     ])
 
 setup(
