@@ -124,9 +124,16 @@ if os.name == 'posix':
             sources=["algo_engine/base/c_market_data_ng/c_candlestick.pyx"],
             include_dirs=["algo_engine/base"],
             extra_compile_args=["-O3"]
-        ),Extension(
+        ),
+        Extension(
             name="algo_engine.base.c_market_data_ng.c_trade_utils",
             sources=["algo_engine/base/c_market_data_ng/c_trade_utils.pyx"],
+            include_dirs=["algo_engine/base"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.base.c_market_data_ng.c_market_data_buffer",
+            sources=["algo_engine/base/c_market_data_ng/c_market_data_buffer.pyx"],
             include_dirs=["algo_engine/base"],
             extra_compile_args=["-O3"]
         ),

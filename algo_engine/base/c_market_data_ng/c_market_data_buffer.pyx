@@ -1,0 +1,263 @@
+from cpython.bytes cimport PyBytes_FromStringAndSize
+from cpython.ref cimport Py_XINCREF, Py_XDECREF
+from libc.stdlib cimport calloc, realloc, free
+from libc.string cimport memcpy, memset
+
+from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST
+
+cdef class MarketDataBufferCache:
+    def __cinit__(self, size_t capacity, object parent):
+        self.parent = parent
+        self.py_array = <PyObject**> calloc(capacity, sizeof(PyObject*))
+        self.c_array = <market_data_t**> calloc(capacity, sizeof(market_data_t*))
+        self.capacity = capacity
+
+    def __dealloc__(self):
+        cdef size_t i
+        if self.py_array:
+            for i in range(self.size):
+                Py_XDECREF(self.py_array[i])
+            free(self.py_array)
+
+        if self.c_array:
+            free(self.c_array)
+
+    cdef int c_write_block_buffer(self, MarketDataBuffer buffer):
+        # Step 1: Calculate required capacities
+        cdef market_data_t* md
+        cdef size_t i = 0
+        cdef size_t data_cap = 0
+        cdef size_t ptr_cap = self.size
+
+        if not ptr_cap:
+            return 0
+
+        for i in range(ptr_cap):
+            md = self.c_array[i]
+            data_cap += c_md_serialized_size(md)
+
+        cdef md_block_buffer* header = buffer.header
+        ptr_cap += header.ptr_tail
+        data_cap += header.data_tail
+
+        # Step 2: Extend buffer if needed
+        if data_cap > header.data_capacity or ptr_cap > header.ptr_capacity:
+            header = c_md_block_buffer_extend(
+                buffer.header,
+                ptr_cap,
+                data_cap,
+                SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+                HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+                <int> MD_CFG_LOCKED
+            )
+
+            if not header:
+                raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
+
+            if buffer.owner:
+                c_md_block_buffer_free(buffer.header, 1)
+
+            buffer.header = header
+            buffer.owner = True
+
+        # Step 3: Copy cached data into buffer
+        for i in range(self.size):
+            md = self.c_array[i]
+            c_md_block_buffer_put(header, md)
+
+    def __iter__(self):
+        cdef size_t i
+        for i in range(self.size):
+            yield MarketData.c_from_header(self.c_array[i], False)
+
+    def __len__(self):
+        return self.size
+
+    def __getitem__(self, ssize_t idx):
+        return self.get(idx)
+
+    def __enter__(self):
+        self.clear()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if isinstance(self.parent, MarketDataBuffer):
+            self.c_write_block_buffer(self.parent)
+        self.clear()
+
+    def put(self, MarketData market_data):
+        cdef PyObject** py_array = self.py_array
+        cdef market_data_t** c_array = self.c_array
+        cdef size_t capacity = self.capacity
+
+        if self.size >= capacity:
+            capacity *= 2
+
+            py_array = <PyObject**> realloc(py_array, capacity * sizeof(PyObject*))
+            if not py_array:
+                raise MemoryError("Failed to reallocate MarketDataBufferCache arrays")
+            self.py_array = py_array
+
+            c_array = <market_data_t**> realloc(c_array, capacity * sizeof(market_data_t*))
+            if not c_array:
+                raise MemoryError("Failed to reallocate MarketDataBufferCache arrays")
+            self.c_array = c_array
+            self.capacity = capacity
+
+        self.c_array[self.size] = market_data.header
+        self.py_array[self.size] = <PyObject*> market_data
+        Py_XINCREF(<PyObject*> market_data)
+        self.size += 1
+
+    def get(self, ssize_t idx):
+        cdef ssize_t total = self.size
+        if idx >= total or idx < -total:
+            raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
+        if idx < 0:
+            idx += total
+        cdef market_data_t* md = self.c_array[idx]
+        return MarketData.c_from_header(md, False)
+
+    def clear(self):
+        cdef size_t i
+        for i in range(self.size):
+            Py_XDECREF(self.py_array[i])
+        memset(self.py_array, 0, self.capacity * sizeof(PyObject*))
+        memset(self.c_array, 0, self.capacity * sizeof(market_data_t*))
+        self.size = 0
+
+
+cdef class MarketDataBuffer:
+    def __cinit__(self, size_t ptr_cap, size_t data_cap):
+        self.header = c_md_block_buffer_new(
+            ptr_cap,
+            data_cap,
+            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+            <int> MD_CFG_LOCKED
+        )
+        if not self.header:
+            raise MemoryError("Failed to allocate MarketDataBuffer")
+
+        self.owner = True
+        self.iter_idx = 0
+
+    def __dealloc__(self):
+        if not self.owner:
+            return
+
+        if self.header:
+            c_md_block_buffer_free(self.header, 1)
+
+    cdef void c_sort(self):
+        c_md_block_buffer_sort(self.header)
+
+    cdef void c_put(self, market_data_t* market_data):
+        cdef md_block_buffer* header = self.header
+        cdef size_t ptr_tail = header.ptr_tail
+        cdef size_t ptr_capacity = header.ptr_capacity
+        cdef size_t data_tail = header.data_tail
+        cdef size_t data_capacity = header.data_capacity
+        cdef size_t md_size = c_md_serialized_size(market_data)
+
+        if ptr_tail >= ptr_capacity or data_tail + md_size > data_capacity:
+            header = c_md_block_buffer_extend(
+                self.header,
+                max(ptr_capacity * 2, ptr_tail + 1),
+                max(data_capacity * 2, data_tail + md_size),
+                SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+                HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+                <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
+            )
+            if not header:
+                raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
+            c_md_block_buffer_free(self.header, 1)
+            self.header = header
+
+        c_md_block_buffer_put(self.header, market_data)
+
+    cdef market_data_t* c_get(self, ssize_t idx):
+        cdef ssize_t total = self.header.ptr_tail
+        if idx >= total or idx < -total:
+            raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
+        if idx < 0:
+            idx += total
+        cdef const char* blob = c_md_block_buffer_get(self.header, idx)
+        cdef market_data_t* md = c_md_deserialize(
+            blob,
+            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+            <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
+        )
+        return md
+
+    # --- python interface ---
+
+    def __iter__(self):
+        self.c_sort()
+        self.iter_idx = 0
+        return self
+
+    def __getitem__(self, idx: int):
+        cdef market_data_t* md = self.c_get(idx)
+        return MarketData.c_from_header(md, False)
+
+    def __len__(self):
+        return self.header.ptr_tail
+
+    def __next__(self):
+        if self.iter_idx >= self.header.ptr_tail:
+            raise StopIteration
+
+        cdef market_data_t* md = self.c_get(self.iter_idx)
+        self.iter_idx += 1
+        return MarketData.c_from_header(md, False)
+
+    def cache(self):
+        return MarketDataBufferCache.__new__(MarketDataBufferCache, 4096, self)
+
+    def put(self, MarketData market_data):
+        self.c_put(market_data.header)
+
+    def get(self, idx: int):
+        cdef market_data_t* md = self.c_get(idx)
+        return MarketData.c_from_header(md, False)
+
+    def sort(self):
+        c_md_block_buffer_sort(self.header)
+
+    def to_bytes(self):
+        cdef size_t serialized_size = c_md_block_buffer_serialized_size(self.header)
+        cdef bytes result = PyBytes_FromStringAndSize(NULL, serialized_size)
+        c_md_block_buffer_serialize(self.header, <char*> result)
+        return result
+
+    @classmethod
+    def from_bytes(cls, data: bytes):
+        cdef md_block_buffer* src = <md_block_buffer*> <char*> data
+        cdef size_t size = len(data)
+        cdef size_t ptr_cap = src.ptr_capacity
+        cdef size_t data_cap = src.data_capacity
+        cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, ptr_cap, data_cap)
+        memcpy(instance.header, src, size)
+        return instance
+
+    @property
+    def ptr_capacity(self):
+        return self.header.ptr_capacity
+
+    @property
+    def ptr_tail(self):
+        return self.header.ptr_tail
+
+    @property
+    def data_capacity(self):
+        return self.header.data_capacity
+
+    @property
+    def data_tail(self):
+        return self.header.data_tail
+
+    @property
+    def is_sorted(self):
+        return <bint> self.header.sorted
