@@ -5,6 +5,7 @@ from libc.string cimport memcpy, memset
 
 from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST
 
+
 cdef class MarketDataBufferCache:
     def __cinit__(self, size_t capacity, object parent):
         self.parent = parent
@@ -242,22 +243,166 @@ cdef class MarketDataBuffer:
         memcpy(instance.header, src, size)
         return instance
 
-    @property
-    def ptr_capacity(self):
-        return self.header.ptr_capacity
+    property ptr_capacity:
+        def __get__(self):
+            return self.header.ptr_capacity
 
-    @property
-    def ptr_tail(self):
-        return self.header.ptr_tail
+    property ptr_tail:
+        def __get__(self):
+            return self.header.ptr_tail
 
-    @property
-    def data_capacity(self):
-        return self.header.data_capacity
+    property data_capacity:
+        def __get__(self):
+            return self.header.data_capacity
 
-    @property
-    def data_tail(self):
-        return self.header.data_tail
+    property data_tail:
+        def __get__(self):
+            return self.header.data_tail
 
-    @property
-    def is_sorted(self):
-        return <bint> self.header.sorted
+    property is_sorted:
+        def __get__(self):
+            return <bint> self.header.sorted
+
+
+class Empty(Exception):
+    pass
+
+
+class Full(Exception):
+    pass
+
+
+cdef class MarketDataRingBuffer:
+    def __cinit__(self, size_t ptr_cap, size_t data_cap):
+        self.header = c_md_ring_buffer_new(
+            ptr_cap,
+            data_cap,
+            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+            <int> MD_CFG_LOCKED
+        )
+        if not self.header:
+            raise MemoryError("Failed to allocate MarketDataBuffer")
+
+        self.owner = True
+        self.iter_idx = 0
+
+    def __dealloc__(self):
+        if not self.owner:
+            return
+
+        if self.header:
+            c_md_ring_buffer_free(self.header, 1)
+
+    cdef bint c_is_empty(self):
+        return c_md_ring_buffer_is_empty(self.header)
+
+    cdef bint c_is_full(self, market_data_t* market_data):
+        return c_md_ring_buffer_is_full(self.header, market_data)
+
+    cdef void c_put(self, market_data_t* market_data):
+        cdef int ret_code = c_md_ring_buffer_put(self.header, market_data)
+        if not ret_code:
+            return
+        if ret_code == -1:
+            raise ValueError("Invalid args")
+        elif ret_code == -2:
+            raise Full('Pointer array is full')
+        elif ret_code == -3:
+            raise Full('Buffer array is full')
+        else:
+            raise RuntimeError(f'Failed to fetch a MarketData from buffer, error code: {ret_code}')
+
+    cdef market_data_t* c_get(self, ssize_t idx):
+        cdef ssize_t total = self.header.ptr_tail
+        if idx >= total or idx < -total:
+            raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
+        if idx < 0:
+            idx += total
+        cdef const char* blob = c_md_ring_buffer_get(self.header, idx)
+        cdef market_data_t* md = c_md_deserialize(
+            blob,
+            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+            <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
+        )
+        return md
+
+    cdef market_data_t* c_listen(self, bint block=True, double timeout=0):
+        cdef const char* blob = NULL
+        cdef int ret_code = c_md_ring_buffer_listen(self.header, block, timeout, &blob)
+        cdef market_data_t* md
+
+        if not ret_code:
+            md = c_md_deserialize(
+                blob,
+                SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
+                HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
+                <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
+            )
+            return md
+
+        if ret_code == -1:
+            raise RuntimeError('Invalid buffer')
+        elif ret_code == -2:
+            raise Empty('Empty buffer')
+        elif ret_code == -3:
+            raise BufferError('Corrupted buffer')
+        elif ret_code == -4:
+            raise TimeoutError('Timeout')
+        else:
+            raise RuntimeError(f'Failed to fetch a MarketData from buffer, error code: {ret_code}')
+
+    def __iter__(self):
+        self.iter_idx = 0
+        return self
+
+    def __getitem__(self, idx: int):
+        cdef market_data_t* md = self.c_get(idx)
+        return MarketData.c_from_header(md, False)
+
+    def __len__(self):
+        return c_md_ring_buffer_size(self.header)
+
+    def __next__(self):
+        cdef size_t total = c_md_ring_buffer_size(self.header)
+        if self.iter_idx >= total:
+            raise StopIteration
+        cdef market_data_t* md = self.c_get(self.iter_idx)
+        self.iter_idx += 1
+        return MarketData.c_from_header(md, False)
+
+    def put(self, MarketData market_data):
+        self.c_put(market_data.header)
+
+    def get(self, idx: int):
+        cdef market_data_t* md = self.c_get(idx)
+        return MarketData.c_from_header(md, False)
+
+    def listen(self, block=True, timeout=0):
+        cdef market_data_t* md = self.c_listen(block, timeout)
+        return MarketData.c_from_header(md, False)
+
+    property ptr_capacity:
+        def __get__(self):
+            return self.header.ptr_capacity
+
+    property ptr_head:
+        def __get__(self):
+            return self.header.ptr_head
+
+    property ptr_tail:
+        def __get__(self):
+            return self.header.ptr_tail
+
+    property data_capacity:
+        def __get__(self):
+            return self.header.data_capacity
+
+    property data_tail:
+        def __get__(self):
+            return self.header.data_tail
+
+    property is_empty:
+        def __get__(self):
+            return self.c_is_empty()

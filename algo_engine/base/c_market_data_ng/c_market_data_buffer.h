@@ -324,7 +324,7 @@ static inline int c_md_block_buffer_clear(md_block_buffer* buffer) {
 
     buffer->ptr_tail = 0;
     buffer->data_tail = 0;
-        buffer->current_timestamp = 0.0;
+    buffer->current_timestamp = 0.0;
     buffer->sorted = 1;
     return 0;
 }
@@ -461,8 +461,23 @@ static inline int c_md_ring_buffer_is_empty(md_ring_buffer* buffer) {
     else return 0;
 }
 
-static inline size_t c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data) {
-    if (!buffer || !market_data) return 0;
+static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer) {
+    if (!buffer) return 0;
+
+    size_t ptr_head = buffer->ptr_head;
+    size_t ptr_tail = buffer->ptr_tail;
+    size_t capacity = buffer->ptr_capacity;
+
+    if (ptr_tail >= ptr_head) {
+        return ptr_tail - ptr_head;
+    }
+    else {
+        return (capacity - ptr_head) + ptr_tail;
+    }
+}
+
+static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data) {
+    if (!buffer || !market_data) return -1;
 
     size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
     size_t ptr_head = buffer->ptr_head;
@@ -470,7 +485,7 @@ static inline size_t c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t*
     size_t ptr_next = (ptr_tail + 1) % buffer->ptr_capacity;
 
     if (ptr_head == ptr_next) {
-        return 0;
+        return -2;
     }
 
     size_t serialized_size = c_md_serialized_size(market_data);
@@ -491,7 +506,7 @@ static inline size_t c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t*
                 buffer->data_tail = serialized_size;
             }
             else {
-                return 0;
+                return -3;
             }
         }
     }
@@ -502,7 +517,7 @@ static inline size_t c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t*
             buffer->data_tail += serialized_size;
         }
         else {
-            return 0;
+            return -3;
         }
     }
 
@@ -512,36 +527,31 @@ static inline size_t c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t*
     offset_array[ptr_tail] = write_offset;
     buffer->ptr_tail = ptr_next;
 
-    return serialized_size;
+    return 0;
 }
 
-static inline market_data_t* c_md_ring_buffer_get(md_ring_buffer* buffer) {
+static inline const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index) {
     if (!buffer) return NULL;
+    if (index >= buffer->ptr_capacity) return NULL;
+    size_t size = c_md_ring_buffer_size(buffer);
+    if (index >= size) return NULL;
 
     size_t ptr_head = buffer->ptr_head;
-    size_t ptr_next = (ptr_head + 1) % buffer->ptr_capacity;
-    size_t ptr_tail = buffer->ptr_tail;
-
-    if (ptr_head == ptr_tail) {
-        return NULL;
-    }
+    size_t ptr_capacity = buffer->ptr_capacity;
+    size_t ptr_idx = (ptr_head + index) % ptr_capacity;
 
     size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
-    size_t data_offset = offset_array[ptr_head];
+    size_t data_offset = offset_array[ptr_idx];
 
     if (data_offset >= buffer->data_capacity) {
         return NULL;
     }
 
     char* data_ptr = buffer->buffer + buffer->data_offset + data_offset;
-    market_data_t* market_data = (market_data_t*) data_ptr;
-
-    buffer->ptr_head = ptr_next;
-
-    return market_data;
+    return data_ptr;
 }
 
-static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, market_data_t** out) {
+static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, const char** out) {
     if (!buffer || !out) return -1;
 
     const uint32_t spin_per_check = 1000;
@@ -565,9 +575,9 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, dou
             size_t data_offset = offset_array[idx];
             if (data_offset >= buffer->data_capacity) return -3; /* corrupt offset */
 
-            market_data_t* md = (market_data_t*) (buffer->buffer + buffer->data_offset + data_offset);
+            const char* data_ptr = (buffer->buffer + buffer->data_offset + data_offset);
             buffer->ptr_head = (idx + 1) % buffer->ptr_capacity;
-            *out = md;
+            *out = data_ptr;
             return 0;
         }
 

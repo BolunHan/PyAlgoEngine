@@ -45,6 +45,7 @@ cdef extern from "c_market_data_buffer.h":
         size_t capacity
         size_t tail
 
+    int c_md_compare_serialized(const void* a, const void* b)
     size_t c_md_total_buffer_size(market_data_t** md_array, size_t n_md)
     market_data_t* c_md_send_to_shm(market_data_t* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, int with_lock)
 
@@ -62,9 +63,10 @@ cdef extern from "c_market_data_buffer.h":
     int c_md_ring_buffer_free(md_ring_buffer* buffer, int with_lock)
     int c_md_ring_buffer_is_full(md_ring_buffer* buffer, market_data_t* market_data)
     int c_md_ring_buffer_is_empty(md_ring_buffer* buffer)
-    size_t c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data)
-    market_data_t* c_md_ring_buffer_get(md_ring_buffer* buffer)
-    int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, market_data_t** out)
+    size_t c_md_ring_buffer_size(md_ring_buffer* buffer)
+    int c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data)
+    const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index)
+    int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, const char** out)
 
     md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, int with_lock)
     int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, int with_lock)
@@ -88,7 +90,6 @@ cdef class MarketDataBufferCache:
 
 cdef class MarketDataBuffer:
     cdef md_block_buffer* header
-    cdef size_t md_array_size
     cdef bint owner
     cdef size_t iter_idx
 
@@ -97,3 +98,19 @@ cdef class MarketDataBuffer:
     cdef void c_put(self, market_data_t* market_data)
 
     cdef market_data_t* c_get(self, ssize_t idx)
+
+
+cdef class MarketDataRingBuffer:
+    cdef md_ring_buffer* header
+    cdef bint owner
+    cdef size_t iter_idx
+
+    cdef bint c_is_empty(self)
+
+    cdef bint c_is_full(self, market_data_t* market_data)
+
+    cdef void c_put(self, market_data_t* market_data)
+
+    cdef market_data_t* c_get(self, ssize_t idx)
+
+    cdef market_data_t* c_listen(self, bint block=?, double timeout=?)

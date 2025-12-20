@@ -133,3 +133,117 @@ class MarketDataBuffer:
     def data_tail(self) -> int:
         """Current data tail offset, representing how many bytes hold serialized payloads."""
         ...
+
+
+class Empty(Exception):
+    """Raised when attempting to read from an empty `MarketDataRingBuffer`."""
+    ...
+
+
+class Full(Exception):
+    """Raised when a `MarketDataRingBuffer` lacks enough pointer or data capacity."""
+    ...
+
+
+class MarketDataRingBuffer:
+    """
+    Fixed-capacity ring buffer that stores serialized `MarketData` and supports
+    low-latency producer/consumer workflows with optional blocking reads.
+    """
+    iter_idx: int
+
+    def __init__(self, ptr_cap: int, data_cap: int) -> None:
+        """Allocate a ring buffer sized for `ptr_cap` pointers and `data_cap` bytes of payload storage."""
+        ...
+
+    def __iter__(self) -> MarketDataRingBuffer:
+        """Return the buffer itself so it can be iterated over the currently stored entries."""
+        ...
+
+    def __getitem__(self, idx: int) -> MarketData:
+        """Return the `MarketData` at `idx`, supporting Python-style negative indexing."""
+        ...
+
+    def __len__(self) -> int:
+        """Return the number of `MarketData` entries that can be iterated without blocking."""
+        ...
+
+    def __next__(self) -> MarketData:
+        """Produce the next `MarketData` in the ring, raising `StopIteration` when exhausted."""
+        ...
+
+    def put(self, market_data: MarketData) -> None:
+        """Insert serialized market data into the ring buffer.
+
+        Args:
+            market_data: The `MarketData` instance to serialize and append.
+
+        Raises:
+            Full: If either the pointer array or backing byte buffer cannot
+                accommodate the serialized payload.
+        """
+        ...
+
+    def get(self, idx: int) -> MarketData:
+        """Return the item at `idx` without mutating the buffer.
+
+        Args:
+            idx: Zero-based index of the item to fetch. Negative indices work
+                like Python lists and count from the end.
+
+        Returns:
+            MarketData: The `MarketData` entry stored at the requested index.
+
+        Raises:
+            IndexError: If `idx` falls outside the readable range.
+        """
+        ...
+
+    def listen(self, block: bool = True, timeout: float = 0) -> MarketData:
+        """Wait for the next entry to become available.
+
+        Args:
+            block: When True, block until data arrives or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of
+                0 means wait indefinitely.
+
+        Returns:
+            MarketData: The next available entry in chronological order.
+
+        Raises:
+            Empty: If no data is available immediately (non-blocking) or before
+                the timeout expires.
+            TimeoutError: If blocking is enabled and the timeout elapses.
+        """
+        ...
+
+    @property
+    def ptr_capacity(self) -> int:
+        """Total pointer slots provisioned for the ring buffer."""
+        ...
+
+    @property
+    def ptr_head(self) -> int:
+        """Head pointer index indicating the next read position."""
+        ...
+
+    @property
+    def ptr_tail(self) -> int:
+        """Tail pointer index that advances with each successful write."""
+        ...
+
+    @property
+    def data_capacity(self) -> int:
+        """Total serialized byte capacity reserved for payload storage."""
+        ...
+
+    @property
+    def data_tail(self) -> int:
+        """Offset of the next free byte within the backing data buffer."""
+        ...
+
+    @property
+    def is_empty(self) -> bool:
+        """Return `True` when the ring buffer has no readable entries."""
+        ...
+
