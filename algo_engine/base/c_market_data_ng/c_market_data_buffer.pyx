@@ -34,7 +34,7 @@ cdef class MarketDataBufferCache:
     def __cinit__(self, size_t capacity, object parent):
         self.parent = parent
         self.py_array = <PyObject**> calloc(capacity, sizeof(PyObject*))
-        self.c_array = <market_data_t**> calloc(capacity, sizeof(market_data_t*))
+        self.c_array = <md_variant**> calloc(capacity, sizeof(md_variant*))
         self.capacity = capacity
 
     def __dealloc__(self):
@@ -49,7 +49,7 @@ cdef class MarketDataBufferCache:
 
     cdef int c_write_block_buffer(self, MarketDataBuffer buffer):
         # Step 1: Calculate required capacities
-        cdef market_data_t* md
+        cdef md_variant* md
         cdef size_t i = 0
         cdef size_t data_cap = 0
         cdef size_t ptr_cap = self.size
@@ -113,7 +113,7 @@ cdef class MarketDataBufferCache:
 
     def put(self, MarketData market_data):
         cdef PyObject** py_array = self.py_array
-        cdef market_data_t** c_array = self.c_array
+        cdef md_variant** c_array = self.c_array
         cdef size_t capacity = self.capacity
 
         if self.size >= capacity:
@@ -124,7 +124,7 @@ cdef class MarketDataBufferCache:
                 raise MemoryError("Failed to reallocate MarketDataBufferCache arrays")
             self.py_array = py_array
 
-            c_array = <market_data_t**> realloc(c_array, capacity * sizeof(market_data_t*))
+            c_array = <md_variant**> realloc(c_array, capacity * sizeof(md_variant*))
             if not c_array:
                 raise MemoryError("Failed to reallocate MarketDataBufferCache arrays")
             self.c_array = c_array
@@ -141,7 +141,7 @@ cdef class MarketDataBufferCache:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
         if idx < 0:
             idx += total
-        cdef market_data_t* md = self.c_array[idx]
+        cdef md_variant* md = self.c_array[idx]
         return MarketData.c_from_header(md, False)
 
     def clear(self):
@@ -149,7 +149,7 @@ cdef class MarketDataBufferCache:
         for i in range(self.size):
             Py_XDECREF(self.py_array[i])
         memset(self.py_array, 0, self.capacity * sizeof(PyObject*))
-        memset(self.c_array, 0, self.capacity * sizeof(market_data_t*))
+        memset(self.c_array, 0, self.capacity * sizeof(md_variant*))
         self.size = 0
 
 
@@ -185,7 +185,7 @@ cdef class MarketDataBuffer:
         else:
             raise RuntimeError(f'Failed to sort MarketDataBuffer, error code: {ret_code}')
 
-    cdef void c_put(self, market_data_t* market_data):
+    cdef void c_put(self, md_variant* market_data):
         cdef md_block_buffer* header = self.header
         cdef size_t ptr_tail = header.ptr_tail
         cdef size_t ptr_capacity = header.ptr_capacity
@@ -218,14 +218,14 @@ cdef class MarketDataBuffer:
         else:
             raise RuntimeError(f'Failed to put a MarketData into block buffer, error code: {ret_code}')
 
-    cdef market_data_t* c_get(self, ssize_t idx):
+    cdef md_variant* c_get(self, ssize_t idx):
         cdef ssize_t total = self.header.ptr_tail
         if idx >= total or idx < -total:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
         if idx < 0:
             idx += total
         cdef const char* blob = c_md_block_buffer_get(self.header, idx)
-        cdef market_data_t* md = c_md_deserialize(
+        cdef md_variant* md = c_md_deserialize(
             blob,
             SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
             HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
@@ -251,7 +251,7 @@ cdef class MarketDataBuffer:
         return self
 
     def __getitem__(self, idx: int):
-        cdef market_data_t* md = self.c_get(idx)
+        cdef md_variant* md = self.c_get(idx)
         return MarketData.c_from_header(md, False)
 
     def __len__(self):
@@ -261,7 +261,7 @@ cdef class MarketDataBuffer:
         if self.iter_idx >= self.header.ptr_tail:
             raise StopIteration
 
-        cdef market_data_t* md = self.c_get(self.iter_idx)
+        cdef md_variant* md = self.c_get(self.iter_idx)
         self.iter_idx += 1
         return MarketData.c_from_header(md, False)
 
@@ -272,7 +272,7 @@ cdef class MarketDataBuffer:
         self.c_put(market_data.header)
 
     def get(self, idx: int):
-        cdef market_data_t* md = self.c_get(idx)
+        cdef md_variant* md = self.c_get(idx)
         return MarketData.c_from_header(md, False)
 
     def sort(self):
@@ -342,12 +342,12 @@ cdef class MarketDataRingBuffer:
             raise RuntimeError(f'{self.__class__.__name__} uninitialized')
         return c_md_ring_buffer_is_empty(self.header)
 
-    cdef bint c_is_full(self, market_data_t* market_data):
+    cdef bint c_is_full(self, md_variant* market_data):
         if not self.header:
             raise RuntimeError(f'{self.__class__.__name__} uninitialized')
         return c_md_ring_buffer_is_full(self.header, market_data)
 
-    cdef void c_put(self, market_data_t* market_data, bint block=True, double timeout=0.0):
+    cdef void c_put(self, md_variant* market_data, bint block=True, double timeout=0.0):
         cdef int ret_code = c_md_ring_buffer_put(self.header, market_data, block, timeout)
 
         if ret_code == MD_BUF_OK:
@@ -361,14 +361,14 @@ cdef class MarketDataRingBuffer:
         else:
             raise RuntimeError(f'Failed to put MarketData, error code: {ret_code}')
 
-    cdef market_data_t* c_get(self, ssize_t idx):
+    cdef md_variant* c_get(self, ssize_t idx):
         cdef ssize_t total = self.header.ptr_tail
         if idx >= total or idx < -total:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
         if idx < 0:
             idx += total
         cdef const char* blob = c_md_ring_buffer_get(self.header, idx)
-        cdef market_data_t* md = c_md_deserialize(
+        cdef md_variant* md = c_md_deserialize(
             blob,
             SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
             HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
@@ -376,10 +376,10 @@ cdef class MarketDataRingBuffer:
         )
         return md
 
-    cdef market_data_t* c_listen(self, bint block=True, double timeout=0):
+    cdef md_variant* c_listen(self, bint block=True, double timeout=0):
         cdef const char* blob = NULL
         cdef int ret_code = c_md_ring_buffer_listen(self.header, block, timeout, &blob)
-        cdef market_data_t* md
+        cdef md_variant* md
 
         if not ret_code:
             md = c_md_deserialize(
@@ -406,7 +406,7 @@ cdef class MarketDataRingBuffer:
         return self
 
     def __getitem__(self, idx: int):
-        cdef market_data_t* md = self.c_get(idx)
+        cdef md_variant* md = self.c_get(idx)
         return MarketData.c_from_header(md, False)
 
     def __len__(self):
@@ -416,7 +416,7 @@ cdef class MarketDataRingBuffer:
         cdef size_t total = c_md_ring_buffer_size(self.header)
         if self.iter_idx >= total:
             raise StopIteration
-        cdef market_data_t* md = self.c_get(self.iter_idx)
+        cdef md_variant* md = self.c_get(self.iter_idx)
         self.iter_idx += 1
         return MarketData.c_from_header(md, False)
 
@@ -424,11 +424,11 @@ cdef class MarketDataRingBuffer:
         self.c_put(market_data.header, block, timeout)
 
     def get(self, idx: int):
-        cdef market_data_t* md = self.c_get(idx)
+        cdef md_variant* md = self.c_get(idx)
         return MarketData.c_from_header(md, False)
 
     def listen(self, bint block=True, double timeout=0.0):
-        cdef market_data_t* md = self.c_listen(block, timeout)
+        cdef md_variant* md = self.c_listen(block, timeout)
         return MarketData.c_from_header(md, False)
 
     property ptr_capacity:
@@ -507,7 +507,7 @@ cdef class MarketDataConcurrentBuffer:
             raise RuntimeError(f'{self.__class__.__name__} uninitialized')
         return <bint> c_md_concurrent_buffer_is_full(self.header)
 
-    cdef void c_put(self, market_data_t* market_data, bint block=True, double timeout=0):
+    cdef void c_put(self, md_variant* market_data, bint block=True, double timeout=0):
         if not market_data.meta_info.shm_allocator:
             market_data = c_md_send_to_shm(
                 market_data,
@@ -530,8 +530,8 @@ cdef class MarketDataConcurrentBuffer:
         else:
             raise RuntimeError(f'Failed to put MarketData, error code: {ret_code}')
 
-    cdef market_data_t* c_listen(self, size_t worker_id, bint block=True, double timeout=0):
-        cdef market_data_t* market_data = NULL
+    cdef md_variant* c_listen(self, size_t worker_id, bint block=True, double timeout=0):
+        cdef md_variant* market_data = NULL
         cdef int ret_code = c_md_concurrent_buffer_listen(
             self.header,
             worker_id,
@@ -583,7 +583,7 @@ cdef class MarketDataConcurrentBuffer:
         self.c_put(market_data.header, block, timeout)
 
     def listen(self, size_t worker_id, bint block=True, double timeout=0.0):
-        cdef market_data_t* md = self.c_listen(worker_id, block, timeout)
+        cdef md_variant* md = self.c_listen(worker_id, block, timeout)
         return MarketData.c_from_header(md, False)
 
     def is_worker_empty(self, size_t worker_id):

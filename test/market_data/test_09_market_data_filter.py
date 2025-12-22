@@ -47,11 +47,15 @@ class TestFilterMode(unittest.TestCase):
 
     def test_all_matches_manual_union(self):
         manual = (
-            FilterMode.NO_INTERNAL
-            | FilterMode.NO_CANCEL
-            | FilterMode.NO_AUCTION
-            | FilterMode.NO_ORDER
-            | FilterMode.NO_TRADE
-            | FilterMode.NO_TICK
+                FilterMode.NO_INTERNAL
+                | FilterMode.NO_CANCEL
+                | FilterMode.NO_AUCTION
+                | FilterMode.NO_ORDER
+                | FilterMode.NO_TRADE
+                | FilterMode.NO_TICK
         )
         self.assertEqual(FilterMode.all().value, manual.value)
+
+
+if __name__ == "__main__":
+    unittest.main()

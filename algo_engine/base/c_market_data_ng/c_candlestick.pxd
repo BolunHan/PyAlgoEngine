@@ -1,4 +1,4 @@
-from .c_market_data cimport market_data_t, MarketData
+from .c_market_data cimport md_variant, MarketData
 
 
 cdef class BarData(MarketData):
@@ -9,7 +9,7 @@ cdef class DailyBar(BarData):
     pass
 
 
-cdef inline object bar_from_header(market_data_t* market_data, bint owner):
+cdef inline object bar_from_header(md_variant* market_data, bint owner):
     cdef ts = market_data.bar_data.meta_info.timestamp
     cdef DailyBar daily_bar
     cdef BarData bar_data

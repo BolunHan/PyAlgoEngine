@@ -3,7 +3,7 @@ from cpython.unicode cimport PyUnicode_AsUTF8
 from libc.math cimport NAN
 from libc.stdint cimport uint64_t, uintptr_t
 
-from .c_market_data cimport C_PROFILE, data_type_t, c_init_buffer
+from .c_market_data cimport C_PROFILE, md_data_type, c_init_buffer
 
 
 cdef class BarData(MarketData):
@@ -24,7 +24,7 @@ cdef class BarData(MarketData):
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_BAR,
+            md_data_type.DTYPE_BAR,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )

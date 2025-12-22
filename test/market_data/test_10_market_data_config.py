@@ -60,3 +60,7 @@ class TestEnvConfigAndViewer(unittest.TestCase):
         self.assertEqual(viewer.MD_CFG_SHARED, CONFIG.MD_CFG_SHARED)
         self.assertEqual(viewer.MD_CFG_FREELIST, CONFIG.MD_CFG_FREELIST)
         self.assertEqual(viewer.MD_CFG_BOOK_SIZE, CONFIG.MD_CFG_BOOK_SIZE)
+
+
+if __name__ == "__main__":
+    unittest.main()

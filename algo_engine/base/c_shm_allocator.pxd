@@ -23,17 +23,17 @@ cdef extern from "c_shm_allocator.h":
     const size_t c_shm_page_overhead
     const size_t c_shm_block_overhead
 
-    ctypedef struct shm_page_t:
+    ctypedef struct shm_page:
         size_t capacity
         size_t occupied
         size_t offset
-        shm_allocator_t* allocator;
+        shm_allocator* allocator;
         shm_memory_block* allocated
         char shm_name[SHM_NAME_LEN]
         char prev_name[SHM_NAME_LEN]
 
     ctypedef struct shm_page_ctx:
-        shm_page_t* shm_page
+        shm_page* shm_page
         int shm_fd
         char* buffer
         shm_page_ctx* prev
@@ -43,10 +43,10 @@ cdef extern from "c_shm_allocator.h":
         size_t size
         shm_memory_block* next_free
         shm_memory_block* next_allocated
-        shm_page_t* parent_page
+        shm_page* parent_page
         char buffer[]
 
-    ctypedef struct shm_allocator_t:
+    ctypedef struct shm_allocator:
         char shm_name[SHM_NAME_LEN]
         size_t pid
         pthread_mutex_t lock
@@ -58,18 +58,18 @@ cdef extern from "c_shm_allocator.h":
         shm_memory_block* free_list
 
     ctypedef struct shm_allocator_ctx:
-        shm_allocator_t* shm_allocator
+        shm_allocator* shm_allocator
         int shm_fd
         shm_page_ctx* active_page
 
     size_t c_page_roundup(size_t size)
     size_t c_block_roundup(size_t size)
     void c_shm_allocator_name(const void* region, char* out)
-    void c_shm_page_name(shm_allocator_t* allocator, char* out)
+    void c_shm_page_name(shm_allocator* allocator, char* out)
     int c_shm_scan(const char* prefix, char* out)
     shm_page_ctx* c_shm_page_new(size_t page_capacity)
-    int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_ctx)
-    void c_shm_page_reclaim(shm_allocator_t* allocator, shm_page_ctx* page_ctx)
+    int c_shm_page_map(shm_allocator* allocator, shm_page_ctx* page_ctx)
+    void c_shm_page_reclaim(shm_allocator* allocator, shm_page_ctx* page_ctx)
 
     shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_t capacity, pthread_mutex_t* lock)
     shm_allocator_ctx* c_shm_allocator_new(size_t region_size)
@@ -81,7 +81,7 @@ cdef extern from "c_shm_allocator.h":
     int c_shm_scan_allocator(char* shm_name)
     int c_shm_scan_page(char* shm_name)
     pid_t c_shm_pid(char* shm_name)
-    shm_allocator_t* c_shm_allocator_dangling(char* shm_name)
+    shm_allocator* c_shm_allocator_dangling(char* shm_name)
     void c_shm_clear_dangling()
 
 

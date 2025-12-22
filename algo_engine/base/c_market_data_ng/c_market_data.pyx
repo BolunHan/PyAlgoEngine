@@ -9,16 +9,16 @@ from libc.string cimport memset, memcpy
 
 
 class DataType(enum.IntEnum):
-    DTYPE_UNKNOWN = data_type_t.DTYPE_UNKNOWN
-    DTYPE_INTERNAL = data_type_t.DTYPE_INTERNAL
-    DTYPE_MARKET_DATA = data_type_t.DTYPE_MARKET_DATA
-    DTYPE_TRANSACTION = data_type_t.DTYPE_TRANSACTION
-    DTYPE_ORDER = data_type_t.DTYPE_ORDER
-    DTYPE_TICK_LITE = data_type_t.DTYPE_TICK_LITE
-    DTYPE_TICK = data_type_t.DTYPE_TICK
-    DTYPE_BAR = data_type_t.DTYPE_BAR
-    DTYPE_REPORT = data_type_t.DTYPE_REPORT
-    DTYPE_INSTRUCTION = data_type_t.DTYPE_INSTRUCTION
+    DTYPE_UNKNOWN = md_data_type.DTYPE_UNKNOWN
+    DTYPE_INTERNAL = md_data_type.DTYPE_INTERNAL
+    DTYPE_MARKET_DATA = md_data_type.DTYPE_MARKET_DATA
+    DTYPE_TRANSACTION = md_data_type.DTYPE_TRANSACTION
+    DTYPE_ORDER = md_data_type.DTYPE_ORDER
+    DTYPE_TICK_LITE = md_data_type.DTYPE_TICK_LITE
+    DTYPE_TICK = md_data_type.DTYPE_TICK
+    DTYPE_BAR = md_data_type.DTYPE_BAR
+    DTYPE_REPORT = md_data_type.DTYPE_REPORT
+    DTYPE_INSTRUCTION = md_data_type.DTYPE_INSTRUCTION
 
 
 cdef bint MD_CFG_LOCKED = False
@@ -117,7 +117,7 @@ globals()['MD_BOOK10'] = MD_BOOK10
 globals()['MD_BOOK20'] = MD_BOOK20
 
 
-cdef void c_set_id(mid_t* id_ptr, object id_value):
+cdef void c_set_id(md_id* id_ptr, object id_value):
     cdef bytes id_bytes
     cdef const char* id_chars
     cdef Py_ssize_t id_len
@@ -126,17 +126,17 @@ cdef void c_set_id(mid_t* id_ptr, object id_value):
 
     if id_value is None:
         # None type
-        id_ptr.id_type = mid_type_t.MID_UNKNOWN
+        id_ptr.id_type = md_id_type.MID_UNKNOWN
     elif isinstance(id_value, int):
         if id_value >= 0:
             if id_value < UINT64_MAX and MID_ALLOW_INT64:
                 # uint64_t type
-                id_ptr.id_type = mid_type_t.MID_UINT64
+                id_ptr.id_type = md_id_type.MID_UINT64
                 (<uint64_t*> id_ptr.data)[0] = <uint64_t> id_value
                 return
             elif id_value < UINT128_MAX and MID_ALLOW_INT128:
                 # uint128_t type
-                id_ptr.id_type = mid_type_t.MID_UINT128
+                id_ptr.id_type = md_id_type.MID_UINT128
                 # (<uint128_t*> id_ptr.data)[0] = <uint128_t> id_value
                 c_write_uint128(<void*> id_ptr.data, <uint128_t> id_value)
                 return
@@ -144,11 +144,11 @@ cdef void c_set_id(mid_t* id_ptr, object id_value):
                 raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
         else:
             if id_value > INT64_MIN and MID_ALLOW_INT64:
-                id_ptr.id_type = mid_type_t.MID_INT64
+                id_ptr.id_type = md_id_type.MID_INT64
                 (<int64_t*> id_ptr.data)[0] = <int64_t> id_value
                 return
             elif id_value > INT128_MIN and MID_ALLOW_INT128:
-                id_ptr.id_type = mid_type_t.MID_INT128
+                id_ptr.id_type = md_id_type.MID_INT128
                 # (<int128_t*> id_ptr.data)[0] = <int128_t> id_value
                 c_write_int128(<void*> id_ptr.data, <int128_t> id_value)
                 return
@@ -156,7 +156,7 @@ cdef void c_set_id(mid_t* id_ptr, object id_value):
                 raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
     elif isinstance(id_value, str):
         # str type
-        id_ptr.id_type = mid_type_t.MID_STRING
+        id_ptr.id_type = md_id_type.MID_STRING
         id_chars = PyUnicode_AsUTF8AndSize(id_value, &id_len)
         if id_len <= ID_SIZE:
             memcpy(<void*> id_ptr.data, id_chars, id_len)
@@ -165,7 +165,7 @@ cdef void c_set_id(mid_t* id_ptr, object id_value):
             raise ValueError(f'String ID {id_value} is too long to fit in the ID buffer.')
     elif isinstance(id_value, bytes):
         # bytes type
-        id_ptr.id_type = mid_type_t.MID_BYTE
+        id_ptr.id_type = md_id_type.MID_BYTE
         id_chars = <const char*> id_value
         id_len = len(id_value)
         if id_len <= ID_SIZE:
@@ -175,7 +175,7 @@ cdef void c_set_id(mid_t* id_ptr, object id_value):
             raise ValueError(f'Byte ID {id_value} is too long to fit in the ID buffer.')
     elif isinstance(id_value, uuid.UUID):
         # uuid type
-        id_ptr.id_type = mid_type_t.MID_UUID
+        id_ptr.id_type = md_id_type.MID_UUID
         id_bytes = id_value.bytes_le
         if MID_ALLOW_INT128:
             memcpy(<void*> id_ptr.data, <const char*> id_bytes, 16)
@@ -184,27 +184,27 @@ cdef void c_set_id(mid_t* id_ptr, object id_value):
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
 
 
-cdef object c_get_id(mid_t* id_ptr):
-    if id_ptr.id_type == mid_type_t.MID_UNKNOWN:
+cdef object c_get_id(md_id* id_ptr):
+    if id_ptr.id_type == md_id_type.MID_UNKNOWN:
         return None
-    elif id_ptr.id_type == mid_type_t.MID_UINT64:
+    elif id_ptr.id_type == md_id_type.MID_UINT64:
         return (<uint64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_INT64:
+    elif id_ptr.id_type == md_id_type.MID_INT64:
         return (<int64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_UINT128:
+    elif id_ptr.id_type == md_id_type.MID_UINT128:
         return c_read_uint128(<void*> id_ptr.data)
-    elif id_ptr.id_type == mid_type_t.MID_INT128:
+    elif id_ptr.id_type == md_id_type.MID_INT128:
         return c_read_int128(<void*> id_ptr.data)
-    elif id_ptr.id_type == mid_type_t.MID_STRING:
+    elif id_ptr.id_type == md_id_type.MID_STRING:
         return PyUnicode_FromString(&id_ptr.data[0])
-    elif id_ptr.id_type == mid_type_t.MID_BYTE:
+    elif id_ptr.id_type == md_id_type.MID_BYTE:
         return PyBytes_FromStringAndSize(&id_ptr.data[0], ID_SIZE).rstrip(b'\0')
-    elif id_ptr.id_type == mid_type_t.MID_UUID:
+    elif id_ptr.id_type == md_id_type.MID_UUID:
         return uuid.UUID(bytes_le=id_ptr.data[:16])
     raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
 
 
-cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
+cdef void c_set_long_id(long_md_id* id_ptr, object id_value):
     cdef bytes id_bytes
     cdef const char* id_chars
     cdef Py_ssize_t id_len
@@ -213,17 +213,17 @@ cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
 
     if id_value is None:
         # None type
-        id_ptr.id_type = mid_type_t.MID_UNKNOWN
+        id_ptr.id_type = md_id_type.MID_UNKNOWN
     elif isinstance(id_value, int):
         if id_value >= 0:
             if id_value < UINT64_MAX and MID_ALLOW_INT64:
                 # uint64_t type
-                id_ptr.id_type = mid_type_t.MID_UINT64
+                id_ptr.id_type = md_id_type.MID_UINT64
                 (<uint64_t*> id_ptr.data)[0] = <uint64_t> id_value
                 return
             elif id_value < UINT128_MAX and MID_ALLOW_INT128:
                 # uint128_t type
-                id_ptr.id_type = mid_type_t.MID_UINT128
+                id_ptr.id_type = md_id_type.MID_UINT128
                 # (<uint128_t*> id_ptr.data)[0] = <uint128_t> id_value
                 c_write_uint128(<void*> id_ptr.data, <uint128_t> id_value)
                 return
@@ -231,11 +231,11 @@ cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
                 raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
         else:
             if id_value > INT64_MIN and MID_ALLOW_INT64:
-                id_ptr.id_type = mid_type_t.MID_INT64
+                id_ptr.id_type = md_id_type.MID_INT64
                 (<int64_t*> id_ptr.data)[0] = <int64_t> id_value
                 return
             elif id_value > INT128_MIN and MID_ALLOW_INT128:
-                id_ptr.id_type = mid_type_t.MID_INT128
+                id_ptr.id_type = md_id_type.MID_INT128
                 # (<int128_t*> id_ptr.data)[0] = <int128_t> id_value
                 c_write_int128(<void*> id_ptr.data, <int128_t> id_value)
                 return
@@ -243,7 +243,7 @@ cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
                 raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
     elif isinstance(id_value, str):
         # str type
-        id_ptr.id_type = mid_type_t.MID_STRING
+        id_ptr.id_type = md_id_type.MID_STRING
         id_chars = PyUnicode_AsUTF8AndSize(id_value, &id_len)
         if id_len <= LONG_ID_SIZE:
             memcpy(<void*> id_ptr.data, id_chars, id_len)
@@ -252,7 +252,7 @@ cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
             raise ValueError(f'String ID {id_value} is too long to fit in the ID buffer.')
     elif isinstance(id_value, bytes):
         # bytes type
-        id_ptr.id_type = mid_type_t.MID_BYTE
+        id_ptr.id_type = md_id_type.MID_BYTE
         id_chars = <const char*> id_value
         id_len = len(id_value)
         if id_len <= LONG_ID_SIZE:
@@ -262,7 +262,7 @@ cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
             raise ValueError(f'Byte ID {id_value} is too long to fit in the ID buffer.')
     elif isinstance(id_value, uuid.UUID):
         # uuid type
-        id_ptr.id_type = mid_type_t.MID_UUID
+        id_ptr.id_type = md_id_type.MID_UUID
         id_bytes = id_value.bytes_le
         if MID_ALLOW_INT128:
             memcpy(<void*> id_ptr.data, <const char*> id_bytes, 16)
@@ -271,22 +271,22 @@ cdef void c_set_long_id(long_mid_t* id_ptr, object id_value):
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
 
 
-cdef object c_get_long_id(long_mid_t* id_ptr):
-    if id_ptr.id_type == mid_type_t.MID_UNKNOWN:
+cdef object c_get_long_id(long_md_id* id_ptr):
+    if id_ptr.id_type == md_id_type.MID_UNKNOWN:
         return None
-    elif id_ptr.id_type == mid_type_t.MID_UINT64:
+    elif id_ptr.id_type == md_id_type.MID_UINT64:
         return (<uint64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_INT64:
+    elif id_ptr.id_type == md_id_type.MID_INT64:
         return (<int64_t*> id_ptr.data)[0]
-    elif id_ptr.id_type == mid_type_t.MID_UINT128:
+    elif id_ptr.id_type == md_id_type.MID_UINT128:
         return c_read_uint128(<void*> id_ptr.data)
-    elif id_ptr.id_type == mid_type_t.MID_INT128:
+    elif id_ptr.id_type == md_id_type.MID_INT128:
         return c_read_int128(<void*> id_ptr.data)
-    elif id_ptr.id_type == mid_type_t.MID_STRING:
+    elif id_ptr.id_type == md_id_type.MID_STRING:
         return PyUnicode_FromString(&id_ptr.data[0])
-    elif id_ptr.id_type == mid_type_t.MID_BYTE:
+    elif id_ptr.id_type == md_id_type.MID_BYTE:
         return PyBytes_FromStringAndSize(&id_ptr.data[0], LONG_ID_SIZE).rstrip(b'\0')
-    elif id_ptr.id_type == mid_type_t.MID_UUID:
+    elif id_ptr.id_type == md_id_type.MID_UUID:
         return uuid.UUID(bytes_le=id_ptr.data[:16])
     raise ValueError(f'Cannot decode the id buffer with type {id_ptr.id_type}.')
 
@@ -309,45 +309,45 @@ cdef class MarketData:
     def __copy__(self):
         cdef object cls = self.__class__
         cdef MarketData instance = <MarketData> cls.__new__(cls)
-        cdef data_type_t dtype = self.header.meta_info.dtype
-        cdef market_data_t* header = c_md_new(dtype, NULL, NULL, <int> MD_CFG_LOCKED)
+        cdef md_data_type dtype = self.header.meta_info.dtype
+        cdef md_variant* header = c_md_new(dtype, NULL, NULL, <int> MD_CFG_LOCKED)
         cdef size_t size = c_md_get_size(self.header.meta_info.dtype)
         memcpy(<void*> instance.header, <const char*> self.header, size)
         instance.__dict__.update(self.__dict__)
         return instance
 
     @staticmethod
-    cdef inline object c_from_header(market_data_t* market_data, bint owner=False):
-        cdef data_type_t dtype = market_data.meta_info.dtype
+    cdef inline object c_from_header(md_variant* market_data, bint owner=False):
+        cdef md_data_type dtype = market_data.meta_info.dtype
 
-        if dtype == data_type_t.DTYPE_INTERNAL:
+        if dtype == md_data_type.DTYPE_INTERNAL:
             return internal_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_TRANSACTION:
+        elif dtype == md_data_type.DTYPE_TRANSACTION:
             return transaction_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_ORDER:
+        elif dtype == md_data_type.DTYPE_ORDER:
             return order_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_TICK_LITE:
+        elif dtype == md_data_type.DTYPE_TICK_LITE:
             return tick_lite_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_TICK:
+        elif dtype == md_data_type.DTYPE_TICK:
             return tick_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_BAR:
+        elif dtype == md_data_type.DTYPE_BAR:
             return bar_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_REPORT:
+        elif dtype == md_data_type.DTYPE_REPORT:
             return report_from_header(market_data, owner)
-        elif dtype == data_type_t.DTYPE_INSTRUCTION:
+        elif dtype == md_data_type.DTYPE_INSTRUCTION:
             return instruction_from_header(market_data, owner)
         else:
             raise NotImplementedError()
 
     cdef inline size_t c_get_size(self):
-        cdef data_type_t dtype = self.header.meta_info.dtype
+        cdef md_data_type dtype = self.header.meta_info.dtype
         cdef size_t size = c_md_get_size(dtype)
         if not size:
             raise ValueError(f'Unknown data type {dtype}')
         return size
 
     cdef inline str c_dtype_name(self):
-        cdef data_type_t dtype = self.header.meta_info.dtype
+        cdef md_data_type dtype = self.header.meta_info.dtype
         cdef const char* dtype_name = c_md_dtype_name(dtype)
         if not dtype_name:
             raise ValueError(f'Unknown data type {dtype}')
@@ -357,11 +357,11 @@ cdef class MarketData:
         c_md_serialize(self.header, out)
 
     @staticmethod
-    cdef inline market_data_t* c_from_bytes(bytes data):
+    cdef inline md_variant* c_from_bytes(bytes data):
         return c_deserialize_buffer(<const char*> data)
 
     @staticmethod
-    def buffer_size(data_type_t dtype):
+    def buffer_size(md_data_type dtype):
         cdef size_t size = c_md_get_size(dtype)
         if not size:
             raise ValueError(f'Unknown data type {dtype}')
@@ -375,13 +375,13 @@ cdef class MarketData:
 
     @classmethod
     def from_bytes(cls, bytes data):
-        cdef market_data_t* header = MarketData.c_from_bytes(data)
+        cdef md_variant* header = MarketData.c_from_bytes(data)
         cdef MarketData instance = MarketData.c_from_header(header, owner=True)
         return instance
 
     @staticmethod
     def from_ptr(uintptr_t addr):
-        cdef market_data_t* header = <market_data_t*> addr
+        cdef md_variant* header = <md_variant*> addr
         cdef MarketData instance = MarketData.c_from_header(header, owner=False)
         return instance
 
@@ -432,14 +432,14 @@ cdef class MarketData:
 
 cdef class FilterMode:
     # Class-level constants for flags
-    NO_INTERNAL = FilterMode.__new__(FilterMode, filter_mode_t.NO_INTERNAL)
-    NO_CANCEL = FilterMode.__new__(FilterMode, filter_mode_t.NO_CANCEL)
-    NO_AUCTION = FilterMode.__new__(FilterMode, filter_mode_t.NO_AUCTION)
-    NO_ORDER = FilterMode.__new__(FilterMode, filter_mode_t.NO_ORDER)
-    NO_TRADE = FilterMode.__new__(FilterMode, filter_mode_t.NO_TRADE)
-    NO_TICK = FilterMode.__new__(FilterMode, filter_mode_t.NO_TICK)
+    NO_INTERNAL = FilterMode.__new__(FilterMode, md_filter_flag.NO_INTERNAL)
+    NO_CANCEL = FilterMode.__new__(FilterMode, md_filter_flag.NO_CANCEL)
+    NO_AUCTION = FilterMode.__new__(FilterMode, md_filter_flag.NO_AUCTION)
+    NO_ORDER = FilterMode.__new__(FilterMode, md_filter_flag.NO_ORDER)
+    NO_TRADE = FilterMode.__new__(FilterMode, md_filter_flag.NO_TRADE)
+    NO_TICK = FilterMode.__new__(FilterMode, md_filter_flag.NO_TICK)
 
-    def __cinit__(self, filter_mode_t value):
+    def __cinit__(self, md_filter_flag value):
         self.value = value
 
     def __or__(self, FilterMode other):
@@ -451,12 +451,12 @@ cdef class FilterMode:
     def __invert__(self):
         # Invert all bits except those beyond our known flags
         inverted_value = ~self.value & (
-            filter_mode_t.NO_INTERNAL |
-            filter_mode_t.NO_CANCEL |
-            filter_mode_t.NO_AUCTION |
-            filter_mode_t.NO_ORDER |
-            filter_mode_t.NO_TRADE |
-            filter_mode_t.NO_TICK
+            md_filter_flag.NO_INTERNAL |
+            md_filter_flag.NO_CANCEL |
+            md_filter_flag.NO_AUCTION |
+            md_filter_flag.NO_ORDER |
+            md_filter_flag.NO_TRADE |
+            md_filter_flag.NO_TICK
         )
         return FilterMode.__new__(FilterMode, inverted_value)
 
@@ -465,45 +465,45 @@ cdef class FilterMode:
 
     def __repr__(self):
         flags = []
-        if filter_mode_t.NO_INTERNAL & self.value: flags.append("NO_INTERNAL")
-        if filter_mode_t.NO_CANCEL & self.value: flags.append("NO_CANCEL")
-        if filter_mode_t.NO_AUCTION & self.value: flags.append("NO_AUCTION")
-        if filter_mode_t.NO_ORDER & self.value: flags.append("NO_ORDER")
-        if filter_mode_t.NO_TRADE & self.value: flags.append("NO_TRADE")
-        if filter_mode_t.NO_TICK & self.value: flags.append("NO_TICK")
+        if md_filter_flag.NO_INTERNAL & self.value: flags.append("NO_INTERNAL")
+        if md_filter_flag.NO_CANCEL & self.value: flags.append("NO_CANCEL")
+        if md_filter_flag.NO_AUCTION & self.value: flags.append("NO_AUCTION")
+        if md_filter_flag.NO_ORDER & self.value: flags.append("NO_ORDER")
+        if md_filter_flag.NO_TRADE & self.value: flags.append("NO_TRADE")
+        if md_filter_flag.NO_TICK & self.value: flags.append("NO_TICK")
         return f"<FilterMode {self.value:#0x}: {' | '.join(flags) or 'None'}>"
 
     @staticmethod
-    cdef inline bint c_mask_data(market_data_t* market_data, filter_mode_t filter_mode):
-        cdef data_type_t dtype = market_data.meta_info.dtype
-        cdef side_t side
+    cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode):
+        cdef md_data_type dtype = market_data.meta_info.dtype
+        cdef md_side side
 
-        if filter_mode_t.NO_INTERNAL & filter_mode:
-            if dtype == data_type_t.DTYPE_INTERNAL:
+        if md_filter_flag.NO_INTERNAL & filter_mode:
+            if dtype == md_data_type.DTYPE_INTERNAL:
                 return False
 
-        if filter_mode_t.NO_CANCEL & filter_mode:
-            if dtype == data_type_t.DTYPE_TRANSACTION:
-                side = (<transaction_data_t*> market_data).side
-                if c_md_side_offset(side) == offset_t.OFFSET_CANCEL:
+        if md_filter_flag.NO_CANCEL & filter_mode:
+            if dtype == md_data_type.DTYPE_TRANSACTION:
+                side = (<md_transaction_data*> market_data).side
+                if c_md_side_offset(side) == md_offset.OFFSET_CANCEL:
                     return False
 
         cdef double timestamp = market_data.meta_info.timestamp
 
-        if filter_mode_t.NO_AUCTION & filter_mode:
+        if md_filter_flag.NO_AUCTION & filter_mode:
             if not C_PROFILE.c_timestamp_in_market_session(timestamp):
                 return False
 
-        if filter_mode_t.NO_ORDER & filter_mode:
-            if dtype == data_type_t.DTYPE_ORDER:
+        if md_filter_flag.NO_ORDER & filter_mode:
+            if dtype == md_data_type.DTYPE_ORDER:
                 return False
 
-        if filter_mode_t.NO_TRADE & filter_mode:
-            if dtype == data_type_t.DTYPE_TRANSACTION:
+        if md_filter_flag.NO_TRADE & filter_mode:
+            if dtype == md_data_type.DTYPE_TRANSACTION:
                 return False
 
-        if filter_mode_t.NO_TICK & filter_mode:
-            if dtype == data_type_t.DTYPE_TICK or dtype == data_type_t.DTYPE_TICK_LITE:
+        if md_filter_flag.NO_TICK & filter_mode:
+            if dtype == md_data_type.DTYPE_TICK or dtype == md_data_type.DTYPE_TICK_LITE:
                 return False
 
         return True
@@ -512,12 +512,12 @@ cdef class FilterMode:
     def all(cls):
         return FilterMode.__new__(
             FilterMode,
-            filter_mode_t.NO_INTERNAL |
-            filter_mode_t.NO_CANCEL |
-            filter_mode_t.NO_AUCTION |
-            filter_mode_t.NO_ORDER |
-            filter_mode_t.NO_TRADE |
-            filter_mode_t.NO_TICK
+            md_filter_flag.NO_INTERNAL |
+            md_filter_flag.NO_CANCEL |
+            md_filter_flag.NO_AUCTION |
+            md_filter_flag.NO_ORDER |
+            md_filter_flag.NO_TRADE |
+            md_filter_flag.NO_TICK
         )
 
     cpdef bint mask_data(self, MarketData market_data):

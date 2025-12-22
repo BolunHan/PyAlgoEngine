@@ -1,7 +1,7 @@
 from cpython.unicode cimport PyUnicode_AsUTF8
 from libc.stdint cimport uintptr_t
 
-from .c_market_data cimport c_init_buffer, data_type_t
+from .c_market_data cimport c_init_buffer, md_data_type
 
 
 cdef class InternalData(MarketData):
@@ -14,7 +14,7 @@ cdef class InternalData(MarketData):
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_INTERNAL,
+            md_data_type.DTYPE_INTERNAL,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )

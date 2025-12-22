@@ -7,30 +7,30 @@ from libc.math cimport INFINITY, NAN, isnan, copysign, fabs
 from libc.stdint cimport int8_t, uintptr_t
 
 from .c_market_data cimport (
-    data_type_t, order_type_t, direction_t, offset_t, side_t,
-    transaction_data_t, c_md_side_opposite, c_md_side_sign, c_md_side_offset, c_md_side_direction,
+    md_data_type, md_order_type, md_direction, md_offset, md_side,
+    md_transaction_data, c_md_side_opposite, c_md_side_sign, c_md_side_offset, c_md_side_direction,
     c_md_side_name, c_md_offset_name, c_md_direction_name, c_md_order_type_name,
     c_init_buffer, c_set_id, c_get_id
 )
 
 
 class OrderType(enum.IntEnum):
-    ORDER_UNKNOWN = order_type_t.ORDER_UNKNOWN
-    ORDER_CANCEL = order_type_t.ORDER_CANCEL
-    ORDER_GENERIC = order_type_t.ORDER_GENERIC
-    ORDER_LIMIT = order_type_t.ORDER_LIMIT
-    ORDER_LIMIT_MAKER = order_type_t.ORDER_LIMIT_MAKER
-    ORDER_MARKET = order_type_t.ORDER_MARKET
-    ORDER_FOK = order_type_t.ORDER_FOK
-    ORDER_FAK = order_type_t.ORDER_FAK
-    ORDER_IOC = order_type_t.ORDER_IOC
+    ORDER_UNKNOWN = md_order_type.ORDER_UNKNOWN
+    ORDER_CANCEL = md_order_type.ORDER_CANCEL
+    ORDER_GENERIC = md_order_type.ORDER_GENERIC
+    ORDER_LIMIT = md_order_type.ORDER_LIMIT
+    ORDER_LIMIT_MAKER = md_order_type.ORDER_LIMIT_MAKER
+    ORDER_MARKET = md_order_type.ORDER_MARKET
+    ORDER_FOK = md_order_type.ORDER_FOK
+    ORDER_FAK = md_order_type.ORDER_FAK
+    ORDER_IOC = md_order_type.ORDER_IOC
 
 
 class TransactionDirection(enum.IntEnum):
-    DIRECTION_UNKNOWN = direction_t.DIRECTION_UNKNOWN
-    DIRECTION_SHORT = direction_t.DIRECTION_SHORT
-    DIRECTION_LONG = direction_t.DIRECTION_LONG
-    DIRECTION_NEUTRAL = direction_t.DIRECTION_NEUTRAL
+    DIRECTION_UNKNOWN = md_direction.DIRECTION_UNKNOWN
+    DIRECTION_SHORT = md_direction.DIRECTION_SHORT
+    DIRECTION_LONG = md_direction.DIRECTION_LONG
+    DIRECTION_NEUTRAL = md_direction.DIRECTION_NEUTRAL
 
     def __or__(self, offset):
         if not isinstance(offset, TransactionOffset):
@@ -50,10 +50,10 @@ class TransactionDirection(enum.IntEnum):
 
 
 class TransactionOffset(enum.IntEnum):
-    OFFSET_CANCEL = offset_t.OFFSET_CANCEL
-    OFFSET_ORDER = offset_t.OFFSET_ORDER
-    OFFSET_OPEN = offset_t.OFFSET_OPEN
-    OFFSET_CLOSE = offset_t.OFFSET_CLOSE
+    OFFSET_CANCEL = md_offset.OFFSET_CANCEL
+    OFFSET_ORDER = md_offset.OFFSET_ORDER
+    OFFSET_OPEN = md_offset.OFFSET_OPEN
+    OFFSET_CLOSE = md_offset.OFFSET_CLOSE
 
     def __or__(self, direction):
         if not isinstance(direction, TransactionDirection):
@@ -70,30 +70,30 @@ class TransactionOffset(enum.IntEnum):
 
 class TransactionSide(enum.IntEnum):
     # Long Side
-    SIDE_LONG_OPEN = side_t.SIDE_LONG_OPEN
-    SIDE_LONG_CLOSE = side_t.SIDE_LONG_CLOSE
-    SIDE_LONG_CANCEL = side_t.SIDE_LONG_CANCEL
+    SIDE_LONG_OPEN = md_side.SIDE_LONG_OPEN
+    SIDE_LONG_CLOSE = md_side.SIDE_LONG_CLOSE
+    SIDE_LONG_CANCEL = md_side.SIDE_LONG_CANCEL
 
     # Short Side
-    SIDE_SHORT_OPEN = side_t.SIDE_SHORT_OPEN
-    SIDE_SHORT_CLOSE = side_t.SIDE_SHORT_CLOSE
-    SIDE_SHORT_CANCEL = side_t.SIDE_SHORT_CANCEL
+    SIDE_SHORT_OPEN = md_side.SIDE_SHORT_OPEN
+    SIDE_SHORT_CLOSE = md_side.SIDE_SHORT_CLOSE
+    SIDE_SHORT_CANCEL = md_side.SIDE_SHORT_CANCEL
 
     # Neutral Side
-    SIDE_NEUTRAL_OPEN = side_t.SIDE_NEUTRAL_OPEN
-    SIDE_NEUTRAL_CLOSE = side_t.SIDE_NEUTRAL_CLOSE
+    SIDE_NEUTRAL_OPEN = md_side.SIDE_NEUTRAL_OPEN
+    SIDE_NEUTRAL_CLOSE = md_side.SIDE_NEUTRAL_CLOSE
 
     # Order
-    SIDE_BID = side_t.SIDE_BID
-    SIDE_ASK = side_t.SIDE_ASK
+    SIDE_BID = md_side.SIDE_BID
+    SIDE_ASK = md_side.SIDE_ASK
 
     # Generic Cancel
-    SIDE_CANCEL = side_t.SIDE_CANCEL
+    SIDE_CANCEL = md_side.SIDE_CANCEL
 
     # C Alias
-    SIDE_UNKNOWN = side_t.SIDE_CANCEL
-    SIDE_LONG = side_t.SIDE_LONG_OPEN
-    SIDE_SHORT = side_t.SIDE_SHORT_OPEN
+    SIDE_UNKNOWN = md_side.SIDE_CANCEL
+    SIDE_LONG = md_side.SIDE_LONG_OPEN
+    SIDE_SHORT = md_side.SIDE_SHORT_OPEN
 
     # Backward compatibility
     ShortOrder = AskOrder = Ask = SIDE_ASK
@@ -109,7 +109,7 @@ class TransactionSide(enum.IntEnum):
     FAULTY = 255
 
     def __neg__(self):
-        return self.__class__(c_md_side_opposite(<side_t> self.value))
+        return self.__class__(c_md_side_opposite(<md_side> self.value))
 
     @classmethod
     def _missing_(cls, value):
@@ -138,27 +138,27 @@ class TransactionSide(enum.IntEnum):
 
     @property
     def sign(self):
-        return c_md_side_sign(<side_t> self.value)
+        return c_md_side_sign(<md_side> self.value)
 
     @property
     def offset(self):
-        return TransactionOffset(c_md_side_offset(<side_t> self.value))
+        return TransactionOffset(c_md_side_offset(<md_side> self.value))
 
     @property
     def direction(self):
-        return TransactionDirection(c_md_side_direction(<side_t> self.value))
+        return TransactionDirection(c_md_side_direction(<md_side> self.value))
 
     @property
     def side_name(self):
-        return PyUnicode_FromString(c_md_side_name(<side_t> self.value))
+        return PyUnicode_FromString(c_md_side_name(<md_side> self.value))
 
     @property
     def offset_name(self):
-        return PyUnicode_FromString(c_md_offset_name(<side_t> self.value))
+        return PyUnicode_FromString(c_md_offset_name(<md_side> self.value))
 
     @property
     def direction_name(self):
-        return PyUnicode_FromString(c_md_direction_name(<side_t> self.value))
+        return PyUnicode_FromString(c_md_direction_name(<md_side> self.value))
 
 
 cdef class TransactionData(MarketData):
@@ -169,7 +169,7 @@ cdef class TransactionData(MarketData):
             double timestamp,
             double price,
             double volume,
-            side_t side,
+            md_side side,
             double multiplier=1.0,
             double notional=NAN,
             object transaction_id=None,
@@ -178,7 +178,7 @@ cdef class TransactionData(MarketData):
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_TRANSACTION,
+            md_data_type.DTYPE_TRANSACTION,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
@@ -223,7 +223,7 @@ cdef class TransactionData(MarketData):
         cdef double sum_notional = first.notional_flow
         cdef Py_ssize_t i
         cdef TransactionData md
-        cdef transaction_data_t td
+        cdef md_transaction_data td
         cdef int8_t sign
 
         for i in range(1, n):
@@ -245,7 +245,7 @@ cdef class TransactionData(MarketData):
                 timestamp = td.meta_info.timestamp
 
         # Determine trade parameters using copysign and fabs
-        cdef side_t trade_side = side_t.SIDE_LONG if sum_volume > 0 else side_t.SIDE_SHORT if sum_volume < 0 else side_t.SIDE_NEUTRAL_OPEN
+        cdef md_side trade_side = md_side.SIDE_LONG if sum_volume > 0 else md_side.SIDE_SHORT if sum_volume < 0 else md_side.SIDE_NEUTRAL_OPEN
         cdef double trade_volume = fabs(sum_volume)
         cdef double trade_notional = fabs(sum_notional)
         cdef double trade_price
@@ -327,13 +327,13 @@ cdef class OrderData(MarketData):
             double timestamp,
             double price,
             double volume,
-            side_t side,
+            md_side side,
             object order_id=None,
-            order_type_t order_type=order_type_t.ORDER_GENERIC,
+            md_order_type order_type=md_order_type.ORDER_GENERIC,
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_ORDER,
+            md_data_type.DTYPE_ORDER,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
@@ -404,7 +404,7 @@ cdef class TradeData(TransactionData):
             double timestamp,
             double trade_price,
             double trade_volume,
-            side_t trade_side,
+            md_side trade_side,
             double multiplier=1.0,
             double notional=NAN,
             object transaction_id=None,
@@ -413,7 +413,7 @@ cdef class TradeData(TransactionData):
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_TRANSACTION,
+            md_data_type.DTYPE_TRANSACTION,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )

@@ -10,7 +10,7 @@ from libc.stdint cimport int8_t, uintptr_t
 
 from .c_market_data cimport (
     C_PROFILE,
-    data_type_t, order_type_t, side_t,
+    md_data_type, md_order_type, md_side,
     c_md_side_sign, c_md_state_name, c_md_side_name, c_md_order_type_name,
     c_md_state_working, c_md_state_placed, c_md_state_done,
     c_init_buffer, c_set_long_id, c_get_long_id, c_md_compare_long_id
@@ -25,16 +25,16 @@ cdef object NO_DEFAULT = object()
 
 
 class OrderState(enum.IntEnum):
-    STATE_UNKNOWN       = order_state_t.STATE_UNKNOWN
-    STATE_REJECTED      = order_state_t.STATE_REJECTED      # order rejected
-    STATE_INVALID       = order_state_t.STATE_INVALID       # invalid order
-    STATE_PENDING       = order_state_t.STATE_PENDING       # order not sent
-    STATE_SENT          = order_state_t.STATE_SENT          # order sent (to exchange)
-    STATE_PLACED        = order_state_t.STATE_PLACED        # order placed in exchange
-    STATE_PARTFILLED    = order_state_t.STATE_PARTFILLED    # order partial filled
-    STATE_FILLED        = order_state_t.STATE_FILLED        # order fully filled
-    STATE_CANCELING     = order_state_t.STATE_CANCELING     # order canceling
-    STATE_CANCELED      = order_state_t.STATE_CANCELED      # order stopped and canceled
+    STATE_UNKNOWN       = md_order_state.STATE_UNKNOWN
+    STATE_REJECTED      = md_order_state.STATE_REJECTED      # order rejected
+    STATE_INVALID       = md_order_state.STATE_INVALID       # invalid order
+    STATE_PENDING       = md_order_state.STATE_PENDING       # order not sent
+    STATE_SENT          = md_order_state.STATE_SENT          # order sent (to exchange)
+    STATE_PLACED        = md_order_state.STATE_PLACED        # order placed in exchange
+    STATE_PARTFILLED    = md_order_state.STATE_PARTFILLED    # order partial filled
+    STATE_FILLED        = md_order_state.STATE_FILLED        # order fully filled
+    STATE_CANCELING     = md_order_state.STATE_CANCELING     # order canceling
+    STATE_CANCELED      = md_order_state.STATE_CANCELED      # order stopped and canceled
 
     # Alias for compatibility
     UNKNOWN             = STATE_UNKNOWN
@@ -65,7 +65,7 @@ class OrderState(enum.IntEnum):
 
     @property
     def state_name(self):
-        return PyUnicode_FromString(c_md_state_name(<order_state_t> self.value))
+        return PyUnicode_FromString(c_md_state_name(<md_order_state> self.value))
 
 
 cdef class TradeReport(MarketData):
@@ -76,7 +76,7 @@ cdef class TradeReport(MarketData):
             double timestamp,
             double price,
             double volume,
-            side_t side,
+            md_side side,
             double notional=NAN,
             double multiplier=1.,
             double fee=0.,
@@ -88,7 +88,7 @@ cdef class TradeReport(MarketData):
             raise ValueError("Volume must be non-negative.")
 
         self.header = c_init_buffer(
-            data_type_t.DTYPE_REPORT,
+            md_data_type.DTYPE_REPORT,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
@@ -219,7 +219,7 @@ cdef class TradeReport(MarketData):
 
     property side_sign:
         def __get__(self):
-            return c_md_side_sign(<side_t> self.header.trade_report.side)
+            return c_md_side_sign(<md_side> self.header.trade_report.side)
 
     property multiplier:
         def __get__(self):
@@ -243,12 +243,12 @@ cdef class TradeReport(MarketData):
 
     property volume_flow:
         def __get__(self):
-            cdef int8_t sign = c_md_side_sign(<side_t> self.header.trade_report.side)
+            cdef int8_t sign = c_md_side_sign(<md_side> self.header.trade_report.side)
             return sign * self.header.trade_report.volume
 
     property notional_flow:
         def __get__(self):
-            cdef int8_t sign = c_md_side_sign(<side_t> self.header.trade_report.side)
+            cdef int8_t sign = c_md_side_sign(<md_side> self.header.trade_report.side)
             return sign * self.header.trade_report.notional
 
     property trade_time:
@@ -262,16 +262,16 @@ cdef class TradeInstruction(MarketData):
             *,
             str ticker,
             double timestamp,
-            side_t side,
+            md_side side,
             double volume,
-            order_type_t order_type=order_type_t.ORDER_GENERIC,
+            md_order_type order_type=md_order_type.ORDER_GENERIC,
             double limit_price=NAN,
             double multiplier=1.,
             object order_id=NO_DEFAULT,
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_INSTRUCTION,
+            md_data_type.DTYPE_INSTRUCTION,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
@@ -287,7 +287,7 @@ cdef class TradeInstruction(MarketData):
 
         c_set_long_id(&self.header.trade_instruction.order_id, uuid.uuid4() if order_id is NO_DEFAULT else order_id)
 
-        self.header.trade_instruction.order_state = order_state_t.STATE_PENDING
+        self.header.trade_instruction.order_state = md_order_state.STATE_PENDING
         self.header.trade_instruction.filled_volume = 0.
         self.header.trade_instruction.filled_notional = 0.
         self.header.trade_instruction.fee = 0.
@@ -339,7 +339,7 @@ cdef class TradeInstruction(MarketData):
             return f"<{self.__class__.__name__}>(Uninitialized)"
         cdef str side_name = PyUnicode_FromString(c_md_side_name(self.header.trade_instruction.side))
         cdef str order_type_name = PyUnicode_FromString(c_md_order_type_name(self.header.trade_instruction.order_type))
-        if isnan(self.header.trade_instruction.limit_price) or self.header.trade_instruction.order_type == order_type_t.ORDER_MARKET:
+        if isnan(self.header.trade_instruction.limit_price) or self.header.trade_instruction.order_type == md_order_type.ORDER_MARKET:
             return f'<{self.__class__.__name__} id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
         else:
             return f'<{self.__class__.__name__} id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
@@ -363,7 +363,7 @@ cdef class TradeInstruction(MarketData):
     cpdef TradeInstruction reset(self):
         self.trades.clear()
 
-        self.header.trade_instruction.order_state = order_state_t.STATE_PENDING
+        self.header.trade_instruction.order_state = md_order_state.STATE_PENDING
         self.header.trade_instruction.filled_volume = 0.
         self.header.trade_instruction.filled_notional = 0.
         self.header.trade_instruction.fee = 0.
@@ -383,17 +383,17 @@ cdef class TradeInstruction(MarketData):
         c_set_long_id(&self.header.trade_instruction.order_id, order_id)
         return self
 
-    cpdef TradeInstruction set_order_state(self, order_state_t order_state, double timestamp=NAN):
+    cpdef TradeInstruction set_order_state(self, md_order_state order_state, double timestamp=NAN):
         if isnan(timestamp):
             timestamp = time.time()
 
         self.header.trade_instruction.order_state = order_state
 
-        if order_state == order_state_t.STATE_PLACED:
+        if order_state == md_order_state.STATE_PLACED:
             self.header.trade_instruction.ts_placed = timestamp
-        elif order_state == order_state_t.STATE_FILLED:
+        elif order_state == md_order_state.STATE_FILLED:
             self.header.trade_instruction.ts_finished = timestamp
-        elif order_state == order_state_t.STATE_CANCELED:
+        elif order_state == md_order_state.STATE_CANCELED:
             self.header.trade_instruction.ts_canceled = timestamp
 
         return self
@@ -435,10 +435,10 @@ cdef class TradeInstruction(MarketData):
 
         # Update order state
         if self.header.trade_instruction.filled_volume == self.volume:
-            self.set_order_state(order_state_t.STATE_FILLED, timestamp)
+            self.set_order_state(md_order_state.STATE_FILLED, timestamp)
             self.header.trade_instruction.ts_finished = timestamp
         elif self.header.trade_instruction.filled_volume > 0:
-            self.set_order_state(order_state_t.STATE_PARTFILLED)
+            self.set_order_state(md_order_state.STATE_PARTFILLED)
 
         # Add to trades dictionary
         self.trades[trade_id] = trade_report
@@ -456,19 +456,19 @@ cdef class TradeInstruction(MarketData):
         self.header.trade_instruction.fee += trade_fee
 
         if self.filled_volume == self.volume:
-            self.set_order_state(order_state_t.STATE_FILLED, timestamp)
+            self.set_order_state(md_order_state.STATE_FILLED, timestamp)
         elif self.filled_volume > 0:
-            self.set_order_state(order_state_t.STATE_PARTFILLED)
+            self.set_order_state(md_order_state.STATE_PARTFILLED)
 
         self.trades[trade_id] = trade_report
         return self
 
     cpdef TradeInstruction cancel_order(self, double timestamp=NAN):
-        self.set_order_state(order_state_t.STATE_CANCELING, timestamp)
+        self.set_order_state(md_order_state.STATE_CANCELING, timestamp)
         return self
 
     cpdef TradeInstruction canceled(self, double timestamp=NAN):
-        self.set_order_state(order_state_t.STATE_CANCELED, timestamp)
+        self.set_order_state(md_order_state.STATE_CANCELED, timestamp)
         return self
 
     property is_working:
@@ -501,7 +501,7 @@ cdef class TradeInstruction(MarketData):
 
     property side_sign:
         def __get__(self):
-            return c_md_side_sign(<side_t> self.header.trade_instruction.side)
+            return c_md_side_sign(<md_side> self.header.trade_instruction.side)
 
     property order_type:
         def __get__(self):

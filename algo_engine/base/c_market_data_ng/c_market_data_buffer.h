@@ -26,8 +26,8 @@
 #define MD_BUF_DISABLED      -8   /* generic (index, worker, ptr, buffer) disabled */
 
 typedef struct md_block_buffer {
-    shm_allocator_t* shm_allocator;
-    heap_allocator_t* heap_allocator;
+    shm_allocator* shm_allocator;
+    heap_allocator* heap_allocator;
     int sorted;
     size_t ptr_capacity;
     size_t ptr_offset;
@@ -40,8 +40,8 @@ typedef struct md_block_buffer {
 } md_block_buffer;
 
 typedef struct md_ring_buffer {
-    shm_allocator_t* shm_allocator;
-    heap_allocator_t* heap_allocator;
+    shm_allocator* shm_allocator;
+    heap_allocator* heap_allocator;
     size_t ptr_capacity;
     size_t ptr_offset;
     size_t ptr_head;
@@ -58,10 +58,10 @@ typedef struct md_concurrent_buffer_worker_t {
 } md_concurrent_buffer_worker_t;
 
 typedef struct md_concurrent_buffer {
-    shm_allocator_t* shm_allocator;
+    shm_allocator* shm_allocator;
     md_concurrent_buffer_worker_t* workers;
     size_t n_workers;
-    market_data_t** buffer;
+    md_variant** buffer;
     size_t capacity;
     size_t tail;
 } md_concurrent_buffer;
@@ -79,8 +79,8 @@ static inline int c_md_compare_serialized(const void* a, const void* b) {
     return 0;
 }
 
-static inline size_t c_md_total_buffer_size(market_data_t** md_array, size_t n_md) {
-    market_data_t* md;
+static inline size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md) {
+    md_variant* md;
     size_t total_size = 0;
 
     for (size_t i = 0; i < n_md; i++) {
@@ -90,7 +90,7 @@ static inline size_t c_md_total_buffer_size(market_data_t** md_array, size_t n_m
     return total_size;
 }
 
-static inline market_data_t* c_md_send_to_shm(market_data_t* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, int with_lock) {
+static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, int with_lock) {
     if (!market_data || !shm_allocator || !shm_pool) return NULL;
 
     // Step 1: Intern ticker string
@@ -115,24 +115,24 @@ static inline market_data_t* c_md_send_to_shm(market_data_t* market_data, shm_al
     }
 
     // Step 3: Initialize new market_data in SHM
-    data_type_t dtype = market_data->meta_info.dtype;
-    market_data_t* shm_md = c_md_new(dtype, shm_allocator, NULL, with_lock);
+    md_data_type dtype = market_data->meta_info.dtype;
+    md_variant* shm_md = c_md_new(dtype, shm_allocator, NULL, with_lock);
     size_t size = c_md_get_size(dtype);
     if (!shm_md) return NULL;
 
     memcpy((void*) shm_md, (void*) market_data, size);
     shm_md->meta_info.ticker = interned_ticker;
 
-    // Step 4: Handle order book pointers if tick_data_t
+    // Step 4: Handle order book pointers if md_tick_data
     if (dtype == DTYPE_TICK) {
-        tick_data_t* src_tick = &market_data->tick_data_full;
-        tick_data_t* dst_tick = &shm_md->tick_data_full;
+        md_tick_data* src_tick = &market_data->tick_data_full;
+        md_tick_data* dst_tick = &shm_md->tick_data_full;
 
         // Bid order book
         if (src_tick->bid) {
             size_t ob_capacity = src_tick->bid->capacity;
-            size_t ob_size = sizeof(order_book_t) + (ob_capacity * sizeof(order_book_entry_t));
-            order_book_t* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator, NULL, with_lock);
+            size_t ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
+            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator, NULL, with_lock);
             if (!ob_shm) {
                 c_shm_free((void*) shm_md, NULL);
                 return NULL;
@@ -147,8 +147,8 @@ static inline market_data_t* c_md_send_to_shm(market_data_t* market_data, shm_al
         // Ask order book
         if (src_tick->ask) {
             size_t ob_capacity = src_tick->ask->capacity;
-            size_t ob_size = sizeof(order_book_t) + (ob_capacity * sizeof(order_book_entry_t));
-            order_book_t* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator, NULL, with_lock);
+            size_t ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
+            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator, NULL, with_lock);
             if (!ob_shm) {
                 if (dst_tick->bid) {
                     c_shm_free((void*) dst_tick->bid, NULL);
@@ -169,7 +169,7 @@ static inline market_data_t* c_md_send_to_shm(market_data_t* market_data, shm_al
 
 // ========== BlockBuffer API Functions ==========
 
-static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) {
+static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
     size_t data_offset = ptr_capacity * sizeof(size_t);
     size_t size = sizeof(md_block_buffer)
         + data_offset                 /* pointer array */
@@ -213,8 +213,8 @@ static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t
 static inline int c_md_block_buffer_free(md_block_buffer* buffer, int with_lock) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
-    shm_allocator_t* shm_allocator = buffer->shm_allocator;
-    heap_allocator_t* heap_allocator = buffer->heap_allocator;
+    shm_allocator* shm_allocator = buffer->shm_allocator;
+    heap_allocator* heap_allocator = buffer->heap_allocator;
 
     if (shm_allocator) {
         pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
@@ -230,7 +230,7 @@ static inline int c_md_block_buffer_free(md_block_buffer* buffer, int with_lock)
     return MD_BUF_OK;
 }
 
-static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) {
+static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
     if (!buffer) return NULL;
 
     size_t new_data_offset = new_ptr_capacity * sizeof(size_t);
@@ -253,7 +253,7 @@ static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer,
     return new_buffer;
 }
 
-static inline int c_md_block_buffer_put(md_block_buffer* buffer, market_data_t* market_data) {
+static inline int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data) {
     if (!buffer || !market_data) return MD_BUF_ERR_INVALID;
 
     if (buffer->ptr_tail >= buffer->ptr_capacity) {
@@ -312,14 +312,14 @@ static inline int c_md_block_buffer_sort(md_block_buffer* buffer) {
 
     size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
     char* data_base = buffer->buffer + buffer->data_offset;
-    market_data_t** ptr_array = (market_data_t**) malloc(buffer->ptr_tail * sizeof(market_data_t*));
+    md_variant** ptr_array = (md_variant**) malloc(buffer->ptr_tail * sizeof(md_variant*));
     if (!ptr_array) return MD_BUF_ERR_INVALID;
 
     for (size_t i = 0; i < buffer->ptr_tail; i++) {
-        ptr_array[i] = (market_data_t*) (data_base + offset_array[i]);
+        ptr_array[i] = (md_variant*) (data_base + offset_array[i]);
     }
 
-    qsort(ptr_array, buffer->ptr_tail, sizeof(market_data_t*), c_md_compare_serialized);
+    qsort(ptr_array, buffer->ptr_tail, sizeof(md_variant*), c_md_compare_serialized);
 
     for (size_t i = 0; i < buffer->ptr_tail; i++) {
         offset_array[i] = (size_t) ((char*) ptr_array[i] - data_base);
@@ -365,7 +365,7 @@ static inline size_t c_md_block_buffer_serialize(md_block_buffer* buffer, char* 
 
 // ========== RingBuffer API Functions ==========
 
-static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator_t* heap_allocator, int with_lock) {
+static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
     size_t data_offset = ptr_capacity * sizeof(size_t);
     size_t size = sizeof(md_ring_buffer) + data_offset + data_capacity;
 
@@ -404,8 +404,8 @@ static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t d
 static inline int c_md_ring_buffer_free(md_ring_buffer* buffer, int with_lock) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
-    shm_allocator_t* shm_allocator = buffer->shm_allocator;
-    heap_allocator_t* heap_allocator = buffer->heap_allocator;
+    shm_allocator* shm_allocator = buffer->shm_allocator;
+    heap_allocator* heap_allocator = buffer->heap_allocator;
 
     if (shm_allocator) {
         pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
@@ -421,7 +421,7 @@ static inline int c_md_ring_buffer_free(md_ring_buffer* buffer, int with_lock) {
     return MD_BUF_OK;
 }
 
-static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, market_data_t* market_data) {
+static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
     size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
@@ -487,7 +487,7 @@ static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer) {
     }
 }
 
-static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data, int block, double timeout) {
+static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, int block, double timeout) {
     if (!buffer || !market_data) return MD_BUF_ERR_INVALID;
 
     const uint32_t spin_per_check = 1000;
@@ -683,7 +683,7 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, dou
 static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, int with_lock) {
     size_t size = sizeof(md_concurrent_buffer)
         + n_workers * sizeof(md_concurrent_buffer_worker_t)
-        + capacity * sizeof(market_data_t*);
+        + capacity * sizeof(md_variant*);
 
     if (size == 0) return NULL;
 
@@ -701,7 +701,7 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
         // buffer->workers[i].ptr_head = 0;
     }
 
-    buffer->buffer = (market_data_t**) (buffer->workers + n_workers);
+    buffer->buffer = (md_variant**) (buffer->workers + n_workers);
     buffer->capacity = capacity;
     buffer->tail = 0;
     return buffer;
@@ -710,7 +710,7 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
 static inline int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, int with_lock) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
-    shm_allocator_t* shm_allocator = buffer->shm_allocator;
+    shm_allocator* shm_allocator = buffer->shm_allocator;
 
     if (shm_allocator) {
         pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
@@ -766,7 +766,7 @@ static inline int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, 
     else return 0;
 }
 
-static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, market_data_t* market_data, int block, double timeout) {
+static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, int block, double timeout) {
     /* Returns: MD_BUF_OK, MD_BUF_ERR_INVALID, MD_BUF_ERR_NOT_SHM, MD_BUF_ERR_FULL, MD_BUF_ERR_TIMEOUT */
     if (!buffer || !market_data) return MD_BUF_ERR_INVALID;
 
@@ -846,7 +846,7 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, marke
     return MD_BUF_OK;
 }
 
-static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, int block, double timeout, market_data_t** out) {
+static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, int block, double timeout, md_variant** out) {
     /* Returns: MD_BUF_OK, MD_BUF_ERR_INVALID, -2 (worker OOR), -3 (worker disabled), MD_BUF_ERR_EMPTY, MD_BUF_ERR_TIMEOUT */
     if (!buffer || !out) return MD_BUF_ERR_INVALID;
     if (worker_id >= buffer->n_workers) return MD_BUF_OOR; /* worker out of range */
@@ -871,7 +871,7 @@ static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, si
 
     for (;;) {
         if (idx != buffer->tail) {
-            market_data_t* md = buffer->buffer[idx];
+            md_variant* md = buffer->buffer[idx];
             worker->ptr_head = (idx + 1) % buffer->capacity;
             *out = md;
             return MD_BUF_OK;

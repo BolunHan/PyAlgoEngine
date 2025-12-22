@@ -48,18 +48,18 @@
 #define SHM_ALLOCATOR_DEFAULT_REGION_SIZE (128ULL << 30)  /* 128 GiB */
 #endif
 
-typedef struct shm_page_t {
+typedef struct shm_page {
     size_t capacity;  // total capacity, excluding metadata
     size_t occupied;  // bytes occupied, excluding metadata
     size_t offset;
-    struct shm_allocator_t* allocator;
+    struct shm_allocator* allocator;
     struct shm_memory_block* allocated;
     char shm_name[SHM_NAME_LEN];
     char prev_name[SHM_NAME_LEN];
-} shm_page_t;
+} shm_page;
 
 typedef struct shm_page_ctx {
-    shm_page_t* shm_page;
+    shm_page* shm_page;
     int shm_fd;
     char* buffer;
     struct shm_page_ctx* prev;
@@ -70,11 +70,11 @@ typedef struct shm_memory_block {
     size_t size;
     struct shm_memory_block* next_free;
     struct shm_memory_block* next_allocated;
-    shm_page_t* parent_page;
+    shm_page* parent_page;
     char buffer[];
 } shm_memory_block;
 
-typedef struct shm_allocator_t {
+typedef struct shm_allocator {
     char shm_name[SHM_NAME_LEN];
     size_t pid;
     pthread_mutex_t lock;
@@ -84,10 +84,10 @@ typedef struct shm_allocator_t {
     char active_page[SHM_NAME_LEN];
     size_t mapped_pages;
     shm_memory_block* free_list;
-} shm_allocator_t;
+} shm_allocator;
 
 typedef struct shm_allocator_ctx {
-    shm_allocator_t* shm_allocator;
+    shm_allocator* shm_allocator;
     int shm_fd;
     shm_page_ctx* active_page;
 } shm_allocator_ctx;
@@ -121,7 +121,7 @@ static inline int c_shm_scan(const char* prefix, char* out);
  * @param page_capacity Total bytes including metadata.
  * @return Page context or NULL on failure.
  */
-static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t page_capacity);
+static inline shm_page_ctx* c_shm_page_new(shm_allocator* allocator, size_t page_capacity);
 
 /**
  * @brief Map a page into the allocator's reserved region at the next offset.
@@ -129,14 +129,14 @@ static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t pa
  * @param page_ctx Page context to map.
  * @return 0 on success, -1 on error.
  */
-static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_ctx);
+static inline int c_shm_page_map(shm_allocator* allocator, shm_page_ctx* page_ctx);
 
 /**
  * @brief Reclaim freed blocks of a given page back to unallocated state, with best effort.
  * @param allocator Allocator metadata (shared).
  * @param page_ctx Page context to reclaim from.
  */
-static inline void c_shm_page_reclaim(shm_allocator_t* allocator, shm_page_ctx* page_ctx);
+static inline void c_shm_page_reclaim(shm_allocator* allocator, shm_page_ctx* page_ctx);
 
 /**
  * @brief Extend allocator with a new page, optionally locking.
@@ -219,7 +219,7 @@ static inline pid_t c_shm_pid(char* shm_name);
  * @param shm_name Output buffer to receive the dangling allocator name.
  * @return Mapped allocator pointer or NULL with errno set.
  */
-static inline shm_allocator_t* c_shm_allocator_dangling(char* shm_name);
+static inline shm_allocator* c_shm_allocator_dangling(char* shm_name);
 
 /**
  * @brief Unlink all dangling allocator/page SHM objects.
@@ -241,7 +241,7 @@ static inline size_t c_block_roundup(size_t size) {
 
 #ifndef C_SHM_OVERHEAD_CONSTANTS_DEFINED
 #define C_SHM_OVERHEAD_CONSTANTS_DEFINED
-static const size_t c_shm_page_overhead = (sizeof(shm_page_t) + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
+static const size_t c_shm_page_overhead = (sizeof(shm_page) + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
 static const size_t c_shm_block_overhead = (sizeof(shm_memory_block) + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
 #endif /* C_SHM_OVERHEAD_CONSTANTS_DEFINED */
 
@@ -252,7 +252,7 @@ static inline void c_shm_allocator_name(const void* region, char* out) {
 
 }
 
-static inline void c_shm_page_name(shm_allocator_t* allocator, char* out) {
+static inline void c_shm_page_name(shm_allocator* allocator, char* out) {
     pid_t pid = getpid();
     size_t page_idx = allocator->mapped_pages;
     // The shm name should be in format of {prefix}_{pid}_{6 digit page_idx}
@@ -306,13 +306,13 @@ static inline int c_shm_scan(const char* prefix, char* out) {
     return 0;
 }
 
-static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t page_capacity) {
+static inline shm_page_ctx* c_shm_page_new(shm_allocator* allocator, size_t page_capacity) {
     shm_page_ctx* ctx = (shm_page_ctx*) calloc(1, sizeof(shm_page_ctx));
     if (!ctx) {
         return NULL;
     }
 
-    shm_page_t* meta = (shm_page_t*) calloc(1, c_shm_page_overhead);
+    shm_page* meta = (shm_page*) calloc(1, c_shm_page_overhead);
     if (!meta) {
         free(ctx);
         return NULL;
@@ -348,7 +348,7 @@ static inline shm_page_ctx* c_shm_page_new(shm_allocator_t* allocator, size_t pa
     return ctx;
 }
 
-static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_ctx) {
+static inline int c_shm_page_map(shm_allocator* allocator, shm_page_ctx* page_ctx) {
     if (!allocator || !page_ctx || !page_ctx->shm_page || page_ctx->shm_fd < 0) {
         errno = EINVAL;
         return -1;
@@ -370,7 +370,7 @@ static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_
     }
 
     // Step 0: Point to metadata at start of page
-    shm_page_t* page_meta = (shm_page_t*) mapped;
+    shm_page* page_meta = (shm_page*) mapped;
     memcpy(page_meta, page_ctx->shm_page, c_shm_page_overhead);
     free(page_ctx->shm_page);
     page_ctx->shm_page = page_meta;
@@ -398,13 +398,13 @@ static inline int c_shm_page_map(shm_allocator_t* allocator, shm_page_ctx* page_
     return 0;
 }
 
-static inline void c_shm_page_reclaim(shm_allocator_t* allocator, shm_page_ctx* page_ctx) {
+static inline void c_shm_page_reclaim(shm_allocator* allocator, shm_page_ctx* page_ctx) {
     if (!allocator || !page_ctx || !page_ctx->shm_page) {
         errno = EINVAL;
         return;
     }
 
-    shm_page_t* page = page_ctx->shm_page;
+    shm_page* page = page_ctx->shm_page;
 
     // Best-effort: walk from newest; stop at first live block.
     shm_memory_block** prevp = &page->allocated;
@@ -444,7 +444,7 @@ static inline shm_page_ctx* c_shm_allocator_extend(shm_allocator_ctx* ctx, size_
         return NULL;
     }
 
-    shm_allocator_t* allocator = ctx->shm_allocator;
+    shm_allocator* allocator = ctx->shm_allocator;
     uint8_t locked = 0;
 
     if (lock) {
@@ -540,7 +540,7 @@ static inline shm_allocator_ctx* c_shm_allocator_new(size_t region_size) {
         return NULL;
     }
 
-    if (ftruncate(meta_fd, sizeof(shm_allocator_t)) != 0) {
+    if (ftruncate(meta_fd, sizeof(shm_allocator)) != 0) {
         close(meta_fd);
         shm_unlink(meta_shm_name);
         munmap(virtual_region, region_size);
@@ -549,7 +549,7 @@ static inline shm_allocator_ctx* c_shm_allocator_new(size_t region_size) {
     }
 
     // Step 3: Map allocator metadata into memory
-    shm_allocator_t* meta = (shm_allocator_t*) mmap(NULL, sizeof(shm_allocator_t), PROT_READ | PROT_WRITE, MAP_SHARED, meta_fd, 0);
+    shm_allocator* meta = (shm_allocator*) mmap(NULL, sizeof(shm_allocator), PROT_READ | PROT_WRITE, MAP_SHARED, meta_fd, 0);
     if (meta == MAP_FAILED) {
         close(meta_fd);
         shm_unlink(meta_shm_name);
@@ -560,7 +560,7 @@ static inline shm_allocator_ctx* c_shm_allocator_new(size_t region_size) {
 
     // Step 4: Initialize metadata IN SHARED MEMORY
     // Must zero first (mmap doesn't guarantee zeroed memory for ftruncate'd SHM)
-    memset(meta, 0, sizeof(shm_allocator_t));
+    memset(meta, 0, sizeof(shm_allocator));
 
     size_t name_len = strnlen(meta_shm_name, SHM_NAME_LEN - 1);
     memcpy(meta->shm_name, meta_shm_name, name_len);
@@ -596,7 +596,7 @@ static inline shm_allocator_ctx* c_shm_allocator_new(size_t region_size) {
 
 cleanup:
     munmap(virtual_region, region_size);
-    munmap(meta, sizeof(shm_allocator_t));
+    munmap(meta, sizeof(shm_allocator));
     close(meta_fd);
     shm_unlink(meta_shm_name);
     free(ctx);
@@ -614,7 +614,7 @@ static inline void c_shm_allocator_free(shm_allocator_ctx* ctx) {
     shm_page_ctx* page_ctx = ctx->active_page;
     while (page_ctx) {
         shm_page_ctx* prev = page_ctx->prev;
-        shm_page_t* page_meta = page_ctx->shm_page;
+        shm_page* page_meta = page_ctx->shm_page;
 
         strncpy(shm_name, page_meta->shm_name, sizeof(shm_name) - 1);
         shm_name[sizeof(shm_name) - 1] = '\0';
@@ -633,7 +633,7 @@ static inline void c_shm_allocator_free(shm_allocator_ctx* ctx) {
     }
 
     // Step 2: Unmap allocator region
-    shm_allocator_t* allocator = ctx->shm_allocator;
+    shm_allocator* allocator = ctx->shm_allocator;
     if (allocator) {
         // Step 2.1: Save shm_name before unmapping
         strncpy(shm_name, allocator->shm_name, sizeof(shm_name) - 1);
@@ -648,7 +648,7 @@ static inline void c_shm_allocator_free(shm_allocator_ctx* ctx) {
         }
 
         // Step 2.4: Unmap allocator shm
-        munmap((void*) allocator, sizeof(shm_allocator_t));
+        munmap((void*) allocator, sizeof(shm_allocator));
 
         // Step 2.5: Unlink allocator SHM
         shm_unlink(shm_name);
@@ -672,7 +672,7 @@ static inline void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mu
     size_t cap_net = c_block_roundup(size);
     // the overhead is already aligned due to struct padding
     size_t cap_total = cap_net + c_shm_block_overhead;
-    shm_allocator_t* allocator = ctx->shm_allocator;
+    shm_allocator* allocator = ctx->shm_allocator;
 
     // Step 1: Lock allocator
     // Locking strategy:
@@ -714,7 +714,7 @@ static inline void* c_shm_calloc(shm_allocator_ctx* ctx, size_t size, pthread_mu
         }
     }
 
-    shm_page_t* page_meta = page_ctx->shm_page;
+    shm_page* page_meta = page_ctx->shm_page;
 
     // Step 2: Extend the allocator if there is no active_page or insufficient space
     if (page_meta->occupied + cap_total > page_meta->capacity) {
@@ -770,7 +770,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
 
     size_t cap_net = c_block_roundup(size);
     size_t cap_total = cap_net + c_shm_block_overhead;
-    shm_allocator_t* allocator = ctx->shm_allocator;
+    shm_allocator* allocator = ctx->shm_allocator;
 
     uint8_t locked = 0;
     pthread_mutex_t* builtin_lock = &allocator->lock;
@@ -811,7 +811,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
     if (scan_all_pages) {
         shm_page_ctx* iter = ctx->active_page;
         while (iter) {
-            shm_page_t* meta = iter->shm_page;
+            shm_page* meta = iter->shm_page;
             if (meta && meta->occupied + cap_total <= meta->capacity) {
                 target_ctx = iter;
                 break;
@@ -820,7 +820,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
         }
     }
     else if (ctx->active_page) {
-        shm_page_t* meta = ctx->active_page->shm_page;
+        shm_page* meta = ctx->active_page->shm_page;
         if (meta && meta->occupied + cap_total <= meta->capacity) {
             target_ctx = ctx->active_page;
         }
@@ -862,7 +862,7 @@ static inline void* c_shm_request(shm_allocator_ctx* ctx, size_t size, int scan_
     }
 
     // Step 4: Allocate from the selected page
-    shm_page_t* page_meta = target_ctx->shm_page;
+    shm_page* page_meta = target_ctx->shm_page;
     size_t offset = page_meta->occupied;
     shm_memory_block* block = (shm_memory_block*) (target_ctx->buffer + offset);
     block->capacity = cap_net;
@@ -889,13 +889,13 @@ static inline void c_shm_free(void* ptr, pthread_mutex_t* lock) {
     }
 
     shm_memory_block* block = (shm_memory_block*) ((char*) ptr - c_shm_block_overhead);
-    shm_page_t* page = block->parent_page;
+    shm_page* page = block->parent_page;
     if (!page || !page->allocator) {
         errno = EINVAL;
         return;
     }
 
-    shm_allocator_t* allocator = page->allocator;
+    shm_allocator* allocator = page->allocator;
 
     uint8_t locked = 0;
     if (lock) {
@@ -930,7 +930,7 @@ static inline void c_shm_reclaim(shm_allocator_ctx* ctx, pthread_mutex_t* lock) 
         locked = 1;
     }
 
-    shm_allocator_t* allocator = ctx->shm_allocator;
+    shm_allocator* allocator = ctx->shm_allocator;
     shm_page_ctx* page_ctx = ctx->active_page;
     while (page_ctx) {
         c_shm_page_reclaim(allocator, page_ctx);
@@ -1018,7 +1018,7 @@ static inline pid_t c_shm_pid(char* shm_name) {
     return (pid_t) v;
 }
 
-static inline shm_allocator_t* c_shm_allocator_dangling(char* shm_name) {
+static inline shm_allocator* c_shm_allocator_dangling(char* shm_name) {
     if (!shm_name) {
         errno = EINVAL;
         return NULL;
@@ -1034,7 +1034,7 @@ static inline shm_allocator_t* c_shm_allocator_dangling(char* shm_name) {
     }
 
     struct dirent* ent = NULL;
-    shm_allocator_t* mapped = NULL;
+    shm_allocator* mapped = NULL;
     char candidate[SHM_NAME_LEN];
 
     while ((ent = readdir(dir)) != NULL) {
@@ -1076,7 +1076,7 @@ static inline shm_allocator_t* c_shm_allocator_dangling(char* shm_name) {
 
         strncpy(shm_name, candidate, SHM_NAME_LEN - 1);
         shm_name[SHM_NAME_LEN - 1] = '\0';
-        mapped = (shm_allocator_t*) map;
+        mapped = (shm_allocator*) map;
         break;
     }
 

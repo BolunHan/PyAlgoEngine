@@ -1,4 +1,4 @@
-from .c_market_data cimport market_data_t, order_book_t, MarketData
+from .c_market_data cimport md_variant, md_orderbook, MarketData
 
 
 cdef class TickDataLite(MarketData):
@@ -6,7 +6,7 @@ cdef class TickDataLite(MarketData):
 
 
 cdef class OrderBook:
-    cdef order_book_t* header
+    cdef md_orderbook* header
     cdef bint owner
     cdef size_t iter_index
 
@@ -33,14 +33,14 @@ cdef class TickData(MarketData):
     cpdef TickDataLite lite(self)
 
 
-cdef inline object tick_lite_from_header(market_data_t* market_data, bint owner):
+cdef inline object tick_lite_from_header(md_variant* market_data, bint owner):
     cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
     instance.header = market_data
     instance.owner = owner
     return instance
 
 
-cdef inline object tick_from_header(market_data_t* market_data, bint owner):
+cdef inline object tick_from_header(md_variant* market_data, bint owner):
     cdef TickData instance = TickData.__new__(TickData)
     instance.header = market_data
 

@@ -20,41 +20,41 @@ cdef extern from "c_heap_allocator.h":
         size_t size
         heap_memory_block* next_free
         heap_memory_block* next_allocated
-        heap_page_t* parent_page
+        heap_page* parent_page
         char buffer[]
 
-    ctypedef struct heap_page_t:
+    ctypedef struct heap_page:
         size_t capacity
         size_t occupied
-        heap_allocator_t* allocator
-        heap_page_t* prev
+        heap_allocator* allocator
+        heap_page* prev
         heap_memory_block* allocated
         char buffer[]
 
-    ctypedef struct heap_allocator_t:
+    ctypedef struct heap_allocator:
         pthread_mutex_t lock
         size_t mapped_pages
         heap_memory_block* free_list
-        heap_page_t* active_page
+        heap_page* active_page
 
     size_t c_page_roundup(size_t size)
     size_t c_block_roundup(size_t size)
-    void c_heap_page_reclaim(heap_allocator_t* allocator, heap_page_t* page)
+    void c_heap_page_reclaim(heap_allocator* allocator, heap_page* page)
 
-    heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, size_t capacity, pthread_mutex_t* lock)
-    heap_allocator_t* c_heap_allocator_new()
-    void c_heap_allocator_free(heap_allocator_t* allocator)
-    void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthread_mutex_t* lock)
-    void* c_heap_request(heap_allocator_t* allocator, size_t size, int scan_all_pages, pthread_mutex_t* lock)
+    heap_page* c_heap_allocator_extend(heap_allocator* allocator, size_t capacity, pthread_mutex_t* lock)
+    heap_allocator* c_heap_allocator_new()
+    void c_heap_allocator_free(heap_allocator* allocator)
+    void* c_heap_calloc(heap_allocator* allocator, size_t size, pthread_mutex_t* lock)
+    void* c_heap_request(heap_allocator* allocator, size_t size, int scan_all_pages, pthread_mutex_t* lock)
     void c_heap_free(void* ptr, pthread_mutex_t* lock)
-    void c_heap_reclaim(heap_allocator_t* allocator, pthread_mutex_t* lock)
+    void c_heap_reclaim(heap_allocator* allocator, pthread_mutex_t* lock)
 
 
 cdef class HeapMemoryPage:
-    cdef heap_page_t* page
+    cdef heap_page* page
 
     @staticmethod
-    cdef inline HeapMemoryPage c_from_header(heap_page_t* header)
+    cdef inline HeapMemoryPage c_from_header(heap_page* header)
 
     cpdef void reclaim(self)
 
@@ -68,13 +68,13 @@ cdef class HeapMemoryBlock:
 
 
 cdef class HeapAllocator:
-    cdef heap_allocator_t* allocator
+    cdef heap_allocator* allocator
     cdef readonly bint owner
 
     @staticmethod
-    cdef HeapAllocator c_from_header(heap_allocator_t* header, bint owner=*)
+    cdef HeapAllocator c_from_header(heap_allocator* header, bint owner=*)
 
-    cdef inline heap_page_t* c_extend(self, size_t capacity=*, pthread_mutex_t* lock=*)
+    cdef inline heap_page* c_extend(self, size_t capacity=*, pthread_mutex_t* lock=*)
 
     cdef inline void* c_calloc(self, size_t size, pthread_mutex_t* lock=*)
 
@@ -94,4 +94,4 @@ cdef class HeapAllocator:
 
 
 cdef HeapAllocator ALLOCATOR
-cdef heap_allocator_t* C_ALLOCATOR
+cdef heap_allocator* C_ALLOCATOR

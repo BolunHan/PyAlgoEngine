@@ -29,25 +29,25 @@ typedef struct heap_memory_block {
     size_t size;
     struct heap_memory_block* next_free;
     struct heap_memory_block* next_allocated;
-    struct heap_page_t* parent_page;
+    struct heap_page* parent_page;
     char buffer[];
 } heap_memory_block;
 
-typedef struct heap_page_t {
+typedef struct heap_page {
     size_t capacity;
     size_t occupied;
-    struct heap_allocator_t* allocator;
-    struct heap_page_t* prev;
+    struct heap_allocator* allocator;
+    struct heap_page* prev;
     struct heap_memory_block* allocated;
     char buffer[];
-} heap_page_t;
+} heap_page;
 
-typedef struct heap_allocator_t {
+typedef struct heap_allocator {
     pthread_mutex_t lock;
     size_t mapped_pages;
     struct heap_memory_block* free_list;
-    struct heap_page_t* active_page;
-} heap_allocator_t;
+    struct heap_page* active_page;
+} heap_allocator;
 
 // ========== Utility Functions ==========
 #ifndef C_COMMON_ROUNDUP_UTILS_DEFINED
@@ -61,7 +61,7 @@ static inline size_t c_block_roundup(size_t size) {
 }
 #endif /* C_COMMON_ROUNDUP_UTILS_DEFINED */
 
-static inline void c_heap_page_reclaim(heap_allocator_t* allocator, heap_page_t* page) {
+static inline void c_heap_page_reclaim(heap_allocator* allocator, heap_page* page) {
     if (!allocator || !page) {
         errno = EINVAL;
         return;
@@ -95,7 +95,7 @@ static inline void c_heap_page_reclaim(heap_allocator_t* allocator, heap_page_t*
 
 // ========== Public API Functions ==========
 
-static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, size_t capacity, pthread_mutex_t* lock) {
+static inline heap_page* c_heap_allocator_extend(heap_allocator* allocator, size_t capacity, pthread_mutex_t* lock) {
     if (!allocator) {
         errno = EINVAL;
         return NULL;
@@ -130,7 +130,7 @@ static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, 
 
     size_t total_capacity = c_page_roundup(capacity);
 
-    heap_page_t* page = (heap_page_t*) calloc(1, total_capacity);
+    heap_page* page = (heap_page*) calloc(1, total_capacity);
 
     if (!page) {
         if (locked) pthread_mutex_unlock(lock);
@@ -138,7 +138,7 @@ static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, 
     }
 
     page->capacity = capacity;
-    page->occupied = sizeof(heap_page_t);
+    page->occupied = sizeof(heap_page);
     page->allocator = allocator;
     page->allocated = NULL;
     page->prev = allocator->active_page;
@@ -149,8 +149,8 @@ static inline heap_page_t* c_heap_allocator_extend(heap_allocator_t* allocator, 
     return page;
 }
 
-static inline heap_allocator_t* c_heap_allocator_new() {
-    heap_allocator_t* allocator = (heap_allocator_t*) calloc(1, sizeof(heap_allocator_t));
+static inline heap_allocator* c_heap_allocator_new() {
+    heap_allocator* allocator = (heap_allocator*) calloc(1, sizeof(heap_allocator));
     if (!allocator) {
         return NULL;
     }
@@ -167,14 +167,14 @@ static inline heap_allocator_t* c_heap_allocator_new() {
     return allocator;
 }
 
-static inline void c_heap_allocator_free(heap_allocator_t* allocator) {
+static inline void c_heap_allocator_free(heap_allocator* allocator) {
     if (!allocator) {
         return;
     }
 
-    heap_page_t* page = allocator->active_page;
+    heap_page* page = allocator->active_page;
     while (page) {
-        heap_page_t* prev = page->prev;
+        heap_page* prev = page->prev;
         free(page);
         page = prev;
     }
@@ -183,7 +183,7 @@ static inline void c_heap_allocator_free(heap_allocator_t* allocator) {
     free(allocator);
 }
 
-static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthread_mutex_t* lock) {
+static inline void* c_heap_calloc(heap_allocator* allocator, size_t size, pthread_mutex_t* lock) {
     if (!allocator || size == 0) {
         errno = EINVAL;
         return NULL;
@@ -211,10 +211,10 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
         child_lock = NULL;
     }
 
-    heap_page_t* page = allocator->active_page;
+    heap_page* page = allocator->active_page;
     if (!page) {
         size_t target_cap = DEFAULT_AUTOPAGE_CAPACITY;
-        while (target_cap < cap_total + sizeof(heap_page_t)) {
+        while (target_cap < cap_total + sizeof(heap_page)) {
             target_cap *= 2;
         }
 
@@ -235,7 +235,7 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
             target_cap *= 2;
         }
 
-        while (target_cap < cap_total + sizeof(heap_page_t)) {
+        while (target_cap < cap_total + sizeof(heap_page)) {
             target_cap *= 2;
         }
         page = c_heap_allocator_extend(allocator, target_cap, child_lock);
@@ -262,7 +262,7 @@ static inline void* c_heap_calloc(heap_allocator_t* allocator, size_t size, pthr
     return (void*) block->buffer;
 }
 
-static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int scan_all_pages, pthread_mutex_t* lock) {
+static inline void* c_heap_request(heap_allocator* allocator, size_t size, int scan_all_pages, pthread_mutex_t* lock) {
     if (!allocator || size == 0) {
         errno = EINVAL;
         return NULL;
@@ -305,9 +305,9 @@ static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int
         free_blk = free_blk->next_free;
     }
 
-    heap_page_t* target_page = NULL;
+    heap_page* target_page = NULL;
     if (scan_all_pages) {
-        heap_page_t* iter = allocator->active_page;
+        heap_page* iter = allocator->active_page;
         while (iter) {
             if (iter->occupied + cap_total <= iter->capacity) {
                 target_page = iter;
@@ -317,19 +317,19 @@ static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int
         }
     }
     else if (allocator->active_page) {
-        heap_page_t* meta = allocator->active_page;
+        heap_page* meta = allocator->active_page;
         if (meta && meta->occupied + cap_total <= meta->capacity) {
             target_page = allocator->active_page;
         }
     }
 
     if (!target_page) {
-        heap_page_t* current = allocator->active_page;
+        heap_page* current = allocator->active_page;
         size_t target_cap;
 
         if (!current) {
             target_cap = DEFAULT_AUTOPAGE_CAPACITY;
-            while (target_cap < cap_total + sizeof(heap_page_t)) {
+            while (target_cap < cap_total + sizeof(heap_page)) {
                 target_cap *= 2;
             }
         }
@@ -344,7 +344,7 @@ static inline void* c_heap_request(heap_allocator_t* allocator, size_t size, int
                 new_cap *= 2;
             }
 
-            while (new_cap < cap_total + sizeof(heap_page_t)) {
+            while (new_cap < cap_total + sizeof(heap_page)) {
                 new_cap *= 2;
             }
             target_cap = new_cap;
@@ -382,13 +382,13 @@ static inline void c_heap_free(void* ptr, pthread_mutex_t* lock) {
     }
 
     heap_memory_block* block = (heap_memory_block*) ((char*) ptr - sizeof(heap_memory_block));
-    heap_page_t* page = block->parent_page;
+    heap_page* page = block->parent_page;
     if (!page || !page->allocator) {
         errno = EINVAL;
         return;
     }
 
-    heap_allocator_t* allocator = page->allocator;
+    heap_allocator* allocator = page->allocator;
 
     uint8_t locked = 0;
     if (lock) {
@@ -407,7 +407,7 @@ static inline void c_heap_free(void* ptr, pthread_mutex_t* lock) {
     if (locked) pthread_mutex_unlock(lock);
 }
 
-static inline void c_heap_reclaim(heap_allocator_t* allocator, pthread_mutex_t* lock) {
+static inline void c_heap_reclaim(heap_allocator* allocator, pthread_mutex_t* lock) {
     if (!allocator) {
         errno = EINVAL;
         return;
@@ -423,7 +423,7 @@ static inline void c_heap_reclaim(heap_allocator_t* allocator, pthread_mutex_t* 
         locked = 1;
     }
 
-    heap_page_t* page = allocator->active_page;
+    heap_page* page = allocator->active_page;
     while (page) {
         c_heap_page_reclaim(allocator, page);
         page = page->prev;

@@ -4,10 +4,10 @@ from libc.stdint cimport uintptr_t
 
 cdef class HeapMemoryPage:
     def __cinit__(self, uintptr_t page_addr=0):
-        self.page = <heap_page_t*> page_addr if page_addr else NULL
+        self.page = <heap_page*> page_addr if page_addr else NULL
 
     @staticmethod
-    cdef inline HeapMemoryPage c_from_header(heap_page_t* header):
+    cdef inline HeapMemoryPage c_from_header(heap_page* header):
         cdef HeapMemoryPage instance = HeapMemoryPage.__new__(HeapMemoryPage, 0)
         instance.page = header
         return instance
@@ -20,7 +20,7 @@ cdef class HeapMemoryPage:
     @classmethod
     def from_buffer(cls, uintptr_t buffer_addr) -> HeapMemoryPage:
         cdef HeapMemoryPage instance = cls.__new__(cls, 0)
-        instance.page = <heap_page_t*> (<char*> buffer_addr - sizeof(heap_page_t))
+        instance.page = <heap_page*> (<char*> buffer_addr - sizeof(heap_page))
         return instance
 
     def allocated(self):
@@ -145,13 +145,13 @@ cdef class HeapAllocator:
             c_heap_allocator_free(self.allocator)
 
     @staticmethod
-    cdef HeapAllocator c_from_header(heap_allocator_t* header, bint owner=False):
+    cdef HeapAllocator c_from_header(heap_allocator* header, bint owner=False):
         cdef HeapAllocator instance = HeapAllocator.__new__(HeapAllocator, False)
         instance.allocator = header
         instance.owner = owner
         return instance
 
-    cdef inline heap_page_t* c_extend(self, size_t capacity=0, pthread_mutex_t* lock=NULL):
+    cdef inline heap_page* c_extend(self, size_t capacity=0, pthread_mutex_t* lock=NULL):
         if not self.allocator:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         return c_heap_allocator_extend(self.allocator, capacity, lock)
@@ -175,7 +175,7 @@ cdef class HeapAllocator:
         if not self.allocator:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         cdef pthread_mutex_t* lock = &self.allocator.lock if with_lock else NULL
-        cdef heap_page_t* page = c_heap_allocator_extend(self.allocator, capacity, lock)
+        cdef heap_page* page = c_heap_allocator_extend(self.allocator, capacity, lock)
         if not page:
             raise OSError(errno, f'<{self.__class__.__name__}> failed to extend new page')
         return HeapMemoryPage.c_from_header(page)
@@ -219,7 +219,7 @@ cdef class HeapAllocator:
     def pages(self):
         if not self.allocator:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
-        cdef heap_page_t* page = self.allocator.active_page
+        cdef heap_page* page = self.allocator.active_page
         while page:
             yield HeapMemoryPage.c_from_header(page)
             page = page.prev
@@ -227,7 +227,7 @@ cdef class HeapAllocator:
     def allocated(self):
         if not self.allocator:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
-        cdef heap_page_t* page = self.allocator.active_page
+        cdef heap_page* page = self.allocator.active_page
         cdef heap_memory_block* block
         while page:
             block = page.allocated
@@ -258,7 +258,7 @@ cdef class HeapAllocator:
 
 
 cdef HeapAllocator ALLOCATOR = HeapAllocator(True)
-cdef heap_allocator_t* C_ALLOCATOR = ALLOCATOR.allocator
+cdef heap_allocator* C_ALLOCATOR = ALLOCATOR.allocator
 
 globals()['ALLOCATOR'] = ALLOCATOR
 globals()['DEFAULT_AUTOPAGE_CAPACITY'] = DEFAULT_AUTOPAGE_CAPACITY

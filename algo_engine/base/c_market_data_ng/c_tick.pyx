@@ -7,8 +7,8 @@ from libc.string cimport memcpy
 
 from .c_market_data cimport (
     SHM_ALLOCATOR, HEAP_ALLOCATOR,
-    data_type_t, direction_t, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_CFG_BOOK_SIZE,
-    order_book_entry_t, c_md_orderbook_sort,
+    md_data_type, md_direction, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_CFG_BOOK_SIZE,
+    md_orderbook_entry, c_md_orderbook_sort,
     c_init_buffer, c_md_orderbook_new, c_md_orderbook_free
 )
 from .c_transaction import TransactionDirection, TransactionOffset
@@ -33,7 +33,7 @@ cdef class TickDataLite(MarketData):
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_TICK_LITE,
+            md_data_type.DTYPE_TICK_LITE,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
@@ -118,16 +118,16 @@ cdef class OrderBook:
     def __cinit__(
             self,
             *,
-            direction_t direction = direction_t.DIRECTION_UNKNOWN,
+            md_direction direction = md_direction.DIRECTION_UNKNOWN,
             object price=None,
             object volume=None,
             object n_orders=None,
             bint is_sorted=False,
             **kwargs
     ):
-        if direction == direction_t.DIRECTION_UNKNOWN:
+        if direction == md_direction.DIRECTION_UNKNOWN:
             return
-        elif direction == direction_t.DIRECTION_LONG or direction == direction_t.DIRECTION_SHORT:
+        elif direction == md_direction.DIRECTION_LONG or direction == md_direction.DIRECTION_SHORT:
             pass
         else:
             raise ValueError(f'Invalid Direction {direction}. expecting {TransactionDirection.DIRECTION_SHORT} or {TransactionDirection.DIRECTION_LONG}')
@@ -159,7 +159,7 @@ cdef class OrderBook:
         cdef size_t len_price = 0 if price is None else len(price)
         cdef size_t len_volume = 0 if volume is None else len(volume)
         cdef size_t len_n_orders = 0 if n_orders is None else len(n_orders)
-        cdef order_book_entry_t* entry
+        cdef md_orderbook_entry* entry
 
         for i in range(self.header.capacity):
             entry = self.header.entries + i
@@ -200,7 +200,7 @@ cdef class OrderBook:
         # Fill in the Py_buffer structure
         view.buf = <void*> self.header.entries
         view.obj = self
-        view.len = self.header.capacity * sizeof(order_book_entry_t)
+        view.len = self.header.capacity * sizeof(md_orderbook_entry)
         view.readonly = 0
         view.itemsize = sizeof(double)
         view.format = NULL
@@ -221,7 +221,7 @@ cdef class OrderBook:
         view.shape[0] = self.header.capacity  # Number of entries
         view.shape[1] = 3  # Each entry has 3 fields (price, volume, n_orders)
 
-        view.strides[0] = sizeof(order_book_entry_t)  # Stride between entries
+        view.strides[0] = sizeof(md_orderbook_entry)  # Stride between entries
         view.strides[1] = sizeof(double)  # Stride between fields within an entry
 
         view.suboffsets = NULL
@@ -248,7 +248,7 @@ cdef class OrderBook:
         self.c_sort()
 
         cdef double volume = 0.0
-        cdef order_book_entry_t* entry
+        cdef md_orderbook_entry* entry
         cdef size_t i
 
         for i in range(self.header.size):
@@ -264,17 +264,17 @@ cdef class OrderBook:
     cdef bytes c_to_bytes(self):
         if not self.header:
             raise ValueError("Cannot convert uninitialized data to bytes")
-        cdef size_t buffer_size = sizeof(order_book_t) + self.header.capacity * sizeof(order_book_entry_t);
+        cdef size_t buffer_size = sizeof(md_orderbook) + self.header.capacity * sizeof(md_orderbook_entry);
         return PyBytes_FromStringAndSize(<char*> self.header, buffer_size)
 
     @staticmethod
     cdef OrderBook c_from_bytes(const char* data):
         cdef OrderBook instance = OrderBook.__new__(OrderBook)
-        cdef const order_book_t* borrowed = <const order_book_t*> data
+        cdef const md_orderbook* borrowed = <const md_orderbook*> data
         cdef size_t book_size = borrowed.capacity
-        cdef size_t buffer_size = sizeof(order_book_t) + borrowed.capacity * sizeof(order_book_entry_t);
+        cdef size_t buffer_size = sizeof(md_orderbook) + borrowed.capacity * sizeof(md_orderbook_entry);
 
-        cdef order_book_t* header
+        cdef md_orderbook* header
         if MD_CFG_SHARED:
             header = c_md_orderbook_new(book_size, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
         elif MD_CFG_FREELIST:
@@ -296,8 +296,8 @@ cdef class OrderBook:
     def __repr__(self):
         if not self.header:
             return f'<{self.__class__.__name__}>(Uninitialized)'
-        cdef str orderbook_type = 'bid' if self.header.direction == direction_t.DIRECTION_LONG \
-            else 'ask' if self.header.direction == direction_t.DIRECTION_SHORT \
+        cdef str orderbook_type = 'bid' if self.header.direction == md_direction.DIRECTION_LONG \
+            else 'ask' if self.header.direction == md_direction.DIRECTION_SHORT \
             else 'unknown'
         return f'<{self.__class__.__name__} {orderbook_type}>(size={self.header.size}, capacity={self.header.capacity}, sorted={self.header.sorted})'
 
@@ -310,7 +310,7 @@ cdef class OrderBook:
         return self
 
     def __next__(self):
-        cdef order_book_entry_t* entry
+        cdef md_orderbook_entry* entry
         while self.iter_index < self.header.size:
             entry = self.header.entries + self.iter_index
             self.iter_index += 1
@@ -324,13 +324,13 @@ cdef class OrderBook:
             raise IndexError('OrderBook index out of range')
         if idx < 0:
             idx += ttl
-        cdef order_book_entry_t* entry = self.header.entries + idx
+        cdef md_orderbook_entry* entry = self.header.entries + idx
         return entry.price, entry.volume, entry.n_orders
 
     cpdef tuple at_price(self, double price):
         cdef size_t n = self.header.size
         cdef size_t i
-        cdef order_book_entry_t* entry
+        cdef md_orderbook_entry* entry
 
         for i in range(n):
             entry = self.header.entries + i
@@ -348,13 +348,13 @@ cdef class OrderBook:
         if idx < 0:
             idx += ttl
 
-        cdef order_book_entry_t* entry = self.header.entries + idx
+        cdef md_orderbook_entry* entry = self.header.entries + idx
         return entry.price, entry.volume, entry.n_orders
 
     @classmethod
     def from_buffer(cls, const unsigned char[:] buffer):
         cdef OrderBook instance = cls.__new__(cls)
-        instance.header = <order_book_t*> &buffer[0]
+        instance.header = <md_orderbook*> &buffer[0]
         instance.owner = False
         return instance
 
@@ -448,7 +448,7 @@ cdef class TickData(MarketData):
             **kwargs
     ):
         self.header = c_init_buffer(
-            data_type_t.DTYPE_TICK,
+            md_data_type.DTYPE_TICK,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
@@ -469,8 +469,8 @@ cdef class TickData(MarketData):
         self.header.tick_data_full.weighted_bid_price = weighted_bid_price
         self.header.tick_data_full.weighted_ask_price = weighted_ask_price
 
-        self.bid = OrderBook.__new__(OrderBook, direction=direction_t.DIRECTION_LONG, is_sorted=False)
-        self.ask = OrderBook.__new__(OrderBook, direction=direction_t.DIRECTION_SHORT, is_sorted=False)
+        self.bid = OrderBook.__new__(OrderBook, direction=md_direction.DIRECTION_LONG, is_sorted=False)
+        self.ask = OrderBook.__new__(OrderBook, direction=md_direction.DIRECTION_SHORT, is_sorted=False)
         self.header.tick_data_full.bid = self.bid.header
         self.header.tick_data_full.ask = self.ask.header
 
@@ -487,11 +487,11 @@ cdef class TickData(MarketData):
 
     def __copy__(self):
         cdef TickData instance = super().__copy__()
-        cdef order_book_t* bid_header = c_md_orderbook_new(self.header.tick_data_full.bid.capacity, NULL, NULL, <int> MD_CFG_LOCKED)
-        cdef order_book_t* ask_header = c_md_orderbook_new(self.header.tick_data_full.ask.capacity, NULL, NULL, <int> MD_CFG_LOCKED)
+        cdef md_orderbook* bid_header = c_md_orderbook_new(self.header.tick_data_full.bid.capacity, NULL, NULL, <int> MD_CFG_LOCKED)
+        cdef md_orderbook* ask_header = c_md_orderbook_new(self.header.tick_data_full.ask.capacity, NULL, NULL, <int> MD_CFG_LOCKED)
 
-        memcpy(<void*> bid_header, <void*> self.header.tick_data_full.bid, sizeof(order_book_t) + self.header.tick_data_full.bid.capacity * sizeof(order_book_entry_t))
-        memcpy(<void*> ask_header, <void*> self.header.tick_data_full.ask, sizeof(order_book_t) + self.header.tick_data_full.ask.capacity * sizeof(order_book_entry_t))
+        memcpy(<void*> bid_header, <void*> self.header.tick_data_full.bid, sizeof(md_orderbook) + self.header.tick_data_full.bid.capacity * sizeof(md_orderbook_entry))
+        memcpy(<void*> ask_header, <void*> self.header.tick_data_full.ask, sizeof(md_orderbook) + self.header.tick_data_full.ask.capacity * sizeof(md_orderbook_entry))
 
         instance.header.tick_data_full.bid = bid_header
         instance.header.tick_data_full.ask = ask_header
@@ -507,8 +507,8 @@ cdef class TickData(MarketData):
         cdef str key_type, book_type
         cdef size_t capacity
         cdef size_t level
-        cdef order_book_t* orderbook
-        cdef order_book_entry_t* entry
+        cdef md_orderbook* orderbook
+        cdef md_orderbook_entry* entry
 
         for key, value in kwargs.items():
             parts = key.split('_')
@@ -565,7 +565,7 @@ cdef class TickData(MarketData):
 
     cpdef TickDataLite lite(self):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        instance.header = <market_data_t*> &self.header.tick_data_full.lite
+        instance.header = <md_variant*> &self.header.tick_data_full.lite
         instance.owner = False
         return instance
 
