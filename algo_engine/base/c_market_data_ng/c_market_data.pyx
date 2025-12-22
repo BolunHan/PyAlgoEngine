@@ -294,7 +294,6 @@ cdef object c_get_long_id(long_mid_t* id_ptr):
 
 
 cdef class MarketData:
-
     def __dealloc__(self):
         if not self.owner:
             return

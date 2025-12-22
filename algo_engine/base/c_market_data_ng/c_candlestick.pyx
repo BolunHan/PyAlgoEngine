@@ -247,4 +247,5 @@ cdef class DailyBar(BarData):
 
 
 from . cimport c_market_data
+
 c_market_data.bar_from_header = bar_from_header

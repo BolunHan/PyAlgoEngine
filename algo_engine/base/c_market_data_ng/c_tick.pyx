@@ -517,7 +517,7 @@ cdef class TickData(MarketData):
                 continue
 
             book_type = parts[0]  # 'bid' or 'ask'
-            key_type = parts[1]   # 'price', 'volume', or 'orders'
+            key_type = parts[1]  # 'price', 'volume', or 'orders'
 
             # Check if there's a level number
             if not parts[2].isdigit():
@@ -655,5 +655,6 @@ cdef class TickData(MarketData):
 
 
 from . cimport c_market_data
+
 c_market_data.tick_lite_from_header = tick_lite_from_header
 c_market_data.tick_from_header = tick_from_header

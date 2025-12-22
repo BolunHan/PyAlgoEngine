@@ -452,5 +452,6 @@ cdef class TradeData(TransactionData):
 
 
 from . cimport c_market_data
+
 c_market_data.transaction_from_header = transaction_from_header
 c_market_data.order_from_header = order_from_header

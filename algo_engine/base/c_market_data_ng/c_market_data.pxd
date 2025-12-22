@@ -462,7 +462,7 @@ cdef class MarketData:
     cdef market_data_t* header
 
     @staticmethod
-    cdef inline object c_from_header(market_data_t* market_data, bint owner=*)
+    cdef inline object c_from_header(market_data_t* market_data, bint owner=?)
 
     cdef inline size_t c_get_size(self)
 

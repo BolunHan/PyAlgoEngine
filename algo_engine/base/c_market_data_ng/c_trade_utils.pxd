@@ -9,9 +9,9 @@ cdef class TradeReport(MarketData):
     @staticmethod
     cdef TradeReport c_from_json(dict json_dict)
 
-    cpdef TradeReport reset_order_id(self, object order_id=*)
+    cpdef TradeReport reset_order_id(self, object order_id=?)
 
-    cpdef TradeReport reset_trade_id(self, object trade_id=*)
+    cpdef TradeReport reset_trade_id(self, object trade_id=?)
 
     cpdef TransactionData to_trade(self)
 
@@ -26,17 +26,17 @@ cdef class TradeInstruction(MarketData):
 
     cpdef TradeInstruction reset(self)
 
-    cpdef TradeInstruction reset_order_id(self, object order_id=*)
+    cpdef TradeInstruction reset_order_id(self, object order_id=?)
 
-    cpdef TradeInstruction set_order_state(self, order_state_t order_state, double timestamp=*)
+    cpdef TradeInstruction set_order_state(self, order_state_t order_state, double timestamp=?)
 
     cpdef TradeInstruction fill(self, TradeReport trade_report)
 
     cpdef TradeInstruction add_trade(self, TradeReport trade_report)
 
-    cpdef TradeInstruction cancel_order(self, double timestamp=*)
+    cpdef TradeInstruction cancel_order(self, double timestamp=?)
 
-    cpdef TradeInstruction canceled(self, double timestamp=*)
+    cpdef TradeInstruction canceled(self, double timestamp=?)
 
 
 cdef inline object report_from_header(market_data_t* market_data, bint owner):

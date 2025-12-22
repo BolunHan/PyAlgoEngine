@@ -25,28 +25,28 @@ cdef object NO_DEFAULT = object()
 
 
 class OrderState(enum.IntEnum):
-    STATE_UNKNOWN = order_state_t.STATE_UNKNOWN
-    STATE_REJECTED = order_state_t.STATE_REJECTED       # order rejected
-    STATE_INVALID = order_state_t.STATE_INVALID         # invalid order
-    STATE_PENDING = order_state_t.STATE_PENDING         # order not sent
-    STATE_SENT = order_state_t.STATE_SENT               # order sent (to exchange)
-    STATE_PLACED = order_state_t.STATE_PLACED           # order placed in exchange
-    STATE_PARTFILLED = order_state_t.STATE_PARTFILLED   # order partial filled
-    STATE_FILLED = order_state_t.STATE_FILLED           # order fully filled
-    STATE_CANCELING = order_state_t.STATE_CANCELING     # order canceling
-    STATE_CANCELED = order_state_t.STATE_CANCELED       # order stopped and canceled
+    STATE_UNKNOWN       = order_state_t.STATE_UNKNOWN
+    STATE_REJECTED      = order_state_t.STATE_REJECTED      # order rejected
+    STATE_INVALID       = order_state_t.STATE_INVALID       # invalid order
+    STATE_PENDING       = order_state_t.STATE_PENDING       # order not sent
+    STATE_SENT          = order_state_t.STATE_SENT          # order sent (to exchange)
+    STATE_PLACED        = order_state_t.STATE_PLACED        # order placed in exchange
+    STATE_PARTFILLED    = order_state_t.STATE_PARTFILLED    # order partial filled
+    STATE_FILLED        = order_state_t.STATE_FILLED        # order fully filled
+    STATE_CANCELING     = order_state_t.STATE_CANCELING     # order canceling
+    STATE_CANCELED      = order_state_t.STATE_CANCELED      # order stopped and canceled
 
     # Alias for compatibility
-    UNKNOWN     = STATE_UNKNOWN
-    Rejected    = STATE_REJECTED
-    Invalid     = STATE_INVALID
-    Pending     = STATE_PENDING
-    Sent        = STATE_SENT
-    Placed      = STATE_PLACED
-    PartFilled  = STATE_PARTFILLED
-    Filled      = STATE_FILLED
-    Canceling   = STATE_CANCELING
-    Canceled    = STATE_CANCELED
+    UNKNOWN             = STATE_UNKNOWN
+    Rejected            = STATE_REJECTED
+    Invalid             = STATE_INVALID
+    Pending             = STATE_PENDING
+    Sent                = STATE_SENT
+    Placed              = STATE_PLACED
+    PartFilled          = STATE_PARTFILLED
+    Filled              = STATE_FILLED
+    Canceling           = STATE_CANCELING
+    Canceled            = STATE_CANCELED
 
     def __hash__(self):
         return self.value
@@ -593,5 +593,6 @@ cdef class TradeInstruction(MarketData):
 
 
 from . cimport c_market_data
+
 c_market_data.report_from_header = report_from_header
 c_market_data.instruction_from_header = instruction_from_header
