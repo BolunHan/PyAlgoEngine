@@ -14,7 +14,7 @@ offset_name_cancel, offset_name_order, offset_name_open, offset_name_close, offs
 state_name_unknown, state_name_rejected, state_name_invalid, state_name_pending, state_name_sent, state_name_placed, state_name_partfilled, state_name_filled, state_name_canceling, state_name_canceled,
 DTYPE_MIN_SIZE, DTYPE_MAX_SIZE,
 direction_t, offset_t, side_t, order_type_t, order_state_t, mid_type_t, data_type_t, filter_mode_t,
-meta_info_t, mid_t, long_mid_t,
+md_meta_t, mid_t, long_mid_t,
 internal_t, order_book_entry_t, order_book_t, candlestick_t, tick_data_lite_t, tick_data_t, transaction_data_t, order_data_t, trade_report_t, trade_instruction_t,
 market_data_t,
 c_usleep, c_md_new, c_md_free, c_md_get_price, c_md_side_offset, c_md_side_direction, c_md_side_opposite, c_md_side_sign, c_md_get_size, c_md_dtype_name, c_md_state_name, c_md_serialized_size, c_md_serialize, c_md_deserialize,

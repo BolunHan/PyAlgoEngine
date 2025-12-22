@@ -194,13 +194,13 @@ typedef enum filter_mode_t {
 
 // ========== Structs ==========
 
-typedef struct meta_info_t {
+typedef struct md_meta_t {
     data_type_t dtype;
     const char* ticker;
     double timestamp;
     shm_allocator_t* shm_allocator;
     heap_allocator_t* heap_allocator;
-} meta_info_t;
+} md_meta_t;
 
 typedef struct mid_t {
     mid_type_t id_type;
@@ -213,7 +213,7 @@ typedef struct long_mid_t {
 } long_mid_t;
 
 typedef struct internal_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     uint32_t code;
 } internal_t;
 
@@ -234,7 +234,7 @@ typedef struct order_book_t {
 } order_book_t;
 
 typedef struct candlestick_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     double bar_span;
     double high_price;
     double low_price;
@@ -246,7 +246,7 @@ typedef struct candlestick_t {
 } candlestick_t;
 
 typedef struct tick_data_lite_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     double bid_price;
     double bid_volume;
     double ask_price;
@@ -270,7 +270,7 @@ typedef struct tick_data_t {
 } tick_data_t;
 
 typedef struct transaction_data_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     double price;
     double volume;
     side_t side;
@@ -282,7 +282,7 @@ typedef struct transaction_data_t {
 } transaction_data_t;
 
 typedef struct order_data_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     double price;
     double volume;
     side_t side;
@@ -291,7 +291,7 @@ typedef struct order_data_t {
 } order_data_t;
 
 typedef struct trade_report_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     double price;
     double volume;
     side_t side;
@@ -303,7 +303,7 @@ typedef struct trade_report_t {
 } trade_report_t;
 
 typedef struct trade_instruction_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     double limit_price;
     double volume;
     side_t side;
@@ -320,7 +320,7 @@ typedef struct trade_instruction_t {
 } trade_instruction_t;
 
 typedef union market_data_t {
-    meta_info_t meta_info;
+    md_meta_t meta_info;
     internal_t internal;
     transaction_data_t transaction_data;
     order_data_t order_data;
@@ -512,8 +512,8 @@ static inline int c_md_state_done(order_state_t state);
 
 /**
  * @brief Compare two meta_info pointers by timestamp (ascending).
- * @param a Pointer to pointer of meta_info_t.
- * @param b Pointer to pointer of meta_info_t.
+ * @param a Pointer to pointer of md_meta_t.
+ * @param b Pointer to pointer of md_meta_t.
  * @return -1, 0, or 1 like strcmp semantics.
  */
 static inline int c_md_compare_ptr(const void* a, const void* b);
@@ -566,7 +566,7 @@ static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_
 
     if (shm_allocator) {
         pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-        meta_info_t* meta = (meta_info_t*) c_shm_request(shm_allocator, size, 0, lock);
+        md_meta_t* meta = (md_meta_t*) c_shm_request(shm_allocator, size, 0, lock);
         if (!meta) return NULL;
         meta->dtype = dtype;
         meta->shm_allocator = shm_allocator->shm_allocator;
@@ -574,14 +574,14 @@ static inline market_data_t* c_md_new(data_type_t dtype, shm_allocator_ctx* shm_
     }
     else if (heap_allocator) {
         pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        meta_info_t* meta = (meta_info_t*) c_heap_request(heap_allocator, size, 0, lock);
+        md_meta_t* meta = (md_meta_t*) c_heap_request(heap_allocator, size, 0, lock);
         if (!meta) return NULL;
         meta->dtype = dtype;
         meta->heap_allocator = heap_allocator;
         return (market_data_t*) meta;
     }
     else {
-        meta_info_t* meta = (meta_info_t*) calloc(1, size);
+        md_meta_t* meta = (md_meta_t*) calloc(1, size);
         if (!meta) return NULL;
         meta->dtype = dtype;
         return (market_data_t*) meta;
@@ -824,16 +824,16 @@ static inline const char* c_md_state_name(order_state_t state) {
 static inline size_t c_md_serialized_size(const market_data_t* market_data) {
     if (!market_data) return 0;
 
-    const meta_info_t* meta = &market_data->meta_info;
+    const md_meta_t* meta = &market_data->meta_info;
     const char* ticker = meta->ticker ? meta->ticker : "";
     const size_t ticker_len = strlen(ticker);
 
     size_t payload_size = 0;
     switch (meta->dtype) {
-        case DTYPE_INTERNAL:      payload_size = sizeof(internal_t) - sizeof(meta_info_t); break;
-        case DTYPE_TRANSACTION:   payload_size = sizeof(transaction_data_t) - sizeof(meta_info_t); break;
-        case DTYPE_ORDER:         payload_size = sizeof(order_data_t) - sizeof(meta_info_t); break;
-        case DTYPE_TICK_LITE:     payload_size = sizeof(tick_data_lite_t) - sizeof(meta_info_t); break;
+        case DTYPE_INTERNAL:      payload_size = sizeof(internal_t) - sizeof(md_meta_t); break;
+        case DTYPE_TRANSACTION:   payload_size = sizeof(transaction_data_t) - sizeof(md_meta_t); break;
+        case DTYPE_ORDER:         payload_size = sizeof(order_data_t) - sizeof(md_meta_t); break;
+        case DTYPE_TICK_LITE:     payload_size = sizeof(tick_data_lite_t) - sizeof(md_meta_t); break;
         case DTYPE_TICK:
         {
             // Special-case: tick_data_t embeds tick_data_lite_t (with meta_info)
@@ -843,7 +843,7 @@ static inline size_t c_md_serialized_size(const market_data_t* market_data) {
             // - bid order book: [uint8 has][capacity][size][uint8 direction][uint8 sorted][entries]
             // - ask order book: same as bid
             const tick_data_t* tick = &market_data->tick_data_full;
-            const size_t lite_payload = sizeof(tick_data_lite_t) - sizeof(meta_info_t);
+            const size_t lite_payload = sizeof(tick_data_lite_t) - sizeof(md_meta_t);
             const size_t fixed_fields = sizeof(double) * 4; // total_bid_volume, total_ask_volume, weighted_bid_price, weighted_ask_price
 
             // Helper lambda-like macros for order book serialized size
@@ -866,9 +866,9 @@ static inline size_t c_md_serialized_size(const market_data_t* market_data) {
             payload_size = lite_payload + fixed_fields + ob_payload;
             break;
         }
-        case DTYPE_BAR:           payload_size = sizeof(candlestick_t) - sizeof(meta_info_t); break;
-        case DTYPE_REPORT:        payload_size = sizeof(trade_report_t) - sizeof(meta_info_t); break;
-        case DTYPE_INSTRUCTION:   payload_size = sizeof(trade_instruction_t) - sizeof(meta_info_t); break;
+        case DTYPE_BAR:           payload_size = sizeof(candlestick_t) - sizeof(md_meta_t); break;
+        case DTYPE_REPORT:        payload_size = sizeof(trade_report_t) - sizeof(md_meta_t); break;
+        case DTYPE_INSTRUCTION:   payload_size = sizeof(trade_instruction_t) - sizeof(md_meta_t); break;
         case DTYPE_UNKNOWN:
         case DTYPE_MARKET_DATA:
         default:
@@ -887,7 +887,7 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
     // [uint8 dtype][double timestamp][uint32 ticker_len][ticker bytes][payload w/o meta_info].
     if (!market_data || !out) return 0;
 
-    const meta_info_t* meta = &market_data->meta_info;
+    const md_meta_t* meta = &market_data->meta_info;
     const char* ticker = meta->ticker ? meta->ticker : "";
     const uint32_t ticker_len = (uint32_t) strlen(ticker);
 
@@ -915,8 +915,8 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
 #define WRITE_PAYLOAD(member_type, member_name) \
     do { \
         const member_type* p = &market_data->member_name; \
-        memcpy(cursor, ((const char*) p) + sizeof(meta_info_t), sizeof(member_type) - sizeof(meta_info_t)); \
-        cursor += sizeof(member_type) - sizeof(meta_info_t); \
+        memcpy(cursor, ((const char*) p) + sizeof(md_meta_t), sizeof(member_type) - sizeof(md_meta_t)); \
+        cursor += sizeof(member_type) - sizeof(md_meta_t); \
     } while (0)
 
     switch (meta->dtype) {
@@ -931,8 +931,8 @@ static inline size_t c_md_serialize(const market_data_t* market_data, char* out)
             const tick_data_lite_t* lite = &tick->lite;
 
             // 1) Serialize tick_data_lite payload (without meta_info)
-            memcpy(cursor, ((const char*) lite) + sizeof(meta_info_t), sizeof(tick_data_lite_t) - sizeof(meta_info_t));
-            cursor += sizeof(tick_data_lite_t) - sizeof(meta_info_t);
+            memcpy(cursor, ((const char*) lite) + sizeof(md_meta_t), sizeof(tick_data_lite_t) - sizeof(md_meta_t));
+            cursor += sizeof(tick_data_lite_t) - sizeof(md_meta_t);
 
             // 2) Serialize fixed tick fields
             memcpy(cursor, &tick->total_bid_volume, sizeof(double));
@@ -1023,7 +1023,7 @@ static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx
     if (!market_data) return NULL;
 
     // Step 3: Deserialize meta_info
-    meta_info_t* meta = &market_data->meta_info;
+    md_meta_t* meta = &market_data->meta_info;
     // dtype already assigned
     // meta->dtype = dtype;
     memcpy(&meta->timestamp, cursor, sizeof(double));
@@ -1042,8 +1042,8 @@ static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx
 #define READ_PAYLOAD(member_type, member_name) \
     do { \
         member_type* p = &market_data->member_name; \
-        memcpy(((char*) p) + sizeof(meta_info_t), cursor, sizeof(member_type) - sizeof(meta_info_t)); \
-        cursor += sizeof(member_type) - sizeof(meta_info_t); \
+        memcpy(((char*) p) + sizeof(md_meta_t), cursor, sizeof(member_type) - sizeof(md_meta_t)); \
+        cursor += sizeof(member_type) - sizeof(md_meta_t); \
     } while (0)
     switch (meta->dtype) {
         case DTYPE_INTERNAL:      READ_PAYLOAD(internal_t, internal); break;
@@ -1056,8 +1056,8 @@ static inline market_data_t* c_md_deserialize(const char* src, shm_allocator_ctx
             tick_data_t* tick = &market_data->tick_data_full;
 
             // 1) Read tick_data_lite payload (without meta_info)
-            memcpy(((char*) &tick->lite) + sizeof(meta_info_t), cursor, sizeof(tick_data_lite_t) - sizeof(meta_info_t));
-            cursor += sizeof(tick_data_lite_t) - sizeof(meta_info_t);
+            memcpy(((char*) &tick->lite) + sizeof(md_meta_t), cursor, sizeof(tick_data_lite_t) - sizeof(md_meta_t));
+            cursor += sizeof(tick_data_lite_t) - sizeof(md_meta_t);
 
             // 2) Read fixed tick fields
             memcpy(&tick->total_bid_volume, cursor, sizeof(double));
@@ -1270,8 +1270,8 @@ static inline int c_md_state_done(order_state_t state) {
 }
 
 static inline int c_md_compare_ptr(const void* a, const void* b) {
-    const meta_info_t* md_a = *(const meta_info_t* const*) a;
-    const meta_info_t* md_b = *(const meta_info_t* const*) b;
+    const md_meta_t* md_a = *(const md_meta_t* const*) a;
+    const md_meta_t* md_b = *(const md_meta_t* const*) b;
 
     if (md_a->timestamp < md_b->timestamp) return -1;
     if (md_a->timestamp > md_b->timestamp) return 1;

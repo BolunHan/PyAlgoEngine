@@ -169,7 +169,7 @@ cdef extern from "c_market_data.h":
         NO_TRADE
         NO_TICK
 
-    ctypedef struct meta_info_t:
+    ctypedef struct md_meta_t:
         data_type_t dtype
         const char* ticker
         double timestamp
@@ -185,7 +185,7 @@ cdef extern from "c_market_data.h":
         char data[LONG_ID_SIZE + 1]
 
     ctypedef struct internal_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         uint32_t code
 
     ctypedef struct order_book_entry_t:
@@ -203,7 +203,7 @@ cdef extern from "c_market_data.h":
         order_book_entry_t entries[]
 
     ctypedef struct candlestick_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         double bar_span
         double high_price
         double low_price
@@ -214,7 +214,7 @@ cdef extern from "c_market_data.h":
         uint64_t trade_count
 
     ctypedef struct tick_data_lite_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         double bid_price
         double bid_volume
         double ask_price
@@ -236,7 +236,7 @@ cdef extern from "c_market_data.h":
         order_book_t* ask
 
     ctypedef struct transaction_data_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         double price
         double volume
         side_t side
@@ -247,7 +247,7 @@ cdef extern from "c_market_data.h":
         mid_t sell_id
 
     ctypedef struct order_data_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         double price
         double volume
         side_t side
@@ -255,7 +255,7 @@ cdef extern from "c_market_data.h":
         order_type_t order_type
 
     ctypedef struct trade_report_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         double price
         double volume
         side_t side
@@ -266,7 +266,7 @@ cdef extern from "c_market_data.h":
         long_mid_t trade_id
 
     ctypedef struct trade_instruction_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         double limit_price
         double volume
         side_t side
@@ -282,7 +282,7 @@ cdef extern from "c_market_data.h":
         double ts_finished
 
     ctypedef union market_data_t:
-        meta_info_t meta_info
+        md_meta_t meta_info
         internal_t internal
         transaction_data_t transaction_data
         order_data_t order_data
@@ -358,7 +358,7 @@ cdef inline market_data_t* c_init_buffer(data_type_t dtype, const char* ticker, 
 
     if not market_data:
         raise MemoryError(f'Failed to allocate shared memory for {PyUnicode_FromString(c_md_dtype_name(dtype))}')
-    cdef meta_info_t* meta_data = <meta_info_t*> market_data
+    cdef md_meta_t* meta_data = <md_meta_t*> market_data
 
     if MD_CFG_SHARED:
         if MD_CFG_LOCKED:
@@ -389,7 +389,7 @@ cdef inline market_data_t* c_deserialize_buffer(const char* src):
 
     if not market_data:
         raise MemoryError('Failed to deserialize market data from bytes')
-    cdef meta_info_t* meta_data = <meta_info_t*> market_data
+    cdef md_meta_t* meta_data = <md_meta_t*> market_data
 
     cdef const char* ticker = meta_data.ticker
     if not ticker:
