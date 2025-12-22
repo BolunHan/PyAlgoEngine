@@ -2,10 +2,7 @@ import random
 import time
 import unittest
 
-from algo_engine.base.c_market_data_ng.c_market_data_buffer import (
-    Empty, Full,
-    MarketDataRingBuffer,
-)
+from algo_engine.base.c_market_data_ng.c_market_data_buffer import BufferFull, BufferEmpty, PipeTimeoutError, MarketDataRingBuffer
 from md_gen import random_market_data
 
 
@@ -35,7 +32,7 @@ class MarketDataRingBufferTests(unittest.TestCase):
 
     def test_ring_wrap_keeps_recent_entries(self):
         got = []
-        buffer = MarketDataRingBuffer(64, 1 << 18)
+        buffer = MarketDataRingBuffer(4, 1 << 18)
         size = 1000
         samples = self._generate_market_data(size)
         enabled = True
@@ -43,22 +40,24 @@ class MarketDataRingBufferTests(unittest.TestCase):
         def worker():
             while enabled:
                 try:
-                    md = buffer.listen(block=True, timeout=0.1)
+                    md = buffer.listen(block=False)
                     got.append(md)
-                except (Empty, TimeoutError):
+                except (BufferEmpty, PipeTimeoutError):
+                    time.sleep(0.0)
                     continue
 
         import threading
         t = threading.Thread(target=worker)
         t.start()
 
-        for market_data in samples:
+        for i , market_data in enumerate(samples):
             while True:
                 try:
-                    buffer.put(market_data)
+                    print(f'[RingBuffer][put] sending {i} / {size} md...')
+                    buffer.put(market_data, block=False)
                     break
-                except Full:
-                    time.sleep(0.0001)
+                except BufferFull:
+                    time.sleep(0.0)
                     continue
 
         time.sleep(1)
@@ -90,7 +89,7 @@ class MarketDataRingBufferTests(unittest.TestCase):
     def test_listen_non_blocking_behavior(self):
         buffer = MarketDataRingBuffer(16, 1 << 18)
 
-        with self.assertRaises(Empty):
+        with self.assertRaises(BufferEmpty):
             buffer.listen(block=False)
 
         samples = self._generate_market_data(6)
@@ -117,7 +116,7 @@ class MarketDataRingBufferTests(unittest.TestCase):
             buffer.listen(block=False, timeout=0)
 
         self.assertTrue(buffer.is_empty)
-        with self.assertRaises(Empty):
+        with self.assertRaises(BufferEmpty):
             buffer.listen(block=False, timeout=0)
 
 
