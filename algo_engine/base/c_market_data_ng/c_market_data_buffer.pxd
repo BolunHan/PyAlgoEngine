@@ -8,6 +8,16 @@ from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, is
 
 
 cdef extern from "c_market_data_buffer.h":
+    const int MD_BUF_OK
+    const int MD_BUF_ERR_INVALID
+    const int MD_BUF_ERR_NOT_SHM
+    const int MD_BUF_ERR_FULL
+    const int MD_BUF_ERR_EMPTY
+    const int MD_BUF_ERR_TIMEOUT
+    const int MD_BUF_ERR_CORRUPT
+    const int MD_BUF_OOR
+    const int MD_BUF_DISABLED
+
     ctypedef struct md_block_buffer:
         shm_allocator_t* shm_allocator
         heap_allocator_t* heap_allocator
@@ -64,7 +74,7 @@ cdef extern from "c_market_data_buffer.h":
     int c_md_ring_buffer_is_full(md_ring_buffer* buffer, market_data_t* market_data)
     int c_md_ring_buffer_is_empty(md_ring_buffer* buffer)
     size_t c_md_ring_buffer_size(md_ring_buffer* buffer)
-    int c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data)
+    int c_md_ring_buffer_put(md_ring_buffer* buffer, market_data_t* market_data, int block, double timeout)
     const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index)
     int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, const char** out)
 
@@ -72,9 +82,10 @@ cdef extern from "c_market_data_buffer.h":
     int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, int with_lock)
     int c_md_concurrent_buffer_enable_worker(md_concurrent_buffer* buffer, size_t worker_id)
     int c_md_concurrent_buffer_disable_worker(md_concurrent_buffer* buffer, size_t worker_id)
-    int c_md_concurrent_buffer_is_full(md_concurrent_buffer* buffer, market_data_t* market_data)
+    int c_md_concurrent_buffer_is_full(md_concurrent_buffer* buffer)
     int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, size_t worker_id)
-    int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, market_data_t* market_data)
+    int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, market_data_t* market_data, int block, double timeout)
+    int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, int block, double timeout, market_data_t** out)
 
 
 cdef class MarketDataBufferCache:
@@ -99,6 +110,8 @@ cdef class MarketDataBuffer:
 
     cdef market_data_t* c_get(self, ssize_t idx)
 
+    cdef void c_clear(self)
+
 
 cdef class MarketDataRingBuffer:
     cdef md_ring_buffer* header
@@ -109,8 +122,28 @@ cdef class MarketDataRingBuffer:
 
     cdef bint c_is_full(self, market_data_t* market_data)
 
-    cdef void c_put(self, market_data_t* market_data)
+    cdef void c_put(self, market_data_t* market_data, bint block=?, double timeout=?)
 
     cdef market_data_t* c_get(self, ssize_t idx)
 
     cdef market_data_t* c_listen(self, bint block=?, double timeout=?)
+
+
+cdef class MarketDataConcurrentBuffer:
+    cdef md_concurrent_buffer* header
+    cdef bint owner
+    cdef size_t iter_idx
+
+    cdef bint c_is_worker_empty(self, size_t worker_id)
+
+    cdef bint c_is_empty(self)
+
+    cdef bint c_is_full(self)
+
+    cdef void c_put(self, market_data_t* market_data, bint block=?, double timeout=?)
+
+    cdef market_data_t* c_listen(self, size_t worker_id, bint block=?, double timeout=?)
+
+    cdef void c_disable_worker(self, size_t worker_id)
+
+    cdef void c_enable_worker(self, size_t worker_id)

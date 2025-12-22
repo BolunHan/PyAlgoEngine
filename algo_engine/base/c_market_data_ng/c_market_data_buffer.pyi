@@ -4,6 +4,30 @@ from typing import Optional
 from .c_market_data import MarketData
 
 
+class InvalidBufferError(Exception):
+    pass
+
+
+class NotInSharedMemoryError(Exception):
+    pass
+
+
+class BufferFull(Exception):
+    pass
+
+
+class BufferEmpty(Exception):
+    pass
+
+
+class PipeTimeoutError(Exception):
+    pass
+
+
+class BufferCorruptedError(Exception):
+    pass
+
+
 class MarketDataBufferCache(object):
     """Mutable staging area for collecting `MarketData` objects before flushing them into a shared buffer."""
     parent: MarketDataBuffer
@@ -47,7 +71,7 @@ class MarketDataBufferCache(object):
         ...
 
 
-class MarketDataBuffer:
+class MarketDataBuffer(object):
     """
     Resizable block buffer that stores serialized `MarketData` and exposes Python-friendly accessors.
 
@@ -62,12 +86,7 @@ class MarketDataBuffer:
     ...     for md in market_data_list:
     ...         cache.put(md)
     >>> buffer.sort()
-
     """
-
-    header: object
-    owner: bool
-    iter_idx: int
 
     def __init__(self, ptr_cap: int, data_cap: int) -> None:
         """Allocate an new empty block buffer sized for `ptr_cap` pointers and `data_cap` bytes."""
@@ -94,7 +113,12 @@ class MarketDataBuffer:
         ...
 
     def put(self, market_data: MarketData) -> None:
-        """Serialize `market_data` into the buffer, expanding capacity as needed."""
+        """Serialize `market_data` into the buffer, expanding capacity as needed.
+
+        Raises:
+            ValueError: If arguments are invalid.
+            BufferFull: If the buffer lacks capacity for the serialized payload.
+        """
         ...
 
     def get(self, idx: int) -> MarketData:
@@ -102,7 +126,11 @@ class MarketDataBuffer:
         ...
 
     def sort(self) -> None:
-        """Sort buffered entries according to their timestamp sequence."""
+        """Sort buffered entries according to their timestamp sequence.
+
+        Raises:
+            InvalidBufferError: If the underlying buffer header is invalid.
+        """
         ...
 
     def to_bytes(self) -> bytes:
@@ -135,16 +163,6 @@ class MarketDataBuffer:
         ...
 
 
-class Empty(Exception):
-    """Raised when attempting to read from an empty `MarketDataRingBuffer`."""
-    ...
-
-
-class Full(Exception):
-    """Raised when a `MarketDataRingBuffer` lacks enough pointer or data capacity."""
-    ...
-
-
 class MarketDataRingBuffer:
     """
     Fixed-capacity ring buffer that stores serialized `MarketData` and supports
@@ -172,15 +190,19 @@ class MarketDataRingBuffer:
         """Produce the next `MarketData` in the ring, raising `StopIteration` when exhausted."""
         ...
 
-    def put(self, market_data: MarketData) -> None:
+    def put(self, market_data: MarketData, block: bool = True, timeout: float = 0.0) -> None:
         """Insert serialized market data into the ring buffer.
 
         Args:
             market_data: The `MarketData` instance to serialize and append.
+            block: When True, block until space is available or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
 
         Raises:
-            Full: If either the pointer array or backing byte buffer cannot
+            ValueError: If arguments are invalid.
+            BufferFull: If either the pointer array or backing byte buffer cannot
                 accommodate the serialized payload.
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
         """
         ...
 
@@ -188,8 +210,7 @@ class MarketDataRingBuffer:
         """Return the item at `idx` without mutating the buffer.
 
         Args:
-            idx: Zero-based index of the item to fetch. Negative indices work
-                like Python lists and count from the end.
+            idx: Zero-based index of the item to fetch. Negative indices are supported.
 
         Returns:
             MarketData: The `MarketData` entry stored at the requested index.
@@ -199,21 +220,21 @@ class MarketDataRingBuffer:
         """
         ...
 
-    def listen(self, block: bool = True, timeout: float = 0) -> MarketData:
+    def listen(self, block: bool = True, timeout: float = 0.0) -> MarketData:
         """Wait for the next entry to become available.
 
         Args:
             block: When True, block until data arrives or the timeout elapses.
-            timeout: Maximum number of seconds to wait when blocking. A value of
-                0 means wait indefinitely.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
 
         Returns:
             MarketData: The next available entry in chronological order.
 
         Raises:
-            Empty: If no data is available immediately (non-blocking) or before
-                the timeout expires.
-            TimeoutError: If blocking is enabled and the timeout elapses.
+            ValueError: If arguments are invalid.
+            BufferEmpty: If no data is available immediately (non-blocking) or before the timeout expires.
+            BufferCorruptedError: If the buffer reports a corrupted offset.
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
         """
         ...
 
@@ -247,3 +268,82 @@ class MarketDataRingBuffer:
         """Return `True` when the ring buffer has no readable entries."""
         ...
 
+
+class MarketDataConcurrentBuffer:
+    """Concurrent multi-consumer buffer backed by shared memory.
+
+    Provides a simple API for multiple workers to consume `MarketData` entries
+    produced by a single writer. Writes can optionally block until space is
+    available, and reads can optionally block until data arrives.
+
+    Example:
+
+    >>> buf = MarketDataConcurrentBuffer(n_workers=2, capacity=1024)
+    >>> buf.put(MarketData(...))
+    >>> md = buf.listen(worker_id=0, block=True, timeout=1.0)
+    >>> md
+    """
+
+    def __init__(self, n_workers: int, capacity: int) -> None:
+        """Create a concurrent buffer for `n_workers` with ring capacity `capacity`."""
+        ...
+
+    def put(self, market_data: MarketData, block: bool = True, timeout: float = 0.0) -> None:
+        """Append a `MarketData` to the buffer.
+
+        Args:
+            market_data: The `MarketData` instance to append. If not already in shared memory, it will be COPIED into SHM.
+            block: When True, block until space becomes available or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
+
+        Raises:
+            ValueError: If arguments are invalid.
+            NotInSharedMemoryError: If the data is not SHM-backed. Python / Cython interface will not raise this error but c-API just might.
+            BufferFull: If the buffer is full and non-blocking mode is used.
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
+        """
+        ...
+
+    def listen(self, worker_id: int, block: bool = True, timeout: float = 0.0) -> MarketData:
+        """Fetch the next item for `worker_id`.
+
+        Args:
+            worker_id: The consumer slot to read from.
+            block: When True, block until data arrives or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
+
+        Returns:
+            MarketData: The next available entry for the given worker.
+
+        Raises:
+            ValueError: If arguments are invalid or the worker is disabled.
+            IndexError: If `worker_id` is out of range.
+            BufferEmpty: If no data is available immediately (non-blocking).
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
+        """
+        ...
+
+    def is_worker_empty(self, worker_id: int) -> bool:
+        """Return `True` when there is no data available for `worker_id`."""
+        ...
+
+    def is_empty(self) -> bool:
+        """Return `True` when there is no data available for any worker."""
+        ...
+
+    def is_full(self) -> bool:
+        """Return `True` when the buffer cannot accept new entries."""
+        ...
+
+    def disable_worker(self, worker_id: int) -> None:
+        """Disable `worker_id`, preventing it from receiving new entries."""
+        ...
+
+    def enable_worker(self, worker_id: int) -> None:
+        """
+        Enable `worker_id`, allowing it to receive new entries.
+
+        This also resets the worker's read pointer to the current write position.
+        Re-enabling a worker that was already enabled will also reset its read pointer.
+        """
+        ...
