@@ -3,7 +3,8 @@ import enum
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Self, Annotated, NamedTuple
+from typing import Any, Self, Annotated
+from warnings import deprecated
 
 
 @dataclass
@@ -365,18 +366,57 @@ class FilterMode:
         """
 
 
-C_CONFIG = NamedTuple(
-    'CONFIG',
-    [
-        ('DEBUG', bool),
-        ('TICKER_SIZE', size_t),
-        ('BOOK_SIZE', size_t),
-        ('ID_SIZE', size_t),
-        ('LONG_ID_SIZE', size_t),
-        ('MAX_WORKERS', size_t)
-    ]
-)
+class ConfigViewer(object):
+    """
+    Viewer for compile-time and runtime configuration constants.
 
-"""
-C struct-like named tuple for compile-time configurations.
-"""
+    Provides read-only access to configuration parameters defined at compile time.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the ConfigViewer instance."""
+        ...
+
+    @property
+    def DEBUG(self):
+        ...
+
+    @property
+    def TICKER_SIZE(self):
+        ...
+
+    @property
+    def BOOK_SIZE(self):
+        ...
+
+    @property
+    def ID_SIZE(self):
+        ...
+
+    @property
+    def LONG_ID_SIZE(self):
+        ...
+
+    @deprecated
+    @property
+    def MAX_WORKERS(self):
+        ...
+
+    @property
+    def MD_CFG_LOCKED(self):
+        ...
+
+    @property
+    def MD_CFG_SHARED(self):
+        ...
+
+    @property
+    def MD_CFG_FREELIST(self):
+        ...
+
+    @property
+    def MD_CFG_BOOK_SIZE(self):
+        ...
+
+
+CONFIG: ConfigViewer

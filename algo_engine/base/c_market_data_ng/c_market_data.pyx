@@ -1,6 +1,5 @@
 import enum
 import uuid
-from collections import namedtuple
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
@@ -36,23 +35,23 @@ cdef class EnvConfigContext:
     cdef void c_activate(self):
         if 'locked' in self.overrides:
             global MD_CFG_LOCKED
-            MD_CFG_LOCKED = self.overrides['locked']
             self.originals['locked'] = MD_CFG_LOCKED
+            MD_CFG_LOCKED = self.overrides['locked']
 
         if 'shared' in self.overrides:
             global MD_CFG_SHARED
-            MD_CFG_SHARED = self.overrides['shared']
             self.originals['shared'] = MD_CFG_SHARED
+            MD_CFG_SHARED = self.overrides['shared']
 
         if 'freelist' in self.overrides:
             global MD_CFG_FREELIST
-            MD_CFG_FREELIST = self.overrides['freelist']
             self.originals['freelist'] = MD_CFG_FREELIST
+            MD_CFG_FREELIST = self.overrides['freelist']
 
         if 'book_size' in self.overrides:
             global MD_CFG_BOOK_SIZE
-            MD_CFG_BOOK_SIZE = self.overrides['book_size']
             self.originals['book_size'] = MD_CFG_BOOK_SIZE
+            MD_CFG_BOOK_SIZE = self.overrides['book_size']
 
     cdef void c_deactivate(self):
         if 'locked' in self.originals:
@@ -80,7 +79,6 @@ cdef class EnvConfigContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.c_deactivate()
-        return exc_type is None
 
     def __or__(self, EnvConfigContext other):
         if not isinstance(other, EnvConfigContext):
@@ -526,11 +524,63 @@ cdef class FilterMode:
         return FilterMode.c_mask_data(market_data.header, self.value)
 
 
-C_CONFIG = namedtuple('CONFIG', ['DEBUG', 'TICKER_SIZE', 'BOOK_SIZE', 'ID_SIZE', 'LONG_ID_SIZE', 'MAX_WORKERS'])(
-    DEBUG=DEBUG,
-    TICKER_SIZE=TICKER_SIZE,
-    BOOK_SIZE=BOOK_SIZE,
-    ID_SIZE=ID_SIZE,
-    LONG_ID_SIZE=LONG_ID_SIZE,
-    MAX_WORKERS=MAX_WORKERS
-)
+cdef class ConfigViewer:
+    def __repr__(self):
+        return (
+            f"<ConfigViewer>("
+            f"DEBUG={self.DEBUG}; "
+            f"TICKER_SIZE={self.TICKER_SIZE}; "
+            f"BOOK_SIZE={self.BOOK_SIZE}; "
+            f"ID_SIZE={self.ID_SIZE}; "
+            f"LONG_ID_SIZE={self.LONG_ID_SIZE}; "
+            f"MAX_WORKERS={self.MAX_WORKERS}; "
+            f"MD_CFG_LOCKED={self.MD_CFG_LOCKED}; "
+            f"MD_CFG_SHARED={self.MD_CFG_SHARED}; "
+            f"MD_CFG_FREELIST={self.MD_CFG_FREELIST}; "
+            f"MD_CFG_BOOK_SIZE={self.MD_CFG_BOOK_SIZE}"
+            f")"
+        )
+
+    property DEBUG:
+        def __get__(self):
+            return DEBUG
+
+    property TICKER_SIZE:
+        def __get__(self):
+            return TICKER_SIZE
+
+    property BOOK_SIZE:
+        def __get__(self):
+            return BOOK_SIZE
+
+    property ID_SIZE:
+        def __get__(self):
+            return ID_SIZE
+
+    property LONG_ID_SIZE:
+        def __get__(self):
+            return LONG_ID_SIZE
+
+    property MAX_WORKERS:
+        def __get__(self):
+            return MAX_WORKERS
+
+    property MD_CFG_LOCKED:
+        def __get__(self):
+            return MD_CFG_LOCKED
+
+    property MD_CFG_SHARED:
+        def __get__(self):
+            return MD_CFG_SHARED
+
+    property MD_CFG_FREELIST:
+        def __get__(self):
+            return MD_CFG_FREELIST
+
+    property MD_CFG_BOOK_SIZE:
+        def __get__(self):
+            return MD_CFG_BOOK_SIZE
+
+
+C_CONFIG = ConfigViewer.__new__(ConfigViewer)
+globals()['CONFIG'] = C_CONFIG

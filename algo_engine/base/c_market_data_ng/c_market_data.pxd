@@ -481,3 +481,7 @@ cdef class FilterMode:
     cdef inline bint c_mask_data(market_data_t* market_data, filter_mode_t filter_mode)
 
     cpdef bint mask_data(self, MarketData market_data)
+
+
+cdef class ConfigViewer:
+    pass
