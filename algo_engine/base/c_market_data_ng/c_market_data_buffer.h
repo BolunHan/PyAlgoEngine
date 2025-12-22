@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <sched.h>
 #include "c_shm_allocator.h"
 #include "c_heap_allocator.h"
 #include "c_intern_string.h"
@@ -589,6 +590,9 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* marke
         if (sleep_us > 0) {
             c_usleep(sleep_us);
         }
+        else {
+            sched_yield();
+        }
         spin_count += 1;
     }
 }
@@ -671,6 +675,9 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, dou
 
         if (sleep_us > 0) {
             c_usleep(sleep_us);
+        }
+        else {
+            sched_yield();
         }
         spin_count += 1;
     }
@@ -836,6 +843,9 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_va
         if (sleep_us > 0) {
             c_usleep(sleep_us);
         }
+        else {
+            sched_yield();
+        }
         spin_count += 1;
     }
 
@@ -904,6 +914,9 @@ static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, si
 
         if (sleep_us > 0) {
             c_usleep(sleep_us);
+        }
+        else {
+            sched_yield();
         }
         spin_count += 1;
     }
