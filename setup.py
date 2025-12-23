@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 from Cython.Build import cythonize
 from setuptools import setup, Extension
@@ -70,7 +71,7 @@ extensions = [
     Extension(
         name="algo_engine.engine.c_event_engine",
         sources=["algo_engine/engine/c_event_engine.pyx"],
-        include_dirs=[event_engine.get_include()],
+        include_dirs=[_evt := event_engine.get_include(), pathlib.Path(_evt) / "base", pathlib.Path(_evt) / "capi"],
         extra_compile_args=["-O3"]
     )
 ]
@@ -93,7 +94,6 @@ if os.name == 'posix':
             sources=["algo_engine/base/c_intern_string.pyx"],
             extra_compile_args=["-O3"]
         ),
-
         # === Market Data Cython Extensions ===
         Extension(
             name="algo_engine.base.c_market_data_ng.c_market_data",
