@@ -71,7 +71,7 @@ extensions = [
     Extension(
         name="algo_engine.engine.c_event_engine",
         sources=["algo_engine/engine/c_event_engine.pyx"],
-        include_dirs=[_evt := event_engine.get_include(), pathlib.Path(_evt) / "base", pathlib.Path(_evt) / "capi"],
+        include_dirs=[*event_engine.get_include()],
         extra_compile_args=["-O3"]
     )
 ]
