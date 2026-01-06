@@ -103,6 +103,7 @@ cdef class MarketDataBuffer:
     cdef md_block_buffer* header
     cdef bint owner
     cdef size_t iter_idx
+    cdef readonly object buf
 
     cdef void c_sort(self)
 

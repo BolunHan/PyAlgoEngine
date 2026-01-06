@@ -155,6 +155,9 @@ cdef class MarketDataBufferCache:
 
 cdef class MarketDataBuffer:
     def __cinit__(self, size_t ptr_cap, size_t data_cap):
+        if not ptr_cap and not data_cap:
+            return
+
         self.header = c_md_block_buffer_new(
             ptr_cap,
             data_cap,
@@ -292,6 +295,15 @@ cdef class MarketDataBuffer:
         cdef size_t data_cap = src.data_capacity
         cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, ptr_cap, data_cap)
         memcpy(instance.header, src, size)
+        return instance
+
+    @classmethod
+    def from_buffer(cls, object data):
+        cdef md_block_buffer* src = <md_block_buffer*> <char*> data
+        cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, 0, 0)
+        instance.buf = data
+        instance.header = src
+        instance.owner = False
         return instance
 
     property ptr_capacity:

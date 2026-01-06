@@ -142,6 +142,11 @@ class MarketDataBuffer(object):
         """Create a new `MarketDataBuffer` by copying the serialized state contained in `data`."""
         ...
 
+    @classmethod
+    def from_buffer(cls, data: bytes) -> MarketDataBuffer:
+        """Create a new `MarketDataBuffer` that references the existing buffer `data` without copying."""
+        ...
+
     @property
     def ptr_capacity(self) -> int:
         """Number of pointer slots currently allocated for the buffer."""

@@ -258,6 +258,7 @@ cdef class HeapAllocator:
 
 
 cdef HeapAllocator ALLOCATOR = HeapAllocator(True)
+ALLOCATOR.owner = False
 cdef heap_allocator* C_ALLOCATOR = ALLOCATOR.allocator
 
 globals()['ALLOCATOR'] = ALLOCATOR

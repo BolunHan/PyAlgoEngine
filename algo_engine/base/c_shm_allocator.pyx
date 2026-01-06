@@ -357,6 +357,7 @@ cdef class SharedMemoryAllocator:
 
 
 cdef SharedMemoryAllocator ALLOCATOR = SharedMemoryAllocator(SHM_ALLOCATOR_DEFAULT_REGION_SIZE, True)
+ALLOCATOR.owner = False
 cdef shm_allocator_ctx* C_ALLOCATOR = ALLOCATOR.ctx
 
 
@@ -372,6 +373,7 @@ globals()['SHM_ALLOCATOR_DEFAULT_REGION_SIZE'] = SHM_ALLOCATOR_DEFAULT_REGION_SI
 
 def cleanup():
     global ALLOCATOR, C_ALLOCATOR
+    ALLOCATOR.owner = True
     globals()['ALLOCATOR'] = ALLOCATOR = None
     C_ALLOCATOR = NULL
     c_shm_clear_dangling()
