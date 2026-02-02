@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 import event_engine
-from event_engine import Topic, PatternTopic, EventEngine
+from event_engine import Topic, EventEngine
 
 from . import LOGGER
 
@@ -18,9 +18,9 @@ class TopicSet(object):
     bod = Topic('bod')
     bod_done = Topic('bod_done')
 
-    launch_order = PatternTopic('launch_order.{ticker}')
-    cancel_order = PatternTopic('cancel_order.{ticker}')
-    realtime = PatternTopic('realtime.{ticker}.{dtype}')
+    launch_order = Topic('launch_order.{ticker}')
+    cancel_order = Topic('cancel_order.{ticker}')
+    realtime = Topic('realtime.{ticker}.{dtype}')
 
     @classmethod
     def push(cls, market_data):
