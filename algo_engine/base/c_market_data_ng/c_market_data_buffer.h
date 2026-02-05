@@ -29,7 +29,7 @@
 typedef struct md_block_buffer {
     shm_allocator* shm_allocator;
     heap_allocator* heap_allocator;
-    int sorted;
+    bool sorted;
     size_t ptr_capacity;
     size_t ptr_offset;
     size_t ptr_tail;
@@ -55,7 +55,7 @@ typedef struct md_ring_buffer {
 
 typedef struct md_concurrent_buffer_worker_t {
     size_t ptr_head;
-    int enabled;
+    bool enabled;
 } md_concurrent_buffer_worker_t;
 
 typedef struct md_concurrent_buffer {
@@ -91,7 +91,7 @@ static inline size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md) 
     return total_size;
 }
 
-static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, int with_lock) {
+static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, bool with_lock) {
     if (!market_data || !shm_allocator || !shm_pool) return NULL;
 
     // Step 1: Intern ticker string
@@ -170,7 +170,7 @@ static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocato
 
 // ========== BlockBuffer API Functions ==========
 
-static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
+static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     size_t data_offset = ptr_capacity * sizeof(size_t);
     size_t size = sizeof(md_block_buffer)
         + data_offset                 /* pointer array */
@@ -211,7 +211,7 @@ static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t
     }
 }
 
-static inline int c_md_block_buffer_free(md_block_buffer* buffer, int with_lock) {
+static inline int c_md_block_buffer_free(md_block_buffer* buffer, bool with_lock) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
     shm_allocator* shm_allocator = buffer->shm_allocator;
@@ -231,7 +231,7 @@ static inline int c_md_block_buffer_free(md_block_buffer* buffer, int with_lock)
     return MD_BUF_OK;
 }
 
-static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
+static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     if (!buffer) return NULL;
 
     size_t new_data_offset = new_ptr_capacity * sizeof(size_t);
@@ -366,7 +366,7 @@ static inline size_t c_md_block_buffer_serialize(md_block_buffer* buffer, char* 
 
 // ========== RingBuffer API Functions ==========
 
-static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
+static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     size_t data_offset = ptr_capacity * sizeof(size_t);
     size_t size = sizeof(md_ring_buffer) + data_offset + data_capacity;
 
@@ -402,7 +402,7 @@ static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t d
     }
 }
 
-static inline int c_md_ring_buffer_free(md_ring_buffer* buffer, int with_lock) {
+static inline int c_md_ring_buffer_free(md_ring_buffer* buffer, bool with_lock) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
     shm_allocator* shm_allocator = buffer->shm_allocator;
@@ -488,7 +488,7 @@ static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer) {
     }
 }
 
-static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, int block, double timeout) {
+static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, bool block, double timeout) {
     if (!buffer || !market_data) return MD_BUF_ERR_INVALID;
 
     const uint32_t spin_per_check = 1000;
@@ -618,7 +618,7 @@ static inline const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t in
     return data_ptr;
 }
 
-static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, const char** out) {
+static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, double timeout, const char** out) {
     if (!buffer || !out) return MD_BUF_ERR_INVALID;
 
     const uint32_t spin_per_check = 1000;
@@ -687,7 +687,7 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, dou
 
 /* Concurrent buffer uses the same unified return codes */
 
-static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, int with_lock) {
+static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, bool with_lock) {
     size_t size = sizeof(md_concurrent_buffer)
         + n_workers * sizeof(md_concurrent_buffer_worker_t)
         + capacity * sizeof(md_variant*);
@@ -714,7 +714,7 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
     return buffer;
 }
 
-static inline int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, int with_lock) {
+static inline int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, bool with_lock) {
     if (!buffer) return MD_BUF_ERR_INVALID;
 
     shm_allocator* shm_allocator = buffer->shm_allocator;
@@ -773,7 +773,7 @@ static inline int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, 
     else return 0;
 }
 
-static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, int block, double timeout) {
+static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, bool block, double timeout) {
     /* Returns: MD_BUF_OK, MD_BUF_ERR_INVALID, MD_BUF_ERR_NOT_SHM, MD_BUF_ERR_FULL, MD_BUF_ERR_TIMEOUT */
     if (!buffer || !market_data) return MD_BUF_ERR_INVALID;
 
@@ -803,7 +803,7 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_va
     // Blocking wait until a slot is available or timeout
     // Single-producer assumption: caller provides external synchronization
     while (block) {
-        int is_full = 0;
+        bool is_full = 0;
         for (size_t i = 0; i < buffer->n_workers; i++) {
             md_concurrent_buffer_worker_t* worker = buffer->workers + i;
             if (!worker->enabled) continue;
@@ -856,7 +856,7 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_va
     return MD_BUF_OK;
 }
 
-static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, int block, double timeout, md_variant** out) {
+static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bool block, double timeout, md_variant** out) {
     /* Returns: MD_BUF_OK, MD_BUF_ERR_INVALID, -2 (worker OOR), -3 (worker disabled), MD_BUF_ERR_EMPTY, MD_BUF_ERR_TIMEOUT */
     if (!buffer || !out) return MD_BUF_ERR_INVALID;
     if (worker_id >= buffer->n_workers) return MD_BUF_OOR; /* worker out of range */

@@ -2,6 +2,7 @@
 #define C_MARKET_DATA_H
 
 #include <math.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -227,7 +228,7 @@ typedef struct md_orderbook {
     size_t capacity;
     size_t size;
     md_direction direction;
-    int sorted;
+    bool sorted;
     shm_allocator* shm_allocator;
     heap_allocator* heap_allocator;
     md_orderbook_entry entries[];
@@ -347,14 +348,14 @@ static inline void c_usleep(unsigned int usec);
  * @param with_lock Whether to lock allocator during allocation.
  * @return Pointer to allocated `md_variant`, or NULL on failure.
  */
-static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock);
+static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
 
 /**
  * @brief Free or recycle a previously allocated market_data buffer.
  * @param market_data Pointer returned by `c_md_new`.
  * @param with_lock Whether to lock allocator during free.
  */
-static inline void c_md_free(md_variant* market_data, int with_lock);
+static inline void c_md_free(md_variant* market_data, bool with_lock);
 
 /**
  * @brief Get the representative price from a market_data union.
@@ -463,7 +464,7 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out);
  * @param with_lock Whether to lock allocator during allocation.
  * @return Newly allocated `md_variant*`, or NULL on failure.
  */
-static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock);
+static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
 
 /**
  * @brief Create a new order book with specified size and direction.
@@ -473,14 +474,14 @@ static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* s
  * @param with_lock Whether to lock allocator during allocation.
  * @return Pointer to allocated `md_orderbook`, or NULL on failure.
  */
-static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock);
+static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
 
 /**
  * @brief Free or recycle a previously allocated order book.
  * @param orderbook Pointer returned by `c_md_orderbook_new`.
  * @param with_lock Whether to lock allocator during free.
  */
-static inline void c_md_orderbook_free(md_orderbook* orderbook, int with_lock);
+static inline void c_md_orderbook_free(md_orderbook* orderbook, bool with_lock);
 
 /**
  * @brief Sort the order book entries in place.
@@ -560,7 +561,7 @@ static inline void c_usleep(unsigned int usec) {
 #endif
 }
 
-static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
+static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     size_t size = c_md_get_size(dtype);
     if (size == 0) return NULL;
 
@@ -588,7 +589,7 @@ static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_al
     }
 }
 
-static inline void c_md_free(md_variant* market_data, int with_lock) {
+static inline void c_md_free(md_variant* market_data, bool with_lock) {
     if (!market_data) return;
 
     shm_allocator* shm_allocator = market_data->meta_info.shm_allocator;
@@ -1009,7 +1010,7 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     return (size_t) (cursor - out);
 }
 
-static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
+static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     if (!src) return NULL;
 
     const char* cursor = src;
@@ -1169,7 +1170,7 @@ static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* s
     return market_data;
 }
 
-static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) {
+static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     size_t size = sizeof(md_orderbook) + book_size * sizeof(md_orderbook_entry);
     if (size == 0) return NULL;
 
@@ -1197,7 +1198,7 @@ static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_c
     }
 }
 
-static inline void c_md_orderbook_free(md_orderbook* orderbook, int with_lock) {
+static inline void c_md_orderbook_free(md_orderbook* orderbook, bool with_lock) {
     if (!orderbook) return;
 
     shm_allocator* shm_allocator = orderbook->shm_allocator;

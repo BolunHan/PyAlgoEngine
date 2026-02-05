@@ -197,7 +197,7 @@ cdef extern from "c_market_data.h":
         size_t capacity;
         size_t size;
         md_direction direction
-        int sorted
+        bint sorted
         shm_allocator* shm_allocator
         heap_allocator* heap_allocator
         md_orderbook_entry entries[]
@@ -293,8 +293,8 @@ cdef extern from "c_market_data.h":
         md_trade_instruction trade_instruction
 
     void c_usleep(unsigned int usec) noexcept nogil
-    md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock)
-    void c_md_free(md_variant* market_data, int with_lock)
+    md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock)
+    void c_md_free(md_variant* market_data, bint with_lock)
     double c_md_get_price(const md_variant* market_data) noexcept nogil
     md_offset c_md_side_offset(md_side side) noexcept nogil
     md_direction c_md_side_direction(md_side side) noexcept nogil
@@ -309,9 +309,9 @@ cdef extern from "c_market_data.h":
     const char* c_md_state_name(md_order_state side) noexcept nogil
     size_t c_md_serialized_size(const md_variant* market_data)
     size_t c_md_serialize(const md_variant* market_data, char* out)
-    md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) noexcept nogil
-    md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock) noexcept nogil
-    void c_md_orderbook_free(md_orderbook* orderbook, int with_lock) noexcept nogil
+    md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock) noexcept nogil
+    md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock) noexcept nogil
+    void c_md_orderbook_free(md_orderbook* orderbook, bint with_lock) noexcept nogil
     int c_md_orderbook_sort(md_orderbook* orderbook) noexcept nogil
     int c_md_state_working(md_order_state state) noexcept nogil
     int c_md_state_placed(md_order_state state) noexcept nogil

@@ -21,7 +21,7 @@ cdef extern from "c_market_data_buffer.h":
     ctypedef struct md_block_buffer:
         shm_allocator* shm_allocator
         heap_allocator* heap_allocator
-        int sorted
+        bint sorted
         size_t ptr_capacity
         size_t ptr_offset
         size_t ptr_tail
@@ -45,7 +45,7 @@ cdef extern from "c_market_data_buffer.h":
 
     ctypedef struct md_concurrent_buffer_worker_t:
         size_t ptr_head
-        int enabled
+        bint enabled
 
     ctypedef struct md_concurrent_buffer:
         shm_allocator* shm_allocator
@@ -57,11 +57,11 @@ cdef extern from "c_market_data_buffer.h":
 
     int c_md_compare_serialized(const void* a, const void* b)
     size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md)
-    md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, int with_lock)
+    md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, bint with_lock)
 
-    md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock)
-    int c_md_block_buffer_free(md_block_buffer* buffer, int with_lock)
-    md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock)
+    md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock)
+    int c_md_block_buffer_free(md_block_buffer* buffer, bint with_lock)
+    md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock)
     int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data)
     const char* c_md_block_buffer_get(md_block_buffer* buffer, size_t index)
     int c_md_block_buffer_sort(md_block_buffer* buffer)
@@ -69,23 +69,23 @@ cdef extern from "c_market_data_buffer.h":
     size_t c_md_block_buffer_serialized_size(md_block_buffer* buffer)
     size_t c_md_block_buffer_serialize(md_block_buffer* buffer, char* out_buffer)
 
-    md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, int with_lock)
-    int c_md_ring_buffer_free(md_ring_buffer* buffer, int with_lock)
+    md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock)
+    int c_md_ring_buffer_free(md_ring_buffer* buffer, bint with_lock)
     int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data)
     int c_md_ring_buffer_is_empty(md_ring_buffer* buffer)
     size_t c_md_ring_buffer_size(md_ring_buffer* buffer)
-    int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, int block, double timeout)
+    int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, bint block, double timeout)
     const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index)
-    int c_md_ring_buffer_listen(md_ring_buffer* buffer, int block, double timeout, const char** out)
+    int c_md_ring_buffer_listen(md_ring_buffer* buffer, bint block, double timeout, const char** out)
 
-    md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, int with_lock)
-    int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, int with_lock)
+    md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, bint with_lock)
+    int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, bint with_lock)
     int c_md_concurrent_buffer_enable_worker(md_concurrent_buffer* buffer, size_t worker_id)
     int c_md_concurrent_buffer_disable_worker(md_concurrent_buffer* buffer, size_t worker_id)
     int c_md_concurrent_buffer_is_full(md_concurrent_buffer* buffer)
     int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, size_t worker_id)
-    int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, int block, double timeout)
-    int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, int block, double timeout, md_variant** out)
+    int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, bint block, double timeout)
+    int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bint block, double timeout, md_variant** out)
 
 
 cdef class MarketDataBufferCache:
