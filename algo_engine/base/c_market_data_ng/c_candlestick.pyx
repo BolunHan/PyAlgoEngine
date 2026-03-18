@@ -164,7 +164,7 @@ cdef class BarData(MarketData):
 
     property bar_start_time:
         def __get__(self):
-            return datetime.fromtimestamp(self.header.meta_info.timestamp, tz=C_PROFILE.time_zone)
+            return datetime.fromtimestamp(self.header.meta_info.timestamp - self.header.bar_data.bar_span, tz=C_PROFILE.time_zone)
 
 
 cdef class DailyBar(BarData):
