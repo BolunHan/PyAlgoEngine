@@ -1,9 +1,13 @@
 import os
+from contextlib import suppress
+from pathlib import Path
+from shutil import copyfile
 
+import event_engine
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
+
 from Cython.Build import cythonize
-import event_engine
 
 
 class BuildExtWithConfig(build_ext):
@@ -130,8 +134,20 @@ if os.name == 'posix':
         ),
     ])
 
+# Monkey hack the "__init__.pxd" issue:
+
+
+market_data_ng_dir = Path(__file__).resolve().parent / "algo_engine/base/c_market_data_ng"
+init_pxd = market_data_ng_dir / "__init__.pxd"
+infra_pxd = market_data_ng_dir / "__infra__.pxd"
+
+with suppress(FileNotFoundError):
+    init_pxd.unlink()
+
 setup(
     name="algo_engine",
     ext_modules=cythonize(extensions),
     cmdclass={"build_ext": BuildExtWithConfig},
 )
+
+copyfile(infra_pxd, init_pxd)

@@ -1,4 +1,3 @@
-# cython: language_level=3
 from cpython.object cimport PyObject
 
 from .c_market_data cimport md_variant
