@@ -154,6 +154,8 @@ cdef class MarketDataBufferCache:
 
 
 cdef class MarketDataBuffer:
+    __type_params__ = MarketData
+
     def __cinit__(self, size_t ptr_cap, size_t data_cap):
         if not ptr_cap and not data_cap:
             return
@@ -247,6 +249,9 @@ cdef class MarketDataBuffer:
             raise RuntimeError(f'Failed to clear MarketDataBuffer, error code: {ret_code}')
 
     # --- python interface ---
+
+    def __class_getitem__(cls, type md_variant):
+        ...
 
     def __iter__(self):
         self.c_sort()

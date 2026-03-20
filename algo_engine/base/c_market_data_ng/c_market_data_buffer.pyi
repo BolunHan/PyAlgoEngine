@@ -1,7 +1,9 @@
 from collections.abc import Iterator
-from typing import Optional
+from typing import Optional, TypeVar, Generic
 
 from .c_market_data import MarketData
+
+MD = TypeVar("MD", bound=MarketData)
 
 
 class InvalidBufferError(Exception):
@@ -28,7 +30,7 @@ class BufferCorruptedError(Exception):
     pass
 
 
-class MarketDataBufferCache(object):
+class MarketDataBufferCache:
     """Mutable staging area for collecting `MarketData` objects before flushing them into a shared buffer."""
     parent: MarketDataBuffer
     capacity: int
@@ -38,7 +40,7 @@ class MarketDataBufferCache(object):
         """Allocate internal arrays large enough for `capacity` entries and remember the originating buffer."""
         ...
 
-    def __iter__(self) -> Iterator[MarketData]:
+    def __iter__(self) -> Iterator[MD]:
         """Yield the cached `MarketData` entries in insertion order."""
         ...
 
@@ -46,7 +48,7 @@ class MarketDataBufferCache(object):
         """Return the number of cached entries currently stored."""
         ...
 
-    def __getitem__(self, idx: int) -> MarketData:
+    def __getitem__(self, idx: int) -> MD:
         """Return the `MarketData` at `idx`, supporting negative indices like a list."""
         ...
 
@@ -58,11 +60,11 @@ class MarketDataBufferCache(object):
         """Flush cached entries back to the parent `MarketDataBuffer` before clearing the cache."""
         ...
 
-    def put(self, market_data: MarketData) -> None:
+    def put(self, market_data: MD) -> None:
         """Append a `MarketData` object to the cache, resizing the backing arrays if required."""
         ...
 
-    def get(self, idx: int) -> MarketData:
+    def get(self, idx: int) -> MD:
         """Retrieve the cached `MarketData` at `idx` without removing it."""
         ...
 
@@ -71,7 +73,7 @@ class MarketDataBufferCache(object):
         ...
 
 
-class MarketDataBuffer(object):
+class MarketDataBuffer(Generic[MD]):
     """
     Resizable block buffer that stores serialized `MarketData` and exposes Python-friendly accessors.
 
@@ -96,7 +98,7 @@ class MarketDataBuffer(object):
         """Return the buffer itself after sorting so it can be iterated in chronological order."""
         ...
 
-    def __getitem__(self, idx: int) -> MarketData:
+    def __getitem__(self, idx: int) -> MD:
         """Return the `MarketData` stored at `idx`, supporting negative indexing."""
         ...
 
@@ -104,7 +106,7 @@ class MarketDataBuffer(object):
         """Return how many `MarketData` entries are currently stored."""
         ...
 
-    def __next__(self) -> MarketData:
+    def __next__(self) -> MD:
         """Produce the next `MarketData` in the sorted buffer, raising `StopIteration` at the end."""
         ...
 
@@ -112,7 +114,7 @@ class MarketDataBuffer(object):
         """Create a `MarketDataBufferCache` bound to this buffer for batch writes."""
         ...
 
-    def put(self, market_data: MarketData) -> None:
+    def put(self, market_data: MD) -> None:
         """Serialize `market_data` into the buffer, expanding capacity as needed.
 
         Raises:
@@ -121,7 +123,7 @@ class MarketDataBuffer(object):
         """
         ...
 
-    def get(self, idx: int) -> MarketData:
+    def get(self, idx: int) -> MD:
         """Fetch the `MarketData` at `idx` without mutating the buffer."""
         ...
 
