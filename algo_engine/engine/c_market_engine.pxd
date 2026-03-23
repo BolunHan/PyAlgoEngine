@@ -1,4 +1,4 @@
-from ..base.c_market_data cimport _MarketDataBuffer
+from ..base.c_market_data.c_market_data cimport _MarketDataBuffer
 from ..profile cimport ProfileDispatcher
 
 

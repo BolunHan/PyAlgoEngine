@@ -3,7 +3,7 @@ from libc.stdint cimport uint8_t, uintptr_t
 
 from event_engine.capi cimport evt_topic, evt_topic_part_variant, evt_topic_type, evt_topic_match, c_topic_match
 
-from ..base.c_market_data cimport _MarketDataVirtualBase, _MarketDataBuffer
+from ..base.c_market_data.c_market_data cimport _MarketDataVirtualBase, _MarketDataBuffer
 from ..base.c_market_data_ng.c_market_data cimport md_variant
 
 

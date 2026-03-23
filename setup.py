@@ -1,16 +1,22 @@
 import os
+import shutil
 from contextlib import suppress
 from pathlib import Path
-from shutil import copyfile
 
 import event_engine
+from Cython.Build import cythonize
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
-from Cython.Build import cythonize
-
 
 class BuildExtWithConfig(build_ext):
+    def run(self):
+        self.pre_compile()
+
+        super().run()
+
+        self.post_compile()
+
     def build_extensions(self):
         macros = []
         for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
@@ -20,7 +26,50 @@ class BuildExtWithConfig(build_ext):
                 macros.append((macro, val))
         for ext in self.extensions:
             ext.define_macros = macros
-        build_ext.build_extensions(self)
+        super().build_extensions()
+
+    def pre_compile(self):
+        self.remove_pxd([
+            "algo_engine.base.c_market_data",
+            "algo_engine.base.c_market_data_ng",
+        ])
+
+    def post_compile(self):
+        # Monkey hack the "__init__.pxd" issue:
+        self.inject_pxd(
+            [
+                "algo_engine.base.c_market_data",
+                "algo_engine.base.c_market_data_ng"
+            ]
+        )
+
+    def remove_pxd(self, modules: list[str]) -> None:
+        project_root = Path(__file__).resolve().parent
+
+        for module in modules:
+            src_dir = project_root.joinpath(*module.split("."))
+            init_pxd = src_dir / "__init__.pxd"
+
+            if init_pxd.exists():
+                print(f"[pre_compile] Removing {init_pxd}")
+                with suppress(FileNotFoundError):
+                    init_pxd.unlink()
+
+    def inject_pxd(self, modules: list[str]) -> None:
+        for module in modules:
+            project_root = Path(__file__).resolve().parent
+            src_dir = project_root.joinpath(*module.split("."))
+            pkg_dir = Path(self.build_lib, *module.split("."))
+
+            infra_pxd = src_dir / "__infra__.pxd"
+            if not infra_pxd.exists():
+                continue
+
+            pkg_dir.mkdir(parents=True, exist_ok=True)
+            init_pxd = pkg_dir / "__init__.pxd"
+
+            print(f"[build_py] Injecting {infra_pxd} -> {init_pxd}")
+            shutil.copyfile(infra_pxd, init_pxd)
 
 
 # Define the extensions
@@ -134,20 +183,8 @@ if os.name == 'posix':
         ),
     ])
 
-# Monkey hack the "__init__.pxd" issue:
-
-
-market_data_ng_dir = Path(__file__).resolve().parent / "algo_engine/base/c_market_data_ng"
-init_pxd = market_data_ng_dir / "__init__.pxd"
-infra_pxd = market_data_ng_dir / "__infra__.pxd"
-
-with suppress(FileNotFoundError):
-    init_pxd.unlink()
-
 setup(
     name="algo_engine",
     ext_modules=cythonize(extensions),
     cmdclass={"build_ext": BuildExtWithConfig},
 )
-
-copyfile(infra_pxd, init_pxd)
