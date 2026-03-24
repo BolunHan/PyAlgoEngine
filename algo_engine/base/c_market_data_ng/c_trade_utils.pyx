@@ -53,15 +53,15 @@ class OrderState(enum.IntEnum):
 
     @property
     def is_working(self):
-        return <bint> c_md_state_working(self.value)
+        return c_md_state_working(self.value)
 
     @property
     def is_placed(self):
-        return <bint> c_md_state_placed(self.value)
+        return c_md_state_placed(self.value)
 
     @property
     def is_done(self):
-        return <bint> c_md_state_done(self.value)
+        return c_md_state_done(self.value)
 
     @property
     def state_name(self):
@@ -473,15 +473,15 @@ cdef class TradeInstruction(MarketData):
 
     property is_working:
         def __get__(self):
-            return <bint> c_md_state_working(self.header.trade_instruction.order_state)
+            return c_md_state_working(self.header.trade_instruction.order_state)
 
     property is_placed:
         def __get__(self):
-            return <bint> c_md_state_placed(self.header.trade_instruction.order_state)
+            return c_md_state_placed(self.header.trade_instruction.order_state)
 
     property is_done:
         def __get__(self):
-            return <bint> c_md_state_done(self.header.trade_instruction.order_state)
+            return c_md_state_done(self.header.trade_instruction.order_state)
 
     property limit_price:
         def __get__(self):

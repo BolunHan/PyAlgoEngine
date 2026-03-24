@@ -327,6 +327,19 @@ typedef union md_variant {
     md_trade_instruction trade_instruction;
 } md_variant;
 
+typedef enum md_ret_code {
+    MD_OK = 0,
+    MD_ERR_INVALID_INPUT = -1,
+    MD_ERR_INVALID_ALLOCATOR = -2,
+    MD_ERR_BUF_FULL = -3,
+    MD_ERR_BUF_EMPTY = -4,
+    MD_ERR_BUF_CORRUPTED = -5,
+    MD_ERR_DISABLED = -6,
+    MD_ERR_TIMEOUT = -7,
+    MD_ERR_OOR = -8,
+    MD_ERR_OOM = -9,
+} md_ret_code;
+
 // ========== Forward Declarations (Public API) ==========
 
 /**
@@ -473,21 +486,21 @@ static inline int c_md_orderbook_sort(md_orderbook* orderbook);
  * @param state Order state to check.
  * @return 1 if working, 0 otherwise.
  */
-static inline int c_md_state_working(md_order_state state);
+static inline bool c_md_state_working(md_order_state state);
 
 /**
  * @brief Check if an order_state is a placed state.
  * @param state Order state to check.
  * @return 1 if placed, 0 otherwise.
  */
-static inline int c_md_state_placed(md_order_state state);
+static inline bool c_md_state_placed(md_order_state state);
 
 /**
  * @brief Check if an order_state is a done state.
  * @param state Order state to check.
  * @return 1 if done, 0 otherwise.
  */
-static inline int c_md_state_done(md_order_state state);
+static inline bool c_md_state_done(md_order_state state);
 
 /**
  * @brief Compare two meta_info pointers by timestamp (ascending).
@@ -1128,7 +1141,7 @@ static inline void c_md_orderbook_free(md_orderbook* orderbook) {
 }
 
 static inline int c_md_orderbook_sort(md_orderbook* orderbook) {
-    if (!orderbook || orderbook->size == 0 || orderbook->sorted) return 0;
+    if (!orderbook || orderbook->size == 0 || orderbook->sorted) return MD_OK;
 
     if (orderbook->direction == DIRECTION_LONG) {
         qsort(orderbook->entries, orderbook->size, sizeof(md_orderbook_entry), c_md_compare_bid);
@@ -1138,45 +1151,45 @@ static inline int c_md_orderbook_sort(md_orderbook* orderbook) {
     }
     else {
         // Invalid direction
-        return -1;
+        return MD_ERR_INVALID_INPUT;
     }
 
     orderbook->sorted = 1;
-    return 0;
+    return MD_OK;
 }
 
-static inline int c_md_state_working(md_order_state state) {
+static inline bool c_md_state_working(md_order_state state) {
     switch (state) {
         case STATE_SENT:
         case STATE_PLACED:
         case STATE_PARTFILLED:
         case STATE_CANCELING:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 
-static inline int c_md_state_placed(md_order_state state) {
+static inline bool c_md_state_placed(md_order_state state) {
     switch (state) {
         case STATE_PLACED:
         case STATE_PARTFILLED:
         case STATE_CANCELING:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 
-static inline int c_md_state_done(md_order_state state) {
+static inline bool c_md_state_done(md_order_state state) {
     switch (state) {
         case STATE_FILLED:
         case STATE_CANCELED:
         case STATE_REJECTED:
         case STATE_INVALID:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 

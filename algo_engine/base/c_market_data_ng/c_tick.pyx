@@ -7,7 +7,7 @@ from libc.string cimport memcpy
 
 from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from .c_market_data cimport (
-    md_data_type, md_direction, MD_CFG_BOOK_SIZE,
+    md_ret_code, md_data_type, md_direction, MD_CFG_BOOK_SIZE,
     md_orderbook_entry, c_md_orderbook_sort,
     c_init_buffer, c_md_orderbook_new, c_md_orderbook_free
 )
@@ -235,7 +235,7 @@ cdef class OrderBook:
 
         cdef int ret_code = c_md_orderbook_sort(self.header)
 
-        if ret_code != 0:
+        if ret_code != md_ret_code.MD_OK:
             raise RuntimeError(f'OrderBook sorting failed with error code {ret_code}.')
 
     cdef double c_loc_volume(self, double p0, double p1):
@@ -547,8 +547,15 @@ cdef class TickData(MarketData):
                 entry.n_orders = 1
 
         # Sort the books
-        c_md_orderbook_sort(self.header.tick_data_full.bid)
-        c_md_orderbook_sort(self.header.tick_data_full.ask)
+        cdef int ret_code
+
+        ret_code = c_md_orderbook_sort(self.header.tick_data_full.bid)
+        if ret_code != md_ret_code.MD_OK:
+            raise RuntimeError(f'OrderBook.bid sorting failed with error code {ret_code}.')
+
+        ret_code = c_md_orderbook_sort(self.header.tick_data_full.ask)
+        if ret_code != md_ret_code.MD_OK:
+            raise RuntimeError(f'OrderBook.ask sorting failed with error code {ret_code}.')
 
     cpdef TickDataLite lite(self):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)

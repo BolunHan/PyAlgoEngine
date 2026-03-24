@@ -290,6 +290,18 @@ cdef extern from "c_market_data.h":
         md_trade_report trade_report
         md_trade_instruction trade_instruction
 
+    ctypedef enum md_ret_code:
+        MD_OK
+        MD_ERR_INVALID_INPUT
+        MD_ERR_INVALID_ALLOCATOR
+        MD_ERR_BUF_FULL
+        MD_ERR_BUF_EMPTY
+        MD_ERR_BUF_CORRUPTED
+        MD_ERR_DISABLED
+        MD_ERR_TIMEOUT
+        MD_ERR_OOR
+        MD_ERR_OOM
+
     void c_usleep(unsigned int usec) noexcept nogil
     md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator) noexcept nogil
     double c_md_get_price(const md_variant* market_data) noexcept nogil
@@ -310,9 +322,9 @@ cdef extern from "c_market_data.h":
     md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator) noexcept nogil
     void c_md_orderbook_free(md_orderbook* orderbook) noexcept nogil
     int c_md_orderbook_sort(md_orderbook* orderbook) noexcept nogil
-    int c_md_state_working(md_order_state state) noexcept nogil
-    int c_md_state_placed(md_order_state state) noexcept nogil
-    int c_md_state_done(md_order_state state) noexcept nogil
+    c_bool c_md_state_working(md_order_state state) noexcept nogil
+    c_bool c_md_state_placed(md_order_state state) noexcept nogil
+    c_bool c_md_state_done(md_order_state state) noexcept nogil
     int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
     int c_md_compare_bid(const void* a, const void* b) noexcept nogil
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil
