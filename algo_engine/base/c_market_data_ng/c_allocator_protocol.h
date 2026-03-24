@@ -1,5 +1,5 @@
-#ifndef C_ALLOCATOR_PROTOCOL_H
-#define C_ALLOCATOR_PROTOCOL_H
+#ifndef C_AE_ALLOCATOR_PROTOCOL_H
+#define C_AE_ALLOCATOR_PROTOCOL_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -35,8 +35,8 @@ typedef struct allocator_protocol {
 
 // ========== Forward Declaration ==========
 
-static inline allocator_protocol* c_allocator_protocol_request(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
-static inline void c_allocator_protocol_recycle(allocator_protocol* protocol, bool with_lock);
+static inline allocator_protocol* c_ae_allocator_protocol_request(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
+static inline void c_ae_allocator_protocol_recycle(allocator_protocol* protocol, bool with_lock);
 static inline void* c_md_alloc(size_t size, allocator_protocol* schematic);
 static inline void c_md_free(void* ptr);
 static inline char* c_md_strdup(const char* src, allocator_protocol* allocator);
@@ -44,7 +44,7 @@ static inline void* c_md_realloc(void* src, size_t new_size, allocator_protocol*
 
 // ========== Utilities Functions ==========
 
-static inline allocator_protocol* c_allocator_protocol_request(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline allocator_protocol* c_ae_allocator_protocol_request(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     if (size == 0) return NULL;
     size_t ttl_size = sizeof(allocator_protocol) + size;
     allocator_protocol* protocol;
@@ -78,7 +78,7 @@ static inline allocator_protocol* c_allocator_protocol_request(size_t size, shm_
     return protocol;
 }
 
-static inline void c_allocator_protocol_recycle(allocator_protocol* protocol, bool with_lock) {
+static inline void c_ae_allocator_protocol_recycle(allocator_protocol* protocol, bool with_lock) {
     if (!protocol) return;
 
 #if MD_ALLOC_VIGILANT > 0
@@ -180,7 +180,7 @@ static inline void c_md_free(void* ptr) {
     }
 #endif
 
-    c_allocator_protocol_recycle(protocol, protocol->with_lock);
+    c_ae_allocator_protocol_recycle(protocol, protocol->with_lock);
 }
 
 static inline char* c_md_strdup(const char* src, allocator_protocol* allocator) {
@@ -208,4 +208,4 @@ static inline void* c_md_realloc(void* src, size_t new_size, allocator_protocol*
     return new_ptr;
 }
 
-#endif /* C_ALLOCATOR_PROTOCOL_H */
+#endif /* C_AE_ALLOCATOR_PROTOCOL_H */

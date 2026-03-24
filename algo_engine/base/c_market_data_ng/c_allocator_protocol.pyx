@@ -91,11 +91,11 @@ cdef class AllocatorProtocol:
         if not size:
             return
         if MD_CFG_SHARED:
-            self.protocol = c_allocator_protocol_request(size, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
+            self.protocol = c_ae_allocator_protocol_request(size, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
         elif MD_CFG_FREELIST:
-            self.protocol = c_allocator_protocol_request(size, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
+            self.protocol = c_ae_allocator_protocol_request(size, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
         else:
-            self.protocol = c_allocator_protocol_request(size, NULL, NULL, 0)
+            self.protocol = c_ae_allocator_protocol_request(size, NULL, NULL, 0)
         self.owner = True
 
     def __dealloc__(self):
@@ -103,7 +103,7 @@ cdef class AllocatorProtocol:
             return
 
         if self.protocol:
-            c_allocator_protocol_recycle(self.protocol, self.protocol.with_lock)
+            c_ae_allocator_protocol_recycle(self.protocol, self.protocol.with_lock)
 
     @staticmethod
     cdef AllocatorProtocol c_from_protocol(allocator_protocol* protocol, bint owner):
