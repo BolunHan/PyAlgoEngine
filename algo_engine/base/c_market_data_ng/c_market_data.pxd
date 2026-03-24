@@ -1,7 +1,9 @@
+from libcpp cimport bool as c_bool
 from cpython.unicode cimport PyUnicode_FromString
 from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
 from libc.string cimport memcpy
 
+from .c_allocator_protocol cimport EnvConfigContext, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_DEFAULT_ALLOCATOR, allocator_protocol, c_md_alloc, c_md_free
 from ..c_heap_allocator cimport heap_allocator, C_ALLOCATOR as HEAP_ALLOCATOR
 from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator, C_ALLOCATOR as SHM_ALLOCATOR
 from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
@@ -10,7 +12,7 @@ from ...profile.c_base cimport C_PROFILE
 
 
 cdef extern from "c_market_data_config.h":
-    const bint DEBUG
+    const c_bool DEBUG
     const size_t TICKER_SIZE
     const size_t BOOK_SIZE
     const size_t ID_SIZE
@@ -173,8 +175,6 @@ cdef extern from "c_market_data.h":
         md_data_type dtype
         const char* ticker
         double timestamp
-        shm_allocator* shm_allocator
-        heap_allocator* heap_allocator
 
     ctypedef struct md_id:
         md_id_type id_type
@@ -197,9 +197,7 @@ cdef extern from "c_market_data.h":
         size_t capacity;
         size_t size;
         md_direction direction
-        bint sorted
-        shm_allocator* shm_allocator
-        heap_allocator* heap_allocator
+        c_bool sorted
         md_orderbook_entry entries[]
 
     ctypedef struct md_candlestick:
@@ -293,8 +291,7 @@ cdef extern from "c_market_data.h":
         md_trade_instruction trade_instruction
 
     void c_usleep(unsigned int usec) noexcept nogil
-    md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock)
-    void c_md_free(md_variant* market_data, bint with_lock)
+    md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator) noexcept nogil
     double c_md_get_price(const md_variant* market_data) noexcept nogil
     md_offset c_md_side_offset(md_side side) noexcept nogil
     md_direction c_md_side_direction(md_side side) noexcept nogil
@@ -309,9 +306,9 @@ cdef extern from "c_market_data.h":
     const char* c_md_state_name(md_order_state side) noexcept nogil
     size_t c_md_serialized_size(const md_variant* market_data)
     size_t c_md_serialize(const md_variant* market_data, char* out)
-    md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock) noexcept nogil
-    md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bint with_lock) noexcept nogil
-    void c_md_orderbook_free(md_orderbook* orderbook, bint with_lock) noexcept nogil
+    md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) noexcept nogil
+    md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator) noexcept nogil
+    void c_md_orderbook_free(md_orderbook* orderbook) noexcept nogil
     int c_md_orderbook_sort(md_orderbook* orderbook) noexcept nogil
     int c_md_state_working(md_order_state state) noexcept nogil
     int c_md_state_placed(md_order_state state) noexcept nogil
@@ -323,50 +320,33 @@ cdef extern from "c_market_data.h":
     int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2) noexcept nogil
 
 
-cdef bint MD_CFG_LOCKED
-cdef bint MD_CFG_SHARED
-cdef bint MD_CFG_FREELIST
 cdef size_t MD_CFG_BOOK_SIZE
 
 
-cdef class EnvConfigContext:
-    cdef dict overrides
-    cdef dict originals
-
-    cdef void c_activate(self)
-
-    cdef void c_deactivate(self)
+cdef class BookConfigContext(EnvConfigContext):
+    pass
 
 
-cdef EnvConfigContext MD_SHARED
-cdef EnvConfigContext MD_LOCKED
-cdef EnvConfigContext MD_FREELIST
-cdef EnvConfigContext MD_BOOK5
-cdef EnvConfigContext MD_BOOK10
-cdef EnvConfigContext MD_BOOK20
+cdef BookConfigContext MD_BOOK5
+cdef BookConfigContext MD_BOOK10
+cdef BookConfigContext MD_BOOK20
 
 
 cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, double timestamp):
     cdef md_variant* market_data
 
-    if MD_CFG_SHARED:
-        market_data = c_md_new(dtype, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
-    elif MD_CFG_FREELIST:
-        market_data = c_md_new(dtype, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
-    else:
-        market_data = c_md_new(dtype, NULL, NULL, 0)
-
+    market_data = c_md_new(dtype, MD_DEFAULT_ALLOCATOR)
     if not market_data:
         raise MemoryError(f'Failed to allocate shared memory for {PyUnicode_FromString(c_md_dtype_name(dtype))}')
     cdef md_meta* meta_data = <md_meta*> market_data
 
-    if MD_CFG_SHARED:
-        if MD_CFG_LOCKED:
+    if MD_DEFAULT_ALLOCATOR.with_shm:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
             meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
         else:
             meta_data.ticker = c_istr(SHM_POOL, ticker)
     else:
-        if MD_CFG_LOCKED:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
             meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
         else:
             meta_data.ticker = c_istr(HEAP_POOL, ticker)
@@ -380,12 +360,7 @@ cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, do
 
 
 cdef inline md_variant* c_deserialize_buffer(const char* src):
-    if MD_CFG_SHARED:
-        market_data = c_md_deserialize(src, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
-    elif MD_CFG_FREELIST:
-        market_data = c_md_deserialize(src, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
-    else:
-        market_data = c_md_deserialize(src, NULL, NULL, 0)
+    market_data = c_md_deserialize(src, MD_DEFAULT_ALLOCATOR)
 
     if not market_data:
         raise MemoryError('Failed to deserialize market data from bytes')
@@ -395,13 +370,13 @@ cdef inline md_variant* c_deserialize_buffer(const char* src):
     if not ticker:
         raise ValueError('Deserialized market data has null ticker string')
 
-    if MD_CFG_SHARED:
-        if MD_CFG_LOCKED:
+    if MD_DEFAULT_ALLOCATOR.with_shm:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
             meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
         else:
             meta_data.ticker = c_istr(SHM_POOL, ticker)
     else:
-        if MD_CFG_LOCKED:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
             meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
         else:
             meta_data.ticker = c_istr(HEAP_POOL, ticker)
@@ -410,10 +385,6 @@ cdef inline md_variant* c_deserialize_buffer(const char* src):
         raise MemoryError('Failed to intern ticker string')
 
     return market_data
-
-
-cdef inline void c_recycle_buffer(md_variant* market_data):
-    c_md_free(market_data, <int> MD_CFG_LOCKED)
 
 
 cdef inline void c_write_uint128(void* data, uint128_t value):

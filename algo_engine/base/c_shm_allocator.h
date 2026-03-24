@@ -33,11 +33,11 @@
 #endif
 
 #ifndef SHM_ALLOCATOR_PREFIX
-#define SHM_ALLOCATOR_PREFIX "/c_shm_allocator"
+#define SHM_ALLOCATOR_PREFIX "/c_pyalgoengine_shm_allocator"
 #endif
 
 #ifndef SHM_PAGE_PREFIX
-#define SHM_PAGE_PREFIX "/c_shm_page"
+#define SHM_PAGE_PREFIX "/c_pyalgoengine_shm_page"
 #endif
 
 #ifndef SHM_NAME_LEN

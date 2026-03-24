@@ -8,8 +8,6 @@
 #include <time.h>
 #include <pthread.h>
 #include <sched.h>
-#include "c_shm_allocator.h"
-#include "c_heap_allocator.h"
 #include "c_intern_string.h"
 #include "c_market_data.h"
 
@@ -27,8 +25,6 @@
 #define MD_BUF_DISABLED      -8   /* generic (index, worker, ptr, buffer) disabled */
 
 typedef struct md_block_buffer {
-    shm_allocator* shm_allocator;
-    heap_allocator* heap_allocator;
     bool sorted;
     size_t ptr_capacity;
     size_t ptr_offset;
@@ -41,8 +37,6 @@ typedef struct md_block_buffer {
 } md_block_buffer;
 
 typedef struct md_ring_buffer {
-    shm_allocator* shm_allocator;
-    heap_allocator* heap_allocator;
     size_t ptr_capacity;
     size_t ptr_offset;
     size_t ptr_head;
@@ -59,13 +53,46 @@ typedef struct md_concurrent_buffer_worker_t {
 } md_concurrent_buffer_worker_t;
 
 typedef struct md_concurrent_buffer {
-    shm_allocator* shm_allocator;
     md_concurrent_buffer_worker_t* workers;
     size_t n_workers;
     md_variant** buffer;
     size_t capacity;
     size_t tail;
 } md_concurrent_buffer;
+
+// ========== Forward Declarations (Public API) ==========
+
+static inline int c_md_compare_serialized(const void* a, const void* b);
+static inline size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md);
+static inline md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool);
+
+static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator);
+static inline void c_md_block_buffer_free(md_block_buffer* buffer);
+static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity);
+static inline int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data);
+static inline const char* c_md_block_buffer_get(md_block_buffer* buffer, size_t index);
+static inline int c_md_block_buffer_sort(md_block_buffer* buffer);
+static inline int c_md_block_buffer_clear(md_block_buffer* buffer);
+static inline size_t c_md_block_buffer_serialized_size(md_block_buffer* buffer);
+static inline size_t c_md_block_buffer_serialize(md_block_buffer* buffer, char* out_buffer);
+
+static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator);
+static inline void c_md_ring_buffer_free(md_ring_buffer* buffer);
+static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data);
+static inline int c_md_ring_buffer_is_empty(md_ring_buffer* buffer);
+static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer);
+static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, bool block, double timeout);
+static inline const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index);
+static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, double timeout, const char** out);
+
+static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, allocator_protocol* shm_allocator);
+static inline void c_md_concurrent_buffer_free(md_concurrent_buffer* buffer);
+static inline int c_md_concurrent_buffer_enable_worker(md_concurrent_buffer* buffer, size_t worker_id);
+static inline int c_md_concurrent_buffer_disable_worker(md_concurrent_buffer* buffer, size_t worker_id);
+static inline int c_md_concurrent_buffer_is_full(md_concurrent_buffer* buffer);
+static inline int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, size_t worker_id);
+static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, bool block, double timeout);
+static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bool block, double timeout, md_variant** out);
 
 // ========== Utility Functions ==========
 
@@ -91,13 +118,13 @@ static inline size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md) 
     return total_size;
 }
 
-static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocator_ctx* shm_allocator, istr_map* shm_pool, bool with_lock) {
+static inline md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) {
     if (!market_data || !shm_allocator || !shm_pool) return NULL;
 
     // Step 1: Intern ticker string
     const char* interned_ticker;
     if (market_data->meta_info.ticker) {
-        if (with_lock) {
+        if (shm_allocator->with_lock) {
             interned_ticker = c_istr_synced(shm_pool, market_data->meta_info.ticker);
         }
         else {
@@ -110,32 +137,33 @@ static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocato
     }
 
     // Step 2: Check if already in SHM
-    if (market_data->meta_info.shm_allocator == shm_allocator->shm_allocator) {
+    allocator_protocol* original_allocator = c_md_protocol_from_ptr(market_data);
+    if (original_allocator->shm_allocator == shm_allocator->shm_allocator) {
         market_data->meta_info.ticker = interned_ticker;
         return market_data;
     }
 
     // Step 3: Initialize new market_data in SHM
     md_data_type dtype = market_data->meta_info.dtype;
-    md_variant* shm_md = c_md_new(dtype, shm_allocator, NULL, with_lock);
+    md_variant* payload = c_md_new(dtype, shm_allocator);
     size_t size = c_md_get_size(dtype);
-    if (!shm_md) return NULL;
+    if (!payload) return NULL;
 
-    memcpy((void*) shm_md, (void*) market_data, size);
-    shm_md->meta_info.ticker = interned_ticker;
+    memcpy((void*) payload, (void*) market_data, size);
+    payload->meta_info.ticker = interned_ticker;
 
     // Step 4: Handle order book pointers if md_tick_data
     if (dtype == DTYPE_TICK) {
         md_tick_data* src_tick = &market_data->tick_data_full;
-        md_tick_data* dst_tick = &shm_md->tick_data_full;
+        md_tick_data* dst_tick = &payload->tick_data_full;
 
         // Bid order book
         if (src_tick->bid) {
             size_t ob_capacity = src_tick->bid->capacity;
             size_t ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
-            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator, NULL, with_lock);
+            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator);
             if (!ob_shm) {
-                c_shm_free((void*) shm_md, NULL);
+                c_md_free(payload);
                 return NULL;
             }
             memcpy((void*) ob_shm, (void*) src_tick->bid, ob_size);
@@ -149,12 +177,12 @@ static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocato
         if (src_tick->ask) {
             size_t ob_capacity = src_tick->ask->capacity;
             size_t ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
-            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator, NULL, with_lock);
+            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator);
             if (!ob_shm) {
                 if (dst_tick->bid) {
-                    c_shm_free((void*) dst_tick->bid, NULL);
+                    c_md_free(dst_tick->bid);
                 }
-                c_shm_free((void*) shm_md, NULL);
+                c_md_free(payload);
                 return NULL;
             }
             memcpy((void*) ob_shm, (void*) src_tick->ask, ob_size);
@@ -165,12 +193,12 @@ static inline md_variant* c_md_send_to_shm(md_variant* market_data, shm_allocato
         }
     }
 
-    return shm_md;
+    return payload;
 }
 
 // ========== BlockBuffer API Functions ==========
 
-static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) {
     size_t data_offset = ptr_capacity * sizeof(size_t);
     size_t size = sizeof(md_block_buffer)
         + data_offset                 /* pointer array */
@@ -178,68 +206,30 @@ static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t
 
     if (size == 0) return NULL;
 
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-        md_block_buffer* buffer = (md_block_buffer*) c_shm_request(shm_allocator, size, 0, lock);
-        if (!buffer) return NULL;
-        buffer->shm_allocator = shm_allocator->shm_allocator; /* ctx -> allocator */
-        buffer->ptr_capacity = ptr_capacity;
-        buffer->data_capacity = data_capacity;
-        buffer->data_offset = data_offset;
-        buffer->sorted = 1;
-        return buffer;
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        md_block_buffer* buffer = (md_block_buffer*) c_heap_request(heap_allocator, size, 0, lock);
-        if (!buffer) return NULL;
-        buffer->heap_allocator = heap_allocator;
-        buffer->ptr_capacity = ptr_capacity;
-        buffer->data_capacity = data_capacity;
-        buffer->data_offset = data_offset;
-        buffer->sorted = 1;
-        return buffer;
-    }
-    else {
-        md_block_buffer* buffer = (md_block_buffer*) calloc(1, size); /* zeroed */
-        if (!buffer) return NULL;
-        buffer->ptr_capacity = ptr_capacity;
-        buffer->data_capacity = data_capacity;
-        buffer->data_offset = data_offset;
-        buffer->sorted = 1;
-        return buffer;
-    }
+    md_block_buffer* buffer = (md_block_buffer*) c_md_alloc(size, allocator);
+    if (!buffer) return NULL;
+    buffer->ptr_capacity = ptr_capacity;
+    buffer->data_capacity = data_capacity;
+    buffer->data_offset = data_offset;
+    buffer->sorted = 1;
+    return buffer;
 }
 
-static inline int c_md_block_buffer_free(md_block_buffer* buffer, bool with_lock) {
-    if (!buffer) return MD_BUF_ERR_INVALID;
-
-    shm_allocator* shm_allocator = buffer->shm_allocator;
-    heap_allocator* heap_allocator = buffer->heap_allocator;
-
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
-        c_shm_free((void*) buffer, lock);
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        c_heap_free((void*) buffer, lock);
-    }
-    else {
-        free((void*) buffer);
-    }
-    return MD_BUF_OK;
+static inline void c_md_block_buffer_free(md_block_buffer* buffer) {
+    if (!buffer) return;
+    c_md_free(buffer);
 }
 
-static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity) {
     if (!buffer) return NULL;
 
     size_t new_data_offset = new_ptr_capacity * sizeof(size_t);
-    md_block_buffer* new_buffer = c_md_block_buffer_new(new_ptr_capacity, new_data_capacity, shm_allocator, heap_allocator, with_lock);
+    allocator_protocol* allocator = c_md_protocol_from_ptr(buffer);
+    md_block_buffer* new_buffer = c_md_block_buffer_new(new_ptr_capacity, new_data_capacity, allocator);
     if (!new_buffer) return NULL;
 
-    new_buffer->ptr_offset = buffer->ptr_offset;
-    new_buffer->ptr_capacity = new_ptr_capacity;;
+    new_buffer->ptr_offset = 0;
+    new_buffer->ptr_capacity = new_ptr_capacity;
     new_buffer->data_capacity = new_data_capacity;
     new_buffer->data_offset = new_data_offset;
     new_buffer->current_timestamp = buffer->current_timestamp;
@@ -366,60 +356,23 @@ static inline size_t c_md_block_buffer_serialize(md_block_buffer* buffer, char* 
 
 // ========== RingBuffer API Functions ==========
 
-static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) {
     size_t data_offset = ptr_capacity * sizeof(size_t);
     size_t size = sizeof(md_ring_buffer) + data_offset + data_capacity;
 
     if (size == 0) return NULL;
 
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-        md_ring_buffer* buffer = (md_ring_buffer*) c_shm_request(shm_allocator, size, 0, lock);
-        if (!buffer) return NULL;
-        buffer->shm_allocator = shm_allocator->shm_allocator;
-        buffer->ptr_capacity = ptr_capacity;
-        buffer->data_capacity = data_capacity;
-        buffer->data_offset = data_offset;
-        return buffer;
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        md_ring_buffer* buffer = (md_ring_buffer*) c_heap_request(heap_allocator, size, 0, lock);
-        if (!buffer) return NULL;
-        buffer->heap_allocator = heap_allocator;
-        buffer->ptr_capacity = ptr_capacity;
-        buffer->data_capacity = data_capacity;
-        buffer->data_offset = data_offset;
-        return buffer;
-    }
-    else {
-        md_ring_buffer* buffer = (md_ring_buffer*) calloc(1, size); /* zeroed */
-        if (!buffer) return NULL;
-        buffer->ptr_capacity = ptr_capacity;
-        buffer->data_capacity = data_capacity;
-        buffer->data_offset = data_offset;
-        return buffer;
-    }
+    md_ring_buffer* buffer = (md_ring_buffer*) c_md_alloc(size, allocator);
+    if (!buffer) return NULL;
+    buffer->ptr_capacity = ptr_capacity;
+    buffer->data_capacity = data_capacity;
+    buffer->data_offset = data_offset;
+    return buffer;
 }
 
-static inline int c_md_ring_buffer_free(md_ring_buffer* buffer, bool with_lock) {
-    if (!buffer) return MD_BUF_ERR_INVALID;
-
-    shm_allocator* shm_allocator = buffer->shm_allocator;
-    heap_allocator* heap_allocator = buffer->heap_allocator;
-
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
-        c_shm_free((void*) buffer, lock);
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        c_heap_free((void*) buffer, lock);
-    }
-    else {
-        free((void*) buffer);
-    }
-    return MD_BUF_OK;
+static inline void c_md_ring_buffer_free(md_ring_buffer* buffer) {
+    if (!buffer) return;
+    c_md_free(buffer);
 }
 
 static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data) {
@@ -687,19 +640,17 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, do
 
 /* Concurrent buffer uses the same unified return codes */
 
-static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, shm_allocator_ctx* shm_allocator, bool with_lock) {
+static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, allocator_protocol* shm_allocator) {
     size_t size = sizeof(md_concurrent_buffer)
         + n_workers * sizeof(md_concurrent_buffer_worker_t)
         + capacity * sizeof(md_variant*);
 
     if (size == 0) return NULL;
 
-    if (!shm_allocator) return NULL; /* only support shm allocator for now */
+    if (!shm_allocator || !shm_allocator->with_shm) return NULL; /* only support shm allocator!*/
 
-    pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-    md_concurrent_buffer* buffer = (md_concurrent_buffer*) c_shm_request(shm_allocator, size, 1, lock);
+    md_concurrent_buffer* buffer = (md_concurrent_buffer*) c_md_alloc(size, shm_allocator);
     if (!buffer) return NULL;
-    buffer->shm_allocator = shm_allocator->shm_allocator;
     buffer->n_workers = n_workers;
     buffer->workers = (md_concurrent_buffer_worker_t*) (buffer + 1);
 
@@ -714,19 +665,9 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
     return buffer;
 }
 
-static inline int c_md_concurrent_buffer_free(md_concurrent_buffer* buffer, bool with_lock) {
-    if (!buffer) return MD_BUF_ERR_INVALID;
-
-    shm_allocator* shm_allocator = buffer->shm_allocator;
-
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
-        c_shm_free((void*) buffer, lock);
-    }
-    else {
-        return MD_BUF_ERR_INVALID;
-    }
-    return MD_BUF_OK;
+static inline void c_md_concurrent_buffer_free(md_concurrent_buffer* buffer) {
+    if (!buffer) return;
+    c_md_free((void*) buffer);
 }
 
 static inline int c_md_concurrent_buffer_enable_worker(md_concurrent_buffer* buffer, size_t worker_id) {
@@ -777,7 +718,8 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_va
     /* Returns: MD_BUF_OK, MD_BUF_ERR_INVALID, MD_BUF_ERR_NOT_SHM, MD_BUF_ERR_FULL, MD_BUF_ERR_TIMEOUT */
     if (!buffer || !market_data) return MD_BUF_ERR_INVALID;
 
-    if (!market_data->meta_info.shm_allocator) return MD_BUF_ERR_NOT_SHM;
+    allocator_protocol* market_data_allocator = c_md_protocol_from_ptr(market_data);
+    if (!market_data_allocator->with_shm) return MD_BUF_ERR_NOT_SHM;
 
     const uint32_t spin_per_check = 1000;
     time_t start_time = 0;

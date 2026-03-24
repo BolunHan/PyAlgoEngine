@@ -1,6 +1,7 @@
+from .c_allocator_protocol import EnvConfigContext, AllocatorProtocol, MD_SHARED, MD_LOCKED, MD_FREELIST
 from .c_market_data import (
-    EnvConfigContext,
-    MD_SHARED, MD_LOCKED, MD_FREELIST, MD_BOOK5, MD_BOOK10, MD_BOOK20,
+    BookConfigContext,
+    MD_BOOK5, MD_BOOK10, MD_BOOK20,
     DataType, MarketData, FilterMode,
     CONFIG
 )

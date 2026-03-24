@@ -7,8 +7,7 @@
 #include <string.h>
 
 #include "c_market_data_config.h"
-#include "c_heap_allocator.h"
-#include "c_shm_allocator.h"
+#include "c_allocator_protocol.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -199,8 +198,6 @@ typedef struct md_meta {
     md_data_type dtype;
     const char* ticker;
     double timestamp;
-    shm_allocator* shm_allocator;
-    heap_allocator* heap_allocator;
 } md_meta;
 
 typedef struct md_id {
@@ -229,8 +226,6 @@ typedef struct md_orderbook {
     size_t size;
     md_direction direction;
     bool sorted;
-    shm_allocator* shm_allocator;
-    heap_allocator* heap_allocator;
     md_orderbook_entry entries[];
 } md_orderbook;
 
@@ -343,19 +338,9 @@ static inline void c_usleep(unsigned int usec);
 /**
  * @brief Allocate a new market_data buffer of the specified dtype.
  * @param dtype Concrete data type to allocate.
- * @param shm_allocator Shared-memory allocator context, or NULL.
- * @param heap_allocator Heap allocator, or NULL.
- * @param with_lock Whether to lock allocator during allocation.
  * @return Pointer to allocated `md_variant`, or NULL on failure.
  */
-static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
-
-/**
- * @brief Free or recycle a previously allocated market_data buffer.
- * @param market_data Pointer returned by `c_md_new`.
- * @param with_lock Whether to lock allocator during free.
- */
-static inline void c_md_free(md_variant* market_data, bool with_lock);
+static inline md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator);
 
 /**
  * @brief Get the representative price from a market_data union.
@@ -459,29 +444,22 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out);
 /**
  * @brief Deserialize market_data from a contiguous buffer.
  * @param src Source byte buffer.
- * @param shm_allocator Shared allocator context, or NULL.
- * @param heap_allocator Heap allocator, or NULL.
- * @param with_lock Whether to lock allocator during allocation.
  * @return Newly allocated `md_variant*`, or NULL on failure.
  */
-static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
+static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator);
 
 /**
  * @brief Create a new order book with specified size and direction.
  * @param book_size Number of levels in the order book.
- * @param shm_allocator Shared-memory allocator context, or NULL.
- * @param heap_allocator Heap allocator, or NULL.
- * @param with_lock Whether to lock allocator during allocation.
  * @return Pointer to allocated `md_orderbook`, or NULL on failure.
  */
-static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
+static inline md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator);
 
 /**
  * @brief Free or recycle a previously allocated order book.
  * @param orderbook Pointer returned by `c_md_orderbook_new`.
- * @param with_lock Whether to lock allocator during free.
  */
-static inline void c_md_orderbook_free(md_orderbook* orderbook, bool with_lock);
+static inline void c_md_orderbook_free(md_orderbook* orderbook);
 
 /**
  * @brief Sort the order book entries in place.
@@ -561,51 +539,13 @@ static inline void c_usleep(unsigned int usec) {
 #endif
 }
 
-static inline md_variant* c_md_new(md_data_type dtype, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator) {
     size_t size = c_md_get_size(dtype);
     if (size == 0) return NULL;
-
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-        md_meta* meta = (md_meta*) c_shm_request(shm_allocator, size, 0, lock);
-        if (!meta) return NULL;
-        meta->dtype = dtype;
-        meta->shm_allocator = shm_allocator->shm_allocator;
-        return (md_variant*) meta;
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        md_meta* meta = (md_meta*) c_heap_request(heap_allocator, size, 0, lock);
-        if (!meta) return NULL;
-        meta->dtype = dtype;
-        meta->heap_allocator = heap_allocator;
-        return (md_variant*) meta;
-    }
-    else {
-        md_meta* meta = (md_meta*) calloc(1, size);
-        if (!meta) return NULL;
-        meta->dtype = dtype;
-        return (md_variant*) meta;
-    }
-}
-
-static inline void c_md_free(md_variant* market_data, bool with_lock) {
-    if (!market_data) return;
-
-    shm_allocator* shm_allocator = market_data->meta_info.shm_allocator;
-    heap_allocator* heap_allocator = market_data->meta_info.heap_allocator;
-
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
-        c_shm_free((void*) market_data, lock);
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        c_heap_free((void*) market_data, lock);
-    }
-    else {
-        free((void*) market_data);
-    }
+    md_meta* meta = (md_meta*) c_md_alloc(size, allocator);
+    if (!meta) return NULL;
+    meta->dtype = dtype;
+    return (md_variant*) meta;
 }
 
 static inline double c_md_get_price(const md_variant* market_data) {
@@ -1010,7 +950,7 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     return (size_t) (cursor - out);
 }
 
-static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) {
     if (!src) return NULL;
 
     const char* cursor = src;
@@ -1020,7 +960,7 @@ static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* s
     cursor += sizeof(uint8_t);
 
     // Step 2: Allocate md_variant
-    md_variant* market_data = c_md_new(dtype, shm_allocator, heap_allocator, with_lock);
+    md_variant* market_data = c_md_new(dtype, allocator);
     if (!market_data) return NULL;
 
     // Step 3: Deserialize meta_info
@@ -1087,9 +1027,10 @@ static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* s
                     memcpy(&sorted_byte, cursor, sizeof(uint8_t));
                     cursor += sizeof(uint8_t);
 
-                    md_orderbook* ob = c_md_orderbook_new(capacity, shm_allocator, heap_allocator, with_lock);
+                    md_orderbook* ob = c_md_orderbook_new(capacity, allocator);
                     if (!ob) {
-                        c_md_free(market_data, with_lock); return NULL;
+                        c_md_free(market_data);
+                        return NULL;
                     }
                     ob->size = size;
                     ob->direction = (md_direction) dir_byte;
@@ -1130,9 +1071,10 @@ static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* s
                     memcpy(&sorted_byte, cursor, sizeof(uint8_t));
                     cursor += sizeof(uint8_t);
 
-                    md_orderbook* ob = c_md_orderbook_new(capacity, shm_allocator, heap_allocator, with_lock);
+                    md_orderbook* ob = c_md_orderbook_new(capacity, allocator);
                     if (!ob) {
-                        c_md_free(market_data, with_lock); return NULL;
+                        c_md_free(market_data);
+                        return NULL;
                     }
                     ob->size = size;
                     ob->direction = (md_direction) dir_byte;
@@ -1170,51 +1112,19 @@ static inline md_variant* c_md_deserialize(const char* src, shm_allocator_ctx* s
     return market_data;
 }
 
-static inline md_orderbook* c_md_orderbook_new(size_t book_size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
+static inline md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator) {
     size_t size = sizeof(md_orderbook) + book_size * sizeof(md_orderbook_entry);
     if (size == 0) return NULL;
 
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->shm_allocator->lock : NULL;
-        md_orderbook* orderbook = (md_orderbook*) c_shm_request(shm_allocator, size, 0, lock);
-        if (!orderbook) return NULL;
-        orderbook->capacity = book_size;
-        orderbook->shm_allocator = shm_allocator->shm_allocator;
-        return orderbook;
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        md_orderbook* orderbook = (md_orderbook*) c_heap_request(heap_allocator, size, 0, lock);
-        if (!orderbook) return NULL;
-        orderbook->capacity = book_size;
-        orderbook->heap_allocator = heap_allocator;
-        return orderbook;
-    }
-    else {
-        md_orderbook* orderbook = (md_orderbook*) calloc(1, size);
-        if (!orderbook) return NULL;
-        orderbook->capacity = book_size;
-        return orderbook;
-    }
+    md_orderbook* orderbook = (md_orderbook*) c_md_alloc(size, allocator);
+    if (!orderbook) return NULL;
+    orderbook->capacity = book_size;
+    return orderbook;
 }
 
-static inline void c_md_orderbook_free(md_orderbook* orderbook, bool with_lock) {
+static inline void c_md_orderbook_free(md_orderbook* orderbook) {
     if (!orderbook) return;
-
-    shm_allocator* shm_allocator = orderbook->shm_allocator;
-    heap_allocator* heap_allocator = orderbook->heap_allocator;
-
-    if (shm_allocator) {
-        pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
-        c_shm_free((void*) orderbook, lock);
-    }
-    else if (heap_allocator) {
-        pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
-        c_heap_free((void*) orderbook, lock);
-    }
-    else {
-        free((void*) orderbook);
-    }
+    c_md_free(orderbook);
 }
 
 static inline int c_md_orderbook_sort(md_orderbook* orderbook) {

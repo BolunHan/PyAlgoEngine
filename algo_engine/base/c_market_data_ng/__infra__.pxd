@@ -137,7 +137,6 @@ from .c_market_data cimport (
 
     c_init_buffer,
     c_deserialize_buffer,
-    c_recycle_buffer,
     c_write_uint128,
     c_read_uint128,
     c_write_int128,

@@ -5,9 +5,9 @@ from libc.stdint cimport uint64_t, uintptr_t
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
 
+from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from .c_market_data cimport (
-    SHM_ALLOCATOR, HEAP_ALLOCATOR,
-    md_data_type, md_direction, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_CFG_BOOK_SIZE,
+    md_data_type, md_direction, MD_CFG_BOOK_SIZE,
     md_orderbook_entry, c_md_orderbook_sort,
     c_init_buffer, c_md_orderbook_new, c_md_orderbook_free
 )
@@ -134,13 +134,7 @@ cdef class OrderBook:
 
         cdef size_t book_size = MD_CFG_BOOK_SIZE
 
-        if MD_CFG_SHARED:
-            self.header = c_md_orderbook_new(book_size, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
-        elif MD_CFG_FREELIST:
-            self.header = c_md_orderbook_new(book_size, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
-        else:
-            self.header = c_md_orderbook_new(book_size, NULL, NULL, 0)
-
+        self.header = c_md_orderbook_new(book_size, MD_DEFAULT_ALLOCATOR)
         if not self.header:
             raise MemoryError('Failed to allocate memory for OrderBook')
 
@@ -194,7 +188,7 @@ cdef class OrderBook:
             return
 
         if self.header:
-            c_md_orderbook_free(self.header, <int> MD_CFG_LOCKED)
+            c_md_orderbook_free(self.header)
 
     def __getbuffer__(self, Py_buffer *view, int flags):
         # Fill in the Py_buffer structure
@@ -274,14 +268,7 @@ cdef class OrderBook:
         cdef size_t book_size = borrowed.capacity
         cdef size_t buffer_size = sizeof(md_orderbook) + borrowed.capacity * sizeof(md_orderbook_entry);
 
-        cdef md_orderbook* header
-        if MD_CFG_SHARED:
-            header = c_md_orderbook_new(book_size, SHM_ALLOCATOR, NULL, <int> MD_CFG_LOCKED)
-        elif MD_CFG_FREELIST:
-            header = c_md_orderbook_new(book_size, NULL, HEAP_ALLOCATOR, <int> MD_CFG_LOCKED)
-        else:
-            header = c_md_orderbook_new(book_size, NULL, NULL, 0)
-
+        cdef md_orderbook* header = c_md_orderbook_new(book_size, MD_DEFAULT_ALLOCATOR)
         if not header:
             raise MemoryError('Failed to allocate memory for OrderBook')
 
@@ -487,8 +474,8 @@ cdef class TickData(MarketData):
 
     def __copy__(self):
         cdef TickData instance = super().__copy__()
-        cdef md_orderbook* bid_header = c_md_orderbook_new(self.header.tick_data_full.bid.capacity, NULL, NULL, <int> MD_CFG_LOCKED)
-        cdef md_orderbook* ask_header = c_md_orderbook_new(self.header.tick_data_full.ask.capacity, NULL, NULL, <int> MD_CFG_LOCKED)
+        cdef md_orderbook* bid_header = c_md_orderbook_new(self.header.tick_data_full.bid.capacity, MD_DEFAULT_ALLOCATOR)
+        cdef md_orderbook* ask_header = c_md_orderbook_new(self.header.tick_data_full.ask.capacity, MD_DEFAULT_ALLOCATOR)
 
         memcpy(<void*> bid_header, <void*> self.header.tick_data_full.bid, sizeof(md_orderbook) + self.header.tick_data_full.bid.capacity * sizeof(md_orderbook_entry))
         memcpy(<void*> ask_header, <void*> self.header.tick_data_full.ask, sizeof(md_orderbook) + self.header.tick_data_full.ask.capacity * sizeof(md_orderbook_entry))

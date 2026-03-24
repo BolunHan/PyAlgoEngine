@@ -21,97 +21,27 @@ class DataType(enum.IntEnum):
     DTYPE_INSTRUCTION = md_data_type.DTYPE_INSTRUCTION
 
 
-cdef bint MD_CFG_LOCKED = False
-cdef bint MD_CFG_SHARED = True
-cdef bint MD_CFG_FREELIST = True
 cdef size_t MD_CFG_BOOK_SIZE = BOOK_SIZE
 
 
-cdef class EnvConfigContext:
-    def __cinit__(self, **kwargs):
-        self.overrides = kwargs
-        self.originals = {}
-
+cdef class BookConfigContext(EnvConfigContext):
     cdef void c_activate(self):
-        if 'locked' in self.overrides:
-            global MD_CFG_LOCKED
-            self.originals['locked'] = MD_CFG_LOCKED
-            MD_CFG_LOCKED = self.overrides['locked']
-
-        if 'shared' in self.overrides:
-            global MD_CFG_SHARED
-            self.originals['shared'] = MD_CFG_SHARED
-            MD_CFG_SHARED = self.overrides['shared']
-
-        if 'freelist' in self.overrides:
-            global MD_CFG_FREELIST
-            self.originals['freelist'] = MD_CFG_FREELIST
-            MD_CFG_FREELIST = self.overrides['freelist']
-
         if 'book_size' in self.overrides:
             global MD_CFG_BOOK_SIZE
             self.originals['book_size'] = MD_CFG_BOOK_SIZE
             MD_CFG_BOOK_SIZE = self.overrides['book_size']
 
     cdef void c_deactivate(self):
-        if 'locked' in self.originals:
-            global MD_CFG_LOCKED
-            MD_CFG_LOCKED = self.originals.pop('locked')
-
-        if 'shared' in self.originals:
-            global MD_CFG_SHARED
-            MD_CFG_SHARED = self.originals.pop('shared')
-
-        if 'freelist' in self.originals:
-            global MD_CFG_FREELIST
-            MD_CFG_FREELIST = self.originals.pop('freelist')
-
         if 'book_size' in self.originals:
             global MD_CFG_BOOK_SIZE
             MD_CFG_BOOK_SIZE = self.originals.pop('book_size')
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}({self.overrides!r})'
 
-    def __enter__(self):
-        self.c_activate()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.c_deactivate()
-
-    def __or__(self, EnvConfigContext other):
-        if not isinstance(other, EnvConfigContext):
-            return NotImplemented
-        merged_overrides = self.overrides | other.overrides
-        return EnvConfigContext(**merged_overrides)
-
-    def __invert__(self):
-        return EnvConfigContext.__new__(
-            EnvConfigContext,
-            **{k: not v if isinstance(v, bool) else v for k, v in self.overrides.items()}
-        )
-
-    def __call__(self, func):
-        def wrapper(*args, **kwargs):
-            self.c_activate()
-            ret = func(*args, **kwargs)
-            self.c_deactivate()
-            return ret
-        return wrapper
+cdef BookConfigContext MD_BOOK5     = BookConfigContext(book_size=5)
+cdef BookConfigContext MD_BOOK10    = BookConfigContext(book_size=10)
+cdef BookConfigContext MD_BOOK20    = BookConfigContext(book_size=20)
 
 
-cdef EnvConfigContext MD_SHARED     = EnvConfigContext(shared=True)
-cdef EnvConfigContext MD_LOCKED     = EnvConfigContext(locked=True)
-cdef EnvConfigContext MD_FREELIST   = EnvConfigContext(freelist=True)
-cdef EnvConfigContext MD_BOOK5      = EnvConfigContext(book_size=5)
-cdef EnvConfigContext MD_BOOK10     = EnvConfigContext(book_size=10)
-cdef EnvConfigContext MD_BOOK20     = EnvConfigContext(book_size=20)
-
-
-globals()['MD_SHARED'] = MD_SHARED
-globals()['MD_LOCKED'] = MD_LOCKED
-globals()['MD_FREELIST'] = MD_FREELIST
 globals()['MD_BOOK5'] = MD_BOOK5
 globals()['MD_BOOK10'] = MD_BOOK10
 globals()['MD_BOOK20'] = MD_BOOK20
@@ -297,7 +227,7 @@ cdef class MarketData:
             return
 
         if self.header:
-            c_recycle_buffer(self.header)
+            c_md_free(self.header)
 
     def __reduce__(self):
         return MarketData.from_bytes, (self.to_bytes(),), self.__dict__
@@ -310,7 +240,7 @@ cdef class MarketData:
         cdef object cls = self.__class__
         cdef MarketData instance = <MarketData> cls.__new__(cls)
         cdef md_data_type dtype = self.header.meta_info.dtype
-        cdef md_variant* header = c_md_new(dtype, NULL, NULL, <int> MD_CFG_LOCKED)
+        cdef md_variant* header = c_md_new(dtype, MD_DEFAULT_ALLOCATOR)
         cdef size_t size = c_md_get_size(self.header.meta_info.dtype)
         memcpy(<void*> instance.header, <const char*> self.header, size)
         instance.__dict__.update(self.__dict__)

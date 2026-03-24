@@ -3,7 +3,9 @@ from cpython.ref cimport Py_XINCREF, Py_XDECREF
 from libc.stdlib cimport calloc, realloc, free
 from libc.string cimport memcpy, memset
 
+from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR
 from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST
+from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
 
 
 class InvalidBufferError(Exception):
@@ -70,17 +72,14 @@ cdef class MarketDataBufferCache:
             header = c_md_block_buffer_extend(
                 buffer.header,
                 ptr_cap,
-                data_cap,
-                SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-                HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-                <int> MD_CFG_LOCKED
+                data_cap
             )
 
             if not header:
                 raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
 
             if buffer.owner:
-                c_md_block_buffer_free(buffer.header, 1)
+                c_md_block_buffer_free(buffer.header)
 
             buffer.header = header
             buffer.owner = True
@@ -160,13 +159,7 @@ cdef class MarketDataBuffer:
         if not ptr_cap and not data_cap:
             return
 
-        self.header = c_md_block_buffer_new(
-            ptr_cap,
-            data_cap,
-            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-            <int> MD_CFG_LOCKED
-        )
+        self.header = c_md_block_buffer_new(ptr_cap, data_cap, MD_DEFAULT_ALLOCATOR)
         if not self.header:
             raise MemoryError("Failed to allocate MarketDataBuffer")
 
@@ -178,7 +171,7 @@ cdef class MarketDataBuffer:
             return
 
         if self.header:
-            c_md_block_buffer_free(self.header, 1)
+            c_md_block_buffer_free(self.header)
 
     cdef void c_sort(self):
         cdef int ret_code = c_md_block_buffer_sort(self.header)
@@ -202,14 +195,11 @@ cdef class MarketDataBuffer:
             header = c_md_block_buffer_extend(
                 self.header,
                 max(ptr_capacity * 2, ptr_tail + 1),
-                max(data_capacity * 2, data_tail + md_size),
-                SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-                HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-                <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
+                max(data_capacity * 2, data_tail + md_size)
             )
             if not header:
                 raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
-            c_md_block_buffer_free(self.header, 1)
+            c_md_block_buffer_free(self.header)
             self.header = header
 
         cdef int ret_code = c_md_block_buffer_put(self.header, market_data)
@@ -230,12 +220,7 @@ cdef class MarketDataBuffer:
         if idx < 0:
             idx += total
         cdef const char* blob = c_md_block_buffer_get(self.header, idx)
-        cdef md_variant* md = c_md_deserialize(
-            blob,
-            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-            <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
-        )
+        cdef md_variant* md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
         return md
 
     cdef void c_clear(self):
@@ -334,13 +319,7 @@ cdef class MarketDataBuffer:
 
 cdef class MarketDataRingBuffer:
     def __cinit__(self, size_t ptr_cap, size_t data_cap):
-        self.header = c_md_ring_buffer_new(
-            ptr_cap,
-            data_cap,
-            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-            <int> MD_CFG_LOCKED
-        )
+        self.header = c_md_ring_buffer_new(ptr_cap, data_cap, MD_DEFAULT_ALLOCATOR)
         if not self.header:
             raise MemoryError("Failed to allocate MarketDataBuffer")
 
@@ -352,7 +331,7 @@ cdef class MarketDataRingBuffer:
             return
 
         if self.header:
-            c_md_ring_buffer_free(self.header, 1)
+            c_md_ring_buffer_free(self.header)
 
     cdef bint c_is_empty(self):
         if not self.header:
@@ -385,12 +364,7 @@ cdef class MarketDataRingBuffer:
         if idx < 0:
             idx += total
         cdef const char* blob = c_md_ring_buffer_get(self.header, idx)
-        cdef md_variant* md = c_md_deserialize(
-            blob,
-            SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-            HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-            <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
-        )
+        cdef md_variant* md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
         return md
 
     cdef md_variant* c_listen(self, bint block=True, double timeout=0):
@@ -399,12 +373,7 @@ cdef class MarketDataRingBuffer:
         cdef md_variant* md
 
         if not ret_code:
-            md = c_md_deserialize(
-                blob,
-                SHM_ALLOCATOR if MD_CFG_SHARED else NULL,
-                HEAP_ALLOCATOR if MD_CFG_FREELIST else NULL,
-                <int> MD_CFG_LOCKED if (MD_CFG_SHARED or MD_CFG_FREELIST) else 0
-            )
+            md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
             return md
 
         if ret_code == MD_BUF_ERR_INVALID:
@@ -475,12 +444,7 @@ cdef class MarketDataRingBuffer:
 
 cdef class MarketDataConcurrentBuffer:
     def __cinit__(self, size_t n_workers, size_t capacity):
-        self.header = c_md_concurrent_buffer_new(
-            n_workers,
-            capacity,
-            SHM_ALLOCATOR,
-            <int> MD_CFG_LOCKED
-        )
+        self.header = c_md_concurrent_buffer_new(n_workers, capacity, MD_SHM_ALLOCATOR)
         if not self.header:
             raise MemoryError("Failed to allocate MarketDataBuffer")
 
@@ -492,7 +456,7 @@ cdef class MarketDataConcurrentBuffer:
             return
 
         if self.header:
-            c_md_concurrent_buffer_free(self.header, 1)
+            c_md_concurrent_buffer_free(self.header)
 
     cdef bint c_is_worker_empty(self, size_t worker_id):
         if not self.header:
@@ -526,12 +490,7 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef void c_put(self, md_variant* market_data, bint block=True, double timeout=0):
         if not market_data.meta_info.shm_allocator:
-            market_data = c_md_send_to_shm(
-                market_data,
-                SHM_ALLOCATOR,
-                SHM_POOL,
-                <int> MD_CFG_LOCKED
-            )
+            market_data = c_md_send_to_shm(market_data, MD_SHM_ALLOCATOR, SHM_POOL)
         cdef int ret_code = c_md_concurrent_buffer_put(self.header, market_data, block, timeout)
 
         if ret_code == MD_BUF_OK:
