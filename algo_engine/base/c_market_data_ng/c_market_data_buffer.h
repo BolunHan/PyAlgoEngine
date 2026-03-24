@@ -43,14 +43,8 @@ typedef struct md_block_buffer {
 } md_block_buffer;
 
 typedef struct md_ring_buffer {
-    size_t ptr_capacity;
-    size_t ptr_offset;
-    size_t ptr_head;
-    size_t ptr_tail;
-    size_t data_capacity;
-    size_t data_offset;
-    size_t data_tail;
-    char buffer[];
+    md_ptr_array ptr_array;
+    md_data_array data_array;
 } md_ring_buffer;
 
 typedef struct md_concurrent_buffer_worker_t {
@@ -76,7 +70,7 @@ static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t
 static inline void c_md_block_buffer_free(md_block_buffer* buffer);
 static inline int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity);
 static inline int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data);
-static inline int c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** data_out, size_t* size_out);
+static inline int c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** out);
 static inline int c_md_block_buffer_sort(md_block_buffer* buffer);
 static inline int c_md_block_buffer_clear(md_block_buffer* buffer);
 static inline size_t c_md_block_buffer_serialized_size(md_block_buffer* buffer);
@@ -89,7 +83,7 @@ static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* m
 static inline int c_md_ring_buffer_is_empty(md_ring_buffer* buffer);
 static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer);
 static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, bool block, double timeout);
-static inline const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index);
+static inline int c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index, const char** out);
 static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, double timeout, const char** out);
 
 static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers, size_t capacity, allocator_protocol* shm_allocator);
@@ -313,22 +307,13 @@ static inline int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* mar
     return MD_OK;
 }
 
-static inline int c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** data_out, size_t* size_out) {
+static inline int c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** out) {
     if (!buffer) return MD_ERR_INVALID_INPUT;
     size_t ptr_tail = buffer->ptr_array.idx_tail;
     if (idx >= ptr_tail) return MD_ERR_OOR;
 
     size_t data_offset = buffer->ptr_array.offsets[idx];
-    if (data_out) *data_out = (const char*) buffer->data_array.buf + data_offset;
-    if (size_out) {
-        if (idx == ptr_tail - 1) {
-            *size_out = buffer->data_array.occupied - data_offset;
-        }
-        else {
-            size_t next_data_offset = buffer->ptr_array.offsets[idx + 1];
-            *size_out = next_data_offset - data_offset;
-        }
-    }
+    if (out) *out = (const char*) buffer->data_array.buf + data_offset;
     return MD_OK;
 }
 
@@ -433,42 +418,53 @@ static inline md_block_buffer* c_md_block_buffer_deserialize(const char* blob, a
 // ========== RingBuffer API Functions ==========
 
 static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) {
-    size_t data_offset = ptr_capacity * sizeof(size_t);
-    size_t size = sizeof(md_ring_buffer) + data_offset + data_capacity;
-
-    if (size == 0) return NULL;
-
-    md_ring_buffer* buffer = (md_ring_buffer*) c_md_alloc(size, allocator);
+    md_ring_buffer* buffer = (md_ring_buffer*) c_md_alloc(sizeof(md_ring_buffer), allocator);
     if (!buffer) return NULL;
-    buffer->ptr_capacity = ptr_capacity;
-    buffer->data_capacity = data_capacity;
-    buffer->data_offset = data_offset;
+
+    buffer->ptr_array.capacity = ptr_capacity;
+    if (ptr_capacity) {
+        buffer->ptr_array.offsets = (size_t*) c_md_alloc(ptr_capacity * sizeof(size_t), allocator);
+        if (!buffer->ptr_array.offsets) goto oom;
+    }
+
+    buffer->data_array.capacity = data_capacity;
+    if (data_capacity) {
+        buffer->data_array.buf = (char*) c_md_alloc(data_capacity, allocator);
+        if (!buffer->data_array.buf) goto oom;
+    }
+
     return buffer;
+
+oom:
+    c_md_ring_buffer_free(buffer);
+    return NULL;
 }
 
 static inline void c_md_ring_buffer_free(md_ring_buffer* buffer) {
     if (!buffer) return;
+    if (buffer->ptr_array.offsets) c_md_free(buffer->ptr_array.offsets);
+    if (buffer->data_array.buf) c_md_free(buffer->data_array.buf);
     c_md_free(buffer);
 }
 
 static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data) {
     if (!buffer) return MD_ERR_INVALID_INPUT;
 
-    size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
-    size_t ptr_head = buffer->ptr_head;
-    size_t ptr_tail = buffer->ptr_tail;
-    size_t ptr_next = (ptr_tail + 1) % buffer->ptr_capacity;
+    size_t ptr_head = buffer->ptr_array.idx_head;
+    size_t ptr_tail = buffer->ptr_array.idx_tail;
+    size_t ptr_capacity = buffer->ptr_array.capacity;
+    size_t ptr_next = (ptr_tail + 1) % ptr_capacity;
 
     if (ptr_head == ptr_next) return 1;
 
     if (ptr_head == ptr_tail) return 0;
 
     size_t payload_size = c_md_serialized_size(market_data);
-    size_t data_head = offset_array[buffer->ptr_head];
-    size_t data_tail = buffer->data_tail;
+    size_t data_head = buffer->ptr_array.offsets[ptr_head];
+    size_t data_tail = buffer->data_array.occupied;
 
     if (data_tail >= data_head) {
-        size_t space_end = buffer->data_capacity - data_tail;
+        size_t space_end = buffer->data_array.capacity - data_tail;
         size_t space_start = data_head;
         if (payload_size <= space_end) {
             return 0;
@@ -495,8 +491,8 @@ static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* m
 static inline int c_md_ring_buffer_is_empty(md_ring_buffer* buffer) {
     if (!buffer) return MD_ERR_INVALID_INPUT;
 
-    size_t ptr_head = buffer->ptr_head;
-    size_t ptr_tail = buffer->ptr_tail;
+    size_t ptr_head = buffer->ptr_array.idx_head;
+    size_t ptr_tail = buffer->ptr_array.idx_tail;
 
     if (ptr_head == ptr_tail) return 1;
     else return 0;
@@ -505,9 +501,9 @@ static inline int c_md_ring_buffer_is_empty(md_ring_buffer* buffer) {
 static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer) {
     if (!buffer) return 0;
 
-    size_t ptr_head = buffer->ptr_head;
-    size_t ptr_tail = buffer->ptr_tail;
-    size_t capacity = buffer->ptr_capacity;
+    size_t ptr_head = buffer->ptr_array.idx_head;
+    size_t ptr_tail = buffer->ptr_array.idx_tail;
+    size_t capacity = buffer->ptr_array.capacity;
 
     if (ptr_tail >= ptr_head) {
         return ptr_tail - ptr_head;
@@ -533,10 +529,10 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* marke
     time(&start_time);
 
     for (;;) {
-        size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
-        size_t ptr_head = buffer->ptr_head;
-        size_t ptr_tail = buffer->ptr_tail;
-        size_t ptr_next = (ptr_tail + 1) % buffer->ptr_capacity;
+        size_t* offset_array = buffer->ptr_array.offsets;
+        size_t ptr_head = buffer->ptr_array.idx_head;
+        size_t ptr_tail = buffer->ptr_array.idx_tail;
+        size_t ptr_next = (ptr_tail + 1) % buffer->ptr_array.capacity;
 
         /* Check pointer slot availability */
         if (ptr_head == ptr_next) {
@@ -545,20 +541,20 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* marke
         else {
             /* Check data space availability and compute write_offset */
             size_t data_head = offset_array[ptr_head];
-            size_t data_tail = buffer->data_tail;
+            size_t data_tail = buffer->data_array.occupied;
             size_t write_offset = 0;
 
             if (data_tail >= data_head) {
-                size_t space_end = buffer->data_capacity - data_tail;
+                size_t space_end = buffer->data_array.capacity - data_tail;
                 if (serialized_size <= space_end) {
                     write_offset = data_tail;
-                    buffer->data_tail += serialized_size;
+                    buffer->data_array.occupied += serialized_size;
                 }
                 else {
                     /* Wrap around */
                     if (serialized_size <= data_head) {
                         write_offset = 0;
-                        buffer->data_tail = serialized_size;
+                        buffer->data_array.occupied = serialized_size;
                     }
                     else {
                         /* insufficient space; treat as full */
@@ -570,7 +566,7 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* marke
                 size_t space_middle = data_head - data_tail;
                 if (serialized_size <= space_middle) {
                     write_offset = data_tail;
-                    buffer->data_tail += serialized_size;
+                    buffer->data_array.occupied += serialized_size;
                 }
                 else {
                     write_offset = (size_t) -1;
@@ -579,10 +575,10 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* marke
 
             if (write_offset != (size_t) -1) {
                 /* Commit write */
-                char* data_ptr = buffer->buffer + buffer->data_offset + write_offset;
+                char* data_ptr = buffer->data_array.buf + write_offset;
                 c_md_serialize(market_data, data_ptr);
                 offset_array[ptr_tail] = write_offset;
-                buffer->ptr_tail = ptr_next;
+                buffer->ptr_array.idx_tail = ptr_next;
                 return MD_OK;
             }
 
@@ -626,25 +622,22 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* marke
     }
 }
 
-static inline const char* c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index) {
-    if (!buffer) return NULL;
-    if (index >= buffer->ptr_capacity) return NULL;
+static inline int c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index, const char** out) {
+    if (!buffer) return MD_ERR_INVALID_INPUT;
+    if (index >= buffer->ptr_array.capacity) return MD_ERR_OOR;
     size_t size = c_md_ring_buffer_size(buffer);
-    if (index >= size) return NULL;
+    if (index >= size) return MD_ERR_OOR;
 
-    size_t ptr_head = buffer->ptr_head;
-    size_t ptr_capacity = buffer->ptr_capacity;
+    size_t ptr_head = buffer->ptr_array.idx_head;
+    size_t ptr_capacity = buffer->ptr_array.capacity;
     size_t ptr_idx = (ptr_head + index) % ptr_capacity;
 
-    size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
+    size_t* offset_array = buffer->ptr_array.offsets;
     size_t data_offset = offset_array[ptr_idx];
 
-    if (data_offset >= buffer->data_capacity) {
-        return NULL;
-    }
-
-    char* data_ptr = buffer->buffer + buffer->data_offset + data_offset;
-    return data_ptr;
+    if (data_offset >= buffer->data_array.capacity) return MD_ERR_BUF_CORRUPTED;
+    if (out) *out = buffer->data_array.buf + data_offset;
+    return MD_OK;
 }
 
 static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, double timeout, const char** out) {
@@ -657,23 +650,22 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, do
     uint32_t spin_count = 0;
     uint32_t sleep_us = 0;
     const int use_timeout = timeout > 0.0;
-    size_t idx = buffer->ptr_head;
+    size_t idx = buffer->ptr_array.idx_head;
 
-    if (!block && idx == buffer->ptr_tail) {
+    if (!block && idx == buffer->ptr_array.idx_tail) {
         return MD_ERR_BUF_EMPTY; /* empty and non-blocking */
     }
 
     time(&start_time);
 
     for (;;) {
-        if (idx != buffer->ptr_tail) {
-            size_t* offset_array = (size_t*) (buffer->buffer + buffer->ptr_offset);
+        if (idx != buffer->ptr_array.idx_tail) {
+            size_t* offset_array = buffer->ptr_array.offsets;
             size_t data_offset = offset_array[idx];
-            if (data_offset >= buffer->data_capacity) return MD_ERR_BUF_CORRUPTED; /* corrupt offset */
-
-            const char* data_ptr = (buffer->buffer + buffer->data_offset + data_offset);
-            buffer->ptr_head = (idx + 1) % buffer->ptr_capacity;
-            *out = data_ptr;
+            if (data_offset >= buffer->data_array.capacity) return MD_ERR_BUF_CORRUPTED; /* corrupt offset */
+            const char* data_ptr = buffer->data_array.buf + data_offset;
+            buffer->ptr_array.idx_head = (idx + 1) % buffer->ptr_array.capacity;
+            if (out) *out = data_ptr;
             return MD_OK;
         }
 

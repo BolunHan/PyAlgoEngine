@@ -192,7 +192,7 @@ cdef class MarketDataBuffer:
         if idx < 0:
             idx += total
         cdef const char* blob = NULL
-        cdef int ret_code = c_md_block_buffer_get(self.header, idx, &blob, NULL)
+        cdef int ret_code = c_md_block_buffer_get(self.header, idx, &blob)
         if ret_code == md_ret_code.MD_OK:
             return c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
         elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
@@ -328,14 +328,23 @@ cdef class MarketDataRingBuffer:
             raise RuntimeError(f'Failed to put MarketData, error code: {ret_code}')
 
     cdef md_variant* c_get(self, ssize_t idx):
-        cdef ssize_t total = self.header.ptr_tail
+        cdef ssize_t total = c_md_ring_buffer_size(self.header)
         if idx >= total or idx < -total:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
         if idx < 0:
             idx += total
-        cdef const char* blob = c_md_ring_buffer_get(self.header, idx)
-        cdef md_variant* md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
-        return md
+        cdef const char* blob = NULL
+        cdef int ret_code = c_md_ring_buffer_get(self.header, idx, &blob)
+        if ret_code == md_ret_code.MD_OK:
+            return c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
+            raise ValueError('Invalid args')
+        elif ret_code == md_ret_code.MD_ERR_BUF_EMPTY:
+            raise BufferEmpty('Buffer is empty')
+        elif ret_code == md_ret_code.MD_ERR_OOR:
+            raise IndexError(f'Index {idx} out of range')
+        else:
+            raise RuntimeError(f'c_md_ring_buffer_get failed with err code: {ret_code}')
 
     cdef md_variant* c_listen(self, bint block=True, double timeout=0):
         cdef const char* blob = NULL
@@ -389,23 +398,23 @@ cdef class MarketDataRingBuffer:
 
     property ptr_capacity:
         def __get__(self):
-            return self.header.ptr_capacity
+            return self.header.ptr_array.capacity
 
     property ptr_head:
         def __get__(self):
-            return self.header.ptr_head
+            return self.header.ptr_array.idx_head
 
     property ptr_tail:
         def __get__(self):
-            return self.header.ptr_tail
+            return self.header.ptr_array.idx_tail
 
     property data_capacity:
         def __get__(self):
-            return self.header.data_capacity
+            return self.header.data_array.capacity
 
     property data_tail:
         def __get__(self):
-            return self.header.data_tail
+            return self.header.data_array.occupied
 
     property is_empty:
         def __get__(self):
