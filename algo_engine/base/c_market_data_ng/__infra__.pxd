@@ -1,3 +1,19 @@
+from .c_allocator_protocol cimport (
+    MD_CFG_LOCKED,
+    MD_CFG_SHARED,
+    MD_CFG_FREELIST,
+
+    EnvConfigContext,
+    MD_SHARED,
+    MD_LOCKED,
+    MD_FREELIST,
+
+    AllocatorProtocol,
+    MD_DEFAULT_ALLOCATOR,
+    MD_SHM_ALLOCATOR,
+    MD_HEAP_ALLOCATOR
+)
+
 from .c_market_data cimport (
     # === Global flags ===
     DEBUG,
@@ -75,6 +91,7 @@ from .c_market_data cimport (
     UINT128_MAX,
 
     # === Structs ===
+    md_ret_code,
     md_direction,
     md_offset,
     md_side,
@@ -130,9 +147,7 @@ from .c_market_data cimport (
     c_md_compare_long_id,
 
     # === Public APIs (Cython-layer) ===
-    MD_CFG_LOCKED,
-    MD_CFG_SHARED,
-    MD_CFG_FREELIST,
+    BookConfigContext,
     MD_CFG_BOOK_SIZE,
 
     c_init_buffer,
@@ -149,10 +164,6 @@ from .c_market_data cimport (
     c_from_header_func,
 
     # === Public APIs (Python-layer) ===
-    EnvConfigContext,
-    MD_SHARED,
-    MD_LOCKED,
-    MD_FREELIST,
     MD_BOOK5,
     MD_BOOK10,
     MD_BOOK20,
@@ -166,16 +177,6 @@ from .c_candlestick cimport BarData, DailyBar, bar_from_header
 from .c_trade_utils cimport TradeReport, TradeInstruction, report_from_header, instruction_from_header
 
 from .c_market_data_buffer cimport (
-    MD_BUF_OK,
-    MD_BUF_ERR_INVALID,
-    MD_BUF_ERR_NOT_SHM,
-    MD_BUF_ERR_FULL,
-    MD_BUF_ERR_EMPTY,
-    MD_BUF_ERR_TIMEOUT,
-    MD_BUF_ERR_CORRUPT,
-    MD_BUF_OOR,
-    MD_BUF_DISABLED,
-
     md_block_buffer,
     md_ring_buffer,
     md_concurrent_buffer_worker_t,
