@@ -147,6 +147,11 @@ if os.name == 'posix':
         ),
         # === Market Data Cython Extensions ===
         Extension(
+            name="algo_engine.base.c_market_data_ng.c_allocator_protocol",
+            sources=["algo_engine/base/c_market_data_ng/c_allocator_protocol.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
             name="algo_engine.base.c_market_data_ng.c_market_data",
             sources=["algo_engine/base/c_market_data_ng/c_market_data.pyx"],
             extra_compile_args=["-O3"]
