@@ -3,7 +3,7 @@ from cpython.ref cimport Py_XINCREF, Py_XDECREF
 from libc.stdlib cimport calloc, realloc, free
 from libc.string cimport memcpy, memset
 
-from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR
+from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR, c_md_protocol_from_ptr
 from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, md_ret_code
 from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
 
@@ -468,7 +468,8 @@ cdef class MarketDataConcurrentBuffer:
         return <bint> c_md_concurrent_buffer_is_full(self.header)
 
     cdef void c_put(self, md_variant* market_data, bint block=True, double timeout=0):
-        if not market_data.meta_info.shm_allocator:
+        cdef allocator_protocol* md_allocator = c_md_protocol_from_ptr(market_data)
+        if not md_allocator.with_shm:
             market_data = c_md_send_to_shm(market_data, MD_SHM_ALLOCATOR, SHM_POOL)
         cdef int ret_code = c_md_concurrent_buffer_put(self.header, market_data, block, timeout)
 
