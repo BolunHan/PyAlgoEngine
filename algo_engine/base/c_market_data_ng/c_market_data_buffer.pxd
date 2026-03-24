@@ -1,3 +1,4 @@
+from libcpp cimport bool as c_bool
 from cpython.object cimport PyObject
 
 from .c_allocator_protocol cimport allocator_protocol
@@ -6,26 +7,25 @@ from ..c_intern_string cimport istr_map
 
 
 cdef extern from "c_market_data_buffer.h":
-    const int MD_BUF_OK
-    const int MD_BUF_ERR_INVALID
-    const int MD_BUF_ERR_NOT_SHM
-    const int MD_BUF_ERR_FULL
-    const int MD_BUF_ERR_EMPTY
-    const int MD_BUF_ERR_TIMEOUT
-    const int MD_BUF_ERR_CORRUPT
-    const int MD_BUF_OOR
-    const int MD_BUF_DISABLED
+    size_t MD_BUF_PTR_DEFAULT_CAP
+    size_t MD_BUF_DATA_DEFAULT_CAP
+
+    ctypedef struct md_ptr_array:
+        size_t capacity
+        size_t idx_head
+        size_t idx_tail
+        size_t* offsets
+
+    ctypedef struct md_data_array:
+        size_t capacity
+        size_t occupied
+        char* buf
 
     ctypedef struct md_block_buffer:
-        bint sorted
-        size_t ptr_capacity
-        size_t ptr_offset
-        size_t ptr_tail
-        size_t data_capacity
-        size_t data_offset
-        size_t data_tail
+        md_ptr_array ptr_array
+        md_data_array data_array
         double current_timestamp
-        char buffer[]
+        c_bool sorted
 
     ctypedef struct md_ring_buffer:
         size_t ptr_capacity
@@ -54,13 +54,14 @@ cdef extern from "c_market_data_buffer.h":
 
     md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) noexcept nogil
     void c_md_block_buffer_free(md_block_buffer* buffer) noexcept nogil
-    md_block_buffer* c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity) noexcept nogil
+    int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity) noexcept nogil
     int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data) noexcept nogil
-    const char* c_md_block_buffer_get(md_block_buffer* buffer, size_t index) noexcept nogil
+    int c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** data_out, size_t* size_out) noexcept nogil
     int c_md_block_buffer_sort(md_block_buffer* buffer) noexcept nogil
     int c_md_block_buffer_clear(md_block_buffer* buffer) noexcept nogil
     size_t c_md_block_buffer_serialized_size(md_block_buffer* buffer) noexcept nogil
-    size_t c_md_block_buffer_serialize(md_block_buffer* buffer, char* out_buffer) noexcept nogil
+    int c_md_block_buffer_serialize(md_block_buffer* buffer, char* out) noexcept nogil
+    md_block_buffer* c_md_block_buffer_deserialize(const char* blob, allocator_protocol* allocator) noexcept nogil
 
     md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) noexcept nogil
     void c_md_ring_buffer_free(md_ring_buffer* buffer) noexcept nogil

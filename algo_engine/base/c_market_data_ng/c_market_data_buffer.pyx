@@ -4,7 +4,7 @@ from libc.stdlib cimport calloc, realloc, free
 from libc.string cimport memcpy, memset
 
 from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR
-from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST
+from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, md_ret_code
 from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
 
 
@@ -64,25 +64,13 @@ cdef class MarketDataBufferCache:
             data_cap += c_md_serialized_size(md)
 
         cdef md_block_buffer* header = buffer.header
-        ptr_cap += header.ptr_tail
-        data_cap += header.data_tail
+        ptr_cap += header.ptr_array.idx_tail
+        data_cap += header.data_array.occupied
 
         # Step 2: Extend buffer if needed
-        if data_cap > header.data_capacity or ptr_cap > header.ptr_capacity:
-            header = c_md_block_buffer_extend(
-                buffer.header,
-                ptr_cap,
-                data_cap
-            )
-
-            if not header:
-                raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
-
-            if buffer.owner:
-                c_md_block_buffer_free(buffer.header)
-
-            buffer.header = header
-            buffer.owner = True
+        cdef int ret_code = c_md_block_buffer_extend(header, ptr_cap, data_cap)
+        if ret_code == md_ret_code.MD_ERR_OOM:
+            raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
 
         # Step 3: Copy cached data into buffer
         for i in range(self.size):
@@ -155,7 +143,7 @@ cdef class MarketDataBufferCache:
 cdef class MarketDataBuffer:
     __type_params__ = MarketData
 
-    def __cinit__(self, size_t ptr_cap, size_t data_cap):
+    def __cinit__(self, size_t ptr_cap=MD_BUF_PTR_DEFAULT_CAP, size_t data_cap=MD_BUF_DATA_DEFAULT_CAP):
         if not ptr_cap and not data_cap:
             return
 
@@ -176,59 +164,52 @@ cdef class MarketDataBuffer:
     cdef void c_sort(self):
         cdef int ret_code = c_md_block_buffer_sort(self.header)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_ERR_INVALID:
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise InvalidBufferError('Invalid buffer')
         else:
             raise RuntimeError(f'Failed to sort MarketDataBuffer, error code: {ret_code}')
 
     cdef void c_put(self, md_variant* market_data):
-        cdef md_block_buffer* header = self.header
-        cdef size_t ptr_tail = header.ptr_tail
-        cdef size_t ptr_capacity = header.ptr_capacity
-        cdef size_t data_tail = header.data_tail
-        cdef size_t data_capacity = header.data_capacity
-        cdef size_t md_size = c_md_serialized_size(market_data)
-
-        if ptr_tail >= ptr_capacity or data_tail + md_size > data_capacity:
-            header = c_md_block_buffer_extend(
-                self.header,
-                max(ptr_capacity * 2, ptr_tail + 1),
-                max(data_capacity * 2, data_tail + md_size)
-            )
-            if not header:
-                raise MemoryError("Failed to allocate new buffer for MarketDataBuffer")
-            c_md_block_buffer_free(self.header)
-            self.header = header
-
         cdef int ret_code = c_md_block_buffer_put(self.header, market_data)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_ERR_INVALID:
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError('Invalid args')
-        elif ret_code == MD_BUF_ERR_FULL:
+        elif ret_code == md_ret_code.MD_ERR_BUF_FULL:
             raise BufferFull('Buffer is full')
+        elif ret_code == md_ret_code.MD_ERR_OOM:
+            raise MemoryError(f'Failed to extend {self.__class__.__name__}')
         else:
             raise RuntimeError(f'Failed to put a MarketData into block buffer, error code: {ret_code}')
 
     cdef md_variant* c_get(self, ssize_t idx):
-        cdef ssize_t total = self.header.ptr_tail
+        cdef ssize_t total = self.header.ptr_array.idx_tail
         if idx >= total or idx < -total:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
         if idx < 0:
             idx += total
-        cdef const char* blob = c_md_block_buffer_get(self.header, idx)
-        cdef md_variant* md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
-        return md
+        cdef const char* blob = NULL
+        cdef int ret_code = c_md_block_buffer_get(self.header, idx, &blob, NULL)
+        if ret_code == md_ret_code.MD_OK:
+            return c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
+            raise ValueError('Invalid args')
+        elif ret_code == md_ret_code.MD_ERR_BUF_EMPTY:
+            raise BufferEmpty('Buffer is empty')
+        elif ret_code == md_ret_code.MD_ERR_OOR:
+            raise IndexError(f'Index {idx} out of range')
+        else:
+            raise RuntimeError(f'c_md_block_buffer_get failed with err code: {ret_code}')
 
     cdef void c_clear(self):
         cdef int ret_code = c_md_block_buffer_clear(self.header)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_ERR_INVALID:
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError('Invalid args')
         else:
             raise RuntimeError(f'Failed to clear MarketDataBuffer, error code: {ret_code}')
@@ -243,15 +224,15 @@ cdef class MarketDataBuffer:
         self.iter_idx = 0
         return self
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, ssize_t idx):
         cdef md_variant* md = self.c_get(idx)
         return MarketData.c_from_header(md, False)
 
     def __len__(self):
-        return self.header.ptr_tail
+        return self.header.ptr_array.idx_tail
 
     def __next__(self):
-        if self.iter_idx >= self.header.ptr_tail:
+        if self.iter_idx >= self.header.ptr_array.idx_tail:
             raise StopIteration
 
         cdef md_variant* md = self.c_get(self.iter_idx)
@@ -264,7 +245,7 @@ cdef class MarketDataBuffer:
     def put(self, MarketData market_data):
         self.c_put(market_data.header)
 
-    def get(self, idx: int):
+    def get(self, ssize_t idx):
         cdef md_variant* md = self.c_get(idx)
         return MarketData.c_from_header(md, False)
 
@@ -278,39 +259,28 @@ cdef class MarketDataBuffer:
         return result
 
     @classmethod
-    def from_bytes(cls, data: bytes):
-        cdef md_block_buffer* src = <md_block_buffer*> <char*> data
-        cdef size_t size = len(data)
-        cdef size_t ptr_cap = src.ptr_capacity
-        cdef size_t data_cap = src.data_capacity
-        cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, ptr_cap, data_cap)
-        memcpy(instance.header, src, size)
-        return instance
-
-    @classmethod
-    def from_buffer(cls, object data):
-        cdef md_block_buffer* src = <md_block_buffer*> <char*> data
+    def from_bytes(cls, bytes data):
+        cdef md_block_buffer* header = c_md_block_buffer_deserialize(<const char*> data, MD_DEFAULT_ALLOCATOR)
         cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, 0, 0)
-        instance.buf = data
-        instance.header = src
-        instance.owner = False
+        instance.header = header
+        instance.owner = True
         return instance
 
     property ptr_capacity:
         def __get__(self):
-            return self.header.ptr_capacity
+            return self.header.ptr_array.capacity
 
     property ptr_tail:
         def __get__(self):
-            return self.header.ptr_tail
+            return self.header.ptr_array.idx_tail
 
     property data_capacity:
         def __get__(self):
-            return self.header.data_capacity
+            return self.header.data_array.capacity
 
     property data_tail:
         def __get__(self):
-            return self.header.data_tail
+            return self.header.data_array.occupied
 
     property is_sorted:
         def __get__(self):
@@ -346,13 +316,13 @@ cdef class MarketDataRingBuffer:
     cdef void c_put(self, md_variant* market_data, bint block=True, double timeout=0.0):
         cdef int ret_code = c_md_ring_buffer_put(self.header, market_data, block, timeout)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_ERR_INVALID:
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError("Invalid args")
-        elif ret_code == MD_BUF_ERR_FULL:
+        elif ret_code == md_ret_code.MD_ERR_BUF_FULL:
             raise BufferFull('Ring buffer is full')
-        elif ret_code == MD_BUF_ERR_TIMEOUT:
+        elif ret_code == md_ret_code.MD_ERR_TIMEOUT:
             raise PipeTimeoutError('Timeout while putting to ring buffer')
         else:
             raise RuntimeError(f'Failed to put MarketData, error code: {ret_code}')
@@ -376,13 +346,13 @@ cdef class MarketDataRingBuffer:
             md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
             return md
 
-        if ret_code == MD_BUF_ERR_INVALID:
+        if ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError('Invalid args')
-        elif ret_code == MD_BUF_ERR_EMPTY:
+        elif ret_code == md_ret_code.MD_ERR_BUF_EMPTY:
             raise BufferEmpty('Empty buffer')
-        elif ret_code == MD_BUF_ERR_CORRUPT:
+        elif ret_code == md_ret_code.MD_ERR_BUF_CORRUPTED:
             raise BufferCorruptedError('Corrupted buffer')
-        elif ret_code == MD_BUF_ERR_TIMEOUT:
+        elif ret_code == md_ret_code.MD_ERR_TIMEOUT:
             raise PipeTimeoutError('Timeout')
         else:
             raise RuntimeError(f'Failed to fetch a MarketData from buffer, error code: {ret_code}')
@@ -465,9 +435,9 @@ cdef class MarketDataConcurrentBuffer:
 
         if ret_code >= 0:
             return <bint> ret_code
-        elif ret_code == MD_BUF_OOR:
+        elif ret_code == md_ret_code.MD_ERR_OOR:
             raise IndexError(f'worker_id {worker_id} out of range {self.header.n_workers}')
-        elif ret_code == MD_BUF_DISABLED:
+        elif ret_code == md_ret_code.MD_ERR_DISABLED:
             raise ValueError(f'worker {worker_id} disabled')
         else:
             raise RuntimeError(f'c_is_worker_empty failed, err code: {ret_code}')
@@ -493,15 +463,15 @@ cdef class MarketDataConcurrentBuffer:
             market_data = c_md_send_to_shm(market_data, MD_SHM_ALLOCATOR, SHM_POOL)
         cdef int ret_code = c_md_concurrent_buffer_put(self.header, market_data, block, timeout)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_ERR_INVALID:
+        elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError("Invalid args")
-        elif ret_code == MD_BUF_ERR_NOT_SHM:
+        elif ret_code == md_ret_code.MD_ERR_INVALID_ALLOCATOR:
             raise NotInSharedMemoryError('Must put a shm backed market data.')
-        elif ret_code == MD_BUF_ERR_FULL:
+        elif ret_code == md_ret_code.MD_ERR_BUF_FULL:
             raise BufferFull(f'{self.__class__.__name__} is full')
-        elif ret_code == MD_BUF_ERR_TIMEOUT:
+        elif ret_code == md_ret_code.MD_ERR_TIMEOUT:
             raise PipeTimeoutError('Timeout while putting to ring buffer')
         else:
             raise RuntimeError(f'Failed to put MarketData, error code: {ret_code}')
@@ -518,15 +488,15 @@ cdef class MarketDataConcurrentBuffer:
         if not ret_code:
             return market_data
 
-        if ret_code == MD_BUF_ERR_INVALID:
+        if ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError('Invalid args')
-        elif ret_code == MD_BUF_OOR:
+        elif ret_code == md_ret_code.MD_ERR_OOR:
             raise IndexError(f'Worker_id {worker_id} out of range')
-        elif ret_code == MD_BUF_DISABLED:
+        elif ret_code == md_ret_code.MD_ERR_DISABLED:
             raise ValueError(f'Worker {worker_id} disabled')
-        elif ret_code == MD_BUF_ERR_EMPTY:
+        elif ret_code == md_ret_code.MD_ERR_BUF_EMPTY:
             raise BufferEmpty('Empty buffer')
-        elif ret_code == MD_BUF_ERR_TIMEOUT:
+        elif ret_code == md_ret_code.MD_ERR_TIMEOUT:
             raise PipeTimeoutError('Timeout')
         else:
             raise RuntimeError(f'Failed to fetch a MarketData from buffer, error code: {ret_code}')
@@ -536,9 +506,9 @@ cdef class MarketDataConcurrentBuffer:
             raise RuntimeError(f'{self.__class__.__name__} uninitialized')
         cdef int ret_code = c_md_concurrent_buffer_disable_worker(self.header, worker_id)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_OOR:
+        elif ret_code == md_ret_code.MD_ERR_OOR:
             raise IndexError(f'Worker_id {worker_id} out of range')
         else:
             raise RuntimeError(f'Failed to disable worker, error code: {ret_code}')
@@ -548,9 +518,9 @@ cdef class MarketDataConcurrentBuffer:
             raise RuntimeError(f'{self.__class__.__name__} uninitialized')
         cdef int ret_code = c_md_concurrent_buffer_enable_worker(self.header, worker_id)
 
-        if ret_code == MD_BUF_OK:
+        if ret_code == md_ret_code.MD_OK:
             return
-        elif ret_code == MD_BUF_OOR:
+        elif ret_code == md_ret_code.MD_ERR_OOR:
             raise IndexError(f'Worker_id {worker_id} out of range')
         else:
             raise RuntimeError(f'Failed to enable worker, error code: {ret_code}')
