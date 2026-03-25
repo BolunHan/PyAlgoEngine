@@ -1,11 +1,11 @@
 import unittest
 
+from algo_engine.base.c_market_data_ng.c_allocator_protocol import MD_SHARED, MD_FREELIST
 from algo_engine.base.c_market_data_ng.c_internal import InternalData
 from algo_engine.base.c_market_data_ng.c_market_data import MarketData
 
 
 class TestInternalData(unittest.TestCase):
-
     def test_init_sets_fields(self):
         data = InternalData(ticker='600010.SH', timestamp=123.234, code=123)
         self.assertEqual(data.ticker, '600010.SH')
@@ -53,4 +53,5 @@ class TestInternalData(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    with ~MD_SHARED | ~MD_FREELIST:
+        unittest.main()
