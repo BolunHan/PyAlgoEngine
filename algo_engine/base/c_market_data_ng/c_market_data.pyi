@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Self, Annotated
 from warnings import deprecated
+from .c_allocator_protocol import EnvConfigContext
 
 
 @dataclass
@@ -77,22 +78,6 @@ class EnvConfigContext:
             A new EnvConfigContext that reverts the configurations set in the original.
         """
         ...
-
-
-MD_SHARED: EnvConfigContext
-"""
-EnvConfigContext instance to set flag for MarketData to use SHM allocator.
-"""
-
-MD_LOCKED: EnvConfigContext
-"""
-EnvConfigContext instance to set flag for MarketData to use thread safe mode.
-"""
-
-MD_FREELIST: EnvConfigContext
-"""
-EnvConfigContext instance to set flag for MarketData to use freelist. Have no effect when in MD_SHARED mode, which enforces its own free list.
-"""
 
 
 class MarketData(object):
@@ -420,3 +405,7 @@ class ConfigViewer(object):
 
 
 CONFIG: ConfigViewer
+
+MD_BOOK5: BookConfigContext
+MD_BOOK10: BookConfigContext
+MD_BOOK20: BookConfigContext

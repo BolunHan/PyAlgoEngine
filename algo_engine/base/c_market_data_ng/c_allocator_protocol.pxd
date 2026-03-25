@@ -13,16 +13,17 @@ cdef extern from "c_allocator_protocol.h":
         shm_allocator* shm_allocator
         shm_allocator_ctx* shm_allocator_ctx
         heap_allocator* heap_allocator
-        c_bool with_shm
         c_bool with_lock
+        c_bool with_shm
+        c_bool with_freelist
         size_t size
         uint64_t magic
         char buf[]
 
-    allocator_protocol* c_ae_allocator_protocol_request(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, c_bool with_lock) noexcept nogil
-    void c_ae_allocator_protocol_recycle(allocator_protocol* protocol, c_bool with_lock) noexcept nogil
-    allocator_protocol* c_md_protocol_from_ptr(const void* ptr) noexcept nogil
+    allocator_protocol* c_md_allocator_protocol_new(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, c_bool with_lock) noexcept nogil
+    void c_md_allocator_protocol_free(allocator_protocol* protocol) noexcept nogil
 
+    allocator_protocol* c_md_protocol_from_ptr(const void* ptr) noexcept nogil
     void* c_md_alloc(size_t size, allocator_protocol* schematic) noexcept nogil
     void c_md_free(void* ptr) noexcept nogil
     char* c_md_strdup(const char* src, allocator_protocol* allocator) noexcept nogil
