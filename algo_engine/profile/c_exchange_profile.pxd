@@ -1,6 +1,5 @@
 from libcpp cimport bool as c_bool
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t
-from cpython.datetime cimport time as py_time
 
 
 cdef extern from "c_ex_profile_base.h":
@@ -114,7 +113,7 @@ cdef extern from "c_ex_profile_base.h":
     extern const session_date_range_t* EX_TRADE_CALENDAR_CACHE
 
     double c_utc_offset_seconds() noexcept nogil
-
+    int c_ex_profile_session_time_compare(const void* t1, const void* t2) noexcept nogil
     double c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) noexcept nogil
     double c_ex_profile_unix_to_ts(double unix_ts) noexcept nogil
     double c_ex_profile_ts_to_elapsed(double elapsed) noexcept nogil
@@ -149,7 +148,7 @@ cdef extern from "c_ex_profile_base.h":
     int c_ex_profile_nearest_trading_date(session_date_t* market_date, c_bool previous, session_date_t* out) noexcept nogil
 
 
-cdef class SessionTime(py_time):
+cdef class SessionTime:
     cdef const session_time_t* header
     cdef bint owner
 
