@@ -113,12 +113,12 @@ cdef extern from "c_ex_profile_base.h":
     extern const session_date_range_t* EX_TRADE_CALENDAR_CACHE
 
     double c_utc_offset_seconds() noexcept nogil
-    int c_ex_profile_session_time_compare(const void* t1, const void* t2) noexcept nogil
+    int c_ex_profile_time_compare(const void* t1, const void* t2) noexcept nogil
     double c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) noexcept nogil
     double c_ex_profile_unix_to_ts(double unix_ts) noexcept nogil
     double c_ex_profile_ts_to_elapsed(double elapsed) noexcept nogil
 
-    int c_ex_profile_session_date_compare(const void* d1, const void* d2) noexcept nogil
+    int c_ex_profile_date_compare(const void* d1, const void* d2) noexcept nogil
     uint32_t c_ex_profile_days_before_year(uint16_t year) noexcept nogil
     c_bool c_ex_profile_is_leap_year(uint16_t year) noexcept nogil
     uint8_t c_ex_profile_days_in_month(uint16_t year, uint8_t month) noexcept nogil
@@ -130,22 +130,22 @@ cdef extern from "c_ex_profile_base.h":
     int c_ex_profile_previous_day(const session_date_t* date, session_date_t* out) noexcept nogil
     int c_ex_profile_days_after(const session_date_t* date, size_t days_after, session_date_t* out) noexcept nogil
     int c_ex_profile_days_before(const session_date_t* date, size_t days_before, session_date_t* out) noexcept nogil
-    session_date_range_t* c_ex_profile_date_range_between(const session_date_t* start_date, const session_date_t* end_date) noexcept nogil
+    session_date_range_t* c_ex_profile_date_range(const session_date_t* start_date, const session_date_t* end_date) noexcept nogil
 
     void c_ex_profile_activate(exchange_profile* profile) noexcept nogil
 
     session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) noexcept nogil
     int c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out) noexcept nogil
-    session_time_range_t* c_ex_profile_session_trange_between_time(session_time_t* start_time, session_time_t* end_time) noexcept nogil
+    session_time_range_t* c_ex_profile_session_trange_between_time(const session_time_t* start_time, const session_time_t* end_time) noexcept nogil
     session_time_range_t* c_ex_profile_session_trange_between_ts(double start_unix_ts, double end_unix_ts) noexcept nogil
 
     session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day) noexcept nogil
     int c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out) noexcept nogil
-    size_t c_ex_profile_session_date_index(session_date_t* date, const session_date_range_t* drange) noexcept nogil
-    session_date_range_t* c_ex_profile_session_date_between(session_date_t* start_date, session_date_t* end_date) noexcept nogil
-    int c_ex_profile_session_trading_days_before(session_date_t* market_date, size_t days, session_date_t* out) noexcept nogil
-    int c_ex_profile_session_trading_days_after(session_date_t* market_date, size_t days, session_date_t* out) noexcept nogil
-    int c_ex_profile_nearest_trading_date(session_date_t* market_date, c_bool previous, session_date_t* out) noexcept nogil
+    size_t c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange) noexcept nogil
+    session_date_range_t* c_ex_profile_session_drange_between(const session_date_t* start_date, const session_date_t* end_date) noexcept nogil
+    int c_ex_profile_session_trading_days_before(const session_date_t* market_date, size_t days, session_date_t* out) noexcept nogil
+    int c_ex_profile_session_trading_days_after(const session_date_t* market_date, size_t days, session_date_t* out) noexcept nogil
+    int c_ex_profile_nearest_trading_date(const session_date_t* market_date, c_bool previous, session_date_t* out) noexcept nogil
 
 
 cdef class SessionTime:
@@ -153,4 +153,35 @@ cdef class SessionTime:
     cdef bint owner
 
     @staticmethod
-    cdef SessionTime c_from_header(session_time_t* header, bint owner)
+    cdef SessionTime c_from_header(const session_time_t* header, bint owner)
+
+
+cdef class SessionTimeRange:
+    cdef const session_time_range_t* header
+    cdef bint owner
+
+    cdef readonly SessionTime start_time
+    cdef readonly SessionTime end_time
+
+    @staticmethod
+    cdef SessionTimeRange c_from_header(const session_time_range_t* header, bint owner)
+
+
+cdef class SessionDate:
+    cdef const session_date_t* header
+    cdef bint owner
+
+    @staticmethod
+    cdef SessionDate c_from_header(const session_date_t* header, bint owner)
+
+
+cdef class SessionDateRange:
+    cdef const session_date_range_t* header
+    cdef bint owner
+
+    cdef readonly SessionDate start_date
+    cdef readonly SessionDate end_date
+    cdef readonly tuple dates
+
+    @staticmethod
+    cdef SessionDateRange c_from_header(const session_date_range_t* header, bint owner)
