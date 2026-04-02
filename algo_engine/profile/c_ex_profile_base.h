@@ -92,14 +92,14 @@ typedef struct session_time_t {
     uint8_t minute;
     uint8_t second;
     uint32_t nanosecond;
-    session_phase session_phase;
+    session_phase phase;
 } session_time_t;
 
 typedef struct session_date_t {
     uint16_t year;  // 0-9999
     uint8_t month;  // 1-12
     uint8_t day;    // 1-31
-    session_type session_type;
+    session_type stype;
 } session_date_t;
 
 typedef struct session_time_range_t {
@@ -133,9 +133,10 @@ typedef struct session_break {
     struct session_break* next;
 } session_break;
 
-typedef void (*c_ex_profile_on_activate)(struct exchange_profile* profile);
-typedef void (*c_ex_profile_on_deactivate)(struct exchange_profile* profile);
-typedef session_date_range_t* (*c_ex_profile_trade_calendar)(session_date_t start_date, session_date_t end_date);
+typedef struct exchange_profile exchange_profile;
+typedef void (*c_ex_profile_on_activate)(const exchange_profile* profile);
+typedef void (*c_ex_profile_on_deactivate)(const exchange_profile* profile);
+typedef session_date_range_t* (*c_ex_profile_trade_calendar)(const session_date_t* start_date, const session_date_t* end_date);
 typedef auction_phase (*c_ex_profile_resolve_auction_phase)(double ts);
 typedef session_phase (*c_ex_profile_resolve_session_phase)(double ts);
 typedef session_type (*c_ex_profile_resolve_session_type)(uint16_t year, uint8_t month, uint8_t day);
@@ -164,8 +165,8 @@ typedef struct exchange_profile {
 
 // ========== Forward Declaration ==========
 
-extern exchange_profile* EX_PROFILE;
-extern session_date_range_t* EX_TRADE_CALENDAR_CACHE;
+extern const exchange_profile* EX_PROFILE;
+extern const session_date_range_t* EX_TRADE_CALENDAR_CACHE;
 
 static inline double c_utc_offset_seconds(void);
 
@@ -196,7 +197,7 @@ static inline session_time_range_t* c_ex_profile_session_trange_between_ts(doubl
 
 static inline session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day);
 static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out);
-static inline size_t c_ex_profile_session_date_index(session_date_t* date, session_date_range_t* drange);
+static inline size_t c_ex_profile_session_date_index(session_date_t* date, const session_date_range_t* drange);
 static inline session_date_range_t* c_ex_profile_session_date_between(session_date_t* start_date, session_date_t* end_date);
 static inline int c_ex_profile_session_trading_days_before(session_date_t* market_date, size_t days, session_date_t* out);
 static inline int c_ex_profile_session_trading_days_after(session_date_t* market_date, size_t days, session_date_t* out);
@@ -604,7 +605,7 @@ static inline void c_ex_profile_activate(exchange_profile* profile) {
     if (EX_PROFILE && EX_PROFILE->on_deactivate_func) EX_PROFILE->on_deactivate_func(EX_PROFILE);
 
     if (EX_TRADE_CALENDAR_CACHE) {
-        free(EX_TRADE_CALENDAR_CACHE);
+        free((void*) EX_TRADE_CALENDAR_CACHE);
         EX_TRADE_CALENDAR_CACHE = NULL;
     }
 
@@ -629,13 +630,13 @@ static inline session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_
     // No active exchange profile, return a default session time representation
     if (!EX_PROFILE) {
         out->elapsed_seconds = ts;
-        out->session_phase = SESSION_PHASE_UNKNOWN;
+        out->phase = SESSION_PHASE_UNKNOWN;
         return out;
     }
 
     // Calculate elapsed seconds since continuous session start
     out->elapsed_seconds = c_ex_profile_ts_to_elapsed(ts);
-    out->session_phase = EX_PROFILE->resolve_session_phase_func(ts);
+    out->phase = EX_PROFILE->resolve_session_phase_func(ts);
     return out;
 }
 
@@ -653,7 +654,7 @@ static inline int c_ex_profile_session_time_from_ts(double unix_ts, session_time
     out->second = second;
     out->nanosecond = nanosecond;
     out->elapsed_seconds = c_ex_profile_ts_to_elapsed(ts);
-    out->session_phase = EX_PROFILE ? EX_PROFILE->resolve_session_phase_func(ts) : SESSION_PHASE_UNKNOWN;
+    out->phase = EX_PROFILE ? EX_PROFILE->resolve_session_phase_func(ts) : SESSION_PHASE_UNKNOWN;
     return 0;
 }
 
@@ -684,7 +685,7 @@ static inline session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8
     d->year = year;
     d->month = month;
     d->day = day;
-    d->session_type = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(year, month, day) : SESSION_TYPE_NORMINAL;
+    d->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(year, month, day) : SESSION_TYPE_NORMINAL;
     return d;
 }
 
@@ -708,7 +709,7 @@ static inline int c_ex_profile_session_date_from_ts_sys(double unix_ts, session_
     out->year = (uint16_t) (tm_local.tm_year + 1900);
     out->month = (uint8_t) (tm_local.tm_mon + 1);
     out->day = (uint8_t) tm_local.tm_mday;
-    out->session_type = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
+    out->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
     return 0;
 }
 
@@ -730,11 +731,11 @@ static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date
     if (ordinal < 1 || ordinal > (int64_t) EX_PROFILE_MAX_ORDINAL) return -1;
 
     if (c_ex_profile_date_from_ordinal((uint32_t) ordinal, out) != 0) return -1;
-    out->session_type = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
+    out->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
     return 0;
 }
 
-static inline size_t c_ex_profile_session_date_index(session_date_t* date, session_date_range_t* drange) {
+static inline size_t c_ex_profile_session_date_index(session_date_t* date, const session_date_range_t* drange) {
     if (!date) return (size_t) -1;
     if (!drange) return (size_t) -1;
     if (drange->n_days == 0u) return (size_t) -1;
@@ -848,7 +849,7 @@ static inline int c_ex_profile_nearest_trading_date(session_date_t* market_date,
 
     if (!EX_TRADE_CALENDAR_CACHE) {
         *out = *market_date;
-        out->session_type = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
+        out->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type_func(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
         return c_ex_profile_date_is_valid(out) ? 0 : -1;
     }
     if (EX_TRADE_CALENDAR_CACHE->n_days == 0u) return -1;
