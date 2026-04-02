@@ -2,9 +2,19 @@ from __future__ import annotations
 
 from datetime import time as py_time, date as py_date
 from enum import IntEnum
-from typing import Any, Self
+from typing import Any, Self, Optional
 
-__all__ = ["SessionType", "SessionPhase", "AuctionPhase", "SessionTime", "SessionTimeRange", "SessionDate", "SessionDateRange"]
+__all__ = [
+    "SessionType",
+    "SessionPhase",
+    "AuctionPhase",
+    "SessionTime",
+    "SessionTimeRange",
+    "SessionDate",
+    "SessionDateRange",
+    "CallAuction",
+    "SessionBreak",
+]
 
 
 class SessionType(IntEnum):
@@ -298,3 +308,77 @@ class SessionDateRange(object):
 
     @property
     def dates(self) -> tuple[SessionDate, ...]: ...
+
+
+class CallAuction(object):
+    """Call auction metadata describing auction windows inside a trading day.
+
+    Lightweight wrapper around the C `call_auction` structure.
+    """
+
+    @property
+    def auction_start(self) -> SessionTime:
+        """The scheduled auction start time."""
+        ...
+
+    @property
+    def active(self) -> SessionTimeRange | None:
+        """Active matching window for the auction, or ``None`` if not present."""
+        ...
+
+    @property
+    def no_cancel(self) -> SessionTimeRange | None:
+        """No-cancel window during the auction, or ``None`` if not present."""
+        ...
+
+    @property
+    def frozen(self) -> SessionTimeRange | None:
+        """Frozen period for the auction, or ``None`` if not present."""
+        ...
+
+    @property
+    def uncross(self) -> SessionTime:
+        """The uncrossing instant as a :class:`SessionTime`."""
+        ...
+
+    @property
+    def auction_end(self) -> SessionTime:
+        """The scheduled auction end time."""
+        ...
+
+
+class SessionBreak(object):
+    """Represents a break interval inside a session.
+
+    Lightweight wrapper around the C ``session_break`` linked-list node.
+    """
+
+    @property
+    def break_start(self) -> SessionTime:
+        """Start time of the break."""
+        ...
+
+    @property
+    def break_end(self) -> SessionTime:
+        """End time of the break."""
+        ...
+
+    @property
+    def break_start_ts(self) -> float:
+        """Cached timestamp (seconds from midnight) for break start."""
+        ...
+
+    @property
+    def break_end_ts(self) -> float:
+        """Cached timestamp (seconds from midnight) for break end."""
+        ...
+
+    @property
+    def break_length_seconds(self) -> float:
+        """Precomputed break length in seconds."""
+        ...
+
+    @property
+    def next(self) -> SessionBreak | None:
+        """Link to the next break, or ``None``."""
+        ...

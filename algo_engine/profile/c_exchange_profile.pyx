@@ -403,3 +403,81 @@ cdef class SessionDateRange:
     property n_days:
         def __get__(self):
             return self.header.n_days
+
+
+cdef class CallAuction:
+    def __init__(self):
+        raise NotImplementedError(f'{self.__class__.__name__} should not be initialized from python interface.')
+
+    @staticmethod
+    cdef CallAuction c_from_header(const call_auction* header):
+        cdef CallAuction instance = CallAuction.__new__(CallAuction)
+        instance.header = header
+        return instance
+
+    property auction_start:
+        def __get__(self):
+            return SessionTime.c_from_header(&self.header.auction_start, False)
+
+    property auction_end:
+        def __get__(self):
+            return SessionTime.c_from_header(&self.header.auction_end, False)
+
+    property uncross:
+        def __get__(self):
+            return SessionTime.c_from_header(&self.header.uncross, False)
+
+    property active:
+        def __get__(self):
+            if self.header.active:
+                return SessionTimeRange.c_from_header(self.header.active, False)
+            return None
+
+    property no_cancel:
+        def __get__(self):
+            if self.header.no_cancel:
+                return SessionTimeRange.c_from_header(self.header.no_cancel, False)
+            return None
+
+    property frozen:
+        def __get__(self):
+            if self.header.frozen:
+                return SessionTimeRange.c_from_header(self.header.frozen, False)
+            return None
+
+
+cdef class SessionBreak:
+    def __init__(self):
+        raise NotImplementedError(f'{self.__class__.__name__} should not be initialized from python interface.')
+
+    @staticmethod
+    cdef SessionBreak c_from_header(const session_break* header):
+        cdef SessionBreak instance = SessionBreak.__new__(SessionBreak)
+        instance.header = header
+        return instance
+
+    property break_start:
+        def __get__(self):
+            return SessionTime.c_from_header(&self.header.break_start, False)
+
+    property break_end:
+        def __get__(self):
+            return SessionTime.c_from_header(&self.header.break_end, False)
+
+    property break_start_ts:
+        def __get__(self):
+            return self.header.break_start_ts
+
+    property break_end_ts:
+        def __get__(self):
+            return self.header.break_end_ts
+
+    property break_length_seconds:
+        def __get__(self):
+            return self.header.break_length_seconds
+
+    property next_break:
+        def __get__(self):
+            if self.header.next:
+                return SessionBreak.c_from_header(self.header.next)
+            return None

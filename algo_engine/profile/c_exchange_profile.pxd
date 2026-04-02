@@ -68,9 +68,9 @@ cdef extern from "c_ex_profile_base.h":
 
     ctypedef struct call_auction:
         session_time_t auction_start
-        session_time_range_t active
-        session_time_range_t no_cancel
-        session_time_range_t frozen
+        const session_time_range_t* active
+        const session_time_range_t* no_cancel
+        const session_time_range_t* frozen
         session_time_t uncross
         session_time_t auction_end
 
@@ -185,3 +185,17 @@ cdef class SessionDateRange:
 
     @staticmethod
     cdef SessionDateRange c_from_header(const session_date_range_t* header, bint owner)
+
+
+cdef class CallAuction:
+    cdef const call_auction* header
+
+    @staticmethod
+    cdef CallAuction c_from_header(const call_auction* header)
+
+
+cdef class SessionBreak:
+    cdef const session_break* header
+
+    @staticmethod
+    cdef SessionBreak c_from_header(const session_break* header)

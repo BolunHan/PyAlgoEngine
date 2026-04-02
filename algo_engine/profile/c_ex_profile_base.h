@@ -116,12 +116,12 @@ typedef struct session_date_range_t {
 } session_date_range_t;
 
 typedef struct call_auction {
-    session_time_t       auction_start;
-    session_time_range_t active;
-    session_time_range_t no_cancel;
-    session_time_range_t frozen;
-    session_time_t       uncross;
-    session_time_t       auction_end;
+    session_time_t              auction_start;
+    const session_time_range_t* active;
+    const session_time_range_t* no_cancel;
+    const session_time_range_t* frozen;
+    session_time_t              uncross;
+    session_time_t              auction_end;
 } call_auction;
 
 typedef struct session_break {
