@@ -87,49 +87,49 @@ typedef enum auction_phase {
 } auction_phase;
 
 typedef struct session_time_t {
-    double elapsed_seconds;
-    uint8_t hour;
-    uint8_t minute;
-    uint8_t second;
-    uint32_t nanosecond;
+    double        elapsed_seconds;
+    uint8_t       hour;
+    uint8_t       minute;
+    uint8_t       second;
+    uint32_t      nanosecond;
     session_phase phase;
 } session_time_t;
 
 typedef struct session_date_t {
-    uint16_t year;  // 0-9999
-    uint8_t month;  // 1-12
-    uint8_t day;    // 1-31
+    uint16_t     year;   // 0-9999
+    uint8_t      month;  // 1-12
+    uint8_t      day;    // 1-31
     session_type stype;
 } session_date_t;
 
 typedef struct session_time_range_t {
     session_time_t start;
     session_time_t end;
-    double elapsed_seconds;
+    double         elapsed_seconds;
 } session_time_range_t;
 
 typedef struct session_date_range_t {
     session_date_t start;
     session_date_t end;
-    size_t n_days;
+    size_t         n_days;
     session_date_t dates[];
 } session_date_range_t;
 
 typedef struct call_auction {
-    session_time_t auction_start;
+    session_time_t       auction_start;
     session_time_range_t active;
     session_time_range_t no_cancel;
     session_time_range_t frozen;
-    session_time_t uncross;
-    session_time_t auction_end;
+    session_time_t       uncross;
+    session_time_t       auction_end;
 } call_auction;
 
 typedef struct session_break {
-    session_time_t break_start;
-    session_time_t break_end;
-    double break_start_ts;        // From midnight, not from session start, cached for break adjustment calculation
-    double break_end_ts;          // From midnight, not from session start, cached for break adjustment calculation
-    double break_length_seconds;  // Cached for break adjustment calculation
+    session_time_t        break_start;
+    session_time_t        break_end;
+    double                break_start_ts;        // From midnight, not from session start, cached for break adjustment calculation
+    double                break_end_ts;          // From midnight, not from session start, cached for break adjustment calculation
+    double                break_length_seconds;  // Cached for break adjustment calculation
     struct session_break* next;
 } session_break;
 
@@ -142,76 +142,76 @@ typedef session_phase (*c_ex_profile_resolve_session_phase)(double ts);
 typedef session_type (*c_ex_profile_resolve_session_type)(uint16_t year, uint8_t month, uint8_t day);
 
 typedef struct exchange_profile {
-    char profile_id[EX_PROFILE_ID_SIZE];  // Unique identifier for the exchange profile (e.g., "NYSE", "NASDAQ")
-    session_time_t session_start;         // Continuous session start time
-    session_time_t session_end;           // Continuous session end time
-    double session_start_ts;              // Continuous session start time in seconds from midnight, cached for session phase resolution and break adjustment calculation
-    double session_end_ts;                // Continuous session end time in seconds from midnight. For continuous session filtering.
-    double session_length_seconds;        // Continuous session length in seconds, cached for break adjustment calculation
-    call_auction* open_call_auction;      // Pointer to open call auction details (if applicable)
-    call_auction* close_call_auction;     // Pointer to close call auction details (if applicable)
-    session_break* session_breaks;        // Linked list of session breaks (if applicable)
-    const char* time_zone;                // IANA time zone string (e.g., "UTC", "America/New_York")
-    double tz_offset_seconds;             // Time zone offset in seconds from UTC (e.g., -18000 for EST). Subject to machine local time zone to UTC conversion
+    char           profile_id[EX_PROFILE_ID_SIZE];  // Unique identifier for the exchange profile (e.g., "NYSE", "NASDAQ")
+    session_time_t session_start;                   // Continuous session start time
+    session_time_t session_end;                     // Continuous session end time
+    double         session_start_ts;                // Continuous session start time in seconds from midnight, cached for session phase resolution and break adjustment calculation
+    double         session_end_ts;                  // Continuous session end time in seconds from midnight. For continuous session filtering.
+    double         session_length_seconds;          // Continuous session length in seconds, cached for break adjustment calculation
+    call_auction*  open_call_auction;               // Pointer to open call auction details (if applicable)
+    call_auction*  close_call_auction;              // Pointer to close call auction details (if applicable)
+    session_break* session_breaks;                  // Linked list of session breaks (if applicable)
+    const char*    time_zone;                       // IANA time zone string (e.g., "UTC", "America/New_York")
+    double         tz_offset_seconds;               // Time zone offset in seconds from UTC (e.g., -18000 for EST). Subject to machine local time zone to UTC conversion
 
     // Function pointers for exchange-specific logic
-    c_ex_profile_on_activate on_activate_func;
-    c_ex_profile_on_deactivate on_deactivate_func;
-    c_ex_profile_trade_calendar trade_calendar_func;
+    c_ex_profile_on_activate           on_activate_func;
+    c_ex_profile_on_deactivate         on_deactivate_func;
+    c_ex_profile_trade_calendar        trade_calendar_func;
     c_ex_profile_resolve_auction_phase resolve_auction_phase_func;
     c_ex_profile_resolve_session_phase resolve_session_phase_func;
-    c_ex_profile_resolve_session_type resolve_session_type_func;
+    c_ex_profile_resolve_session_type  resolve_session_type_func;
 } exchange_profile;
 
 // ========== Forward Declaration ==========
 
-extern const exchange_profile* EX_PROFILE;
-extern const session_date_range_t* EX_TRADE_CALENDAR_CACHE;
+extern const exchange_profile*      EX_PROFILE;
+extern const session_date_range_t*  EX_TRADE_CALENDAR_CACHE;
 
-static inline double c_utc_offset_seconds(void);
+static inline double                c_utc_offset_seconds(void);
+static inline int                   c_ex_profile_time_compare(const void* t1, const void* t2);
+static inline double                c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
+static inline double                c_ex_profile_unix_to_ts(double unix_ts);
+static inline double                c_ex_profile_ts_to_elapsed(double elapsed);
 
-static inline double c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
-static inline double c_ex_profile_unix_to_ts(double unix_ts);
-static inline double c_ex_profile_ts_to_elapsed(double elapsed);
+static inline int                   c_ex_profile_date_compare(const void* d1, const void* d2);
+static inline uint32_t              c_ex_profile_days_before_year(uint16_t year);
+static inline bool                  c_ex_profile_is_leap_year(uint16_t year);
+static inline uint8_t               c_ex_profile_days_in_month(uint16_t year, uint8_t month);
+static inline bool                  c_ex_profile_date_is_valid(const session_date_t* date);
+static inline uint32_t              c_ex_profile_date_to_ordinal(const session_date_t* date);
+static inline int                   c_ex_profile_date_from_ordinal(uint32_t ordinal, session_date_t* out);
+static inline int                   c_ex_profile_date_from_year_day(uint16_t year, uint32_t day_of_year, session_date_t* out);
+static inline int                   c_ex_profile_next_day(const session_date_t* date, session_date_t* out);
+static inline int                   c_ex_profile_previous_day(const session_date_t* date, session_date_t* out);
+static inline int                   c_ex_profile_days_after(const session_date_t* date, size_t days_after, session_date_t* out);
+static inline int                   c_ex_profile_days_before(const session_date_t* date, size_t days_before, session_date_t* out);
+static inline session_date_range_t* c_ex_profile_date_range(const session_date_t* start_date, const session_date_t* end_date);
 
-static inline int c_ex_profile_session_date_compare(const void* d1, const void* d2);
-static inline uint32_t c_ex_profile_days_before_year(uint16_t year);
-static inline bool c_ex_profile_is_leap_year(uint16_t year);
-static inline uint8_t c_ex_profile_days_in_month(uint16_t year, uint8_t month);
-static inline bool c_ex_profile_date_is_valid(const session_date_t* date);
-static inline uint32_t c_ex_profile_date_to_ordinal(const session_date_t* date);
-static inline int c_ex_profile_date_from_ordinal(uint32_t ordinal, session_date_t* out);
-static inline int c_ex_profile_date_from_year_day(uint16_t year, uint32_t day_of_year, session_date_t* out);
-static inline int c_ex_profile_next_day(const session_date_t* date, session_date_t* out);
-static inline int c_ex_profile_previous_day(const session_date_t* date, session_date_t* out);
-static inline int c_ex_profile_days_after(const session_date_t* date, size_t days_after, session_date_t* out);
-static inline int c_ex_profile_days_before(const session_date_t* date, size_t days_before, session_date_t* out);
-static inline session_date_range_t* c_ex_profile_date_range_between(const session_date_t* start_date, const session_date_t* end_date);
+static inline void                  c_ex_profile_activate(exchange_profile* profile);
 
-static inline void c_ex_profile_activate(exchange_profile* profile);
-
-static inline session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
-static inline int c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out);
-static inline session_time_range_t* c_ex_profile_session_trange_between_time(session_time_t* start_time, session_time_t* end_time);
+static inline session_time_t*       c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
+static inline int                   c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out);
+static inline session_time_range_t* c_ex_profile_session_trange_between_time(const session_time_t* start_time, const session_time_t* end_time);
 static inline session_time_range_t* c_ex_profile_session_trange_between_ts(double start_unix_ts, double end_unix_ts);
 
-static inline session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day);
-static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out);
-static inline size_t c_ex_profile_session_date_index(session_date_t* date, const session_date_range_t* drange);
-static inline session_date_range_t* c_ex_profile_session_date_between(session_date_t* start_date, session_date_t* end_date);
-static inline int c_ex_profile_session_trading_days_before(session_date_t* market_date, size_t days, session_date_t* out);
-static inline int c_ex_profile_session_trading_days_after(session_date_t* market_date, size_t days, session_date_t* out);
-static inline int c_ex_profile_nearest_trading_date(session_date_t* market_date, bool previous, session_date_t* out);
+static inline session_date_t*       c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day);
+static inline int                   c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out);
+static inline size_t                c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange);
+static inline session_date_range_t* c_ex_profile_session_drange_between(const session_date_t* start_date, const session_date_t* end_date);
+static inline int                   c_ex_profile_session_trading_days_before(const session_date_t* market_date, size_t days, session_date_t* out);
+static inline int                   c_ex_profile_session_trading_days_after(const session_date_t* market_date, size_t days, session_date_t* out);
+static inline int                   c_ex_profile_nearest_trading_date(const session_date_t* market_date, bool previous, session_date_t* out);
 
 // ========== Utilities Functions (session_time_t) ==========
 
 static inline double c_utc_offset_seconds(void) {
-    time_t now = time(NULL);
+    time_t    now = time(NULL);
     struct tm local_tm;
     struct tm gmt_tm;
-    time_t local_seconds = 0;
-    time_t gmt_seconds = 0;
-    double diff_seconds = 0.0;
+    time_t    local_seconds = 0;
+    time_t    gmt_seconds = 0;
+    double    diff_seconds = 0.0;
 
     localtime_r(&now, &local_tm);
     gmtime_r(&now, &gmt_tm);
@@ -223,6 +223,25 @@ static inline double c_utc_offset_seconds(void) {
     return diff_seconds;
 }
 
+static inline int c_ex_profile_time_compare(const void* t1, const void* t2) {
+    // qsort function, returns 1, -1, or 0
+    if (t1 == t2) return 0;
+    if (!t1) return -1;
+    if (!t2) return 1;
+
+    const session_time_t* time1 = (const session_time_t*) t1;
+    const session_time_t* time2 = (const session_time_t*) t2;
+    if (time1->hour < time2->hour) return -1;
+    if (time1->hour > time2->hour) return 1;
+    if (time1->minute < time2->minute) return -1;
+    if (time1->minute > time2->minute) return 1;
+    if (time1->second < time2->second) return -1;
+    if (time1->second > time2->second) return 1;
+    if (time1->nanosecond < time2->nanosecond) return -1;
+    if (time1->nanosecond > time2->nanosecond) return 1;
+    return 0;
+}
+
 static inline double c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) {
     double total_seconds = hour * SECONDS_PER_HOUR + minute * SECONDS_PER_MINUTE + second + (double) nanosecond / NANOS_PER_SECOND;
     return total_seconds;
@@ -231,7 +250,7 @@ static inline double c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8
 static inline double c_ex_profile_unix_to_ts(double unix_ts) {
     // When no active profile is set, fall back to the machine-local Unix day fraction.
     const double tz_offset = EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0;
-    double total_seconds = fmod(unix_ts + tz_offset, (double) SECONDS_PER_DAY);
+    double       total_seconds = fmod(unix_ts + tz_offset, (double) SECONDS_PER_DAY);
     return total_seconds;
 }
 
@@ -241,7 +260,7 @@ static inline double c_ex_profile_ts_to_elapsed(double ts) {
     if (ts <= EX_PROFILE->session_start_ts) return 0.0;
     if (ts >= EX_PROFILE->session_end_ts) return EX_PROFILE->session_length_seconds;
 
-    double break_elapsed = 0;
+    double         break_elapsed = 0;
     session_break* current_break = EX_PROFILE->session_breaks;
     while (current_break) {
         if (ts > current_break->break_end_ts) break_elapsed += current_break->break_length_seconds;
@@ -255,7 +274,7 @@ static inline double c_ex_profile_ts_to_elapsed(double ts) {
 
 // ========== Utilities Functions (session_date_t) ==========
 
-static inline int c_ex_profile_session_date_compare(const void* d1, const void* d2) {
+static inline int c_ex_profile_date_compare(const void* d1, const void* d2) {
     // qsort function, returns 1, -1, or 0
     if (d1 == d2) return 0;
     if (!d1) return -1;
@@ -325,8 +344,8 @@ static inline int c_ex_profile_date_from_ordinal(uint32_t ordinal, session_date_
     uint32_t n1 = 0u;
     uint32_t day_of_year = 0u;  // 0-based day-of-year
     uint16_t year = 0u;
-    uint8_t month = 1u;
-    uint8_t is_leap = 0u;
+    uint8_t  month = 1u;
+    uint8_t  is_leap = 0u;
 
     if (!out) return -1;
 
@@ -426,9 +445,9 @@ static inline int c_ex_profile_next_day(const session_date_t* date, session_date
     if (!c_ex_profile_date_is_valid(date)) return -1;
 
     uint16_t year = date->year;
-    uint8_t month = date->month;
-    uint8_t day = date->day;
-    uint8_t dim = c_ex_profile_days_in_month(year, month);
+    uint8_t  month = date->month;
+    uint8_t  day = date->day;
+    uint8_t  dim = c_ex_profile_days_in_month(year, month);
     if (dim == 0u) return -1;
 
     if (day < dim) {
@@ -462,8 +481,8 @@ static inline int c_ex_profile_previous_day(const session_date_t* date, session_
     if (!c_ex_profile_date_is_valid(date)) return -1;
 
     const uint16_t year = date->year;
-    const uint8_t month = date->month;
-    const uint8_t day = date->day;
+    const uint8_t  month = date->month;
+    const uint8_t  day = date->day;
 
     if (day > 1u) {
         *out = *date;
@@ -486,7 +505,7 @@ static inline int c_ex_profile_previous_day(const session_date_t* date, session_
     if (year <= EX_PROFILE_MIN_YEAR) return -1;
     {
         const uint16_t prev_year = (uint16_t) (year - 1u);
-        const uint8_t dim = c_ex_profile_days_in_month(prev_year, 12u);
+        const uint8_t  dim = c_ex_profile_days_in_month(prev_year, 12u);
         if (dim == 0u) return -1;
         *out = *date;
         out->year = prev_year;
@@ -516,7 +535,7 @@ static inline int c_ex_profile_days_after(const session_date_t* date, size_t day
         const uint16_t year = date->year;
         const uint32_t start_of_year = c_ex_profile_days_before_year(year);
         const uint32_t day_of_year = ordinal - start_of_year - 1u;
-        const uint8_t is_leap = (uint8_t) (((year % 4u) == 0u) && (((year % 100u) != 0u) || ((year % 400u) == 0u)));
+        const uint8_t  is_leap = (uint8_t) (((year % 4u) == 0u) && (((year % 100u) != 0u) || ((year % 400u) == 0u)));
         const uint32_t year_len = (uint32_t) (365u + is_leap);
 
         if (day_of_year < year_len) {
@@ -555,7 +574,7 @@ static inline int c_ex_profile_days_before(const session_date_t* date, size_t da
         const uint16_t year = date->year;
         const uint32_t start_of_year = c_ex_profile_days_before_year(year);
         const uint32_t day_of_year = ordinal - start_of_year - 1u;
-        const uint8_t is_leap = (uint8_t) (((year % 4u) == 0u) && (((year % 100u) != 0u) || ((year % 400u) == 0u)));
+        const uint8_t  is_leap = (uint8_t) (((year % 4u) == 0u) && (((year % 100u) != 0u) || ((year % 400u) == 0u)));
         const uint32_t year_len = (uint32_t) (365u + is_leap);
 
         if (day_of_year < year_len) {
@@ -573,13 +592,13 @@ static inline int c_ex_profile_days_before(const session_date_t* date, size_t da
     return c_ex_profile_date_from_ordinal(ordinal, out);
 }
 
-static inline session_date_range_t* c_ex_profile_date_range_between(const session_date_t* start_date, const session_date_t* end_date) {
+static inline session_date_range_t* c_ex_profile_date_range(const session_date_t* start_date, const session_date_t* end_date) {
     if (!start_date || !end_date) return NULL;
 
     uint32_t start_ordinal = c_ex_profile_date_to_ordinal(start_date);
     uint32_t end_ordinal = c_ex_profile_date_to_ordinal(end_date);
     if (start_ordinal == 0u || end_ordinal == 0u || end_ordinal < start_ordinal) return NULL;
-    size_t n_days = (size_t) (end_ordinal - start_ordinal + 1u);
+    size_t                n_days = (size_t) (end_ordinal - start_ordinal + 1u);
     session_date_range_t* drange = (session_date_range_t*) calloc(1, sizeof(session_date_range_t) + n_days * sizeof(session_date_t));
     if (!drange) return NULL;
     drange->start = *start_date;
@@ -643,10 +662,10 @@ static inline session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_
 static inline int c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out) {
     if (!out) return -1;
 
-    double ts = c_ex_profile_unix_to_ts(unix_ts);
-    uint8_t hour = (uint8_t) (ts / SECONDS_PER_HOUR);
-    uint8_t minute = (uint8_t) ((ts - hour * SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-    uint8_t second = (uint8_t) (ts - hour * SECONDS_PER_HOUR - minute * SECONDS_PER_MINUTE);
+    double   ts = c_ex_profile_unix_to_ts(unix_ts);
+    uint8_t  hour = (uint8_t) (ts / SECONDS_PER_HOUR);
+    uint8_t  minute = (uint8_t) ((ts - hour * SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+    uint8_t  second = (uint8_t) (ts - hour * SECONDS_PER_HOUR - minute * SECONDS_PER_MINUTE);
     uint32_t nanosecond = (uint32_t) ((ts - (uint64_t) ts) * NANOS_PER_SECOND);
 
     out->hour = hour;
@@ -658,7 +677,7 @@ static inline int c_ex_profile_session_time_from_ts(double unix_ts, session_time
     return 0;
 }
 
-static inline session_time_range_t* c_ex_profile_session_trange_between_time(session_time_t* start_time, session_time_t* end_time) {
+static inline session_time_range_t* c_ex_profile_session_trange_between_time(const session_time_t* start_time, const session_time_t* end_time) {
     session_time_range_t* trange = (session_time_range_t*) calloc(1, sizeof(session_time_range_t));
     if (!trange) return NULL;
     trange->start = *start_time;
@@ -720,7 +739,7 @@ static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date
     int64_t days = 0;
     int64_t ordinal = 0;
 
-    double shifted_ts = unix_ts + (EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0);
+    double  shifted_ts = unix_ts + (EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0);
     if (!isfinite(shifted_ts)) return -1;
 
     double days_floor = floor(shifted_ts / (double) SECONDS_PER_DAY);
@@ -735,12 +754,12 @@ static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date
     return 0;
 }
 
-static inline size_t c_ex_profile_session_date_index(session_date_t* date, const session_date_range_t* drange) {
+static inline size_t c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange) {
     if (!date) return (size_t) -1;
     if (!drange) return (size_t) -1;
     if (drange->n_days == 0u) return (size_t) -1;
-    if (c_ex_profile_session_date_compare(date, &drange->start) == -1) return 0;                // Start date
-    if (c_ex_profile_session_date_compare(date, &drange->end) == 1) return drange->n_days - 1;  // End date
+    if (c_ex_profile_date_compare(date, &drange->start) == -1) return 0;                // Start date
+    if (c_ex_profile_date_compare(date, &drange->end) == 1) return drange->n_days - 1;  // End date
 
     // Return the largest index i such that drange->dates[i] <= date.
     // Use a half-open binary search to avoid size_t underflow.
@@ -748,7 +767,7 @@ static inline size_t c_ex_profile_session_date_index(session_date_t* date, const
     size_t hi = drange->n_days;  // exclusive
     while (lo < hi) {
         size_t mid = lo + ((hi - lo) >> 1);
-        int cmp = c_ex_profile_session_date_compare(&drange->dates[mid], date);
+        int    cmp = c_ex_profile_date_compare(&drange->dates[mid], date);
         if (cmp <= 0) lo = mid + 1u;
         else hi = mid;
     }
@@ -756,15 +775,15 @@ static inline size_t c_ex_profile_session_date_index(session_date_t* date, const
     return lo - 1u;
 }
 
-static inline session_date_range_t* c_ex_profile_session_date_between(session_date_t* start_date, session_date_t* end_date) {
+static inline session_date_range_t* c_ex_profile_session_drange_between(const session_date_t* start_date, const session_date_t* end_date) {
     if (!start_date || !end_date) return NULL;
     // Cache contains trading days only. If no cache, fall back to natural calendar day range.
-    if (!EX_TRADE_CALENDAR_CACHE) return c_ex_profile_date_range_between(start_date, end_date);
+    if (!EX_TRADE_CALENDAR_CACHE) return c_ex_profile_date_range(start_date, end_date);
     if (EX_TRADE_CALENDAR_CACHE->n_days == 0u) return NULL;
 
     // Normalize order.
-    if (c_ex_profile_session_date_compare(start_date, end_date) == 1) {
-        session_date_t* tmp = start_date;
+    if (c_ex_profile_date_compare(start_date, end_date) == 1) {
+        const session_date_t* tmp = start_date;
         start_date = end_date;
         end_date = tmp;
     }
@@ -774,18 +793,18 @@ static inline session_date_range_t* c_ex_profile_session_date_between(session_da
     if (start_idx == (size_t) -1 || end_idx == (size_t) -1) return NULL;
 
     // Convert floor-index into a [first >= start_date] index.
-    if (c_ex_profile_session_date_compare(EX_TRADE_CALENDAR_CACHE->dates + start_idx, start_date) == -1) {
+    if (c_ex_profile_date_compare(EX_TRADE_CALENDAR_CACHE->dates + start_idx, start_date) == -1) {
         if (start_idx + 1u >= EX_TRADE_CALENDAR_CACHE->n_days) return NULL;
         start_idx += 1u;
     }
 
     // c_ex_profile_session_date_index() is a floor/left indexer, but it clamps "date < start" to 0.
     // Reject the clamp-at-0 case where even dates[0] is after end_date (no cached date <= end_date).
-    if (end_idx == 0u && c_ex_profile_session_date_compare(EX_TRADE_CALENDAR_CACHE->dates, end_date) == 1) return NULL;
+    if (end_idx == 0u && c_ex_profile_date_compare(EX_TRADE_CALENDAR_CACHE->dates, end_date) == 1) return NULL;
 
     if (start_idx > end_idx) return NULL;
 
-    size_t n_days = (size_t) (end_idx - start_idx + 1u);
+    size_t                n_days = (size_t) (end_idx - start_idx + 1u);
     session_date_range_t* drange = (session_date_range_t*) calloc(1, sizeof(session_date_range_t) + n_days * sizeof(session_date_t));
     if (!drange) return NULL;
 
@@ -800,7 +819,7 @@ static inline session_date_range_t* c_ex_profile_session_date_between(session_da
     return drange;
 }
 
-static inline int c_ex_profile_session_trading_days_before(session_date_t* market_date, size_t days, session_date_t* out) {
+static inline int c_ex_profile_session_trading_days_before(const session_date_t* market_date, size_t days, session_date_t* out) {
     if (!market_date || !out || days == 0) return -1;
 
     if (!EX_TRADE_CALENDAR_CACHE) return c_ex_profile_days_before(market_date, days, out);
@@ -811,7 +830,7 @@ static inline int c_ex_profile_session_trading_days_before(session_date_t* marke
 
     // If market_date is not a trading day, idx is the floor trading date (dates[idx] < market_date).
     // In that case, treat dates[idx] as "1 trading day before market_date".
-    int cmp = c_ex_profile_session_date_compare(EX_TRADE_CALENDAR_CACHE->dates + idx, market_date);
+    int cmp = c_ex_profile_date_compare(EX_TRADE_CALENDAR_CACHE->dates + idx, market_date);
     if (cmp == -1) days--;
     if (cmp == 1) return -1;  // market_date is before the first trading day in the cache
 
@@ -820,7 +839,7 @@ static inline int c_ex_profile_session_trading_days_before(session_date_t* marke
     return 0;
 }
 
-static inline int c_ex_profile_session_trading_days_after(session_date_t* market_date, size_t days, session_date_t* out) {
+static inline int c_ex_profile_session_trading_days_after(const session_date_t* market_date, size_t days, session_date_t* out) {
     if (!market_date || !out || days == 0) return -1;
 
     if (!EX_TRADE_CALENDAR_CACHE) return c_ex_profile_days_after(market_date, days, out);
@@ -828,7 +847,7 @@ static inline int c_ex_profile_session_trading_days_after(session_date_t* market
 
     size_t idx = c_ex_profile_session_date_index(market_date, EX_TRADE_CALENDAR_CACHE);
     if (idx == (size_t) -1) return -1;
-    int cmp = c_ex_profile_session_date_compare(EX_TRADE_CALENDAR_CACHE->dates + idx, market_date);
+    int cmp = c_ex_profile_date_compare(EX_TRADE_CALENDAR_CACHE->dates + idx, market_date);
     if (cmp == 1) {
         size_t max_idx = EX_TRADE_CALENDAR_CACHE->n_days - 1u;
         size_t offset = days - 1u;
@@ -844,7 +863,7 @@ static inline int c_ex_profile_session_trading_days_after(session_date_t* market
     }
 }
 
-static inline int c_ex_profile_nearest_trading_date(session_date_t* market_date, bool previous, session_date_t* out) {
+static inline int c_ex_profile_nearest_trading_date(const session_date_t* market_date, bool previous, session_date_t* out) {
     if (!market_date || !out) return -1;
 
     if (!EX_TRADE_CALENDAR_CACHE) {
@@ -856,7 +875,7 @@ static inline int c_ex_profile_nearest_trading_date(session_date_t* market_date,
 
     size_t idx = c_ex_profile_session_date_index(market_date, EX_TRADE_CALENDAR_CACHE);
     if (idx == (size_t) -1) return -1;
-    int cmp = c_ex_profile_session_date_compare(EX_TRADE_CALENDAR_CACHE->dates + idx, market_date);
+    int cmp = c_ex_profile_date_compare(EX_TRADE_CALENDAR_CACHE->dates + idx, market_date);
 
     if (cmp == 0) {
         *out = EX_TRADE_CALENDAR_CACHE->dates[idx];

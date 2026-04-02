@@ -1,9 +1,8 @@
 #include "c_ex_profile_base.h"
 
-// Template/default callbacks
-
 static void default_on_activate(const exchange_profile* profile) {
     if (!profile) return;
+    // ((exchange_profile*) profile)->tz_offset_seconds = c_utc_offset_seconds();
     (void) profile;
 }
 
@@ -13,7 +12,7 @@ static void default_on_deactivate(const exchange_profile* profile) {
 
 static session_date_range_t* default_trade_calendar(const session_date_t* start_date, const session_date_t* end_date) {
     // Default: every calendar day is a trading day, and every day is nominal.
-    session_date_range_t* drange = c_ex_profile_date_range_between(start_date, end_date);
+    session_date_range_t* drange = c_ex_profile_date_range(start_date, end_date);
     if (!drange) return NULL;
 
     drange->start.stype = SESSION_TYPE_NORMINAL;
@@ -45,7 +44,7 @@ static session_type default_resolve_session_type(uint16_t year, uint8_t month, u
 // Default profile instance
 
 static const exchange_profile DEFAULT_PROFILE = {
-    .profile_id = "DEFAULT",
+    .profile_id = "UTC_NONSTOP_DEFAULT",
 
     .session_start = {
         .elapsed_seconds = 0.0,
@@ -83,5 +82,5 @@ static const exchange_profile DEFAULT_PROFILE = {
 };
 
 // Externs from the header
-const exchange_profile* EX_PROFILE = &DEFAULT_PROFILE;
+const exchange_profile*     EX_PROFILE = &DEFAULT_PROFILE;
 const session_date_range_t* EX_TRADE_CALENDAR_CACHE = NULL;

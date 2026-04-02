@@ -1,7 +1,7 @@
 import unittest
-from datetime import time as py_time
-
-from algo_engine.profile.c_exchange_profile import SessionTime, SessionPhase
+import datetime
+import time
+from algo_engine.profile.c_exchange_profile import *
 
 
 class TestSessionTime(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestSessionTime(unittest.TestCase):
         self.assertIn("00:00:01", r)
 
     def test_from_and_to_pytime(self):
-        t = py_time(14, 5, 6, 789123)
+        t = datetime.time(14, 5, 6, 789123)
         st = SessionTime.from_pytime(t)
         # to_pytime should round-trip to the same microsecond precision
         t2 = st.to_pytime()
@@ -61,9 +61,32 @@ class TestSessionTime(unittest.TestCase):
         self.assertTrue(a != b)
 
         # Compare with python datetime.time
-        t = py_time(9, 0, 0)
+        t = datetime.time(9, 0, 0)
         self.assertTrue(a == t or a == SessionTime.from_pytime(t))
         self.assertTrue(b > t)
+
+    def test_from_timestamp(self):
+        # Use a unix_ts inside a day for deterministic mapping
+        # unix_ts = 9 * 3600 + 30 * 60 + 15 + 0.123456789
+        unix_ts = time.time()
+        ts_offset = local_utc_offset_seconds()
+        py_time = datetime.datetime.fromtimestamp(unix_ts).time()  # with default profile activated, the tz_offset_seconds are unset, we have to adjust manually.
+        st = SessionTime.from_timestamp(unix_ts + ts_offset)
+
+        # Check that fields match the components of unix_ts
+        self.assertEqual(st.hour, py_time.hour)
+        self.assertEqual(st.minute, py_time.minute)
+        self.assertEqual(st.second, py_time.second)
+        # Allow microsecond rounding tolerance
+        self.assertAlmostEqual(st.microsecond, py_time.microsecond, delta=1)  # max 1 microsecond difference due to rounding vs flooring, SessionTime uses flooring to guarantee trading system safety
+
+    def test_timedelta_subtraction(self):
+        # Timedelta-like subtraction returns a SessionTimeRange with elapsed_seconds
+        a = SessionTime(9, 0, 0, 0)
+        b = SessionTime(10, 0, 1, 500000000)
+        tr = b - a
+        # elapsed should equal difference of their elapsed_seconds values
+        self.assertAlmostEqual(tr.elapsed_seconds, b.elapsed_seconds - a.elapsed_seconds, places=9)
 
 
 def main():
