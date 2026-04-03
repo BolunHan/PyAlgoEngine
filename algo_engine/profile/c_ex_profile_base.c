@@ -43,7 +43,7 @@ static session_type default_resolve_session_type(uint16_t year, uint8_t month, u
 
 // Default profile instance
 
-static const exchange_profile DEFAULT_PROFILE = {
+const exchange_profile EX_PROFILE_DEFAULT = {
     .profile_id = "UTC_NONSTOP_DEFAULT",
 
     .session_start = {
@@ -82,5 +82,5 @@ static const exchange_profile DEFAULT_PROFILE = {
 };
 
 // Externs from the header
-const exchange_profile*     EX_PROFILE = &DEFAULT_PROFILE;
+const exchange_profile*     EX_PROFILE = &EX_PROFILE_DEFAULT;
 const session_date_range_t* EX_TRADE_CALENDAR_CACHE = NULL;

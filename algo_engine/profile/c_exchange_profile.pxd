@@ -82,9 +82,9 @@ cdef extern from "c_ex_profile_base.h":
         double break_length_seconds
         session_break* next
 
-    ctypedef void (*c_ex_profile_on_activate)(exchange_profile* profile) noexcept nogil
-    ctypedef void (*c_ex_profile_on_deactivate)(exchange_profile* profile) noexcept nogil
-    ctypedef session_date_range_t* (*c_ex_profile_trade_calendar)(session_date_t* start_date, session_date_t* end_date) noexcept nogil
+    ctypedef void (*c_ex_profile_on_activate)(const exchange_profile* profile) noexcept nogil
+    ctypedef void (*c_ex_profile_on_deactivate)(const exchange_profile* profile) noexcept nogil
+    ctypedef session_date_range_t* (*c_ex_profile_trade_calendar)(const session_date_t* start_date, const session_date_t* end_date) noexcept nogil
     ctypedef auction_phase (*c_ex_profile_resolve_auction_phase)(double ts) noexcept nogil
     ctypedef session_phase (*c_ex_profile_resolve_session_phase)(double ts) noexcept nogil
     ctypedef session_type (*c_ex_profile_resolve_session_type)(uint16_t year, uint8_t month, uint8_t day) noexcept nogil
@@ -112,6 +112,8 @@ cdef extern from "c_ex_profile_base.h":
     extern const exchange_profile* EX_PROFILE
     extern const session_date_range_t* EX_TRADE_CALENDAR_CACHE
 
+    extern const exchange_profile EX_PROFILE_DEFAULT;
+
     double c_utc_offset_seconds() noexcept nogil
     int c_ex_profile_time_compare(const void* t1, const void* t2) noexcept nogil
     double c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) noexcept nogil
@@ -132,7 +134,7 @@ cdef extern from "c_ex_profile_base.h":
     int c_ex_profile_days_before(const session_date_t* date, size_t days_before, session_date_t* out) noexcept nogil
     session_date_range_t* c_ex_profile_date_range(const session_date_t* start_date, const session_date_t* end_date) noexcept nogil
 
-    void c_ex_profile_activate(exchange_profile* profile) noexcept nogil
+    void c_ex_profile_activate(const exchange_profile* profile) noexcept nogil
 
     session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) noexcept nogil
     int c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out) noexcept nogil
@@ -199,3 +201,21 @@ cdef class SessionBreak:
 
     @staticmethod
     cdef SessionBreak c_from_header(const session_break* header)
+
+
+cdef class ExchangeProfile:
+    cdef const exchange_profile* header
+
+    cdef readonly str profile_id
+    cdef readonly SessionTime session_start
+    cdef readonly SessionTime session_end
+    cdef readonly CallAuction open_call_auction
+    cdef readonly CallAuction close_call_auction
+    cdef readonly tuple[SessionBreak] session_breaks
+    cdef readonly str time_zone
+
+    @staticmethod
+    cdef ExchangeProfile c_from_header(const exchange_profile* header)
+
+
+cdef ExchangeProfile DEFAULT_PROFILE

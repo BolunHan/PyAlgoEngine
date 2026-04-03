@@ -2,6 +2,7 @@ import enum
 
 from cpython.datetime cimport time as py_time, date as py_date
 from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE
+from cpython.unicode cimport PyUnicode_FromString
 from libc.stdlib cimport calloc, free
 
 
@@ -481,3 +482,127 @@ cdef class SessionBreak:
             if self.header.next:
                 return SessionBreak.c_from_header(self.header.next)
             return None
+
+
+cdef class ExchangeProfile:
+    def __init__(self):
+        raise NotImplementedError(f'{self.__class__.__name__} should not be initialized from python interface.')
+
+    @staticmethod
+    cdef ExchangeProfile c_from_header(const exchange_profile* header):
+        cdef ExchangeProfile instance = ExchangeProfile.__new__(ExchangeProfile)
+
+        instance.header = header
+        instance.profile_id = PyUnicode_FromString(header.profile_id)
+        instance.session_start = SessionTime.c_from_header(&header.session_start, False)
+        instance.session_end = SessionTime.c_from_header(&header.session_end, False)
+
+        if header.open_call_auction:
+            instance.open_call_auction = CallAuction.c_from_header(header.open_call_auction)
+        else:
+            instance.open_call_auction = None
+
+        if header.close_call_auction:
+            instance.close_call_auction = CallAuction.c_from_header(header.close_call_auction)
+        else:
+            instance.close_call_auction = None
+
+        cdef list breaks = []
+        cdef session_break* current_break = header.session_breaks
+        while current_break:
+            breaks.append(SessionBreak.c_from_header(current_break))
+            current_break = current_break.next
+        instance.session_breaks = tuple(breaks)
+
+        instance.time_zone = PyUnicode_FromString(header.time_zone) if header.time_zone else None
+
+        return instance
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}>({self.profile_id})"
+
+    def activate(self):
+        c_ex_profile_activate(self.header)
+
+    def deactivate(self):
+        if EX_PROFILE == self.header and EX_PROFILE != &EX_PROFILE_DEFAULT:
+            c_ex_profile_activate(&EX_PROFILE_DEFAULT)
+
+    def trade_calendar(self, object start_date, object end_date):
+        cdef const session_date_t* c_start_date = NULL
+        cdef const session_date_t* c_end_date = NULL
+
+        if isinstance(start_date, SessionDate):
+            c_start_date = (<SessionDate> start_date).header
+        elif isinstance(start_date, py_date):
+            temp_start = SessionDate.from_pydate(start_date)
+            c_start_date = (<SessionDate> temp_start).header
+        else:
+            raise TypeError(f'Unsupported type for start_date: {start_date.__class__.__name__}')
+
+        if isinstance(end_date, SessionDate):
+            c_end_date = (<SessionDate> end_date).header
+        elif isinstance(end_date, py_date):
+            temp_end = SessionDate.from_pydate(end_date)
+            c_end_date = (<SessionDate> temp_end).header
+        else:
+            raise TypeError(f'Unsupported type for end_date: {end_date.__class__.__name__}')
+
+        cdef session_date_range_t* drange = self.header.trade_calendar_func(c_start_date, c_end_date)
+        if not drange:
+            raise RuntimeError(f'{self} failed to get trade calendar from start_date={start_date} to end_date={end_date}')
+        return SessionDateRange.c_from_header(drange, True)
+
+    def resolve_auction_phase(self, object session_time):
+        cdef double ts = 0.0
+        cdef const session_time_t* c_time
+        if isinstance(session_time, SessionTime):
+            c_time = (<SessionTime> session_time).header
+            ts = c_ex_profile_time_to_ts(c_time.hour, c_time.minute, c_time.second, c_time.nanosecond)
+        elif isinstance(session_time, py_time):
+             ts = c_ex_profile_time_to_ts(session_time.hour, session_time.minute, session_time.second, session_time.microsecond * 1000)
+        else:
+            raise TypeError(f'Unsupported type for session_time: {session_time.__class__.__name__}')
+        return AuctionPhase(self.header.resolve_auction_phase_func(ts))
+
+    def resolve_session_phase(self, object session_time):
+        cdef double ts = 0.0
+        cdef const session_time_t* c_time
+        if isinstance(session_time, SessionTime):
+            c_time = (<SessionTime> session_time).header
+            ts = c_ex_profile_time_to_ts(c_time.hour, c_time.minute, c_time.second, c_time.nanosecond)
+        elif isinstance(session_time, py_time):
+            ts = c_ex_profile_time_to_ts(session_time.hour, session_time.minute, session_time.second, session_time.microsecond * 1000)
+        else:
+            raise TypeError(f'Unsupported type for session_time: {session_time.__class__.__name__}')
+        return SessionPhase(self.header.resolve_session_phase_func(ts))
+
+    def resolve_session_type(self, object session_date):
+        cdef const session_date_t* c_date
+        if isinstance(session_date, SessionDate):
+            c_date = (<SessionDate> session_date).header
+            return SessionType(self.header.resolve_session_type_func(c_date.year, c_date.month, c_date.day))
+        elif isinstance(session_date, py_date):
+            return SessionType(self.header.resolve_session_type_func(session_date.year, session_date.month, session_date.day))
+        else:
+            raise TypeError(f'Unsupported type for date: {session_date.__class__.__name__}')
+
+    property session_start_ts:
+        def __get__(self):
+            return self.header.session_start_ts
+
+    property session_end_ts:
+        def __get__(self):
+            return self.header.session_end_ts
+
+    property session_length_seconds:
+        def __get__(self):
+            return self.header.session_length_seconds
+
+    property tz_offset_seconds:
+        def __get__(self):
+            return self.header.tz_offset_seconds
+
+
+cdef ExchangeProfile DEFAULT_PROFILE = ExchangeProfile.c_from_header(&EX_PROFILE_DEFAULT)
+globals()['DEFAULT_PROFILE'] = DEFAULT_PROFILE

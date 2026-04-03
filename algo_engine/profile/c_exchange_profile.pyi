@@ -1,8 +1,6 @@
-from __future__ import annotations
-
-from datetime import time as py_time, date as py_date
+from datetime import date as py_date, time as py_time
 from enum import IntEnum
-from typing import Any, Self, Optional
+from typing import Self
 
 __all__ = [
     "SessionType",
@@ -15,6 +13,71 @@ __all__ = [
     "CallAuction",
     "SessionBreak",
 ]
+
+
+class ExchangeProfile(object):
+    """Represents an exchange profile with session configuration and helpers.
+
+    ExchangeProfile instances are thin wrappers around the C-level
+    ``exchange_profile`` struct. Use :meth:`trade_calendar`, :meth:`resolve_*`
+    helpers and activation methods to query profile-specific behaviour.
+    """
+
+    @staticmethod
+    def c_from_header(header: object) -> "ExchangeProfile": ...
+
+    profile_id: str
+    """Unique identifier for the profile (e.g. "NYSE", "SSE")."""
+
+    session_start: SessionTime
+    """Continuous session start time."""
+
+    session_end: SessionTime
+    """Continuous session end time."""
+
+    open_call_auction: Optional[CallAuction]
+    """Open call auction metadata, or ``None`` if not configured."""
+
+    close_call_auction: Optional[CallAuction]
+    """Close call auction metadata, or ``None`` if not configured."""
+
+    session_breaks: tuple[SessionBreak, ...]
+    """Tuple of configured session breaks (may be empty)."""
+
+    time_zone: Optional[str]
+    """IANA time zone string for the profile, or ``None``."""
+
+    def __repr__(self) -> str: ...
+
+    def activate(self) -> None: ...
+
+    def deactivate(self) -> None: ...
+
+    def trade_calendar(self, start_date: DateLike, end_date: DateLike) -> SessionDateRange: ...
+
+    def resolve_auction_phase(self, session_time: TimeLike) -> AuctionPhase: ...
+
+    def resolve_session_phase(self, session_time: TimeLike) -> SessionPhase: ...
+
+    def resolve_session_type(self, session_date: DateLike) -> SessionType: ...
+
+    @property
+    def session_start_ts(self) -> float: ...
+
+    @property
+    def session_end_ts(self) -> float: ...
+
+    @property
+    def session_length_seconds(self) -> float: ...
+
+    @property
+    def tz_offset_seconds(self) -> float: ...
+
+
+# DEFAULT_PROFILE is exported as a convenience wrapper for the builtin C default
+# exchange profile (EX_PROFILE_DEFAULT).
+DEFAULT_PROFILE: ExchangeProfile
+
 
 
 class SessionType(IntEnum):
@@ -137,7 +200,7 @@ class SessionTime(object):
 
     def to_pytime(self) -> py_time: ...
 
-    def isoformat(self, *args: Any, **kwargs: Any) -> str: ...
+    def isoformat(self, *args, **kwargs) -> str: ...
 
     @classmethod
     def fromisoformat(cls, time_str: str) -> Self: ...

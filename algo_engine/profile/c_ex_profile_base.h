@@ -168,6 +168,8 @@ typedef struct exchange_profile {
 extern const exchange_profile*      EX_PROFILE;
 extern const session_date_range_t*  EX_TRADE_CALENDAR_CACHE;
 
+extern const exchange_profile       EX_PROFILE_DEFAULT;
+
 static inline double                c_utc_offset_seconds(void);
 static inline int                   c_ex_profile_time_compare(const void* t1, const void* t2);
 static inline double                c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
@@ -188,7 +190,7 @@ static inline int                   c_ex_profile_days_after(const session_date_t
 static inline int                   c_ex_profile_days_before(const session_date_t* date, size_t days_before, session_date_t* out);
 static inline session_date_range_t* c_ex_profile_date_range(const session_date_t* start_date, const session_date_t* end_date);
 
-static inline void                  c_ex_profile_activate(exchange_profile* profile);
+static inline void                  c_ex_profile_activate(const exchange_profile* profile);
 
 static inline session_time_t*       c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
 static inline int                   c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out);
@@ -618,7 +620,7 @@ static inline session_date_range_t* c_ex_profile_date_range(const session_date_t
 
 // ========== Public APIs (exchange_profile) ==========
 
-static inline void c_ex_profile_activate(exchange_profile* profile) {
+static inline void c_ex_profile_activate(const exchange_profile* profile) {
     if (EX_PROFILE == profile) return;
 
     if (EX_PROFILE && EX_PROFILE->on_deactivate_func) EX_PROFILE->on_deactivate_func(EX_PROFILE);
