@@ -12,72 +12,10 @@ __all__ = [
     "SessionDateRange",
     "CallAuction",
     "SessionBreak",
+    "ExchangeProfile",
+    "PROFILE_DEFAULT",
+    "PROFILE_CN"
 ]
-
-
-class ExchangeProfile(object):
-    """Represents an exchange profile with session configuration and helpers.
-
-    ExchangeProfile instances are thin wrappers around the C-level
-    ``exchange_profile`` struct. Use :meth:`trade_calendar`, :meth:`resolve_*`
-    helpers and activation methods to query profile-specific behaviour.
-    """
-
-    @staticmethod
-    def c_from_header(header: object) -> "ExchangeProfile": ...
-
-    profile_id: str
-    """Unique identifier for the profile (e.g. "NYSE", "SSE")."""
-
-    session_start: SessionTime
-    """Continuous session start time."""
-
-    session_end: SessionTime
-    """Continuous session end time."""
-
-    open_call_auction: Optional[CallAuction]
-    """Open call auction metadata, or ``None`` if not configured."""
-
-    close_call_auction: Optional[CallAuction]
-    """Close call auction metadata, or ``None`` if not configured."""
-
-    session_breaks: tuple[SessionBreak, ...]
-    """Tuple of configured session breaks (may be empty)."""
-
-    time_zone: Optional[str]
-    """IANA time zone string for the profile, or ``None``."""
-
-    def __repr__(self) -> str: ...
-
-    def activate(self) -> None: ...
-
-    def deactivate(self) -> None: ...
-
-    def trade_calendar(self, start_date: DateLike, end_date: DateLike) -> SessionDateRange: ...
-
-    def resolve_auction_phase(self, session_time: TimeLike) -> AuctionPhase: ...
-
-    def resolve_session_phase(self, session_time: TimeLike) -> SessionPhase: ...
-
-    def resolve_session_type(self, session_date: DateLike) -> SessionType: ...
-
-    @property
-    def session_start_ts(self) -> float: ...
-
-    @property
-    def session_end_ts(self) -> float: ...
-
-    @property
-    def session_length_seconds(self) -> float: ...
-
-    @property
-    def tz_offset_seconds(self) -> float: ...
-
-
-# DEFAULT_PROFILE is exported as a convenience wrapper for the builtin C default
-# exchange profile (EX_PROFILE_DEFAULT).
-DEFAULT_PROFILE: ExchangeProfile
-
 
 
 class SessionType(IntEnum):
@@ -318,6 +256,8 @@ class SessionDate(object):
 
     def is_valid(self) -> bool: ...
 
+    def is_weekend(self) -> bool: ...
+
     def ctime(self) -> str: ...
 
     @classmethod
@@ -445,3 +385,79 @@ class SessionBreak(object):
     def next(self) -> SessionBreak | None:
         """Link to the next break, or ``None``."""
         ...
+
+
+class ExchangeProfile(object):
+    """Represents an exchange profile with session configuration and helpers.
+
+    ExchangeProfile instances are thin wrappers around the C-level
+    """
+
+    def __repr__(self) -> str: ...
+
+    def activate(self) -> None:
+        """Activate this profile for the current thread."""
+        ...
+
+    def deactivate(self) -> None:
+        """Deactivate this profile and revert to the default profile, for the current thread."""
+        ...
+
+    def trade_calendar(self, start_date: DateLike, end_date: DateLike) -> SessionDateRange: ...
+
+    def resolve_auction_phase(self, session_time: TimeLike) -> AuctionPhase: ...
+
+    def resolve_session_phase(self, session_time: TimeLike) -> SessionPhase: ...
+
+    def resolve_session_type(self, session_date: DateLike) -> SessionType: ...
+
+    @property
+    def profile_id(self) -> str:
+        """Unique identifier for the profile (e.g. "UTC_NONSTOP_DEFAULT" (the default one), "CN_STOCK")."""
+        ...
+
+    @property
+    def session_start(self) -> SessionTime:
+        """Continuous session start time."""
+        ...
+
+    @property
+    def session_end(self) -> SessionTime:
+        """Continuous session end time."""
+        ...
+
+    @property
+    def open_call_auction(self) -> CallAuction | None:
+        """Open call auction metadata, or ``None`` if not configured."""
+        ...
+
+    @property
+    def close_call_auction(self) -> CallAuction | None:
+        """Close call auction metadata, or ``None`` if not configured."""
+        ...
+
+    @property
+    def session_breaks(self) -> tuple[SessionBreak, ...]:
+        """Tuple of configured session breaks (may be empty)."""
+        ...
+
+    @property
+    def time_zone(self) -> str | None:
+        """IANA time zone string for the profile, or ``None``."""
+        ...
+
+    @property
+    def session_start_ts(self) -> float: ...
+
+    @property
+    def session_end_ts(self) -> float: ...
+
+    @property
+    def session_length_seconds(self) -> float: ...
+
+    @property
+    def tz_offset_seconds(self) -> float: ...
+
+
+PROFILE_DEFAULT: ExchangeProfile
+PROFILE_CN: ExchangeProfile
