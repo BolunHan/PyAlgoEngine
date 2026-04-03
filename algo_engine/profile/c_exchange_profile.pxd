@@ -251,7 +251,7 @@ cdef class ProfileCompatible:
     cdef inline SessionDateRange c_trade_calendar(self, py_date start_date, py_date end_date):
         cdef SessionDate d1 = SessionDate.from_pydate(start_date)
         cdef SessionDate d2 = SessionDate.from_pydate(end_date)
-        cdef session_date_range_t* drange = c_ex_profile_date_range(d1.header, d2.header)
+        cdef session_date_range_t* drange = c_ex_profile_session_drange_between(d1.header, d2.header)
         if drange:
             return SessionDateRange.c_from_header(drange, True)
         return None

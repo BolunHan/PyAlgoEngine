@@ -1,5 +1,6 @@
-from datetime import date as py_date, time as py_time
-from enum import IntEnum
+import datetime
+import enum
+import zoneinfo
 from typing import Self
 
 __all__ = [
@@ -13,12 +14,14 @@ __all__ = [
     "CallAuction",
     "SessionBreak",
     "ExchangeProfile",
+    "ProfileCompatible",
+    "PROFILE",
     "PROFILE_DEFAULT",
     "PROFILE_CN"
 ]
 
 
-class SessionType(IntEnum):
+class SessionType(enum.IntEnum):
     """Describes the type of trading session for a given market date.
 
     The integer values map directly to the underlying C enum constants used
@@ -46,7 +49,7 @@ class SessionType(IntEnum):
     CIRCUIT_BREAK: SessionType
 
 
-class SessionPhase(IntEnum):
+class SessionPhase(enum.IntEnum):
     """The phase of the trading session at a particular time-of-day.
 
     The values correspond to the phases used inside the C exchange profile
@@ -64,7 +67,7 @@ class SessionPhase(IntEnum):
     CLOSED: SessionPhase
 
 
-class AuctionPhase(IntEnum):
+class AuctionPhase(enum.IntEnum):
     """Auction-specific phase during call auctions.
 
     These values map to the auction phases used by the exchange profile.
@@ -93,7 +96,7 @@ def local_utc_offset_seconds() -> int:
     ...
 
 
-TimeLike = SessionTime | py_time
+TimeLike = SessionTime | datetime.time
 
 
 class SessionTime(object):
@@ -131,12 +134,12 @@ class SessionTime(object):
     def __init__(self, hour: int = 0, minute: int = 0, second: int = 0, nanosecond: int = 0) -> None: ...
 
     @classmethod
-    def from_pytime(cls, t: py_time) -> Self: ...
+    def from_pytime(cls, t: datetime.time) -> Self: ...
 
     @classmethod
     def from_timestamp(cls, unix_ts: float) -> Self: ...
 
-    def to_pytime(self) -> py_time: ...
+    def to_pytime(self) -> datetime.time: ...
 
     def isoformat(self, *args, **kwargs) -> str: ...
 
@@ -203,7 +206,7 @@ class SessionTimeRange(object):
     def end_time(self) -> SessionTime: ...
 
 
-DateLike = SessionDate | py_date
+DateLike = SessionDate | datetime.date
 
 
 class SessionDate(object):
@@ -246,9 +249,9 @@ class SessionDate(object):
     def from_ordinal(cls, ordinal: int) -> SessionDate: ...
 
     @classmethod
-    def from_pydate(cls, dt: py_date) -> SessionDate: ...
+    def from_pydate(cls, dt: datetime.date) -> SessionDate: ...
 
-    def to_pydate(self) -> py_date: ...
+    def to_pydate(self) -> datetime.date: ...
 
     def to_ordinal(self) -> int: ...
 
@@ -299,6 +302,10 @@ class SessionDateRange(object):
     def __iter__(self): ...
 
     def __getitem__(self, idx: int) -> SessionDate: ...
+
+    def __contains__(self, item: DateLike) -> bool: ...
+
+    def index(self, item: DateLike) -> int: ...
 
     @property
     def n_days(self) -> int: ...
@@ -390,26 +397,69 @@ class SessionBreak(object):
 class ExchangeProfile(object):
     """Represents an exchange profile with session configuration and helpers.
 
-    ExchangeProfile instances are thin wrappers around the C-level
+    This object mirrors the C ``exchange_profile`` struct and provides
+    convenience Python methods that dispatch to the underlying C function
+    pointers. Instances are typically obtained from module-level globals
+    ``PROFILE_DEFAULT`` and ``PROFILE_CN`` or via the :meth:`c_from_header`
+    factory.
+
+    Note: Many methods accept both Python-level wrappers (``SessionDate``/
+    ``SessionTime``) and their standard-library counterparts (``datetime.date``/
+    ``datetime.time``) for convenience.
     """
 
     def __repr__(self) -> str: ...
 
     def activate(self) -> None:
-        """Activate this profile for the current thread."""
+        """Activate this profile as the global exchange profile for the process/thread.
+
+        This calls into the C-level activation callback and sets the global
+        profile pointer used by other APIs.
+        """
         ...
 
     def deactivate(self) -> None:
-        """Deactivate this profile and revert to the default profile, for the current thread."""
+        """Deactivate this profile and restore the default profile.
+
+        If this profile is the currently active one the implementation will
+        switch back to ``PROFILE_DEFAULT``.
+        """
         ...
 
-    def trade_calendar(self, start_date: DateLike, end_date: DateLike) -> SessionDateRange: ...
+    def trade_calendar(self, start_date: DateLike, end_date: DateLike) -> SessionDateRange:
+        """Return a :class:`SessionDateRange` containing trading dates between two dates.
 
-    def resolve_auction_phase(self, session_time: TimeLike) -> AuctionPhase: ...
+        Args:
+            start_date: inclusive start; may be a :class:`SessionDate` or :class:`datetime.date`.
+            end_date: inclusive end; may be a :class:`SessionDate` or :class:`datetime.date`.
 
-    def resolve_session_phase(self, session_time: TimeLike) -> SessionPhase: ...
+        Returns:
+            SessionDateRange: C-backed range object with ``dates`` sequence of :class:`SessionDate`.
+        """
+        ...
 
-    def resolve_session_type(self, session_date: DateLike) -> SessionType: ...
+    def resolve_auction_phase(self, session_time: TimeLike) -> AuctionPhase:
+        """Resolve auction-phase at the provided time-of-day.
+
+        Args:
+            session_time: :class:`SessionTime` or :class:`datetime.time`.
+
+        Returns:
+            AuctionPhase: an enum value representing the auction sub-phase.
+        """
+        ...
+
+    def resolve_session_phase(self, session_time: TimeLike) -> SessionPhase:
+        """Resolve high-level session phase at the provided time-of-day (preopen/open/continuous/etc.)."""
+        ...
+
+    def resolve_session_type(self, session_date: DateLike) -> SessionType:
+        """Return the :class:`SessionType` for the provided market date.
+
+        Args:
+            session_date: :class:`SessionDate` or :class:`datetime.date`.
+        """
+        ...
 
     @property
     def profile_id(self) -> str:
@@ -428,22 +478,26 @@ class ExchangeProfile(object):
 
     @property
     def open_call_auction(self) -> CallAuction | None:
-        """Open call auction metadata, or ``None`` if not configured."""
+        """Open call auction metadata (maybe ``None``)."""
         ...
 
     @property
     def close_call_auction(self) -> CallAuction | None:
-        """Close call auction metadata, or ``None`` if not configured."""
+        """Close call auction metadata (maybe ``None``)."""
         ...
 
     @property
     def session_breaks(self) -> tuple[SessionBreak, ...]:
-        """Tuple of configured session breaks (may be empty)."""
+        """Tuple of :class:`SessionBreak` describing intraday breaks."""
         ...
 
     @property
-    def time_zone(self) -> str | None:
-        """IANA time zone string for the profile, or ``None``."""
+    def time_zone(self) -> zoneinfo.ZoneInfo:
+        """IANA time zone as a :class:`zoneinfo.zoneinfo.ZoneInfo` instance.
+
+        The live implementation returns a zoneinfo.ZoneInfo object which can be used
+        to construct timezone-aware datetime for timestamp conversions.
+        """
         ...
 
     @property
@@ -458,6 +512,148 @@ class ExchangeProfile(object):
     @property
     def tz_offset_seconds(self) -> float: ...
 
+
+TS_LIKE = datetime.time | float | int
+
+
+class ProfileCompatible(object):
+    """Convenience singleton providing profile-aware utilities.
+
+    This wrapper dispatches to the currently active profile (the C global
+    ``EX_PROFILE``) and exposes higher-level helpers that operate on
+    :class:`datetime`/numeric timestamps, or :class:`datetime.time` values.
+
+    Most methods enforce that the provided time(s) are inside a market
+    session (or auction) and will raise / assert if not. Use the
+    ``break_adjusted`` flags to include/exclude lunch breaks.
+    """
+
+    def time_to_seconds(self, t: datetime.time, break_adjusted: bool = True) -> float:
+        """Convert a time-of-day to seconds since trading session start.
+
+        Args:
+            t: datetime.time instance representing a clock time in the profile's local zone.
+            break_adjusted: If True, subtract non-trading break durations (e.g., lunch break).
+
+        Returns:
+            float: elapsed seconds since session open (breaks excluded when requested) or
+            raw seconds-of-day if break_adjusted is False.
+        """
+        ...
+
+    def timestamp_to_seconds(self, t: float, break_adjusted: bool = True) -> float:
+        """Convert a UNIX timestamp (seconds) to seconds since session open, optionally break-adjusted."""
+        ...
+
+    def break_adjusted(self, elapsed_seconds: float) -> float:
+        """Return the break-adjusted elapsed seconds for a raw seconds-since-midnight value."""
+        ...
+
+    def trading_time_between(self, start_time: TS_LIKE, end_time: TS_LIKE) -> float:
+        """Compute total trading seconds between two datetime (or UNIX timestamps).
+
+        Accepts either naive datetime (interpreted in profile.time_zone) or numeric
+        UNIX timestamps. The result is the total trading-time (seconds) excluding
+        non-trading periods (e.g., lunch break).
+        """
+        ...
+
+    def is_market_session(self, timestamp) -> bool:
+        """Return True if the provided timestamp/time/datetime is in continuous market session.
+
+        Accepts numeric UNIX timestamps, :class:`datetime.time` or :class:`datetime.datetime`.
+        """
+        ...
+
+    def is_auction_session(self, timestamp) -> bool:
+        """Return True if the provided timestamp/time/datetime is in an auction period."""
+        ...
+
+    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date) -> list[SessionDate]:
+        """Return a list of :class:`SessionDate` for trading (market) days within the range."""
+        ...
+
+    def trading_days_before(self, market_date: datetime.date, days: int) -> datetime.date:
+        """Return the market date that is a given number of trading days before the provided date.
+
+        If the provided date is not a trading day, it will be treated as if it were the nearest **NEXT** trading day.
+        That is, if days == 1 and the provided date is SAT or SUN, the result will be FRI, not THU.
+        """
+        ...
+
+    def trading_days_after(self, market_date: datetime.date, days: int) -> datetime.date:
+        """Return the market date that is a given number of trading days after the provided date.
+
+        If the provided date is not a trading day, it will be treated as if it were the nearest **PREVIOUS** trading day.
+        That is, if days == 1 and the provided date is SAT or SUN, the result will be MON, not TUE.
+        """
+        ...
+
+    def trading_days_between(self, start_date: datetime.date, end_date: datetime.date) -> int:
+        """Return the number of trading days between two market dates (inclusive)."""
+        ...
+
+    def nearest_trading_date(self, market_date: datetime.date, method: str = 'previous') -> datetime.date:
+        """Return the nearest trading date to the provided date.
+
+        Args:
+            market_date: The reference date for which to find the nearest trading date.
+            method: Method to resolve ties when the provided date is exactly between two trading days. Options are 'previous' (default) or 'next'.
+
+        Returns:
+            datetime.date: The nearest trading date to the provided date.
+        """
+        ...
+
+    def is_trading_day(self, market_date: datetime.date) -> bool: ...
+
+    @property
+    def profile_id(self) -> str:
+        """Return the profile_id of the currently active exchange profile."""
+        ...
+
+    @property
+    def session_start(self) -> SessionTime:
+        """Return the **CONTINUOUS** session start time of the currently active exchange profile."""
+        ...
+
+    @property
+    def session_end(self) -> SessionTime:
+        """Return the **CONTINUOUS** session end time of the currently active exchange profile."""
+        ...
+
+    @property
+    def open_call_auction(self) -> CallAuction | None:
+        """Return the open call auction metadata of the currently active exchange profile, or None if not present."""
+        ...
+
+    @property
+    def close_call_auction(self) -> CallAuction | None:
+        """Return the close call auction metadata of the currently active exchange profile, or None if not present."""
+        ...
+
+    @property
+    def session_breaks(self) -> tuple[SessionBreak, ...]:
+        """Return the intraday breaks of the currently active exchange profile as a tuple of SessionBreak."""
+        ...
+
+    @property
+    def time_zone(self) -> zoneinfo.ZoneInfo:
+        """Return the time zone of the currently active exchange profile as a zoneinfo.zoneinfo.ZoneInfo instance."""
+        ...
+
+    @property
+    def range_break(self) -> list[dict]:
+        """Return a list of range break dicts for Plotly X-axis configuration based on the session breaks of the currently active exchange profile."""
+        ...
+
+    @property
+    def trade_calendar_cache(self) -> SessionDateRange | None:
+        """Return a cached SessionDateRange for the current active exchange profile, or None."""
+        ...
+
+
+PROFILE: ProfileCompatible
 
 PROFILE_DEFAULT: ExchangeProfile
 PROFILE_CN: ExchangeProfile

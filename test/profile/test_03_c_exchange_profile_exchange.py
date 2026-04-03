@@ -3,11 +3,10 @@ from datetime import date, time as py_time
 
 from algo_engine.profile.c_exchange_profile import (
     ExchangeProfile,
-    DEFAULT_PROFILE,
+    PROFILE_DEFAULT,
     SessionDate,
     SessionDateRange,
     SessionTime,
-    SessionTimeRange,
     CallAuction,
     SessionBreak,
     SessionType,
@@ -18,7 +17,7 @@ from algo_engine.profile.c_exchange_profile import (
 
 class TestExchangeProfile(unittest.TestCase):
     def test_default_profile_basic_properties(self):
-        dp = DEFAULT_PROFILE
+        dp = PROFILE_DEFAULT
         self.assertIsInstance(dp, ExchangeProfile)
         self.assertIsInstance(dp.profile_id, str)
         # session start/end are SessionTime
@@ -33,7 +32,7 @@ class TestExchangeProfile(unittest.TestCase):
         self.assertIsInstance(dp.session_breaks, tuple)
 
     def test_resolve_helpers_return_enums(self):
-        dp = DEFAULT_PROFILE
+        dp = PROFILE_DEFAULT
         # resolve using SessionTime instance
         sp = dp.resolve_session_phase(SessionTime(9, 0))
         self.assertIsInstance(sp, SessionPhase)
@@ -47,7 +46,7 @@ class TestExchangeProfile(unittest.TestCase):
         self.assertIsInstance(st, SessionType)
 
     def test_trade_calendar_and_call_auction_structs(self):
-        dp = DEFAULT_PROFILE
+        dp = PROFILE_DEFAULT
         # Use a small date range within same month
         start = SessionDate.from_pydate(date(2024, 2, 27))
         end = SessionDate.from_pydate(date(2024, 3, 2))

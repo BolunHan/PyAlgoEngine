@@ -411,6 +411,44 @@ cdef class SessionDateRange:
     def __getitem__(self, Py_ssize_t idx):
         return self.dates[idx]
 
+    def __contains__(self, object item):
+        cdef session_date_t dt
+        if isinstance(item, py_date):
+            dt.year = item.year
+            dt.month = item.month
+            dt.day = item.day
+        elif isinstance(item, SessionDate):
+            dt.year = item.header.year
+            dt.month = item.header.month
+            dt.day = item.header.day
+        else:
+            raise TypeError(f'Unsupported type for membership test: {item.__class__.__name__}')
+        cdef size_t i = c_ex_profile_session_date_index(&dt, self.header)
+        if i == <size_t> -1:
+            return False
+        cdef const session_date_t* found = self.header.dates + i
+        return c_ex_profile_date_compare(found, &dt) == 0
+
+    def index(self, object item):
+        cdef session_date_t dt
+        if isinstance(item, py_date):
+            dt.year = item.year
+            dt.month = item.month
+            dt.day = item.day
+        elif isinstance(item, SessionDate):
+            dt.year = item.header.year
+            dt.month = item.header.month
+            dt.day = item.header.day
+        else:
+            raise TypeError(f'Unsupported type for index lookup: {item.__class__.__name__}')
+        cdef size_t i = c_ex_profile_session_date_index(&dt, self.header)
+        if i == <size_t> -1:
+            raise ValueError(f'{item} not found in {self}')
+        cdef const session_date_t* found = self.header.dates + i
+        if c_ex_profile_date_compare(found, &dt) == 0:
+            return i
+        raise ValueError(f'{item} not found in {self}')
+
     property n_days:
         def __get__(self):
             return self.header.n_days
@@ -614,7 +652,6 @@ cdef class ExchangeProfile:
             return self.header.tz_offset_seconds
 
 
-
 cdef class ProfileCompatible:
     def __cinit__(self):
         self.header = &EX_PROFILE
@@ -762,37 +799,33 @@ cdef class ProfileCompatible:
                 return ZoneInfo(PyUnicode_FromString(self.header[0].time_zone))
             return None
 
-    @property
-    def range_break(self) -> list[dict]:
-        """
-        an range break designed for plotly.
-        """
-        range_break = []
+    property range_break:
+        def __get__(self):
+            range_break = []
+            if not self.session_breaks:
+                return range_break
 
-        if not self.session_breaks:
+            # Convert session_break to range_break format
+            cdef SessionBreak session_break
+            for session_break in self.session_breaks:
+                start = session_break.break_start
+                end = session_break.break_end
+                start_hour = start.hour + start.minute / 60
+                end_hour = end.hour + end.minute / 60
+                range_break.append(dict(bounds=[start_hour, end_hour], pattern="hour"))
+
+            # Add the additional fixed non-trading periods
+            if self.session_start is not None and self.session_start != py_time.min:
+                range_break.append(dict(bounds=[0, self.session_start.hour + self.session_start.minute / 60], pattern="hour"))
+            if self.session_end is not None and self.session_end != py_time.max:
+                range_break.append(dict(bounds=[self.session_end.hour + self.session_end.minute / 60, 24], pattern="hour"))
             return range_break
 
-        # Convert session_break to range_break format
-        cdef SessionBreak session_break
-        for session_break in self.session_breaks:
-            start = session_break.break_start
-            end = session_break.break_end
-            start_hour = start.hour + start.minute / 60
-            end_hour = end.hour + end.minute / 60
-            range_break.append(dict(bounds=[start_hour, end_hour], pattern="hour"))
-
-        # Add the additional fixed non-trading periods
-        if self.session_start is not None and self.session_start != py_time.min:
-            range_break.append(
-                dict(bounds=[0, self.session_start.hour + self.session_start.minute / 60], pattern="hour"),
-            )
-
-        if self.session_end is not None and self.session_end != py_time.max:
-            range_break.append(
-                dict(bounds=[self.session_end.hour + self.session_end.minute / 60, 24], pattern="hour"),
-            )
-
-        return range_break
+    property trade_calendar_cache:
+        def __get__(self):
+            if EX_TRADE_CALENDAR_CACHE:
+                return SessionDateRange.c_from_header(EX_TRADE_CALENDAR_CACHE, False)
+            return None
 
 
 cdef ProfileCompatible PROFILE = ProfileCompatible()
