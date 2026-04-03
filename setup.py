@@ -29,17 +29,21 @@ class BuildExtWithConfig(build_ext):
         super().build_extensions()
 
     def pre_compile(self):
-        self.remove_pxd([
-            "algo_engine.base.c_market_data",
-            "algo_engine.base.c_market_data_ng",
-        ])
+        self.remove_pxd(
+            [
+                "algo_engine.base.c_market_data",
+                "algo_engine.base.c_market_data_ng",
+                "algo_engine.profile"
+            ]
+        )
 
     def post_compile(self):
         # Monkey hack the "__init__.pxd" issue:
         self.inject_pxd(
             [
                 "algo_engine.base.c_market_data",
-                "algo_engine.base.c_market_data_ng"
+                "algo_engine.base.c_market_data_ng",
+                "algo_engine.profile"
             ]
         )
 
@@ -143,6 +147,12 @@ if os.name == 'posix':
         Extension(
             name="algo_engine.base.c_intern_string",
             sources=["algo_engine/base/c_intern_string.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        # === Exchange Profile Cython Extensions ===
+        Extension(
+            name="algo_engine.profile.c_exchange_profile",
+            sources=["algo_engine/profile/c_exchange_profile.pyx", "algo_engine/profile/c_ex_profile_base.c", "algo_engine/profile/c_ex_profile_cn.c"],
             extra_compile_args=["-O3"]
         ),
         # === Market Data Cython Extensions ===
