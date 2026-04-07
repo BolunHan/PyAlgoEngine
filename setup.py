@@ -33,7 +33,8 @@ class BuildExtWithConfig(build_ext):
             [
                 "algo_engine.base.c_market_data",
                 "algo_engine.base.c_market_data_ng",
-                "algo_engine.profile"
+                "algo_engine.profile",
+                "algo_engine.exchange_profile"
             ]
         )
 
@@ -43,7 +44,8 @@ class BuildExtWithConfig(build_ext):
             [
                 "algo_engine.base.c_market_data",
                 "algo_engine.base.c_market_data_ng",
-                "algo_engine.profile"
+                "algo_engine.profile",
+                "algo_engine.exchange_profile"
             ]
         )
 
@@ -151,8 +153,25 @@ if os.name == 'posix':
         ),
         # === Exchange Profile Cython Extensions ===
         Extension(
-            name="algo_engine.profile.c_exchange_profile",
-            sources=["algo_engine/profile/c_exchange_profile.pyx", "algo_engine/profile/c_ex_profile_base.c", "algo_engine/profile/c_ex_profile_cn.c"],
+            name="algo_engine.exchange_profile.c_exchange_profile",
+            sources=["algo_engine/exchange_profile/c_exchange_profile.pyx",
+                     "algo_engine/exchange_profile/c_ex_profile_base.c",
+                     "algo_engine/exchange_profile/c_ex_profile_cn.c"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.exchange_profile.c_profile_dispatcher",
+            sources=["algo_engine/exchange_profile/c_profile_dispatcher.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.exchange_profile.c_profile_default",
+            sources=["algo_engine/exchange_profile/c_profile_default.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.exchange_profile.c_profile_cn",
+            sources=["algo_engine/exchange_profile/c_profile_cn.pyx"],
             extra_compile_args=["-O3"]
         ),
         # === Market Data Cython Extensions ===
