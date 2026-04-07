@@ -4,13 +4,12 @@ import time
 from typing import Literal
 
 import numpy as np
+from algo_engine.base import MarketData, TradeInstruction, TradeReport
 
+from algo_engine.apps import LOGGER
+from algo_engine.apps.backtest.web_app import WebApp
+from algo_engine.backtest import ProgressReplay, SimMatch
 from algo_engine.backtest.metrics import TradeMetrics
-from . import LOGGER
-from .web_app import WebApp
-from ...backtest import SimMatch, ProgressReplay
-from ...base import MarketData, TradeReport, TradeInstruction
-from ...profile import Profile, PROFILE
 
 
 class Tester(object, metaclass=abc.ABCMeta):
@@ -19,13 +18,11 @@ class Tester(object, metaclass=abc.ABCMeta):
             start_date: datetime.date,
             end_date: datetime.date,
             dtype: list[str] = None,
-            profile: Profile = None,
             **kwargs
     ):
         self.start_date = start_date
         self.end_date = end_date
         self.dtype = ['TickData', 'TradeData'] if dtype is None else dtype
-        self.profile = PROFILE if profile is None else profile
 
         self.timestamp = 0.
         self.last_price = {}
@@ -149,7 +146,6 @@ class StrategyTester(Tester):
             start_date=start_date,
             end_date=end_date,
             dtype=kwargs.pop('dtype', ['TickData', 'TradeData']),
-            profile=kwargs.pop('profile', PROFILE),
             event_engine=strategy.event_engine,
             topic_set=strategy.topic_set,
             multi_threading=kwargs.pop('multi_threading', False),

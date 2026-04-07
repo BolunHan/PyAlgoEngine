@@ -3,20 +3,18 @@ import datetime
 import pathlib
 from threading import Thread
 
-from .doc_server import CandleStick
-from .. import LOGGER
-from ..bokeh_server import DocManager, DocServer
-from ...profile import Profile, PROFILE
+from algo_engine.apps import LOGGER
+from algo_engine.apps.backtest.doc_server import CandleStick
+from algo_engine.apps.bokeh_server import DocManager, DocServer
 
 
 class WebApp(object):
-    def __init__(self, start_date: datetime.date, end_date: datetime.date, name: str = 'WebApp.Backtest', address: str = '0.0.0.0', port: int = 8080, profile: Profile = None, **kwargs):
+    def __init__(self, start_date: datetime.date, end_date: datetime.date, name: str = 'WebApp.Backtest', address: str = '0.0.0.0', port: int = 8080, **kwargs):
         from flask import Flask
         self.start_date = start_date
         self.end_date = end_date
         self.name = name
         self.root_dir = pathlib.Path(__file__).parent
-        self.profile = PROFILE if profile is None else profile
         self.host = address
         self.port = port
 

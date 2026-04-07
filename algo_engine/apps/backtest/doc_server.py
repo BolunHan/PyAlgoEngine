@@ -1,14 +1,14 @@
 import datetime
 import pathlib
 from functools import partial
-from typing import TypedDict, NotRequired
+from typing import NotRequired, TypedDict
 
 import pandas as pd
+from algo_engine.base import MarketData, TradeData, TransactionData
 
-from .. import DocServer, DocTheme
-from ...base import MarketData, TradeData, TransactionData
-from ...profile import Profile, PROFILE
-from ...utils import ts_indices
+from algo_engine.apps import DocServer, DocTheme
+from algo_engine.exchange_profile import PROFILE
+from algo_engine.utils import ts_indices
 
 
 class StickTheme(DocTheme):
@@ -19,11 +19,9 @@ class StickTheme(DocTheme):
     ws_style = ColorStyle(up="green", down="red")
     cn_style = ColorStyle(up="red", down="green")
 
-    def __init__(self, profile: Profile = PROFILE, style: ColorStyle = None):
-        self.profile = profile
-
+    def __init__(self, style: ColorStyle = None):
         if style is None:
-            if profile.profile_id == 'cn':
+            if PROFILE.profile_id in ['CN_STOCK']:
                 self.style = self.cn_style
             else:
                 self.style = self.ws_style
@@ -52,11 +50,10 @@ class CandleStick(DocServer):
         low_price: float
         volume: NotRequired[float]
 
-    def __init__(self, ticker: str, start_date: datetime.date, end_date: datetime.date, profile: Profile = PROFILE, interval: float = 60., x_axis: list[float] = None, theme: DocTheme = None, **kwargs):
+    def __init__(self, ticker: str, start_date: datetime.date, end_date: datetime.date, interval: float = 60., x_axis: list[float] = None, theme: DocTheme = None, **kwargs):
         self.ticker = ticker
         self.start_date = start_date
         self.end_date = end_date
-        self.profile = profile
         self.interval = interval
         self.indices = self.ts_indices() if x_axis is None else x_axis
 
@@ -68,7 +65,7 @@ class CandleStick(DocServer):
             update_interval=kwargs.get('update_interval', 0),
         )
 
-        self.theme = StickTheme(profile=self.profile) if self.theme is None else self.theme
+        self.theme = StickTheme() if self.theme is None else self.theme
         self.timestamp: float = 0.
         self.active_bar_data: CandleStick.ActiveBarData | None = None
         self._data = {
@@ -89,16 +86,16 @@ class CandleStick(DocServer):
         from start date to end date, with given interval, in seconds
         """
 
-        calendar = self.profile.trade_calendar(start_date=self.start_date, end_date=self.end_date)
+        calendar = PROFILE.trade_calendar(start_date=self.start_date, end_date=self.end_date)
         timestamps = []
         for market_date in calendar:
             _ts_indices = ts_indices(
                 market_date=market_date,
                 interval=self.interval,
-                session_start=self.profile.session_start,
-                session_end=self.profile.session_end,
-                session_break=self.profile.session_break,
-                time_zone=self.profile.time_zone,
+                session_start=PROFILE.session_start.to_pytime(),
+                session_end=PROFILE.session_end.to_pytime(),
+                session_break=[(session_break.break_start.to_pytime(), session_break.break_end.to_pytime()) for session_break in PROFILE.session_breaks],
+                time_zone=PROFILE.time_zone,
                 ts_mode='both'
             )
 
@@ -206,7 +203,7 @@ class CandleStick(DocServer):
 
     def pipe(self, sequence: dict[str, list]):
         sequence['index'].append(self.active_bar_data['idx'] + 0.5)  # to ensure bar rendered in the center of the interval
-        sequence['market_time'].append(datetime.datetime.fromtimestamp(self.active_bar_data['ts_start'], tz=self.profile.time_zone))
+        sequence['market_time'].append(PROFILE.timestamp_to_datetime(self.active_bar_data['ts_start']))
         sequence['open_price'].append(self.active_bar_data['open_price'])
         sequence['close_price'].append(self.active_bar_data['close_price'])
         sequence['cs.high_price'].append(self.active_bar_data['high_price'])
@@ -280,7 +277,7 @@ class CandleStick(DocServer):
             source=source
         )
 
-        plot.xaxis.major_label_overrides = {i: datetime.datetime.fromtimestamp(ts, tz=self.profile.time_zone).strftime('%Y-%m-%d %H:%M:%S') for i, ts in enumerate(self.indices)}
+        plot.xaxis.major_label_overrides = {i: PROFILE.timestamp_to_datetime(ts).strftime('%Y-%m-%d %H:%M:%S') for i, ts in enumerate(self.indices)}
         plot.xaxis.ticker.min_interval = 1.
         tools[5].renderers = [_candlestick]
 

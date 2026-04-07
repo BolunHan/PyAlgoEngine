@@ -1,14 +1,16 @@
 import datetime
 import time
 
-from algo_engine.apps.backtest import WebApp, LOGGER
 from algo_engine.base import Progress
-from algo_engine.profile import PROFILE_CN
+
+from algo_engine.apps.backtest import LOGGER, WebApp
+from algo_engine.exchange_profile import PROFILE_CN
 from algo_engine.utils import fake_data
 
 
 def main():
-    PROFILE_CN.override_profile()
+    PROFILE_CN.activate()
+
     ticker = '000016.SH'
     market_date = datetime.date.today()
 
