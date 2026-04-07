@@ -328,6 +328,14 @@ class SessionDateRange(object):
 
     def index(self, item: DateLike) -> int: ...
 
+    def to_list(self) -> list[datetime.date]:
+        """Convert the SessionDateRange to a list of datetime.date objects.
+
+        Returns:
+            List[datetime.date]: A list of datetime.date instances corresponding to the session dates in the range.
+        """
+        ...
+
     @property
     def n_days(self) -> int: ...
 

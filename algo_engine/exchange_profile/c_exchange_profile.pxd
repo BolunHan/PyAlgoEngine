@@ -211,6 +211,8 @@ cdef class SessionDateRange:
     @staticmethod
     cdef SessionDateRange c_from_header(const session_date_range_t* header, bint owner)
 
+    cpdef list to_list(self)
+
 
 cdef class CallAuction:
     cdef const call_auction* header

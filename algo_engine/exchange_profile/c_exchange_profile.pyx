@@ -468,6 +468,14 @@ cdef class SessionDateRange:
             return i
         raise ValueError(f'{item} not found in {self}')
 
+    cpdef list to_list(self):
+        cdef list out = []
+        cdef session_date_t dt
+        for i in range(self.header.n_days):
+            dt = self.header.dates[i]
+            out.append(py_date.__new__(py_date, dt.year, dt.month, dt.day))
+        return out
+
     property n_days:
         def __get__(self):
             return self.header.n_days
