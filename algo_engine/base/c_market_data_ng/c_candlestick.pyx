@@ -3,7 +3,8 @@ from cpython.unicode cimport PyUnicode_AsUTF8
 from libc.math cimport NAN
 from libc.stdint cimport uint64_t, uintptr_t
 
-from .c_market_data cimport C_PROFILE, md_data_type, c_init_buffer
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
+from .c_market_data cimport md_data_type, c_init_buffer
 
 
 cdef class BarData(MarketData):
@@ -160,11 +161,11 @@ cdef class BarData(MarketData):
 
     property bar_end_time:
         def __get__(self):
-            return datetime.fromtimestamp(self.header.meta_info.timestamp, tz=C_PROFILE.time_zone)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
 
     property bar_start_time:
         def __get__(self):
-            return datetime.fromtimestamp(self.header.meta_info.timestamp - self.header.bar_data.bar_span, tz=C_PROFILE.time_zone)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp - self.header.bar_data.bar_span)
 
 
 cdef class DailyBar(BarData):

@@ -7,6 +7,7 @@ from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_AsUTF8
 from libc.stdint cimport UINT64_MAX, INT64_MIN, int64_t
 from libc.string cimport memset, memcpy
 
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 
 class DataType(enum.IntEnum):
     DTYPE_UNKNOWN = md_data_type.DTYPE_UNKNOWN
@@ -343,7 +344,7 @@ cdef class MarketData:
 
     property market_time:
         def __get__(self):
-            return datetime.fromtimestamp(self.header.meta_info.timestamp, tz=C_PROFILE.time_zone)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
 
     property market_price:
         def __get__(self):
@@ -421,7 +422,7 @@ cdef class FilterMode:
         cdef double timestamp = market_data.meta_info.timestamp
 
         if md_filter_flag.NO_AUCTION & filter_mode:
-            if not C_PROFILE.c_timestamp_in_market_session(timestamp):
+            if not PROFILE.c_timestamp_in_market_session(timestamp):
                 return False
 
         if md_filter_flag.NO_ORDER & filter_mode:
@@ -512,5 +513,5 @@ cdef class ConfigViewer:
             return MD_CFG_BOOK_SIZE
 
 
-C_CONFIG = ConfigViewer.__new__(ConfigViewer)
-globals()['CONFIG'] = C_CONFIG
+cdef ConfigViewer CONFIG = ConfigViewer.__new__(ConfigViewer)
+globals()['CONFIG'] = CONFIG

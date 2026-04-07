@@ -8,8 +8,8 @@ from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8
 from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport int8_t, uintptr_t
 
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 from .c_market_data cimport (
-    C_PROFILE,
     md_data_type, md_order_type, md_side,
     c_md_side_sign, c_md_state_name, c_md_side_name, c_md_order_type_name,
     c_md_state_working, c_md_state_placed, c_md_state_done,
@@ -253,7 +253,7 @@ cdef class TradeReport(MarketData):
 
     property trade_time:
         def __get__(self):
-            return datetime.fromtimestamp(self.header.meta_info.timestamp, tz=C_PROFILE.time_zone)
+            return PROFILE.c_timestamp_in_market_session(self.header.meta_info.timestamp)
 
 
 cdef class TradeInstruction(MarketData):
@@ -556,7 +556,7 @@ cdef class TradeInstruction(MarketData):
 
     property start_time:
         def __get__(self):
-            return datetime.fromtimestamp(self.header.meta_info.timestamp, tz=C_PROFILE.time_zone)
+            return PROFILE.c_timestamp_in_market_session(self.header.meta_info.timestamp)
 
     property placed_ts:
         def __get__(self):
@@ -574,21 +574,21 @@ cdef class TradeInstruction(MarketData):
         def __get__(self):
             cdef double ts_placed = self.header.trade_instruction.ts_placed
             if ts_placed:
-                return datetime.fromtimestamp(ts_placed, tz=C_PROFILE.time_zone)
+                return PROFILE.c_timestamp_in_market_session(ts_placed)
             return None
 
     property canceled_time:
         def __get__(self):
             cdef double ts_canceled = self.header.trade_instruction.ts_canceled
             if ts_canceled:
-                return datetime.fromtimestamp(ts_canceled, tz=C_PROFILE.time_zone)
+                return PROFILE.c_timestamp_in_market_session(ts_canceled)
             return None
 
     property finished_time:
         def __get__(self):
             cdef double ts_finished = self.header.trade_instruction.ts_finished
             if ts_finished:
-                return datetime.fromtimestamp(ts_finished, tz=C_PROFILE.time_zone)
+                return PROFILE.c_timestamp_in_market_session(ts_finished)
             return None
 
 
