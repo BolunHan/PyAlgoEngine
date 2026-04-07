@@ -711,6 +711,68 @@ const size_t EX_PROFILE_CN_HOLIDAYS_PRECOMPUTED_COUNT = sizeof(EX_PROFILE_CN_HOL
 const size_t EX_PROFILE_CN_HOLIDAYS_ESTIMATED_COUNT = sizeof(EX_PROFILE_CN_HOLIDAYS_ESTIMATED) / sizeof(session_date_t);
 const size_t EX_PROFILE_CN_CIRCUIT_BREAK_DATES_COUNT = sizeof(EX_PROFILE_CN_CIRCUIT_BREAK_DATES) / sizeof(session_date_t);
 
+// ========== Timestamp Constants ==========
+
+static const double        EX_PROFILE_CN_TS_OPENCALL_START = HMS_TO_TS(9u, 15u, 0u);      // 09:15:00
+static const double        EX_PROFILE_CN_TS_OPENCALL_NO_CANCEL = HMS_TO_TS(9u, 20u, 0u);  // 09:20:00
+static const double        EX_PROFILE_CN_TS_OPENCALL_UNCROSS = HMS_TO_TS(9u, 25u, 0u);    // 09:25:00 (uncross)
+static const double        EX_PROFILE_CN_TS_SESSION_START = HMS_TO_TS(9u, 30u, 0u);       // 09:30:00
+static const double        EX_PROFILE_CN_TS_BREAK_START = HMS_TO_TS(11u, 30u, 0u);        // 11:30:00
+static const double        EX_PROFILE_CN_TS_BREAK_END = HMS_TO_TS(13u, 0u, 0u);           // 13:00:00
+static const double        EX_PROFILE_CN_TS_CLOSECALL_START = HMS_TO_TS(14u, 57u, 0u);    // 14:57:00
+static const double        EX_PROFILE_CN_TS_SESSION_END = HMS_TO_TS(15u, 0u, 0u);         // 15:00:00
+
+const session_time_range_t EX_PROFILE_CN_OPENCALL_ACTIVE = {
+    .start = {.elapsed_seconds = -15.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 15u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .end = {.elapsed_seconds = -10.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 20u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .elapsed_seconds = 5 * SECONDS_PER_MINUTE,
+};
+
+const session_time_range_t EX_PROFILE_CN_OPENCALL_NO_CANCEL = {
+    .start = {.elapsed_seconds = -10.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 20u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .end = {.elapsed_seconds = -5.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 25u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .elapsed_seconds = 5 * SECONDS_PER_MINUTE,
+};
+
+const session_time_range_t EX_PROFILE_CN_OPENCALL_FROZEN = {
+    .start = {.elapsed_seconds = -5.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 25u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .end = {.elapsed_seconds = 0, .hour = 9u, .minute = 30u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .elapsed_seconds = 5 * SECONDS_PER_MINUTE,
+};
+
+const call_auction EX_PROFILE_CN_OPENCALL_AUCTION = {
+    .auction_start = {.elapsed_seconds = -15.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 15u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .active = &EX_PROFILE_CN_OPENCALL_ACTIVE,
+    .no_cancel = &EX_PROFILE_CN_OPENCALL_NO_CANCEL,
+    .frozen = &EX_PROFILE_CN_OPENCALL_FROZEN,
+    .uncross = {.elapsed_seconds = -5.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 25u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+    .auction_end = {.elapsed_seconds = 0.0, .hour = 9u, .minute = 30u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
+};
+
+const session_time_range_t EX_PROFILE_CN_CLOSECALL_NO_CANCEL = {
+    .start = {.elapsed_seconds = 14220.0, .hour = 14u, .minute = 57u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
+    .end = {.elapsed_seconds = 14400.0, .hour = 15u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
+    .elapsed_seconds = 180.0,
+};
+
+const call_auction EX_PROFILE_CN_CLOSECALL_AUCTION = {
+    .auction_start = {.elapsed_seconds = 14220.0, .hour = 14u, .minute = 57u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
+    .active = NULL,
+    .no_cancel = &EX_PROFILE_CN_CLOSECALL_NO_CANCEL,
+    .frozen = NULL,
+    .uncross = {.elapsed_seconds = 14400.0, .hour = 15u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
+    .auction_end = {.elapsed_seconds = 14400.0, .hour = 15u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
+};
+
+const session_break EX_PROFILE_CN_BREAK = {
+    .break_start = {.elapsed_seconds = 7200.0, .hour = 11u, .minute = 30u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_BREAK},
+    .break_end = {.elapsed_seconds = 7200.0, .hour = 13u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_BREAK},
+    .break_start_ts = EX_PROFILE_CN_TS_BREAK_START,  // 11:30:00
+    .break_end_ts = EX_PROFILE_CN_TS_BREAK_END,      // 13:00:00
+    .break_length_seconds = EX_PROFILE_CN_TS_BREAK_END - EX_PROFILE_CN_TS_BREAK_START,
+    .next = NULL,
+};
+
 // ========== Forward Declaration ==========
 
 static inline bool           c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* list, size_t n);
@@ -724,17 +786,6 @@ static session_date_range_t* c_ex_profile_trade_calendar_cn(const session_date_t
 static auction_phase         c_ex_profile_resolve_auction_phase_cn(double ts);
 static session_phase         c_ex_profile_resolve_session_phase_cn(double ts);
 static session_type          c_ex_profile_resolve_session_type_cn(uint16_t year, uint8_t month, uint8_t day);
-
-// ========== Timestamp Constants ==========
-
-static const double EX_PROFILE_CN_TS_OPENCALL_START = HMS_TO_TS(9u, 15u, 0u);      // 09:15:00
-static const double EX_PROFILE_CN_TS_OPENCALL_NO_CANCEL = HMS_TO_TS(9u, 20u, 0u);  // 09:20:00
-static const double EX_PROFILE_CN_TS_OPENCALL_UNCROSS = HMS_TO_TS(9u, 25u, 0u);    // 09:25:00 (uncross)
-static const double EX_PROFILE_CN_TS_SESSION_START = HMS_TO_TS(9u, 30u, 0u);       // 09:30:00
-static const double EX_PROFILE_CN_TS_BREAK_START = HMS_TO_TS(11u, 30u, 0u);        // 11:30:00
-static const double EX_PROFILE_CN_TS_BREAK_END = HMS_TO_TS(13u, 0u, 0u);           // 13:00:00
-static const double EX_PROFILE_CN_TS_CLOSECALL_START = HMS_TO_TS(14u, 57u, 0u);    // 14:57:00
-static const double EX_PROFILE_CN_TS_SESSION_END = HMS_TO_TS(15u, 0u, 0u);         // 15:00:00
 
 // ========== Utilities Functions ==========
 
@@ -877,57 +928,6 @@ static session_type c_ex_profile_resolve_session_type_cn(uint16_t year, uint8_t 
     return SESSION_TYPE_NON_TRADING;
 }
 
-const session_time_range_t EX_PROFILE_CN_OPENCALL_ACTIVE = {
-    .start = {.elapsed_seconds = -15.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 15u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .end = {.elapsed_seconds = -10.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 20u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .elapsed_seconds = 5 * SECONDS_PER_MINUTE,
-};
-
-const session_time_range_t EX_PROFILE_CN_OPENCALL_NO_CANCEL = {
-    .start = {.elapsed_seconds = -10.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 20u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .end = {.elapsed_seconds = -5.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 25u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .elapsed_seconds = 5 * SECONDS_PER_MINUTE,
-};
-
-const session_time_range_t EX_PROFILE_CN_OPENCALL_FROZEN = {
-    .start = {.elapsed_seconds = -5.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 25u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .end = {.elapsed_seconds = 0, .hour = 9u, .minute = 30u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .elapsed_seconds = 5 * SECONDS_PER_MINUTE,
-};
-
-const call_auction EX_PROFILE_CN_OPENCALL_AUCTION = {
-    .auction_start = {.elapsed_seconds = -15.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 15u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .active = &EX_PROFILE_CN_OPENCALL_ACTIVE,
-    .no_cancel = &EX_PROFILE_CN_OPENCALL_NO_CANCEL,
-    .frozen = &EX_PROFILE_CN_OPENCALL_FROZEN,
-    .uncross = {.elapsed_seconds = -5.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 25u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-    .auction_end = {.elapsed_seconds = 0.0, .hour = 9u, .minute = 30u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},
-};
-
-const session_time_range_t EX_PROFILE_CN_CLOSECALL_NO_CANCEL = {
-    .start = {.elapsed_seconds = 14220.0, .hour = 14u, .minute = 57u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
-    .end = {.elapsed_seconds = 14400.0, .hour = 15u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
-    .elapsed_seconds = 180.0,
-};
-
-const call_auction EX_PROFILE_CN_CLOSECALL_AUCTION = {
-    .auction_start = {.elapsed_seconds = 14220.0, .hour = 14u, .minute = 57u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
-    .active = NULL,
-    .no_cancel = &EX_PROFILE_CN_CLOSECALL_NO_CANCEL,
-    .frozen = NULL,
-    .uncross = {.elapsed_seconds = 14400.0, .hour = 15u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
-    .auction_end = {.elapsed_seconds = 14400.0, .hour = 15u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_CLOSE_AUCTION},
-};
-
-const session_break EX_PROFILE_CN_BREAK = {
-    .break_start = {.elapsed_seconds = 7200.0, .hour = 11u, .minute = 30u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_BREAK},
-    .break_end = {.elapsed_seconds = 7200.0, .hour = 13u, .minute = 0u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_BREAK},
-    .break_start_ts = HMS_TO_TS(11u, 30u, 0u),  // 11:30:00
-    .break_end_ts = HMS_TO_TS(13u, 0u, 0u),     // 13:00:00
-    .break_length_seconds = HMS_TO_TS(13u, 0u, 0u) - HMS_TO_TS(11u, 30u, 0u),
-    .next = NULL,
-};
-
 bool                        EX_PROFILE_CN_IS_ACTIVATED = false;
 
 const session_date_range_t* EX_PROFILE_CN_TRADE_CALENDAR = NULL;
@@ -951,9 +951,9 @@ const exchange_profile      EX_PROFILE_CN = {
         .nanosecond = 0u,
         .phase = SESSION_PHASE_CLOSED,
     },
-    .session_start_ts = HMS_TO_TS(9, 30, 0),  // 09:30:00
-    .session_end_ts = HMS_TO_TS(15, 0, 0),    // 15:00:00
-    .session_length_seconds = 14400.0,        // 4h continuous trading excluding lunch break
+    .session_start_ts = EX_PROFILE_CN_TS_SESSION_START,  // 09:30:00
+    .session_end_ts = EX_PROFILE_CN_TS_SESSION_END,      // 15:00:00
+    .session_length_seconds = 14400.0,                   // 4h continuous trading excluding lunch break
 
     .open_call_auction = &EX_PROFILE_CN_OPENCALL_AUCTION,
     .close_call_auction = &EX_PROFILE_CN_CLOSECALL_AUCTION,
@@ -962,10 +962,10 @@ const exchange_profile      EX_PROFILE_CN = {
     .time_zone = "Asia/Shanghai",
     .tz_offset_seconds = 28800.0,
 
-    .on_activate_func = c_ex_profile_on_activate_cn,
-    .on_deactivate_func = c_ex_profile_on_deactivate_cn,
-    .trade_calendar_func = c_ex_profile_trade_calendar_cn,
-    .resolve_auction_phase_func = c_ex_profile_resolve_auction_phase_cn,
-    .resolve_session_phase_func = c_ex_profile_resolve_session_phase_cn,
-    .resolve_session_type_func = c_ex_profile_resolve_session_type_cn,
+    .on_activate = c_ex_profile_on_activate_cn,
+    .on_deactivate = c_ex_profile_on_deactivate_cn,
+    .trade_calendar = c_ex_profile_trade_calendar_cn,
+    .resolve_auction_phase = c_ex_profile_resolve_auction_phase_cn,
+    .resolve_session_phase = c_ex_profile_resolve_session_phase_cn,
+    .resolve_session_type = c_ex_profile_resolve_session_type_cn,
 };

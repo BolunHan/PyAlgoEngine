@@ -73,14 +73,15 @@ const exchange_profile EX_PROFILE_DEFAULT = {
     .time_zone = "UTC",
     .tz_offset_seconds = 0.0,
 
-    .on_activate_func = default_on_activate,
-    .on_deactivate_func = default_on_deactivate,
-    .trade_calendar_func = default_trade_calendar,
-    .resolve_auction_phase_func = default_resolve_auction_phase,
-    .resolve_session_phase_func = default_resolve_session_phase,
-    .resolve_session_type_func = default_resolve_session_type,
+    .on_activate = default_on_activate,
+    .on_deactivate = default_on_deactivate,
+    .trade_calendar = default_trade_calendar,
+    .resolve_auction_phase = default_resolve_auction_phase,
+    .resolve_session_phase = default_resolve_session_phase,
+    .resolve_session_type = default_resolve_session_type,
 };
 
 // Externs from the header
-const exchange_profile*     EX_PROFILE = &EX_PROFILE_DEFAULT;
-const session_date_range_t* EX_TRADE_CALENDAR_CACHE = NULL;
+const exchange_profile*         EX_PROFILE = &EX_PROFILE_DEFAULT;
+ex_profile_activation_listener* EX_PROFILE_ACTIVATION_LISTENERS = NULL;
+const session_date_range_t*     EX_TRADE_CALENDAR_CACHE = NULL;

@@ -1,8 +1,8 @@
 import enum
-from zoneinfo import ZoneInfo
+from datetime import timezone
 
-from cpython.datetime cimport time as py_time, date as py_date
-from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE
+from cpython.datetime cimport timedelta
+from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE, PyObject
 from cpython.unicode cimport PyUnicode_FromString
 from libc.stdlib cimport calloc, free
 
@@ -536,35 +536,189 @@ cdef class ExchangeProfile:
     def __init__(self):
         raise NotImplementedError(f'{self.__class__.__name__} should not be initialized from python interface.')
 
+    def __dealloc__(self):
+        if self.listener_id:
+            c_ex_profile_deregister_activation_listener(self.listener_id)
+
+    @staticmethod
+    cdef ExchangeProfile c_new_bound_instance():
+        cdef ExchangeProfile instance = ExchangeProfile.__new__(ExchangeProfile)
+        instance.c_bind(EX_PROFILE)
+        cdef uintptr_t listener_id = c_ex_profile_register_activation_listener(
+            ExchangeProfile.c_listener_adapter,
+            <void*> <PyObject*> instance
+        )
+        instance.listener_id = listener_id
+        return instance
+
     @staticmethod
     cdef ExchangeProfile c_from_header(const exchange_profile* header):
         cdef ExchangeProfile instance = ExchangeProfile.__new__(ExchangeProfile)
+        instance.c_bind(header)
+        return instance
 
-        instance.header = header
-        instance.profile_id = PyUnicode_FromString(header.profile_id)
-        instance.session_start = SessionTime.c_from_header(&header.session_start, False)
-        instance.session_end = SessionTime.c_from_header(&header.session_end, False)
+    @staticmethod
+    cdef void c_listener_adapter(const exchange_profile* previous_profile, const exchange_profile* new_profile, void* user_data) noexcept:
+        cdef ExchangeProfile py_profile = <ExchangeProfile> <PyObject*> user_data
+        py_profile.c_bind(new_profile)
+
+    cdef inline void c_bind(self, const exchange_profile* header):
+        self.header = header
+        self.profile_id = PyUnicode_FromString(header.profile_id)
+        self.session_start = SessionTime.c_from_header(&header.session_start, False)
+        self.session_end = SessionTime.c_from_header(&header.session_end, False)
 
         if header.open_call_auction:
-            instance.open_call_auction = CallAuction.c_from_header(header.open_call_auction)
+            self.open_call_auction = CallAuction.c_from_header(header.open_call_auction)
         else:
-            instance.open_call_auction = None
+            self.open_call_auction = None
 
         if header.close_call_auction:
-            instance.close_call_auction = CallAuction.c_from_header(header.close_call_auction)
+            self.close_call_auction = CallAuction.c_from_header(header.close_call_auction)
         else:
-            instance.close_call_auction = None
+            self.close_call_auction = None
 
         cdef list breaks = []
         cdef const session_break* current_break = header.session_breaks
         while current_break:
             breaks.append(SessionBreak.c_from_header(current_break))
             current_break = current_break.next
-        instance.session_breaks = tuple(breaks)
+        self.session_breaks = tuple(breaks)
+        self.time_zone = timezone(
+            offset=timedelta(seconds=<Py_ssize_t> header.tz_offset_seconds),
+            name=PyUnicode_FromString(header.time_zone)
+        ) if header.time_zone else None
 
-        instance.time_zone = PyUnicode_FromString(header.time_zone) if header.time_zone else None
+    cdef inline bint c_time_in_market_session(self, py_time t):
+        cdef double ts = c_ex_profile_time_to_ts(t.hour, t.minute, t.second, t.microsecond * 1000)
+        cdef phase = self.header.resolve_session_phase(ts)
+        return phase == session_phase.SESSION_PHASE_CONTINUOUS
 
-        return instance
+    cdef inline bint c_timestamp_in_market_session(self, double unix_ts):
+        cdef double ts = c_ex_profile_unix_to_ts(unix_ts)
+        cdef phase = self.header.resolve_session_phase(ts)
+        return phase == session_phase.SESSION_PHASE_CONTINUOUS
+
+    cdef inline bint c_timestamp_in_auction_session(self, double unix_ts):
+        cdef double ts = c_ex_profile_unix_to_ts(unix_ts)
+        cdef phase = self.header.resolve_session_phase(ts)
+        return phase == session_phase.SESSION_PHASE_OPEN_AUCTION or phase == session_phase.SESSION_PHASE_CLOSE_AUCTION
+
+    cdef inline SessionDateRange c_trade_calendar(self, py_date start_date, py_date end_date):
+        cdef SessionDate d1 = SessionDate.from_pydate(start_date)
+        cdef SessionDate d2 = SessionDate.from_pydate(end_date)
+        cdef session_date_range_t* drange = c_ex_profile_session_drange_between(d1.header, d2.header)
+        if drange:
+            return SessionDateRange.c_from_header(drange, True)
+        return None
+
+    cdef inline bint c_date_in_market_session(self, py_date market_date):
+        cdef session_date_t target
+        target.year = market_date.year
+        target.month = market_date.month
+        target.day = market_date.day
+        return c_ex_profile_is_trading_day(&target)
+
+    cdef inline double c_time_to_seconds(self, py_time t, bint break_adjusted):
+        cdef double ts =  c_ex_profile_time_to_ts(t.hour, t.minute, t.second, t.microsecond * 1000)
+        if break_adjusted:
+            return c_ex_profile_ts_to_elapsed(ts)
+        return ts
+
+    cdef inline double c_timestamp_to_seconds(self, double t, bint break_adjusted):
+        cdef double ts = c_ex_profile_unix_to_ts(t)
+        if break_adjusted:
+            return c_ex_profile_ts_to_elapsed(ts)
+        return ts
+
+    cdef inline double c_break_adjusted(self, double ts):
+        return c_ex_profile_ts_to_elapsed(ts)
+
+    cdef inline double c_trading_time_between(self, py_datetime start_time, py_datetime end_time):
+        cdef session_date_t d1
+        cdef session_time_t t1
+        d1.year = start_time.year
+        d1.month = start_time.month
+        d1.day = start_time.day
+        t1.hour = start_time.hour
+        t1.minute = start_time.minute
+        t1.second = start_time.second
+        t1.nanosecond = start_time.microsecond * 1000
+
+        cdef session_date_t d2
+        cdef session_time_t t2
+        d2.year = end_time.year
+        d2.month = end_time.month
+        d2.day = end_time.day
+        t2.hour = end_time.hour
+        t2.minute = end_time.minute
+        t2.second = end_time.second
+        t2.nanosecond = end_time.microsecond * 1000
+
+        cdef ssize_t date_diff = 0
+        cdef double ts_diff = 0
+        if c_ex_profile_date_compare(&d1, &d2) == 0:
+            pass
+        else:
+            c_ex_profile_trading_days_between(&d1, &d2, &date_diff)
+            ts_diff += self.header.session_length_seconds * date_diff
+        cdef double ts1 = c_ex_profile_time_to_ts(t1.hour, t1.minute, t1.second, t1.nanosecond)
+        cdef double ts2 = c_ex_profile_time_to_ts(t2.hour, t2.minute, t2.second, t2.nanosecond)
+        cdef elapsed1 = c_ex_profile_ts_to_elapsed(ts1)
+        cdef elapsed2 = c_ex_profile_ts_to_elapsed(ts2)
+        ts_diff += elapsed2 - elapsed1
+        return ts_diff
+
+    cdef inline py_date c_trading_days_before(self, py_date market_date, size_t days):
+        cdef session_date_t d
+        d.year = market_date.year
+        d.month = market_date.month
+        d.day = market_date.day
+
+        cdef session_date_t out
+        c_ex_profile_session_trading_days_before(&d, days, &out)
+        return py_date(out.year, out.month, out.day)
+
+    cdef inline py_date c_trading_days_after(self, py_date market_date, size_t days):
+        cdef session_date_t d
+        d.year = market_date.year
+        d.month = market_date.month
+        d.day = market_date.day
+
+        cdef session_date_t out
+        c_ex_profile_session_trading_days_after(&d, days, &out)
+        return py_date(out.year, out.month, out.day)
+
+    cdef inline ssize_t c_trading_days_between(self, py_date start_date, py_date end_date):
+        cdef session_date_t d1
+        d1.year = start_date.year
+        d1.month = start_date.month
+        d1.day = start_date.day
+
+        cdef session_date_t d2
+        d2.year = end_date.year
+        d2.month = end_date.month
+        d2.day = end_date.day
+
+        cdef ssize_t out = 0
+        cdef int ret_code = c_ex_profile_trading_days_between(&d1, &d2, &out)
+        if ret_code == 0:
+            return out
+        else:
+            raise RuntimeError(f'c_ex_profile_trading_days_between failed with err code: {ret_code}')
+
+    cdef inline py_date c_nearest_trading_date(self, py_date market_date, bint previous):
+        cdef session_date_t dt
+        dt.year = market_date.year
+        dt.month = market_date.month
+        dt.day = market_date.day
+        cdef session_date_t out
+        cdef int ret_code = c_ex_profile_nearest_trading_date(&dt, <c_bool> previous, &out)
+        if ret_code == 0:
+            return py_date(out.year, out.month, out.day)
+        raise ValueError(f'Can not locate a nearest trading date for {market_date}')
+
+    # === Python Interfaces ===
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>({self.profile_id})"
@@ -596,7 +750,7 @@ cdef class ExchangeProfile:
         else:
             raise TypeError(f'Unsupported type for end_date: {end_date.__class__.__name__}')
 
-        cdef session_date_range_t* drange = self.header.trade_calendar_func(c_start_date, c_end_date)
+        cdef session_date_range_t* drange = self.header.trade_calendar(c_start_date, c_end_date)
         if not drange:
             raise RuntimeError(f'{self} failed to get trade calendar from start_date={start_date} to end_date={end_date}')
         return SessionDateRange.c_from_header(drange, True)
@@ -611,7 +765,7 @@ cdef class ExchangeProfile:
              ts = c_ex_profile_time_to_ts(session_time.hour, session_time.minute, session_time.second, session_time.microsecond * 1000)
         else:
             raise TypeError(f'Unsupported type for session_time: {session_time.__class__.__name__}')
-        return AuctionPhase(self.header.resolve_auction_phase_func(ts))
+        return AuctionPhase(self.header.resolve_auction_phase(ts))
 
     def resolve_session_phase(self, object session_time):
         cdef double ts = 0.0
@@ -623,66 +777,38 @@ cdef class ExchangeProfile:
             ts = c_ex_profile_time_to_ts(session_time.hour, session_time.minute, session_time.second, session_time.microsecond * 1000)
         else:
             raise TypeError(f'Unsupported type for session_time: {session_time.__class__.__name__}')
-        return SessionPhase(self.header.resolve_session_phase_func(ts))
+        return SessionPhase(self.header.resolve_session_phase(ts))
 
     def resolve_session_type(self, object session_date):
         cdef const session_date_t* c_date
         if isinstance(session_date, SessionDate):
             c_date = (<SessionDate> session_date).header
-            return SessionType(self.header.resolve_session_type_func(c_date.year, c_date.month, c_date.day))
+            return SessionType(self.header.resolve_session_type(c_date.year, c_date.month, c_date.day))
         elif isinstance(session_date, py_date):
-            return SessionType(self.header.resolve_session_type_func(session_date.year, session_date.month, session_date.day))
+            return SessionType(self.header.resolve_session_type(session_date.year, session_date.month, session_date.day))
         else:
             raise TypeError(f'Unsupported type for date: {session_date.__class__.__name__}')
 
-    property session_start_ts:
-        def __get__(self):
-            return self.header.session_start_ts
-
-    property session_end_ts:
-        def __get__(self):
-            return self.header.session_end_ts
-
-    property session_length_seconds:
-        def __get__(self):
-            return self.header.session_length_seconds
-
-    property tz_offset_seconds:
-        def __get__(self):
-            return self.header.tz_offset_seconds
-
-
-cdef class ProfileCompatible:
-    def __cinit__(self):
-        self.header = &EX_PROFILE
-
-    def __repr__(self):
-        if self.profile_id:
-            return f'<Profile {self.profile_id}>({id(self)})'
-        return f'<Profile DEFAULT>({id(self)})'
-
-    cpdef double time_to_seconds(self, py_time t, bint break_adjusted=True):
-        cdef const exchange_profile* active_profile = self.header[0]
+    def time_to_seconds(self, py_time t, bint break_adjusted=True):
         cdef double ts = c_ex_profile_time_to_ts(t.hour, t.minute, t.second, t.microsecond * 1000)
-        cdef phase = active_profile.resolve_session_phase_func(ts)
+        cdef phase = self.header.resolve_session_phase(ts)
         assert phase == session_phase.SESSION_PHASE_CONTINUOUS, f'{t} not in continuous trading session'
         if break_adjusted:
             return c_ex_profile_ts_to_elapsed(ts)
         return ts
 
-    cpdef double timestamp_to_seconds(self, double t, bint break_adjusted=True):
-        cdef const exchange_profile* active_profile = self.header[0]
+    def timestamp_to_seconds(self, double t, bint break_adjusted=True):
         cdef double ts = c_ex_profile_unix_to_ts(t)
-        cdef phase = active_profile.resolve_session_phase_func(ts)
+        cdef phase = self.header.resolve_session_phase(ts)
         assert phase == session_phase.SESSION_PHASE_CONTINUOUS, f'{t} not in continuous trading session'
         if break_adjusted:
             return c_ex_profile_ts_to_elapsed(ts)
         return ts
 
-    cpdef double break_adjusted(self, double elapsed_seconds):
+    def break_adjusted(self, double elapsed_seconds):
         return c_ex_profile_ts_to_elapsed(elapsed_seconds)
 
-    cpdef double trading_time_between(self, object start_time, object end_time):
+    def trading_time_between(self, object start_time, object end_time):
         cdef py_datetime st, et
         cdef double ts
 
@@ -704,7 +830,7 @@ cdef class ProfileCompatible:
         cdef seconds = self.c_trading_time_between(start_time=st, end_time=et)
         return seconds
 
-    cpdef bint is_market_session(self, object timestamp):
+    def is_market_session(self, object timestamp):
         if isinstance(timestamp, (float, int)):
             return self.c_timestamp_in_market_session(<double> timestamp)
         elif isinstance(timestamp, py_time):
@@ -716,7 +842,7 @@ cdef class ProfileCompatible:
                 return False
         raise TypeError(f'Invalid timestamp type {type(timestamp)}, except a datetime, time or numeric.')
 
-    cpdef bint is_auction_session(self, object timestamp):
+    def is_auction_session(self, object timestamp):
         cdef double ts
         if isinstance(timestamp, (float, int)):
             return self.c_timestamp_in_auction_session(<double> timestamp)
@@ -728,25 +854,19 @@ cdef class ProfileCompatible:
             return self.c_timestamp_in_auction_session(ts)
         raise TypeError(f'Invalid timestamp type {type(timestamp)}, except a datetime, time or numeric.')
 
-    cpdef list trade_calendar(self, py_date start_date, py_date end_date):
-        cdef SessionDateRange drange = self.c_trade_calendar(start_date=start_date, end_date=end_date)
-        if drange is None:
-            return []
-        return list(drange.dates)
-
-    cpdef py_date trading_days_before(self, py_date market_date, ssize_t days):
+    def trading_days_before(self, py_date market_date, ssize_t days):
         assert days > 0, "days must be positive"
         return self.c_trading_days_before(market_date=market_date, days=days)
 
-    cpdef py_date trading_days_after(self, py_date market_date, ssize_t days):
+    def trading_days_after(self, py_date market_date, ssize_t days):
         assert days > 0, "days must be positive"
         return self.c_trading_days_after(market_date=market_date, days=days)
 
-    cpdef size_t trading_days_between(self, py_date start_date, py_date end_date):
+    def trading_days_between(self, py_date start_date, py_date end_date):
         assert start_date <= end_date, f'The {end_date=} must not prior to the {start_date=}'
         return self.c_trading_days_between(start_date=start_date, end_date=end_date)
 
-    cpdef py_date nearest_trading_date(self, py_date market_date, str method='previous'):
+    def nearest_trading_date(self, py_date market_date, str method='previous'):
         cdef bint previous
 
         if method == 'previous':
@@ -758,46 +878,28 @@ cdef class ProfileCompatible:
 
         return self.c_nearest_trading_date(market_date=market_date, previous=previous)
 
-    cpdef bint is_trading_day(self, py_date market_date):
+    def is_trading_day(self, py_date market_date):
         return self.c_date_in_market_session(market_date)
 
-    property profile_id:
+    property bound_instance:
         def __get__(self):
-            return PyUnicode_FromString(self.header[0].profile_id)
+            return bool(self.listener_id)
 
-    property session_start:
+    property session_start_ts:
         def __get__(self):
-            return SessionTime.c_from_header(&self.header[0].session_start, False)
+            return self.header.session_start_ts
 
-    property session_end:
+    property session_end_ts:
         def __get__(self):
-            return SessionTime.c_from_header(&self.header[0].session_end, False)
+            return self.header.session_end_ts
 
-    property open_call_auction:
+    property session_length_seconds:
         def __get__(self):
-            if self.header[0].open_call_auction:
-                return CallAuction.c_from_header(self.header[0].open_call_auction)
-            return None
+            return self.header.session_length_seconds
 
-    property close_call_auction:
+    property tz_offset_seconds:
         def __get__(self):
-            if self.header[0].close_call_auction:
-                return CallAuction.c_from_header(self.header[0].close_call_auction)
-
-    property session_breaks:
-        def __get__(self):
-            cdef list breaks = []
-            cdef const session_break* current_break = self.header[0].session_breaks
-            while current_break:
-                breaks.append(SessionBreak.c_from_header(current_break))
-                current_break = current_break.next
-            return tuple(breaks)
-
-    property time_zone:
-        def __get__(self):
-            if self.header[0].time_zone:
-                return ZoneInfo(PyUnicode_FromString(self.header[0].time_zone))
-            return None
+            return self.header.tz_offset_seconds
 
     property range_break:
         def __get__(self):
@@ -826,13 +928,3 @@ cdef class ProfileCompatible:
             if EX_TRADE_CALENDAR_CACHE:
                 return SessionDateRange.c_from_header(EX_TRADE_CALENDAR_CACHE, False)
             return None
-
-
-cdef ProfileCompatible PROFILE = ProfileCompatible()
-globals()['PROFILE'] = PROFILE
-
-cdef ExchangeProfile PROFILE_DEFAULT = ExchangeProfile.c_from_header(&EX_PROFILE_DEFAULT)
-cdef ExchangeProfile PROFILE_CN = ExchangeProfile.c_from_header(&EX_PROFILE_CN)
-
-globals()['PROFILE_DEFAULT'] = PROFILE_DEFAULT
-globals()['PROFILE_CN'] = PROFILE_CN

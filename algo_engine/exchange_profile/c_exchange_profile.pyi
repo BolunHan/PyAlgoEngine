@@ -1,6 +1,5 @@
 import datetime
 import enum
-import zoneinfo
 from typing import Self
 
 __all__ = [
@@ -492,10 +491,10 @@ class ExchangeProfile(object):
         ...
 
     @property
-    def time_zone(self) -> zoneinfo.ZoneInfo:
-        """IANA time zone as a :class:`zoneinfo.zoneinfo.ZoneInfo` instance.
+    def time_zone(self) -> datetime.timezone:
+        """IANA time zone as a :class:`zoneinfo.datetime.timezone` instance.
 
-        The live implementation returns a zoneinfo.ZoneInfo object which can be used
+        The live implementation returns a datetime.timezone object which can be used
         to construct timezone-aware datetime for timestamp conversions.
         """
         ...
@@ -638,8 +637,8 @@ class ProfileCompatible(object):
         ...
 
     @property
-    def time_zone(self) -> zoneinfo.ZoneInfo:
-        """Return the time zone of the currently active exchange profile as a zoneinfo.zoneinfo.ZoneInfo instance."""
+    def time_zone(self) -> datetime.timezone:
+        """Return the time zone of the currently active exchange profile as a zoneinfo.datetime.timezone instance."""
         ...
 
     @property
