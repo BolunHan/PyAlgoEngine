@@ -1,9 +1,12 @@
+import pathlib
+import sys
 import unittest
 from datetime import date, time as py_time
 
-from algo_engine.profile.c_exchange_profile import (
+sys.path.insert(0, pathlib.Path(__file__).parents[2] / 'algo_engine')
+
+from algo_engine.exchange_profile.c_exchange_profile import (
     ExchangeProfile,
-    PROFILE_DEFAULT,
     SessionDate,
     SessionDateRange,
     SessionTime,
@@ -13,6 +16,8 @@ from algo_engine.profile.c_exchange_profile import (
     SessionPhase,
     AuctionPhase,
 )
+
+from algo_engine.exchange_profile.c_profile_default import PROFILE_DEFAULT
 
 
 class TestExchangeProfile(unittest.TestCase):
@@ -70,4 +75,3 @@ class TestExchangeProfile(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

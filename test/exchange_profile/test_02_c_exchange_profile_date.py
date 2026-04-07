@@ -1,7 +1,11 @@
+import pathlib
+import sys
 import unittest
 from datetime import datetime, date, timedelta
 
-from algo_engine.profile.c_exchange_profile import SessionDate, SessionDateRange, local_utc_offset_seconds
+sys.path.insert(0, pathlib.Path(__file__).parents[2] / 'algo_engine')
+
+from algo_engine.exchange_profile.c_exchange_profile import SessionDate, SessionDateRange, local_utc_offset_seconds
 
 TZ_OFFSET_SECONDS = local_utc_offset_seconds()
 
@@ -15,7 +19,7 @@ class TestSessionDate(unittest.TestCase):
 
         for ts in samples:
             with self.subTest(ts=ts):
-                sd = SessionDate.from_ts(ts + TZ_OFFSET_SECONDS)  # monkey patch for no active profile
+                sd = SessionDate.from_unix(ts + TZ_OFFSET_SECONDS)  # monkey patch for no active profile
                 expected = datetime.fromtimestamp(ts).date()
                 self.assertEqual((sd.year, sd.month, sd.day), (expected.year, expected.month, expected.day))
                 self.assertTrue(sd.is_valid())
@@ -40,28 +44,28 @@ class TestSessionDate(unittest.TestCase):
 
         for ts in samples:
             with self.subTest(ts=ts):
-                sd = SessionDate.from_ts(ts + TZ_OFFSET_SECONDS)  # monkey patch for no active profile
+                sd = SessionDate.from_unix(ts + TZ_OFFSET_SECONDS)  # monkey patch for no active profile
                 expected = datetime.fromtimestamp(ts).date()
                 self.assertEqual((sd.year, sd.month, sd.day), (expected.year, expected.month, expected.day))
 
     def test_from_ts_fractional_seconds(self):
         ts = 1709164800.75
-        sd = SessionDate.from_ts(ts)
+        sd = SessionDate.from_unix(ts)
         expected = datetime.fromtimestamp(ts).date()
         self.assertEqual((sd.year, sd.month, sd.day), (expected.year, expected.month, expected.day))
 
     def test_from_ts_invalid_inputs(self):
         with self.assertRaises(RuntimeError):
-            SessionDate.from_ts(float("nan"))
+            SessionDate.from_unix(float("nan"))
 
         with self.assertRaises(RuntimeError):
-            SessionDate.from_ts(float("inf"))
+            SessionDate.from_unix(float("inf"))
 
         with self.assertRaises(RuntimeError):
-            SessionDate.from_ts(float("-inf"))
+            SessionDate.from_unix(float("-inf"))
 
         with self.assertRaises(RuntimeError):
-            SessionDate.from_ts(-62135683200.0)
+            SessionDate.from_unix(-62135683200.0)
 
     def test_static_apis_and_ordinal_roundtrip(self):
         self.assertTrue(SessionDate.is_leap_year(2000))

@@ -1,14 +1,13 @@
+import pathlib
+import sys
 import unittest
 from datetime import date, datetime, time as py_time
 
-from algo_engine.profile.c_exchange_profile import (
-    PROFILE_CN,
-    PROFILE,
-    SessionDate,
-    SessionType,
-    SessionPhase,
-    AuctionPhase,
-)
+sys.path.insert(0, pathlib.Path(__file__).parents[2] / 'algo_engine')
+
+from algo_engine.exchange_profile.c_exchange_profile import SessionDate, SessionType, SessionPhase, AuctionPhase
+from algo_engine.exchange_profile.c_profile_dispatcher import PROFILE
+from algo_engine.exchange_profile.c_profile_cn import PROFILE_CN
 
 
 class TestCNProfile(unittest.TestCase):
@@ -90,7 +89,7 @@ class TestCNProfile(unittest.TestCase):
         self.assertAlmostEqual(br.break_length_seconds, 5400.0)
 
 
-class TestProfileCompatible(unittest.TestCase):
+class TestProfileDispatcher(unittest.TestCase):
     def setUp(self):
         # Activate CN profile for PROFILE singleton
         PROFILE_CN.activate()

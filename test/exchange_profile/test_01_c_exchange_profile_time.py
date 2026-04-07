@@ -1,7 +1,12 @@
-import unittest
 import datetime
+import pathlib
+import sys
 import time
-from algo_engine.profile.c_exchange_profile import *
+import unittest
+
+sys.path.insert(0, pathlib.Path(__file__).parents[2] / 'algo_engine')
+
+from algo_engine.exchange_profile.c_exchange_profile import *
 
 
 class TestSessionTime(unittest.TestCase):
