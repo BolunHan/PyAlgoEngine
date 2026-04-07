@@ -7,8 +7,7 @@ from typing import Literal, overload
 import numpy as np
 import pandas as pd
 
-from exchange_profile.c_exchange_profile import SessionBreak, SessionTimeRange
-from ..exchange_profile import PROFILE, SessionDate, SessionTime
+from ..exchange_profile import PROFILE, SessionDate, SessionTime, SessionBreak, SessionTimeRange
 
 
 @overload
