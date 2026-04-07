@@ -273,6 +273,8 @@ cdef class ExchangeProfile:
 
     cdef inline py_date c_nearest_trading_date(self, py_date market_date, bint previous)
 
+    cdef inline py_datetime c_timestamp_to_datetime(self, double unix_ts)
+
 
 cdef ExchangeProfile PROFILE
 cdef ExchangeProfile PROFILE_DEFAULT

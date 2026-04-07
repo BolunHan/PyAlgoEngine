@@ -625,6 +625,13 @@ cdef class ExchangeProfile:
             return c_ex_profile_ts_to_elapsed(ts)
         return ts
 
+    cdef inline py_datetime c_timestamp_to_datetime(self, double unix_ts):
+        cdef session_date_t out_date
+        cdef session_time_t out_time
+        c_ex_profile_session_date_from_ts(unix_ts, &out_date)
+        c_ex_profile_session_time_from_ts(unix_ts, &out_time)
+        return py_datetime.__new__(py_datetime, out_date.year, out_date.month, out_date.day, out_time.hour, out_time.minute, out_time.second, out_time.nanosecond // 1000, self.time_zone)
+
     cdef inline double c_timestamp_to_seconds(self, double t, bint break_adjusted):
         cdef double ts = c_ex_profile_unix_to_ts(t)
         if break_adjusted:
@@ -788,6 +795,9 @@ cdef class ExchangeProfile:
             return SessionType(self.header.resolve_session_type(session_date.year, session_date.month, session_date.day))
         else:
             raise TypeError(f'Unsupported type for date: {session_date.__class__.__name__}')
+
+    def timestamp_to_datetime(self, double unix_ts):
+        return self.c_timestamp_to_datetime(unix_ts)
 
     def time_to_seconds(self, py_time t, bint break_adjusted=True):
         cdef double ts = c_ex_profile_time_to_ts(t.hour, t.minute, t.second, t.microsecond * 1000)

@@ -459,6 +459,10 @@ class ExchangeProfile(object):
         """
         ...
 
+    def timestamp_to_datetime(self, unix_ts: float) -> datetime.datetime:
+        """Convert a UNIX timestamp to a timezone-aware datetime in the profile's time zone."""
+        ...
+
     def time_to_seconds(self, t: datetime.time, break_adjusted: bool = True) -> float:
         """Convert a time-of-day to seconds since trading session start.
 
