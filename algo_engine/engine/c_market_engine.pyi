@@ -2,7 +2,7 @@ import abc
 from datetime import datetime, date
 
 from algo_engine.base import MarketData, InternalData
-from algo_engine.profile import Profile
+from algo_engine.exchange_profile import Profile
 
 MDS: MarketDataService
 
