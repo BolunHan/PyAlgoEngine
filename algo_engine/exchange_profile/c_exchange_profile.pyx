@@ -104,9 +104,18 @@ cdef class SessionTime:
         return instance
 
     @classmethod
+    def from_ts(cls, double ts):
+        if ts >= 24 * 3600 or ts < 0:
+            raise ValueError(f"Timestamp out of range for a single day: {ts}")
+        cdef SessionTime instance = SessionTime.__new__(SessionTime)
+        if c_ex_profile_session_time_from_ts(ts, <session_time_t*> instance.header) != 0:
+            raise ValueError(f"Invalid timestamp: {ts}")
+        return instance
+
+    @classmethod
     def from_timestamp(cls, double unix_ts):
         cdef SessionTime instance = SessionTime.__new__(SessionTime)
-        if c_ex_profile_session_time_from_ts(unix_ts, <session_time_t*> instance.header) != 0:
+        if c_ex_profile_session_time_from_unix(unix_ts, <session_time_t*> instance.header) != 0:
             raise ValueError(f"Invalid timestamp: {unix_ts}")
         return instance
 
@@ -265,14 +274,18 @@ cdef class SessionDate:
         return c_ex_profile_days_in_month(year, month)
 
     @classmethod
-    def from_ts(cls, double unix_ts):
+    def today(cls):
+        return cls.from_pydate(py_date.today())
+
+    @classmethod
+    def from_unix(cls, double unix_ts):
         cdef session_date_t* header = <session_date_t*> calloc(1, sizeof(session_date_t))
         if not header:
             raise MemoryError(f'Failed to allocate memory for {cls.__name__}')
-        cdef int ret_code = c_ex_profile_session_date_from_ts(unix_ts, header)
+        cdef int ret_code = c_ex_profile_session_date_from_unix(unix_ts, header)
         if ret_code != 0:
             free(header)
-            raise RuntimeError(f'c_ex_profile_session_date_from_ts failed with err code: {ret_code}')
+            raise RuntimeError(f'c_ex_profile_session_date_from_unix failed with err code: {ret_code}')
         cdef SessionDate instance = cls.__new__(cls, 0, 0, 0, no_alloc=True)
         instance.header = header
         instance.owner = True
@@ -342,6 +355,9 @@ cdef class SessionDate:
 
     def weekday(self):
         return self.to_pydate().weekday()
+
+    def timestamp(self):
+        return c_ex_profile_session_date_to_unix(self.header)
 
     property year:
         def __get__(self):
@@ -428,6 +444,9 @@ cdef class SessionDateRange:
             return False
         cdef const session_date_t* found = self.header.dates + i
         return c_ex_profile_date_compare(found, &dt) == 0
+
+    def __len__(self):
+        return self.n_days
 
     def index(self, object item):
         cdef session_date_t dt
@@ -628,8 +647,12 @@ cdef class ExchangeProfile:
     cdef inline py_datetime c_timestamp_to_datetime(self, double unix_ts):
         cdef session_date_t out_date
         cdef session_time_t out_time
-        c_ex_profile_session_date_from_ts(unix_ts, &out_date)
-        c_ex_profile_session_time_from_ts(unix_ts, &out_time)
+        cdef int ret_code = c_ex_profile_session_date_from_unix(unix_ts, &out_date)
+        if ret_code != 0:
+            raise ValueError(f'unix_ts: {unix_ts} out of range.')
+        ret_code = c_ex_profile_session_time_from_unix(unix_ts, &out_time)
+        if ret_code != 0:
+            raise ValueError(f'unix_ts: {unix_ts} out of range.')
         return py_datetime.__new__(py_datetime, out_date.year, out_date.month, out_date.day, out_time.hour, out_time.minute, out_time.second, out_time.nanosecond // 1000, self.time_zone)
 
     cdef inline double c_timestamp_to_seconds(self, double t, bint break_adjusted):

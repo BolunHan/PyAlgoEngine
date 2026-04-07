@@ -209,12 +209,14 @@ static inline uintptr_t                c_ex_profile_register_activation_listener
 static inline int                      c_ex_profile_deregister_activation_listener(uintptr_t listener_id);
 
 static inline session_time_t*          c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);
-static inline int                      c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out);
+static inline int                      c_ex_profile_session_time_from_ts(double ts, session_time_t* out);
+static inline int                      c_ex_profile_session_time_from_unix(double unix_ts, session_time_t* out);
 static inline session_time_range_t*    c_ex_profile_session_trange_between_time(const session_time_t* start_time, const session_time_t* end_time);
-static inline session_time_range_t*    c_ex_profile_session_trange_between_ts(double start_unix_ts, double end_unix_ts);
+static inline session_time_range_t*    c_ex_profile_session_trange_between_unix(double start_unix_ts, double end_unix_ts);
 
 static inline session_date_t*          c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day);
-static inline int                      c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out);
+static inline int                      c_ex_profile_session_date_from_unix(double unix_ts, session_date_t* out);
+static inline double                   c_ex_profile_session_date_to_unix(const session_date_t* date);
 static inline size_t                   c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange);
 static inline size_t                   c_ex_profile_session_ymd_index(uint16_t year, uint8_t month, uint8_t day, const session_date_t* date_array, size_t n_days);
 static inline session_date_range_t*    c_ex_profile_session_drange_between(const session_date_t* start_date, const session_date_t* end_date);
@@ -741,10 +743,9 @@ static inline session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_
     return out;
 }
 
-static inline int c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out) {
+static inline int c_ex_profile_session_time_from_ts(double ts, session_time_t* out) {
     if (!out) return -1;
 
-    double   ts = c_ex_profile_unix_to_ts(unix_ts);
     uint8_t  hour = (uint8_t) (ts / SECONDS_PER_HOUR);
     uint8_t  minute = (uint8_t) ((ts - hour * SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
     uint8_t  second = (uint8_t) (ts - hour * SECONDS_PER_HOUR - minute * SECONDS_PER_MINUTE);
@@ -759,6 +760,12 @@ static inline int c_ex_profile_session_time_from_ts(double unix_ts, session_time
     return 0;
 }
 
+static inline int c_ex_profile_session_time_from_unix(double unix_ts, session_time_t* out) {
+    if (!out) return -1;
+    double ts = c_ex_profile_unix_to_ts(unix_ts);
+    return c_ex_profile_session_time_from_ts(ts, out);
+}
+
 static inline session_time_range_t* c_ex_profile_session_trange_between_time(const session_time_t* start_time, const session_time_t* end_time) {
     session_time_range_t* trange = (session_time_range_t*) calloc(1, sizeof(session_time_range_t));
     if (!trange) return NULL;
@@ -768,12 +775,12 @@ static inline session_time_range_t* c_ex_profile_session_trange_between_time(con
     return trange;
 }
 
-static inline session_time_range_t* c_ex_profile_session_trange_between_ts(double start_unix_ts, double end_unix_ts) {
+static inline session_time_range_t* c_ex_profile_session_trange_between_unix(double start_unix_ts, double end_unix_ts) {
     session_time_range_t* trange = (session_time_range_t*) calloc(1, sizeof(session_time_range_t));
     if (!trange) return NULL;
 
-    c_ex_profile_session_time_from_ts(start_unix_ts, &trange->start);
-    c_ex_profile_session_time_from_ts(end_unix_ts, &trange->end);
+    c_ex_profile_session_time_from_unix(start_unix_ts, &trange->start);
+    c_ex_profile_session_time_from_unix(end_unix_ts, &trange->end);
     trange->elapsed_seconds = trange->end.elapsed_seconds - trange->start.elapsed_seconds;
     return trange;
 }
@@ -790,7 +797,7 @@ static inline session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8
     return d;
 }
 
-static inline int c_ex_profile_session_date_from_ts_sys(double unix_ts, session_date_t* out) {
+static inline int c_ex_profile_session_date_from_unix_sys(double unix_ts, session_date_t* out) {
     if (!out) return -1;
     if (!isfinite(unix_ts)) return -1;
 
@@ -814,7 +821,7 @@ static inline int c_ex_profile_session_date_from_ts_sys(double unix_ts, session_
     return 0;
 }
 
-static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out) {
+static inline int c_ex_profile_session_date_from_unix(double unix_ts, session_date_t* out) {
     if (!out) return -1;
     if (!isfinite(unix_ts)) return -1;
 
@@ -834,6 +841,19 @@ static inline int c_ex_profile_session_date_from_ts(double unix_ts, session_date
     if (c_ex_profile_date_from_ordinal((uint32_t) ordinal, out) != 0) return -1;
     out->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
     return 0;
+}
+
+static inline double c_ex_profile_session_date_to_unix(const session_date_t* date) {
+    if (!date) return NAN;
+    if (!c_ex_profile_date_is_valid(date)) return NAN;
+
+    uint32_t ordinal = c_ex_profile_date_to_ordinal(date);
+    if (ordinal == 0u) return NAN;
+
+    // Convert ordinal to Unix timestamp at UTC midnight, then apply profile's UTC offset.
+    double unix_ts = ((double) (ordinal - UNIX_EPOCH_ORDINAL)) * (double) SECONDS_PER_DAY;
+    if (EX_PROFILE) unix_ts -= EX_PROFILE->tz_offset_seconds;
+    return unix_ts;
 }
 
 static inline size_t c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange) {

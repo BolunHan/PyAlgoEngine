@@ -13,6 +13,10 @@ __all__ = [
     "CallAuction",
     "SessionBreak",
     "ExchangeProfile",
+
+    'PROFILE',
+    'PROFILE_DEFAULT',
+    'PROFILE_CN'
 ]
 
 
@@ -132,6 +136,19 @@ class SessionTime(object):
     def from_pytime(cls, t: datetime.time) -> Self: ...
 
     @classmethod
+    def from_ts(cls, ts: float) -> Self:
+        """Create a SessionTime from a seconds elapsed since midnight timestamp.
+
+        Args:
+            ts: Seconds since midnight (can be fractional).
+        Returns:
+            SessionTime instance corresponding to the provided timestamp.
+        Raises:
+            ValueError: If the timestamp is negative or exceeds the number of seconds in a day.
+        """
+        ...
+
+    @classmethod
     def from_timestamp(cls, unix_ts: float) -> Self: ...
 
     def to_pytime(self) -> datetime.time: ...
@@ -238,7 +255,10 @@ class SessionDate(object):
     def days_in_month(year: int, month: int) -> int: ...
 
     @classmethod
-    def from_ts(cls, unix_ts: float) -> SessionDate: ...
+    def today(cls) -> SessionDate: ...
+
+    @classmethod
+    def from_unix(cls, unix_ts: float) -> SessionDate: ...
 
     @classmethod
     def from_ordinal(cls, ordinal: int) -> SessionDate: ...
@@ -272,6 +292,10 @@ class SessionDate(object):
 
     def weekday(self) -> int: ...
 
+    def timestamp(self) -> float:
+        """Return the UNIX timestamp (seconds since epoch) corresponding to this date at midnight in the profile's local time zone."""
+        ...
+
     @property
     def year(self) -> int: ...
 
@@ -299,6 +323,8 @@ class SessionDateRange(object):
     def __getitem__(self, idx: int) -> SessionDate: ...
 
     def __contains__(self, item: DateLike) -> bool: ...
+
+    def __len__(self) -> int: ...
 
     def index(self, item: DateLike) -> int: ...
 

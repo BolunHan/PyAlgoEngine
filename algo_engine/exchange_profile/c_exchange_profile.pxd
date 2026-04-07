@@ -151,12 +151,14 @@ cdef extern from "c_ex_profile_base.h":
     int c_ex_profile_deregister_activation_listener(uintptr_t listener_id)
 
     session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond) noexcept nogil
-    int c_ex_profile_session_time_from_ts(double unix_ts, session_time_t* out) noexcept nogil
+    int c_ex_profile_session_time_from_ts(double ts, session_time_t* out) noexcept nogil
+    int c_ex_profile_session_time_from_unix(double unix_ts, session_time_t* out) noexcept nogil
     session_time_range_t* c_ex_profile_session_trange_between_time(const session_time_t* start_time, const session_time_t* end_time) noexcept nogil
-    session_time_range_t* c_ex_profile_session_trange_between_ts(double start_unix_ts, double end_unix_ts) noexcept nogil
+    session_time_range_t* c_ex_profile_session_trange_between_unix(double start_unix_ts, double end_unix_ts) noexcept nogil
 
     session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day) noexcept nogil
-    int c_ex_profile_session_date_from_ts(double unix_ts, session_date_t* out) noexcept nogil
+    int c_ex_profile_session_date_from_unix(double unix_ts, session_date_t* out) noexcept nogil
+    double c_ex_profile_session_date_to_unix(const session_date_t* date) noexcept nogil
     size_t c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange) noexcept nogil
     size_t c_ex_profile_session_ymd_index(uint16_t year, uint8_t month, uint8_t day, const session_date_t* date_array, size_t n_days) noexcept nogil
     session_date_range_t* c_ex_profile_session_drange_between(const session_date_t* start_date, const session_date_t* end_date) noexcept nogil
