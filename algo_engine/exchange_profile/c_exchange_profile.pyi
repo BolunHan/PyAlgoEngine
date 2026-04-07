@@ -13,10 +13,6 @@ __all__ = [
     "CallAuction",
     "SessionBreak",
     "ExchangeProfile",
-    "ProfileCompatible",
-    "PROFILE",
-    "PROFILE_DEFAULT",
-    "PROFILE_CN"
 ]
 
 
@@ -393,6 +389,9 @@ class SessionBreak(object):
         ...
 
 
+TS_LIKE = datetime.time | float | int
+
+
 class ExchangeProfile(object):
     """Represents an exchange profile with session configuration and helpers.
 
@@ -460,6 +459,81 @@ class ExchangeProfile(object):
         """
         ...
 
+    def time_to_seconds(self, t: datetime.time, break_adjusted: bool = True) -> float:
+        """Convert a time-of-day to seconds since trading session start.
+
+        Args:
+            t: datetime.time instance representing a clock time in the profile's local zone.
+            break_adjusted: If True, subtract non-trading break durations (e.g., lunch break).
+
+        Returns:
+            float: elapsed seconds since session open (breaks excluded when requested) or
+            raw seconds-of-day if break_adjusted is False.
+        """
+        ...
+
+    def timestamp_to_seconds(self, t: float, break_adjusted: bool = True) -> float:
+        """Convert a UNIX timestamp (seconds) to seconds since session open, optionally break-adjusted."""
+        ...
+
+    def break_adjusted(self, elapsed_seconds: float) -> float:
+        """Return the break-adjusted elapsed seconds for a raw seconds-since-midnight value."""
+        ...
+
+    def trading_time_between(self, start_time: TS_LIKE, end_time: TS_LIKE) -> float:
+        """Compute total trading seconds between two datetime (or UNIX timestamps).
+
+        Accepts either naive datetime (interpreted in profile.time_zone) or numeric
+        UNIX timestamps. The result is the total trading-time (seconds) excluding
+        non-trading periods (e.g., lunch break).
+        """
+        ...
+
+    def is_market_session(self, timestamp) -> bool:
+        """Return True if the provided timestamp/time/datetime is in continuous market session.
+
+        Accepts numeric UNIX timestamps, :class:`datetime.time` or :class:`datetime.datetime`.
+        """
+        ...
+
+    def is_auction_session(self, timestamp) -> bool:
+        """Return True if the provided timestamp/time/datetime is in an auction period."""
+        ...
+
+    def trading_days_before(self, market_date: datetime.date, days: int) -> datetime.date:
+        """Return the market date that is a given number of trading days before the provided date.
+
+        If the provided date is not a trading day, it will be treated as if it were the nearest **NEXT** trading day.
+        That is, if days == 1 and the provided date is SAT or SUN, the result will be FRI, not THU.
+        """
+        ...
+
+    def trading_days_after(self, market_date: datetime.date, days: int) -> datetime.date:
+        """Return the market date that is a given number of trading days after the provided date.
+
+        If the provided date is not a trading day, it will be treated as if it were the nearest **PREVIOUS** trading day.
+        That is, if days == 1 and the provided date is SAT or SUN, the result will be MON, not TUE.
+        """
+        ...
+
+    def trading_days_between(self, start_date: datetime.date, end_date: datetime.date) -> int:
+        """Return the number of trading days between two market dates (inclusive)."""
+        ...
+
+    def nearest_trading_date(self, market_date: datetime.date, method: str = 'previous') -> datetime.date:
+        """Return the nearest trading date to the provided date.
+
+        Args:
+            market_date: The reference date for which to find the nearest trading date.
+            method: Method to resolve ties when the provided date is exactly between two trading days. Options are 'previous' (default) or 'next'.
+
+        Returns:
+            datetime.date: The nearest trading date to the provided date.
+        """
+        ...
+
+    def is_trading_day(self, market_date: datetime.date) -> bool: ...
+
     @property
     def profile_id(self) -> str:
         """Unique identifier for the profile (e.g. "UTC_NONSTOP_DEFAULT" (the default one), "CN_STOCK")."""
@@ -511,136 +585,6 @@ class ExchangeProfile(object):
     @property
     def tz_offset_seconds(self) -> float: ...
 
-
-TS_LIKE = datetime.time | float | int
-
-
-class ProfileCompatible(object):
-    """Convenience singleton providing profile-aware utilities.
-
-    This wrapper dispatches to the currently active profile (the C global
-    ``EX_PROFILE``) and exposes higher-level helpers that operate on
-    :class:`datetime`/numeric timestamps, or :class:`datetime.time` values.
-
-    Most methods enforce that the provided time(s) are inside a market
-    session (or auction) and will raise / assert if not. Use the
-    ``break_adjusted`` flags to include/exclude lunch breaks.
-    """
-
-    def time_to_seconds(self, t: datetime.time, break_adjusted: bool = True) -> float:
-        """Convert a time-of-day to seconds since trading session start.
-
-        Args:
-            t: datetime.time instance representing a clock time in the profile's local zone.
-            break_adjusted: If True, subtract non-trading break durations (e.g., lunch break).
-
-        Returns:
-            float: elapsed seconds since session open (breaks excluded when requested) or
-            raw seconds-of-day if break_adjusted is False.
-        """
-        ...
-
-    def timestamp_to_seconds(self, t: float, break_adjusted: bool = True) -> float:
-        """Convert a UNIX timestamp (seconds) to seconds since session open, optionally break-adjusted."""
-        ...
-
-    def break_adjusted(self, elapsed_seconds: float) -> float:
-        """Return the break-adjusted elapsed seconds for a raw seconds-since-midnight value."""
-        ...
-
-    def trading_time_between(self, start_time: TS_LIKE, end_time: TS_LIKE) -> float:
-        """Compute total trading seconds between two datetime (or UNIX timestamps).
-
-        Accepts either naive datetime (interpreted in profile.time_zone) or numeric
-        UNIX timestamps. The result is the total trading-time (seconds) excluding
-        non-trading periods (e.g., lunch break).
-        """
-        ...
-
-    def is_market_session(self, timestamp) -> bool:
-        """Return True if the provided timestamp/time/datetime is in continuous market session.
-
-        Accepts numeric UNIX timestamps, :class:`datetime.time` or :class:`datetime.datetime`.
-        """
-        ...
-
-    def is_auction_session(self, timestamp) -> bool:
-        """Return True if the provided timestamp/time/datetime is in an auction period."""
-        ...
-
-    def trade_calendar(self, start_date: datetime.date, end_date: datetime.date) -> list[SessionDate]:
-        """Return a list of :class:`SessionDate` for trading (market) days within the range."""
-        ...
-
-    def trading_days_before(self, market_date: datetime.date, days: int) -> datetime.date:
-        """Return the market date that is a given number of trading days before the provided date.
-
-        If the provided date is not a trading day, it will be treated as if it were the nearest **NEXT** trading day.
-        That is, if days == 1 and the provided date is SAT or SUN, the result will be FRI, not THU.
-        """
-        ...
-
-    def trading_days_after(self, market_date: datetime.date, days: int) -> datetime.date:
-        """Return the market date that is a given number of trading days after the provided date.
-
-        If the provided date is not a trading day, it will be treated as if it were the nearest **PREVIOUS** trading day.
-        That is, if days == 1 and the provided date is SAT or SUN, the result will be MON, not TUE.
-        """
-        ...
-
-    def trading_days_between(self, start_date: datetime.date, end_date: datetime.date) -> int:
-        """Return the number of trading days between two market dates (inclusive)."""
-        ...
-
-    def nearest_trading_date(self, market_date: datetime.date, method: str = 'previous') -> datetime.date:
-        """Return the nearest trading date to the provided date.
-
-        Args:
-            market_date: The reference date for which to find the nearest trading date.
-            method: Method to resolve ties when the provided date is exactly between two trading days. Options are 'previous' (default) or 'next'.
-
-        Returns:
-            datetime.date: The nearest trading date to the provided date.
-        """
-        ...
-
-    def is_trading_day(self, market_date: datetime.date) -> bool: ...
-
-    @property
-    def profile_id(self) -> str:
-        """Return the profile_id of the currently active exchange profile."""
-        ...
-
-    @property
-    def session_start(self) -> SessionTime:
-        """Return the **CONTINUOUS** session start time of the currently active exchange profile."""
-        ...
-
-    @property
-    def session_end(self) -> SessionTime:
-        """Return the **CONTINUOUS** session end time of the currently active exchange profile."""
-        ...
-
-    @property
-    def open_call_auction(self) -> CallAuction | None:
-        """Return the open call auction metadata of the currently active exchange profile, or None if not present."""
-        ...
-
-    @property
-    def close_call_auction(self) -> CallAuction | None:
-        """Return the close call auction metadata of the currently active exchange profile, or None if not present."""
-        ...
-
-    @property
-    def session_breaks(self) -> tuple[SessionBreak, ...]:
-        """Return the intraday breaks of the currently active exchange profile as a tuple of SessionBreak."""
-        ...
-
-    @property
-    def time_zone(self) -> datetime.timezone:
-        """Return the time zone of the currently active exchange profile as a zoneinfo.datetime.timezone instance."""
-        ...
-
     @property
     def range_break(self) -> list[dict]:
         """Return a list of range break dicts for Plotly X-axis configuration based on the session breaks of the currently active exchange profile."""
@@ -650,9 +594,3 @@ class ProfileCompatible(object):
     def trade_calendar_cache(self) -> SessionDateRange | None:
         """Return a cached SessionDateRange for the current active exchange profile, or None."""
         ...
-
-
-PROFILE: ProfileCompatible
-
-PROFILE_DEFAULT: ExchangeProfile
-PROFILE_CN: ExchangeProfile
