@@ -928,3 +928,13 @@ cdef class ExchangeProfile:
             if EX_TRADE_CALENDAR_CACHE:
                 return SessionDateRange.c_from_header(EX_TRADE_CALENDAR_CACHE, False)
             return None
+
+
+cdef ExchangeProfile PROFILE = ExchangeProfile.c_new_bound_instance()
+globals()['PROFILE'] = PROFILE
+
+cdef ExchangeProfile PROFILE_DEFAULT = ExchangeProfile.c_from_header(&EX_PROFILE_DEFAULT)
+globals()['PROFILE_DEFAULT'] = PROFILE_DEFAULT
+
+cdef ExchangeProfile PROFILE_CN = ExchangeProfile.c_from_header(&EX_PROFILE_CN)
+globals()['PROFILE_CN'] = PROFILE_CN

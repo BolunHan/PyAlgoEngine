@@ -1,7 +1,7 @@
 from .c_exchange_profile import (
     SessionDate, SessionDateRange, SessionTime, SessionTimeRange,
     CallAuction, SessionBreak, SessionType, SessionPhase, AuctionPhase,
-    ExchangeProfile as Profile,
+    ExchangeProfile as Profile
 )
 
 from .c_profile_dispatcher import PROFILE

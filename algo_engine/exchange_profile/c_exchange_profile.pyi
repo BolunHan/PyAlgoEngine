@@ -594,3 +594,8 @@ class ExchangeProfile(object):
     def trade_calendar_cache(self) -> SessionDateRange | None:
         """Return a cached SessionDateRange for the current active exchange profile, or None."""
         ...
+
+
+PROFILE: ExchangeProfile
+PROFILE_DEFAULT: ExchangeProfile
+PROFILE_CN: ExchangeProfile

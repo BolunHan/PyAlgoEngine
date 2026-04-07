@@ -1,3 +1,1 @@
-cdef ExchangeProfile PROFILE_DEFAULT = ExchangeProfile.c_from_header(&EX_PROFILE_DEFAULT)
-
-globals()['PROFILE_DEFAULT'] = PROFILE_DEFAULT
+from .c_exchange_profile import PROFILE_DEFAULT

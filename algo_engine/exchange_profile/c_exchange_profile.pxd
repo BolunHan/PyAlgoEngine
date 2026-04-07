@@ -122,6 +122,7 @@ cdef extern from "c_ex_profile_base.h":
     extern const exchange_profile* EX_PROFILE
     extern const session_date_range_t* EX_TRADE_CALENDAR_CACHE
     extern ex_profile_activation_listener* EX_PROFILE_ACTIVATION_LISTENERS
+
     extern const exchange_profile EX_PROFILE_DEFAULT;
 
     double c_utc_offset_seconds() noexcept nogil
@@ -164,6 +165,10 @@ cdef extern from "c_ex_profile_base.h":
     int c_ex_profile_nearest_trading_date(const session_date_t* market_date, c_bool previous, session_date_t* out) noexcept nogil
     c_bool c_ex_profile_is_trading_day(const session_date_t* market_date) noexcept nogil
     int c_ex_profile_trading_days_between(const session_date_t* start_date, const session_date_t* end_date, ssize_t* out) noexcept nogil
+
+
+cdef extern from "c_ex_profile_cn.h":
+    extern const exchange_profile EX_PROFILE_CN
 
 
 cdef class SessionTime:
@@ -268,3 +273,7 @@ cdef class ExchangeProfile:
 
     cdef inline py_date c_nearest_trading_date(self, py_date market_date, bint previous)
 
+
+cdef ExchangeProfile PROFILE
+cdef ExchangeProfile PROFILE_DEFAULT
+cdef ExchangeProfile PROFILE_CN

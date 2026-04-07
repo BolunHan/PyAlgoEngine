@@ -32,9 +32,15 @@ from .c_exchange_profile cimport (
 
     exchange_profile,
 
+    ex_profile_activation_callback,
+    ex_profile_activation_listener,
+
     EX_PROFILE,
     EX_TRADE_CALENDAR_CACHE,
+    EX_PROFILE_ACTIVATION_LISTENERS,
+
     EX_PROFILE_DEFAULT,
+    EX_PROFILE_CN,
 
     c_utc_offset_seconds,
     c_ex_profile_time_compare,
@@ -80,6 +86,6 @@ from .c_exchange_profile cimport (
     ExchangeProfile
 )
 
-from .c_profile_dispatcher cimport PROFILE, EX_PROFILE
-from .c_profile_default cimport PROFILE_DEFAULT, EX_PROFILE_DEFAULT
-from .c_profile_cn cimport PROFILE_CN, EX_PROFILE_CN
+from .c_profile_dispatcher cimport PROFILE
+from .c_profile_default cimport PROFILE_DEFAULT
+from .c_profile_cn cimport EX_PROFILE_CN
