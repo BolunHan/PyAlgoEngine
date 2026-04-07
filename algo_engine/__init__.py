@@ -1,4 +1,4 @@
-__version__ = "0.9.7"
+__version__ = "0.9.7.post1"
 
 import functools
 import logging
@@ -51,10 +51,10 @@ except ImportError:
 @functools.cache
 def get_include():
     import os
-    from .base import C_CONFIG
+    from .base import CONFIG
 
     res_dir = os.path.dirname(__file__)
-    LOGGER.info(f'Building with <PyAlgoEngine> version: "{__version__}", resource directory: "{res_dir}", config: "{C_CONFIG}".')
+    LOGGER.info(f'Building with <PyAlgoEngine> version: "{__version__}", resource directory: "{res_dir}", config: "{CONFIG}".')
     return res_dir
 
 
