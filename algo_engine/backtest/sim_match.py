@@ -2,11 +2,12 @@ import datetime
 import random
 
 import numpy as np
+from event_engine.capi import EventEngine
 
 from . import LOGGER
-from ..base import OrderType, MarketData, BarData, TransactionData, TradeData, TickData, TickDataLite, OrderState, OrderData, TradeReport, TradeInstruction, TransactionSide, TransactionDirection
-from ..engine import TOPIC, EVENT_ENGINE
-from ..profile import PROFILE
+from ..base import BarData, MarketData, OrderData, OrderState, OrderType, TickData, TickDataLite, TradeData, TradeInstruction, TradeReport, TransactionData, TransactionDirection, TransactionSide
+from ..engine import EVENT_ENGINE, TOPIC, TopicSet
+from ..exchange_profile import PROFILE
 
 LOGGER = LOGGER.getChild('SimMatch')
 
@@ -162,7 +163,7 @@ class SimMatch(object):
 
         return False
 
-    def register(self, topic_set=None, event_engine=None):
+    def register(self, topic_set: TopicSet = None, event_engine: EventEngine = None):
         if topic_set is not None:
             self.topic_set = topic_set
 
@@ -502,4 +503,4 @@ class SimMatch(object):
 
     @property
     def market_time(self) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(self.timestamp, tz=PROFILE.time_zone)
+        return PROFILE.timestamp_to_datetime(self.timestamp)
