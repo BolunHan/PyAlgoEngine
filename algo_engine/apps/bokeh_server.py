@@ -2,11 +2,11 @@ import abc
 import uuid
 from copy import deepcopy
 from functools import partial
-from threading import Thread, Lock, Event
+from threading import Event, Lock, Thread
 from typing import overload
 
+from algo_engine.base import MarketData
 from . import LOGGER
-from ..base import MarketData
 
 
 class DocTheme(object, metaclass=abc.ABCMeta):

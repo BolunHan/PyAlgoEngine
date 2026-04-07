@@ -4,12 +4,12 @@ import time
 from typing import Literal
 
 import numpy as np
-from algo_engine.base import MarketData, TradeInstruction, TradeReport
 
 from algo_engine.apps import LOGGER
 from algo_engine.apps.backtest.web_app import WebApp
 from algo_engine.backtest import ProgressReplay, SimMatch
 from algo_engine.backtest.metrics import TradeMetrics
+from algo_engine.base import MarketData, TradeInstruction, TradeReport
 
 
 class Tester(object, metaclass=abc.ABCMeta):
