@@ -11,7 +11,8 @@ import numpy as np
 
 from . import LOGGER, Singleton
 from .c_market_engine import MDS
-from ..base import TransactionSide, TradeInstruction, MarketData, TradeReport, OrderState, OrderType
+from ..base import MarketData, OrderState, OrderType, TradeInstruction, TradeReport, TransactionSide
+from ..exchange_profile import PROFILE
 
 LOGGER = LOGGER.getChild('AlgoEngine')
 if TYPE_CHECKING:
@@ -454,15 +455,13 @@ class AlgoTemplate(object, metaclass=abc.ABCMeta):
     def start_time(self) -> datetime.datetime | None:
         if self.ts_started is None:
             return None
-
-        return datetime.datetime.fromtimestamp(self.ts_started, tz=self.algo_engine.mds.profile.time_zone)
+        return self.dma.mds.profile.timestamp_to_datetime(self.ts_started)
 
     @property
     def finish_time(self) -> datetime.datetime | None:
         if self.ts_finished is None:
             return None
-
-        return datetime.datetime.fromtimestamp(self.ts_finished, tz=self.algo_engine.mds.profile.time_zone)
+        return self.dma.mds.profile.timestamp_to_datetime(self.ts_finished)
 
 
 class Passive(AlgoTemplate):
