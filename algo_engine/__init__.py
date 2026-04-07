@@ -1,17 +1,25 @@
-__version__ = "0.9.6"
+__version__ = "0.9.7"
 
 import functools
 import logging
 import os
 import traceback
 
-from . import profile
 from .base.telemetrics import LOGGER
 
 if 'ALGO_DIR' in os.environ:
     WORKING_DIRECTORY = os.path.realpath(os.environ['ALGO_DIR'])
 else:
     WORKING_DIRECTORY = str(os.getcwd())
+
+from . import base
+from . import exchange_profile
+from . import engine
+from . import backtest
+from . import strategy
+from . import apps
+from . import monitor
+from . import utils
 
 
 def set_logger(logger: logging.Logger):
@@ -51,7 +59,7 @@ def get_include():
 
 
 __all__ = [
-    'apps', 'backtest', 'base', 'engine', 'monitor', 'profile', 'strategy', 'utils',
+    'apps', 'backtest', 'base', 'engine', 'exchange_profile', 'monitor', 'profile', 'strategy', 'utils',
     'algo_addon',
     'get_include',
     'LOGGER'
