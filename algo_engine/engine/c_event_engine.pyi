@@ -1,7 +1,6 @@
-from event_engine import Topic, EventEngineEx
+from event_engine.capi import Topic, EventEngineEx
 
-from ..base.c_market_data.c_market_data import MarketData as MD
-from ..base.c_market_data_ng.c_market_data import MarketData as MD_NG
+from ..base.c_market_data_ng.c_market_data import MarketData
 
 
 class TopicSet:
@@ -32,7 +31,7 @@ class TopicSet:
 
     def __init__(self) -> None: ...
 
-    def push(self, market_data: MD) -> Topic:
+    def push(self, market_data: MarketData) -> Topic:
         """Return the cached real-time topic for the given market data.
 
         Resolves to 'realtime.{ticker}.{dtype}' using values read from the
@@ -44,12 +43,6 @@ class TopicSet:
 
         Returns:
             A resolved `Topic` for publishing the market data.
-        """
-        ...
-
-    def push_ng(self, market_data: MD_NG) -> Topic:
-        """
-        Same as `push`, but works with the NG market data structure.
         """
         ...
 

@@ -3,7 +3,6 @@ from libc.stdint cimport uint8_t, uintptr_t
 
 from event_engine.capi cimport evt_topic, evt_topic_part_variant, evt_topic_type, evt_topic_match, c_topic_match
 
-from ..base.c_market_data.c_market_data cimport _MarketDataVirtualBase, _MarketDataBuffer
 from ..base.c_market_data_ng.c_market_data cimport md_variant
 
 
@@ -22,26 +21,7 @@ cdef class TopicSet:
 
         self.push_topic_map = {}
 
-    cpdef Topic push(self, object market_data):
-        cdef uintptr_t data_addr = market_data._data_addr
-        cdef _MarketDataBuffer* market_data_ptr = <_MarketDataBuffer*> data_addr
-        cdef uint8_t dtype = market_data_ptr.MetaInfo.dtype
-        cdef str ticker = PyUnicode_FromString(&market_data_ptr.MetaInfo.ticker[0])
-        cdef dict topic_map
-
-        if ticker in self.push_topic_map:
-            topic_map = self.push_topic_map[ticker]
-        else:
-            topic_map = {}
-            self.push_topic_map[ticker] = topic_map
-
-        if dtype in topic_map:
-            return topic_map[dtype]
-        cdef Topic topic = self.realtime.format(ticker=ticker, dtype=_MarketDataVirtualBase.c_dtype_name(dtype))
-        topic_map[dtype] = topic
-        return topic
-
-    cpdef Topic push_ng(self, MarketData market_data):
+    cpdef Topic push(self, MarketData market_data):
         cdef md_variant* market_data_ptr = market_data.header
         cdef uint8_t dtype = <uint8_t> market_data_ptr.meta_info.dtype
         cdef str ticker = PyUnicode_FromString(market_data_ptr.meta_info.ticker)
@@ -55,7 +35,7 @@ cdef class TopicSet:
 
         if dtype in topic_map:
             return topic_map[dtype]
-        cdef Topic topic = self.realtime.format(ticker=ticker, dtype=_MarketDataVirtualBase.c_dtype_name(dtype))
+        cdef Topic topic = self.realtime.format(ticker=ticker, dtype=MarketData.c_dtype_name(dtype))
         topic_map[dtype] = topic
         return topic
 

@@ -17,9 +17,7 @@ cdef class TopicSet:
     cdef readonly Topic realtime
     cdef readonly dict push_topic_map
 
-    cpdef Topic push(self, object market_data)
-
-    cpdef Topic push_ng(self, MarketData market_data)
+    cpdef Topic push(self, MarketData market_data)
 
     cpdef dict parse(self, Topic topic)
 
