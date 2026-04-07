@@ -7,82 +7,155 @@ from typing import Literal, overload
 import numpy as np
 import pandas as pd
 
-from ..profile import Profile, PROFILE
+from exchange_profile.c_exchange_profile import SessionBreak, SessionTimeRange
+from ..exchange_profile import PROFILE, SessionDate, SessionTime
 
 
 @overload
-def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode: Literal['start', 'end', 'both'], ts_format='timestamp') -> list[float]:
+def ts_indices(
+        market_date: datetime.date | SessionDate = None,
+        interval: datetime.timedelta | float = 60.,
+        session_start: datetime.time | SessionTime = None,
+        session_end: datetime.time | SessionTime = None,
+        session_breaks: list[tuple[datetime.time, datetime.time]] | SessionBreak = None,
+        ts_mode: Literal['start', 'end', 'both'] | str = 'end',
+        ts_format='timestamp'
+) -> list[float]:
     ...
 
 
 @overload
-def ts_indices(market_date, interval, session_start, session_end, session_break, time_zone, ts_mode: Literal['start', 'end', 'both'], ts_format='datetime') -> list[datetime.datetime]:
+def ts_indices(
+        market_date: datetime.date | SessionDate = None,
+        interval: datetime.timedelta | float = 60.,
+        session_start: datetime.time | SessionTime = None,
+        session_end: datetime.time | SessionTime = None,
+        session_breaks: list[tuple[datetime.time, datetime.time]] | SessionBreak = None,
+        ts_mode: Literal['start', 'end', 'both'] | str = 'end',
+        ts_format='datetime'
+) -> list[datetime.datetime]:
+    ...
+
+
+@overload
+def ts_indices(
+        market_date: datetime.date | SessionDate = None,
+        interval: datetime.timedelta | float = 60.,
+        session_start: datetime.time | SessionTime = None,
+        session_end: datetime.time | SessionTime = None,
+        session_breaks: list[tuple[datetime.time, datetime.time]] | SessionBreak = None,
+        ts_mode: Literal['start', 'end', 'both'] | str = 'end',
+        ts_format='session_time'
+) -> list[SessionTime]:
     ...
 
 
 def ts_indices(
-        market_date: datetime.date = None,
-        interval: float = 60.,
-        session_start: datetime.time = datetime.time.min,
-        session_end: datetime.time = None,
-        session_break: list[tuple[datetime.time, datetime.time]] = None,
-        time_zone: datetime.tzinfo = None,
+        market_date: datetime.date | SessionDate = None,
+        interval: datetime.timedelta | float = 60.,
+        session_start: datetime.time | SessionTime = None,
+        session_end: datetime.time | SessionTime = None,
+        session_breaks: list[tuple[datetime.time, datetime.time]] | SessionBreak = None,
         ts_mode: Literal['start', 'end', 'both'] | str = 'end',
-        ts_format: Literal['timestamp', 'datetime'] | str = 'timestamp'
+        ts_format: Literal['timestamp', 'datetime', 'session_time'] | str = 'timestamp',
+        **kwargs
 ) -> list[float]:
+    # Regularize input parameters
     if market_date is None:
         market_date = datetime.date.today()
+    elif isinstance(market_date, datetime.date):
+        market_date = SessionDate.from_pydate(market_date)
+    elif isinstance(market_date, pd.Timestamp):
+        market_date = SessionDate.from_pydate(market_date.date())
+    elif isinstance(market_date, SessionDate):
+        pass
+    else:
+        raise ValueError(f'Invalid market_date {market_date}!')
+
+    if session_start is None:
+        start_ts = PROFILE.session_start_ts
+    elif isinstance(session_start, datetime.time):
+        start_ts = SessionTime.from_pytime(session_start).ts
+    elif isinstance(session_start, SessionTime):
+        start_ts = session_start.ts
+    else:
+        raise ValueError(f'Invalid session_start {session_start}!')
+
+    if session_end is None:
+        end_ts = PROFILE.session_end_ts
+    elif isinstance(session_end, datetime.time):
+        end_ts = SessionTime.from_pytime(session_end).ts
+    elif isinstance(session_end, SessionTime):
+        end_ts = session_end.ts
+    else:
+        raise ValueError(f'Invalid session_end {session_end}!')
+
+    if isinstance(interval, datetime.timedelta):
+        interval = interval.total_seconds()
+    elif isinstance(interval, (int, float)):
+        interval = float(interval)
+    elif isinstance(interval, pd.Timedelta):
+        interval = interval.total_seconds()
+    elif isinstance(interval, SessionTimeRange):
+        interval = interval.elapsed_seconds
+    else:
+        raise ValueError(f'Invalid interval {interval}!')
+
+    if session_breaks is None:
+        breaks_ts = [(session_break.break_start_ts, session_break.break_end_ts) for session_break in PROFILE.session_breaks]
+    elif isinstance(session_breaks, SessionBreak):
+        breaks_ts = [(session_breaks.break_start_ts, session_breaks.break_end_ts)]
+    elif isinstance(session_breaks, list):
+        breaks_ts = [(PROFILE.time_to_seconds(session_break[0], False), PROFILE.time_to_seconds(session_break[1], False)) for session_break in session_breaks]
+    else:
+        raise ValueError(f'Invalid session_breaks {session_breaks}!')
+
+    market_date: SessionDate
+    md_ts = market_date.timestamp()
+    start_ts: float
+    end_ts: float
+    breaks_ts: list[tuple[float, float]]
+    interval: float
 
     # this is supposed to be the end_time of the given candle stick
-    market_time = datetime.datetime.combine(market_date, session_start, tzinfo=time_zone) + datetime.timedelta(seconds=interval)
-
-    if not session_end:
-        session_end = datetime.datetime.combine(market_date + datetime.timedelta(days=1), datetime.time(0), tzinfo=time_zone)
-    # session end in next day
-    elif session_end < session_start:
-        session_end = datetime.datetime.combine(market_date + datetime.timedelta(days=1), session_end, tzinfo=time_zone)
-    else:
-        session_end = datetime.datetime.combine(market_date, session_end, tzinfo=time_zone)
-
+    ts = start_ts + interval
     if ts_mode == 'both':
-        session_end += datetime.timedelta(seconds=interval)
+        end_ts += interval
 
     ts_index = []
-    while market_time <= session_end:
+    while ts <= end_ts:
         # check if the given market_time is in session break
         in_session = True
 
-        if session_break:
-            for break_range in session_break:
-                break_start, break_end = break_range
-
-                if break_start < market_time.time() <= break_end:
+        if breaks_ts:
+            for break_start, break_end in breaks_ts:
+                if break_start < ts <= break_end:
                     in_session = False
                     break
 
         if ts_mode == 'start' or ts_mode == 'both':
-            _market_time = market_time - datetime.timedelta(seconds=interval)
+            _ts = ts - interval
         elif ts_mode == 'end':
-            _market_time = market_time
+            _ts = ts
         else:
             raise ValueError(f'Invalid ts_mode {ts_mode}!')
 
         if in_session:
             if ts_format == 'timestamp':
-                timestamp = _market_time.timestamp()
-                ts_index.append(timestamp)
+                ts_index.append(_ts + md_ts)
             elif ts_format == 'datetime':
-                ts_index.append(_market_time)
+                ts_index.append(PROFILE.timestamp_to_datetime(_ts))
+            elif ts_format == 'session_time':
+                ts_index.append(SessionTime.from_ts(_ts))
             else:
                 raise ValueError(f'Invalid ts_format {ts_format}!')
 
-        market_time += datetime.timedelta(seconds=interval)
+        ts += interval
 
     return ts_index
 
 
 def fake_daily_data(
-        ticker: str,
         start_date: datetime.date,
         end_date: datetime.date,
         p0: float = 100.,
@@ -91,11 +164,7 @@ def fake_daily_data(
         **kwargs
 ) -> pd.DataFrame:
     if calendar is None:
-        import exchange_calendars
-        market = kwargs.get('market', 'SSE')
-        calendar = exchange_calendars.get_calendar(market)
-        sessions = calendar.sessions_in_range(start_date, end_date)
-        calendar = sorted([_.date() for _ in sessions])
+        calendar = [_.to_pydate() for _ in PROFILE.trade_calendar(start_date, end_date)]
 
     ttl_days = kwargs.get('ttl_days', 252)
     risk_free_rate = kwargs.get('risk_free_rate', 0.04)
@@ -119,7 +188,7 @@ def fake_daily_data(
     open_price = np.random.uniform(low=low_price, high=high_price)
 
     data = pd.DataFrame({
-        'date': calendar,
+        'date': list(calendar),
         'open_price': open_price,
         'high_price': high_price,
         'low_price': low_price,
@@ -135,36 +204,13 @@ def fake_data(
         p0: float = 100.,
         volatility: float = 0.20,
         interval: float = 60.,
-        profile: Profile = None,
-        session_start: datetime.time = None,
-        session_end: datetime.time = None,
-        session_break: list[tuple[datetime.time, datetime.time]] = None,
         **kwargs
 ) -> pd.DataFrame:
-    if profile is None:
-        profile = PROFILE
-
-    session_start = profile.session_start if session_start is None else session_start
-    session_end = profile.session_end if session_end is None else session_end
-    session_break = profile.session_break if session_break is None else session_break
-    time_zone = kwargs.get('time_zone', profile.time_zone)
-
-    if not session_start:
-        session_start = datetime.time.min
-
-    _ts_indices = ts_indices(
-        market_date=market_date,
-        interval=interval,
-        session_start=session_start,
-        session_end=session_end,
-        session_break=session_break,
-        time_zone=time_zone,
-        ts_mode='end',
-    )
+    indices = ts_indices(market_date=market_date, interval=interval, **kwargs)
 
     ttl_days = kwargs.get('ttl_days', 252)
     risk_free_rate = kwargs.get('risk_free_rate', 0.04)
-    num_obs = len(_ts_indices)
+    num_obs = len(indices)
     obs_volatility = volatility / np.sqrt(ttl_days * num_obs)
     obs_risk_free_rate = np.log(1 + risk_free_rate) / ttl_days / num_obs
 
@@ -186,7 +232,7 @@ def fake_data(
     low_price = np.min([low_price, open_price], axis=0)
 
     data = pd.DataFrame({
-        'timestamp': _ts_indices,
+        'timestamp': indices,
         'open_price': open_price,
         'high_price': high_price,
         'low_price': low_price,
