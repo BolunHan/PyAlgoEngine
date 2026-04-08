@@ -42,8 +42,10 @@ Issues = "https://github.com/BolunHan/PyAlgoEngine/issues"
 
 [tool.setuptools.packages.find]
 exclude = [
-    "algo_engine.profile*",
-    "algo_engine.base.c_market_data_deprecated*",
+    "test", "test.*",
+    "docs", "docs.*",
+    "algo_engine.profile", "algo_engine.profile.*",
+    "algo_engine.base.c_market_data_deprecated", "algo_engine.base.c_market_data_deprecated.*",
 ]
 
 [tool.setuptools.dynamic]

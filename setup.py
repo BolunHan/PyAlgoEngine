@@ -32,6 +32,7 @@ class BuildExtWithConfig(build_ext):
     def pre_compile(self):
         self.remove_pxd(
             [
+                "algo_engine.base",
                 "algo_engine.base.c_market_data",
                 "algo_engine.exchange_profile",
                 "algo_engine.engine"
@@ -42,6 +43,7 @@ class BuildExtWithConfig(build_ext):
         # Monkey hack the "__init__.pxd" issue:
         self.inject_pxd(
             [
+                "algo_engine.base",
                 "algo_engine.base.c_market_data",
                 "algo_engine.exchange_profile",
                 "algo_engine.engine"
