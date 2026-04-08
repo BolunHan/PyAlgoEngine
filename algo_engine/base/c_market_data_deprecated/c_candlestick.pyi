@@ -3,11 +3,6 @@ from typing import Any, Literal, overload
 
 from .c_market_data import MarketData
 
-BAR_DOUBLE_FIELDS = Literal["high_price", "low_price", "open_price", "close_price", "volume", "notional"]
-BAR_INT_FIELDS = Literal["trade_count"]
-BAR_TYPE = Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']
-DAILY_TYPE = Literal['Daily', 'Daily-Plus']
-
 
 class BarData(MarketData):
     """
@@ -21,7 +16,6 @@ class BarData(MarketData):
 
     def __init__(
             self,
-            *,
             ticker: str,
             timestamp: float,
             high_price: float,
@@ -55,23 +49,32 @@ class BarData(MarketData):
         ...
 
     @overload
-    def __getitem__(self, key: BAR_DOUBLE_FIELDS) -> float: ...
+    def __getitem__(self, key: Literal["high_price", "low_price", "open_price", "close_price", "volume", "notional"]) -> float: ...
 
     @overload
-    def __getitem__(self, key: BAR_INT_FIELDS) -> int: ...
+    def __getitem__(self, key: Literal["trade_count"]) -> int: ...
 
     def __getitem__(self, key: str) -> float | int:
         """Access bar properties using dictionary-style syntax."""
         ...
 
     @overload
-    def __setitem__(self, key: BAR_DOUBLE_FIELDS, value: float) -> None: ...
+    def __setitem__(self, key: Literal["high_price", "low_price", "open_price", "close_price", "volume", "notional"], value: float) -> None: ...
 
     @overload
-    def __setitem__(self, key: BAR_INT_FIELDS, value: int) -> None: ...
+    def __setitem__(self, key: Literal["trade_count"], value: int) -> None: ...
 
     def __setitem__(self, key: str, value: float | int) -> None:
         """Set bar properties using dictionary-style syntax."""
+        ...
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> BarData:
+        """Reconstruct bar from serialized byte data."""
+        ...
+
+    def __copy__(self) -> BarData:
+        """Create a deep copy of this bar."""
         ...
 
     @property
@@ -130,7 +133,7 @@ class BarData(MarketData):
         ...
 
     @property
-    def bar_type(self) -> BAR_TYPE:
+    def bar_type(self) -> Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']:
         """Get the classification of this bar's time period."""
         ...
 
@@ -212,6 +215,6 @@ class DailyBar(BarData):
         ...
 
     @property
-    def bar_type(self) -> DAILY_TYPE:
+    def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
         """Get the classification of this daily bar."""
         ...

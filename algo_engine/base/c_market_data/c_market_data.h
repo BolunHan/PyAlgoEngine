@@ -6,8 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "c_market_data_config.h"
+#include "../../exchange_profile/c_ex_profile_base.h"
 #include "c_allocator_protocol.h"
+#include "c_market_data_config.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -82,8 +83,8 @@ static const char state_name_canceled[]     = "canceled";
 #define DTYPE_MIN_SIZE (sizeof(md_internal))
 #define DTYPE_MAX_SIZE (sizeof(md_variant))
 
-typedef __int128_t int128_t;
-typedef __uint128_t uint128_t;
+typedef __int128_t     int128_t;
+typedef __uint128_t    uint128_t;
 
 static const uint128_t UINT128_MAX = (((uint128_t) 1) << 127) * 2 - 1;
 static const int128_t  INT128_MIN  = -((int128_t) (UINT128_MAX)) - 1;
@@ -189,141 +190,146 @@ typedef enum md_filter_flag {
     NO_AUCTION          = 1 << 2,
     NO_ORDER            = 1 << 3,
     NO_TRADE            = 1 << 4,
-    NO_TICK             = 1 << 5
+    NO_TICK             = 1 << 5,
+
+    MD_FILTER_FLAG_COUNT = 5
 } md_filter_flag;
+
+#define MD_FILTER_ALL ((1 << MD_FILTER_FLAG_COUNT) - 1)
 
 // ========== Structs ==========
 
 typedef struct md_meta {
-    md_data_type dtype;
-    const char* ticker;
-    double timestamp;
+    md_data_type       dtype;
+    const char*        ticker;
+    double             timestamp;
+    session_datetime_t dt;
 } md_meta;
 
 typedef struct md_id {
     md_id_type id_type;
-    char data[ID_SIZE + 1];
+    char       data[ID_SIZE + 1];
 } md_id;
 
 typedef struct long_md_id {
     md_id_type id_type;
-    char data[LONG_ID_SIZE + 1];
+    char       data[LONG_ID_SIZE + 1];
 } long_md_id;
 
 typedef struct md_internal {
-    md_meta meta_info;
+    md_meta  meta_info;
     uint32_t code;
 } md_internal;
 
 typedef struct md_orderbook_entry {
-    double price;
-    double volume;
+    double   price;
+    double   volume;
     uint64_t n_orders;
 } md_orderbook_entry;
 
 typedef struct md_orderbook {
-    size_t capacity;
-    size_t size;
-    md_direction direction;
-    bool sorted;
+    size_t             capacity;
+    size_t             size;
+    md_direction       direction;
+    bool               sorted;
     md_orderbook_entry entries[];
 } md_orderbook;
 
 typedef struct md_candlestick {
-    md_meta meta_info;
-    double bar_span;
-    double high_price;
-    double low_price;
-    double open_price;
-    double close_price;
-    double volume;
-    double notional;
+    md_meta  meta_info;
+    double   bar_span;
+    double   high_price;
+    double   low_price;
+    double   open_price;
+    double   close_price;
+    double   volume;
+    double   notional;
     uint64_t trade_count;
 } md_candlestick;
 
 typedef struct md_tick_data_lite {
-    md_meta meta_info;
-    double bid_price;
-    double bid_volume;
-    double ask_price;
-    double ask_volume;
-    double last_price;
-    double open_price;
-    double prev_close;
-    double total_traded_volume;
-    double total_traded_notional;
+    md_meta  meta_info;
+    double   bid_price;
+    double   bid_volume;
+    double   ask_price;
+    double   ask_volume;
+    double   last_price;
+    double   open_price;
+    double   prev_close;
+    double   total_traded_volume;
+    double   total_traded_notional;
     uint64_t total_trade_count;
 } md_tick_data_lite;
 
 typedef struct md_tick_data {
     md_tick_data_lite lite;
-    double total_bid_volume;
-    double total_ask_volume;
-    double weighted_bid_price;
-    double weighted_ask_price;
-    md_orderbook* bid;
-    md_orderbook* ask;
+    double            total_bid_volume;
+    double            total_ask_volume;
+    double            weighted_bid_price;
+    double            weighted_ask_price;
+    md_orderbook*     bid;
+    md_orderbook*     ask;
 } md_tick_data;
 
 typedef struct md_transaction_data {
     md_meta meta_info;
-    double price;
-    double volume;
+    double  price;
+    double  volume;
     md_side side;
-    double multiplier;
-    double notional;
-    md_id transaction_id;
-    md_id buy_id;
-    md_id sell_id;
+    double  multiplier;
+    double  notional;
+    md_id   transaction_id;
+    md_id   buy_id;
+    md_id   sell_id;
 } md_transaction_data;
 
 typedef struct md_order_data {
-    md_meta meta_info;
-    double price;
-    double volume;
-    md_side side;
-    md_id order_id;
+    md_meta       meta_info;
+    double        price;
+    double        volume;
+    md_side       side;
+    md_id         order_id;
     md_order_type order_type;
 } md_order_data;
 
 typedef struct md_trade_report {
-    md_meta meta_info;
-    double price;
-    double volume;
-    md_side side;
-    double multiplier;
-    double notional;
-    double fee;
+    md_meta    meta_info;
+    double     price;
+    double     volume;
+    md_side    side;
+    double     multiplier;
+    double     notional;
+    double     fee;
     long_md_id order_id;
     long_md_id trade_id;
 } md_trade_report;
 
 typedef struct md_trade_instruction {
-    md_meta meta_info;
-    double limit_price;
-    double volume;
-    md_side side;
-    long_md_id order_id;
-    md_order_type order_type;
-    double multiplier;
+    md_meta        meta_info;
+    double         limit_price;
+    double         volume;
+    md_side        side;
+    long_md_id     order_id;
+    md_order_type  order_type;
+    double         multiplier;
     md_order_state order_state;
-    double filled_volume;
-    double filled_notional;
-    double fee;
-    double ts_placed;
-    double ts_canceled;
-    double ts_finished;
+    double         filled_volume;
+    double         filled_notional;
+    double         fee;
+    double         ts_placed;
+    double         ts_canceled;
+    double         ts_finished;
 } md_trade_instruction;
 
 typedef union md_variant {
-    md_meta meta_info;
-    md_internal internal;
-    md_transaction_data transaction_data;
-    md_order_data order_data;
-    md_candlestick bar_data;
-    md_tick_data_lite tick_data_lite;
-    md_tick_data tick_data_full;
-    md_trade_report trade_report;
+    md_meta              meta_info;
+    md_internal          internal;
+    md_transaction_data  transaction_data;
+    md_order_data        order_data;
+    md_candlestick       bar_data;
+    md_tick_data_lite    tick_data_lite;
+    md_tick_data         tick_data_full;
+    md_trade_report      trade_report;
     md_trade_instruction trade_instruction;
 } md_variant;
 
@@ -542,13 +548,21 @@ static inline int c_md_compare_id(const md_id* id1, const md_id* id2);
  */
 static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2);
 
+/**
+ * @brief Filter market_data based on specified flags.
+ * @param market_data Pointer to the market data buffer.
+ * @param flags Bitwise combination of md_filter_flag to exclude certain types.
+ * @return true if the market_data passes the filter, false if it should be excluded.
+ */
+static inline bool c_md_filter(const md_variant* market_data, md_filter_flag flags);
+
 // ========== Utility Functions ==========
 
 static inline void c_usleep(unsigned int usec) {
 #if defined(_WIN32) || defined(_WIN64)
     Sleep(usec / 1000);  // Windows: Sleep in milliseconds
 #else
-    usleep(usec);        // POSIX: Sleep in microseconds
+    usleep(usec);  // POSIX: Sleep in microseconds
 #endif
 }
 
@@ -597,7 +611,7 @@ static inline md_direction c_md_side_direction(md_side side) {
 }
 
 static inline md_side c_md_side_opposite(md_side side) {
-    md_offset offset = (md_offset) (side & 0xFC);  // Extract the offset bits      (0xFC = 11111100)
+    md_offset    offset = (md_offset) (side & 0xFC);        // Extract the offset bits      (0xFC = 11111100)
     md_direction direction = (md_direction) (side & 0x03);  // Extract the direction bits   (0x03 = 00000011)
 
     if (direction == DIRECTION_LONG) {
@@ -779,17 +793,23 @@ static inline size_t c_md_serialized_size(const md_variant* market_data) {
     if (!market_data) return 0;
 
     const md_meta* meta = &market_data->meta_info;
-    const char* ticker = meta->ticker ? meta->ticker : "";
-    const size_t ticker_len = strlen(ticker);
-
-    size_t payload_size = 0;
+    const char*    ticker = meta->ticker ? meta->ticker : "";
+    const size_t   ticker_len = strlen(ticker);
+    size_t         payload_size = 0;
     switch (meta->dtype) {
-        case DTYPE_INTERNAL:      payload_size = sizeof(md_internal) - sizeof(md_meta); break;
-        case DTYPE_TRANSACTION:   payload_size = sizeof(md_transaction_data) - sizeof(md_meta); break;
-        case DTYPE_ORDER:         payload_size = sizeof(md_order_data) - sizeof(md_meta); break;
-        case DTYPE_TICK_LITE:     payload_size = sizeof(md_tick_data_lite) - sizeof(md_meta); break;
-        case DTYPE_TICK:
-        {
+        case DTYPE_INTERNAL:
+            payload_size = sizeof(md_internal) - sizeof(md_meta);
+            break;
+        case DTYPE_TRANSACTION:
+            payload_size = sizeof(md_transaction_data) - sizeof(md_meta);
+            break;
+        case DTYPE_ORDER:
+            payload_size = sizeof(md_order_data) - sizeof(md_meta);
+            break;
+        case DTYPE_TICK_LITE:
+            payload_size = sizeof(md_tick_data_lite) - sizeof(md_meta);
+            break;
+        case DTYPE_TICK: {
             // Special-case: md_tick_data embeds md_tick_data_lite (with meta_info)
             // and contains pointers to order books. We serialize:
             // - tick_data_lite payload (without meta_info)
@@ -797,32 +817,36 @@ static inline size_t c_md_serialized_size(const md_variant* market_data) {
             // - bid order book: [uint8 has][capacity][size][uint8 direction][uint8 sorted][entries]
             // - ask order book: same as bid
             const md_tick_data* tick = &market_data->tick_data_full;
-            const size_t lite_payload = sizeof(md_tick_data_lite) - sizeof(md_meta);
-            const size_t fixed_fields = sizeof(double) * 4; // total_bid_volume, total_ask_volume, weighted_bid_price, weighted_ask_price
+            const size_t        lite_payload = sizeof(md_tick_data_lite) - sizeof(md_meta);
+            const size_t        fixed_fields = sizeof(double) * 4;  // total_bid_volume, total_ask_volume, weighted_bid_price, weighted_ask_price
 
             // Helper lambda-like macros for order book serialized size
             size_t ob_payload = 0;
             // Bid
             ob_payload += sizeof(uint8_t);
             if (tick->bid) {
-                ob_payload += (2 * sizeof(size_t))                 // capacity + size
-                    + (2 * sizeof(uint8_t))               // direction + sorted flags
-                    + (tick->bid->size * sizeof(md_orderbook_entry));
+                ob_payload += (2 * sizeof(size_t))     // capacity + size
+                              + (2 * sizeof(uint8_t))  // direction + sorted flags
+                              + (tick->bid->size * sizeof(md_orderbook_entry));
             }
             // Ask
             ob_payload += sizeof(uint8_t);
             if (tick->ask) {
-                ob_payload += (2 * sizeof(size_t))
-                    + (2 * sizeof(uint8_t))
-                    + (tick->ask->size * sizeof(md_orderbook_entry));
+                ob_payload += (2 * sizeof(size_t)) + (2 * sizeof(uint8_t)) + (tick->ask->size * sizeof(md_orderbook_entry));
             }
 
             payload_size = lite_payload + fixed_fields + ob_payload;
             break;
         }
-        case DTYPE_BAR:           payload_size = sizeof(md_candlestick) - sizeof(md_meta); break;
-        case DTYPE_REPORT:        payload_size = sizeof(md_trade_report) - sizeof(md_meta); break;
-        case DTYPE_INSTRUCTION:   payload_size = sizeof(md_trade_instruction) - sizeof(md_meta); break;
+        case DTYPE_BAR:
+            payload_size = sizeof(md_candlestick) - sizeof(md_meta);
+            break;
+        case DTYPE_REPORT:
+            payload_size = sizeof(md_trade_report) - sizeof(md_meta);
+            break;
+        case DTYPE_INSTRUCTION:
+            payload_size = sizeof(md_trade_instruction) - sizeof(md_meta);
+            break;
         case DTYPE_UNKNOWN:
         case DTYPE_MARKET_DATA:
         default:
@@ -830,11 +854,12 @@ static inline size_t c_md_serialized_size(const md_variant* market_data) {
             break;
     }
 
-    return sizeof(uint8_t)      /* dtype */
-        + sizeof(double)        /* timestamp */
-        + sizeof(uint32_t)      /* ticker length */
-        + ticker_len + 1       /* ticker bytes with nul terminator*/
-        + payload_size;         /* payload without meta_info */
+    return sizeof(uint8_t)              /* dtype */
+           + sizeof(double)             /* timestamp */
+           + sizeof(session_datetime_t) /* session_datetime */
+           + sizeof(uint32_t)           /* ticker length */
+           + ticker_len + 1             /* ticker bytes with nul terminator*/
+           + payload_size;              /* payload without meta_info */
 }
 
 static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
@@ -842,17 +867,19 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     if (!market_data || !out) return 0;
 
     const md_meta* meta = &market_data->meta_info;
-    const char* ticker = meta->ticker ? meta->ticker : "";
+    const char*    ticker = meta->ticker ? meta->ticker : "";
     const uint32_t ticker_len = (uint32_t) strlen(ticker);
+    char*          cursor = out;
 
-    char* cursor = out;
-
-    const uint8_t dtype_byte = (uint8_t) meta->dtype;
-    memcpy(cursor, &dtype_byte, sizeof(dtype_byte));
+    const uint8_t  dtype_byte = (uint8_t) meta->dtype;
+    memcpy(cursor, &dtype_byte, sizeof(uint8_t));
     cursor += sizeof(uint8_t);
 
-    memcpy(cursor, &meta->timestamp, sizeof(meta->timestamp));
+    memcpy(cursor, &meta->timestamp, sizeof(double));
     cursor += sizeof(double);
+
+    memcpy(cursor, &meta->dt, sizeof(meta->dt));
+    cursor += sizeof(session_datetime_t);
 
     memcpy(cursor, &ticker_len, sizeof(ticker_len));
     cursor += sizeof(uint32_t);
@@ -866,22 +893,29 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     cursor[0] = '\0';
     cursor++;
 
-#define WRITE_PAYLOAD(member_type, member_name) \
-    do { \
-        const member_type* p = &market_data->member_name; \
+#define WRITE_PAYLOAD(member_type, member_name)                                                     \
+    do {                                                                                            \
+        const member_type* p = &market_data->member_name;                                           \
         memcpy(cursor, ((const char*) p) + sizeof(md_meta), sizeof(member_type) - sizeof(md_meta)); \
-        cursor += sizeof(member_type) - sizeof(md_meta); \
+        cursor += sizeof(member_type) - sizeof(md_meta);                                            \
     } while (0)
 
     switch (meta->dtype) {
-        case DTYPE_INTERNAL:      WRITE_PAYLOAD(md_internal, internal); break;
-        case DTYPE_TRANSACTION:   WRITE_PAYLOAD(md_transaction_data, transaction_data); break;
-        case DTYPE_ORDER:         WRITE_PAYLOAD(md_order_data, order_data); break;
-        case DTYPE_TICK_LITE:     WRITE_PAYLOAD(md_tick_data_lite, tick_data_lite); break;
-        case DTYPE_TICK:
-        {
+        case DTYPE_INTERNAL:
+            WRITE_PAYLOAD(md_internal, internal);
+            break;
+        case DTYPE_TRANSACTION:
+            WRITE_PAYLOAD(md_transaction_data, transaction_data);
+            break;
+        case DTYPE_ORDER:
+            WRITE_PAYLOAD(md_order_data, order_data);
+            break;
+        case DTYPE_TICK_LITE:
+            WRITE_PAYLOAD(md_tick_data_lite, tick_data_lite);
+            break;
+        case DTYPE_TICK: {
             // Special-case serialization for md_tick_data
-            const md_tick_data* tick = &market_data->tick_data_full;
+            const md_tick_data*      tick = &market_data->tick_data_full;
             const md_tick_data_lite* lite = &tick->lite;
 
             // 1) Serialize tick_data_lite payload (without meta_info)
@@ -949,9 +983,15 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
             }
             break;
         }
-        case DTYPE_BAR:           WRITE_PAYLOAD(md_candlestick, bar_data); break;
-        case DTYPE_REPORT:        WRITE_PAYLOAD(md_trade_report, trade_report); break;
-        case DTYPE_INSTRUCTION:   WRITE_PAYLOAD(md_trade_instruction, trade_instruction); break;
+        case DTYPE_BAR:
+            WRITE_PAYLOAD(md_candlestick, bar_data);
+            break;
+        case DTYPE_REPORT:
+            WRITE_PAYLOAD(md_trade_report, trade_report);
+            break;
+        case DTYPE_INSTRUCTION:
+            WRITE_PAYLOAD(md_trade_instruction, trade_instruction);
+            break;
         case DTYPE_UNKNOWN:
         case DTYPE_MARKET_DATA:
         default:
@@ -983,6 +1023,9 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
     memcpy(&meta->timestamp, cursor, sizeof(double));
     cursor += sizeof(double);
 
+    memcpy(&meta->dt, cursor, sizeof(session_datetime_t));
+    cursor += sizeof(session_datetime_t);
+
     uint32_t ticker_len = 0;
     memcpy(&ticker_len, cursor, sizeof(uint32_t));
     cursor += sizeof(uint32_t);
@@ -993,19 +1036,26 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
     cursor += ticker_len + 1;
 
     // Step 4: Deserialize payload
-#define READ_PAYLOAD(member_type, member_name) \
-    do { \
-        member_type* p = &market_data->member_name; \
+#define READ_PAYLOAD(member_type, member_name)                                                \
+    do {                                                                                      \
+        member_type* p = &market_data->member_name;                                           \
         memcpy(((char*) p) + sizeof(md_meta), cursor, sizeof(member_type) - sizeof(md_meta)); \
-        cursor += sizeof(member_type) - sizeof(md_meta); \
+        cursor += sizeof(member_type) - sizeof(md_meta);                                      \
     } while (0)
     switch (meta->dtype) {
-        case DTYPE_INTERNAL:      READ_PAYLOAD(md_internal, internal); break;
-        case DTYPE_TRANSACTION:   READ_PAYLOAD(md_transaction_data, transaction_data); break;
-        case DTYPE_ORDER:         READ_PAYLOAD(md_order_data, order_data); break;
-        case DTYPE_TICK_LITE:     READ_PAYLOAD(md_tick_data_lite, tick_data_lite); break;
-        case DTYPE_TICK:
-        {
+        case DTYPE_INTERNAL:
+            READ_PAYLOAD(md_internal, internal);
+            break;
+        case DTYPE_TRANSACTION:
+            READ_PAYLOAD(md_transaction_data, transaction_data);
+            break;
+        case DTYPE_ORDER:
+            READ_PAYLOAD(md_order_data, order_data);
+            break;
+        case DTYPE_TICK_LITE:
+            READ_PAYLOAD(md_tick_data_lite, tick_data_lite);
+            break;
+        case DTYPE_TICK: {
             // Special-case deserialization for md_tick_data
             md_tick_data* tick = &market_data->tick_data_full;
 
@@ -1029,7 +1079,7 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
                 memcpy(&has_bid, cursor, sizeof(uint8_t));
                 cursor += sizeof(uint8_t);
                 if (has_bid) {
-                    size_t capacity = 0, size = 0;
+                    size_t  capacity = 0, size = 0;
                     uint8_t dir_byte = 0, sorted_byte = 0;
                     memcpy(&capacity, cursor, sizeof(size_t));
                     cursor += sizeof(size_t);
@@ -1057,7 +1107,7 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
                         }
                         cursor += bytes_in_src;
                         if (size > capacity) {
-                            ob->size = capacity; // clamp to capacity
+                            ob->size = capacity;  // clamp to capacity
                         }
                     }
                     tick->bid = ob;
@@ -1073,7 +1123,7 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
                 memcpy(&has_ask, cursor, sizeof(uint8_t));
                 cursor += sizeof(uint8_t);
                 if (has_ask) {
-                    size_t capacity = 0, size = 0;
+                    size_t  capacity = 0, size = 0;
                     uint8_t dir_byte = 0, sorted_byte = 0;
                     memcpy(&capacity, cursor, sizeof(size_t));
                     cursor += sizeof(size_t);
@@ -1101,7 +1151,7 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
                         }
                         cursor += bytes_in_src;
                         if (size > capacity) {
-                            ob->size = capacity; // clamp to capacity
+                            ob->size = capacity;  // clamp to capacity
                         }
                     }
                     tick->ask = ob;
@@ -1112,9 +1162,15 @@ static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* 
             }
             break;
         }
-        case DTYPE_BAR:           READ_PAYLOAD(md_candlestick, bar_data); break;
-        case DTYPE_REPORT:        READ_PAYLOAD(md_trade_report, trade_report); break;
-        case DTYPE_INSTRUCTION:   READ_PAYLOAD(md_trade_instruction, trade_instruction); break;
+        case DTYPE_BAR:
+            READ_PAYLOAD(md_candlestick, bar_data);
+            break;
+        case DTYPE_REPORT:
+            READ_PAYLOAD(md_trade_report, trade_report);
+            break;
+        case DTYPE_INSTRUCTION:
+            READ_PAYLOAD(md_trade_instruction, trade_instruction);
+            break;
         case DTYPE_UNKNOWN:
         case DTYPE_MARKET_DATA:
         default:
@@ -1236,4 +1292,37 @@ static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* 
     return memcmp(id1, id2, LONG_ID_SIZE) == 0;
 }
 
-#endif // C_MARKET_DATA_H
+static inline bool c_md_filter(const md_variant* market_data, md_filter_flag flags) {
+    if (!market_data) return false;
+    md_data_type dtype = market_data->meta_info.dtype;
+
+    if (flags & NO_INTERNAL && dtype == DTYPE_INTERNAL) {
+        return false;
+    }
+
+    if (flags & NO_CANCEL && dtype == DTYPE_TRANSACTION) {
+        md_side side = market_data->transaction_data.side;
+        if (c_md_side_offset(side) == OFFSET_CANCEL) return false;
+    }
+
+    if (flags & NO_AUCTION) {
+        session_phase phase = market_data->meta_info.dt.time.phase;
+        if (phase == SESSION_PHASE_OPEN_AUCTION || phase == SESSION_PHASE_CLOSE_AUCTION) return false;
+    }
+
+    if (flags & NO_ORDER && dtype == DTYPE_ORDER) {
+        return false;
+    }
+
+    if (flags & NO_TRADE && dtype == DTYPE_TRANSACTION) {
+        return false;
+    }
+
+    if (flags & NO_TICK && (dtype == DTYPE_TICK || dtype == DTYPE_TICK_LITE)) {
+        return false;
+    }
+
+    return true;
+}
+
+#endif  // C_MARKET_DATA_H

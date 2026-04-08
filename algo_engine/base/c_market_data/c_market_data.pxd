@@ -1,36 +1,106 @@
-# cython: language_level=3
-from cpython.datetime cimport datetime
-from libc.stdint cimport int8_t, uint8_t, int32_t, uint32_t, uint64_t, uintptr_t
+from libcpp cimport bool as c_bool
+from cpython.unicode cimport PyUnicode_FromString
+from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
+from libc.string cimport memcpy
+
+from .c_allocator_protocol cimport EnvConfigContext, MD_CFG_LOCKED, MD_CFG_SHARED, MD_CFG_FREELIST, MD_DEFAULT_ALLOCATOR, allocator_protocol, c_md_alloc, c_md_free
+from ..c_heap_allocator cimport heap_allocator, C_ALLOCATOR as HEAP_ALLOCATOR
+from ..c_shm_allocator cimport shm_allocator_ctx, shm_allocator, C_ALLOCATOR as SHM_ALLOCATOR
+from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
+from ...exchange_profile.c_exchange_profile cimport session_datetime_t, session_type, c_ex_profile_unix_to_datetime
 
 
 cdef extern from "c_market_data_config.h":
-    const int TICKER_SIZE
-    const int BOOK_SIZE
-    const int ID_SIZE
-    const int MAX_WORKERS
+    const c_bool DEBUG
+    const size_t BOOK_SIZE
+    const size_t ID_SIZE
+    const size_t LONG_ID_SIZE
+    const size_t MAX_WORKERS
+
+    const int MID_ALLOW_INT64
+    const int MID_ALLOW_INT128
+    const int LONG_MID_ALLOW_INT64
+    const int LONG_MID_ALLOW_INT128
 
 
 # Declare external constants
-cdef extern from "c_market_data_external.h":
-    int8_t direction_to_sign(uint8_t x) nogil
-    int compare_md_ptr(const void* a, const void* b) nogil
-    int compare_entries_bid(const void* a, const void* b) nogil
-    int compare_entries_ask(const void* a, const void* b) nogil
-    void platform_usleep(unsigned int usec) nogil
+cdef extern from "c_market_data.h":
+    const char* dtype_name_internal
+    const char* dtype_name_transaction
+    const char* dtype_name_order
+    const char* dtype_name_tick_lite
+    const char* dtype_name_tick
+    const char* dtype_name_bar
+    const char* dtype_name_report
+    const char* dtype_name_instruction
+    const char* dtype_name_generic
 
-    ctypedef enum Direction:
+    const char* side_name_open
+    const char* side_name_close
+    const char* side_name_short
+    const char* side_name_cover
+    const char* side_name_bid
+    const char* side_name_ask
+    const char* side_name_cancel
+    const char* side_name_cancel_bid
+    const char* side_name_cancel_ask
+    const char* side_name_neutral_open
+    const char* side_name_neutral_close
+    const char* side_name_unknown
+
+    const char* order_name_unknown
+    const char* order_name_cancel
+    const char* order_name_generic
+    const char* order_name_limit
+    const char* order_name_limit_maker
+    const char* order_name_market
+    const char* order_name_fok
+    const char* order_name_fak
+    const char* order_name_ioc
+
+    const char* direction_name_short
+    const char* direction_name_long
+    const char* direction_name_neutral
+    const char* direction_name_unknown
+
+    const char* offset_name_cancel
+    const char* offset_name_order
+    const char* offset_name_open
+    const char* offset_name_close
+    const char* offset_name_unknown
+
+    const char* state_name_unknown
+    const char* state_name_rejected
+    const char* state_name_invalid
+    const char* state_name_pending
+    const char* state_name_sent
+    const char* state_name_placed
+    const char* state_name_partfilled
+    const char* state_name_filled
+    const char* state_name_canceling
+    const char* state_name_canceled
+
+    const size_t DTYPE_MIN_SIZE
+    const size_t DTYPE_MAX_SIZE
+
+    ctypedef unsigned long long uint128_t
+    ctypedef long long int128_t
+    const int128_t INT128_MIN
+    const uint128_t UINT128_MAX
+
+    ctypedef enum md_direction:
         DIRECTION_UNKNOWN
         DIRECTION_SHORT
         DIRECTION_LONG
         DIRECTION_NEUTRAL
 
-    ctypedef enum Offset:
+    ctypedef enum md_offset:
         OFFSET_CANCEL
         OFFSET_ORDER
         OFFSET_OPEN
         OFFSET_CLOSE
 
-    ctypedef enum Side:
+    ctypedef enum md_side:
         SIDE_LONG_OPEN
         SIDE_LONG_CLOSE
         SIDE_LONG_CANCEL
@@ -46,248 +116,363 @@ cdef extern from "c_market_data_external.h":
         SIDE_LONG
         SIDE_SHORT
 
+    ctypedef enum md_order_type:
+        ORDER_UNKNOWN
+        ORDER_CANCEL
+        ORDER_GENERIC
+        ORDER_LIMIT
+        ORDER_LIMIT_MAKER
+        ORDER_MARKET
+        ORDER_FOK
+        ORDER_FAK
+        ORDER_IOC
 
-cdef enum OrderType:
-    ORDER_UNKNOWN = 2
-    ORDER_CANCEL = 1
-    ORDER_GENERIC = 0
-    ORDER_LIMIT = 10
-    ORDER_LIMIT_MAKER = 11
-    ORDER_MARKET = 20
-    ORDER_FOK = 21
-    ORDER_FAK = 22
-    ORDER_IOC = 23
+    ctypedef enum md_order_state:
+        STATE_UNKNOWN
+        STATE_REJECTED
+        STATE_INVALID
+        STATE_PENDING
+        STATE_SENT
+        STATE_PLACED
+        STATE_PARTFILLED
+        STATE_FILLED
+        STATE_CANCELING
+        STATE_CANCELED
+
+    ctypedef enum md_id_type:
+        MID_UNKNOWN
+        MID_UINT128
+        MID_INT128
+        MID_UINT64
+        MID_INT64
+        MID_STRING
+        MID_BYTE
+        MID_UUID
+
+    ctypedef enum md_data_type:
+        DTYPE_UNKNOWN
+        DTYPE_INTERNAL
+        DTYPE_MARKET_DATA
+        DTYPE_TRANSACTION
+        DTYPE_ORDER
+        DTYPE_TICK_LITE
+        DTYPE_TICK
+        DTYPE_BAR
+        DTYPE_REPORT
+        DTYPE_INSTRUCTION
+
+    ctypedef enum md_filter_flag:
+        NO_INTERNAL
+        NO_CANCEL
+        NO_AUCTION
+        NO_ORDER
+        NO_TRADE
+        NO_TICK
+
+    ctypedef struct md_meta:
+        md_data_type dtype
+        const char* ticker
+        double timestamp
+        session_datetime_t dt
+
+    ctypedef struct md_id:
+        md_id_type id_type
+        char data[ID_SIZE + 1]
+
+    ctypedef struct long_md_id:
+        md_id_type id_type
+        char data[LONG_ID_SIZE + 1]
+
+    ctypedef struct md_internal:
+        md_meta meta_info
+        uint32_t code
+
+    ctypedef struct md_orderbook_entry:
+        double price
+        double volume
+        uint64_t n_orders
+
+    ctypedef struct md_orderbook:
+        size_t capacity;
+        size_t size;
+        md_direction direction
+        c_bool sorted
+        md_orderbook_entry entries[]
+
+    ctypedef struct md_candlestick:
+        md_meta meta_info
+        double bar_span
+        double high_price
+        double low_price
+        double open_price
+        double close_price
+        double volume
+        double notional
+        uint64_t trade_count
+
+    ctypedef struct md_tick_data_lite:
+        md_meta meta_info
+        double bid_price
+        double bid_volume
+        double ask_price
+        double ask_volume
+        double last_price
+        double open_price
+        double prev_close
+        double total_traded_volume
+        double total_traded_notional
+        uint64_t total_trade_count
+
+    ctypedef struct md_tick_data:
+        md_tick_data_lite lite
+        double total_bid_volume
+        double total_ask_volume
+        double weighted_bid_price
+        double weighted_ask_price
+        md_orderbook* bid
+        md_orderbook* ask
+
+    ctypedef struct md_transaction_data:
+        md_meta meta_info
+        double price
+        double volume
+        md_side side
+        double multiplier
+        double notional
+        md_id transaction_id
+        md_id buy_id
+        md_id sell_id
+
+    ctypedef struct md_order_data:
+        md_meta meta_info
+        double price
+        double volume
+        md_side side
+        md_id order_id
+        md_order_type order_type
+
+    ctypedef struct md_trade_report:
+        md_meta meta_info
+        double price
+        double volume
+        md_side side
+        double multiplier
+        double notional
+        double fee
+        long_md_id order_id
+        long_md_id trade_id
+
+    ctypedef struct md_trade_instruction:
+        md_meta meta_info
+        double limit_price
+        double volume
+        md_side side
+        long_md_id order_id
+        md_order_type order_type
+        double multiplier
+        md_order_state order_state
+        double filled_volume
+        double filled_notional
+        double fee
+        double ts_placed
+        double ts_canceled
+        double ts_finished
+
+    ctypedef union md_variant:
+        md_meta meta_info
+        md_internal internal
+        md_transaction_data transaction_data
+        md_order_data order_data
+        md_candlestick bar_data
+        md_tick_data_lite tick_data_lite
+        md_tick_data tick_data_full
+        md_trade_report trade_report
+        md_trade_instruction trade_instruction
+
+    ctypedef enum md_ret_code:
+        MD_OK
+        MD_ERR_INVALID_INPUT
+        MD_ERR_INVALID_ALLOCATOR
+        MD_ERR_BUF_FULL
+        MD_ERR_BUF_EMPTY
+        MD_ERR_BUF_CORRUPTED
+        MD_ERR_DISABLED
+        MD_ERR_TIMEOUT
+        MD_ERR_OOR
+        MD_ERR_OOM
+
+    const size_t MD_FILTER_FLAG_COUNT
+    const md_filter_flag MD_FILTER_ALL
+
+    void c_usleep(unsigned int usec) noexcept nogil
+    md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator) noexcept nogil
+    double c_md_get_price(const md_variant* market_data) noexcept nogil
+    md_offset c_md_side_offset(md_side side) noexcept nogil
+    md_direction c_md_side_direction(md_side side) noexcept nogil
+    md_side c_md_side_opposite(md_side side) noexcept nogil
+    int8_t c_md_side_sign(md_side side) noexcept nogil
+    size_t c_md_get_size(md_data_type dtype) noexcept nogil
+    const char* c_md_dtype_name(md_data_type dtype) noexcept nogil
+    const char* c_md_side_name(md_side side) noexcept nogil
+    const char* c_md_order_type_name(md_order_type order_type) noexcept nogil
+    const char* c_md_direction_name(md_side side) noexcept nogil
+    const char* c_md_offset_name(md_side side) noexcept nogil
+    const char* c_md_state_name(md_order_state side) noexcept nogil
+    size_t c_md_serialized_size(const md_variant* market_data)
+    size_t c_md_serialize(const md_variant* market_data, char* out)
+    md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) noexcept nogil
+    md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator) noexcept nogil
+    void c_md_orderbook_free(md_orderbook* orderbook) noexcept nogil
+    int c_md_orderbook_sort(md_orderbook* orderbook) noexcept nogil
+    c_bool c_md_state_working(md_order_state state) noexcept nogil
+    c_bool c_md_state_placed(md_order_state state) noexcept nogil
+    c_bool c_md_state_done(md_order_state state) noexcept nogil
+    int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
+    int c_md_compare_bid(const void* a, const void* b) noexcept nogil
+    int c_md_compare_ask(const void* a, const void* b) noexcept nogil
+    int c_md_compare_id(const md_id* id1, const md_id* id2) noexcept nogil
+    int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2) noexcept nogil
+    c_bool c_md_filter(const md_variant* market_data, md_filter_flag flags) noexcept nogil
 
 
-cdef enum OrderState:
-    STATE_UNKNOWN = 0
-    STATE_REJECTED = 1  # order rejected
-    STATE_INVALID = 2  # invalid order
-    STATE_PENDING = 3  # order not sent. CAUTION pending order is not working nor done!
-    STATE_SENT = 4  # order sent (to exchange)
-    STATE_PLACED = 5  # order placed in exchange
-    STATE_PARTFILLED = 6  # order partial filled
-    STATE_FILLED = 7  # order fully filled
-    STATE_CANCELING = 8  # order canceling
-    STATE_CANCELED = 9  # order stopped and canceled
+cdef size_t MD_CFG_BOOK_SIZE
 
 
-# Data type mapping
-cdef enum DataType:
-    DTYPE_UNKNOWN = 0
-    DTYPE_INTERNAL = 1
-    DTYPE_MARKET_DATA = 10
-    DTYPE_TRANSACTION = 20
-    DTYPE_ORDER = 30
-    DTYPE_TICK_LITE = 31
-    DTYPE_TICK = 32
-    DTYPE_BAR = 40
-
-    DTYPE_REPORT = 50
-    DTYPE_INSTRUCTION = 51
+cdef class BookConfigContext(EnvConfigContext):
+    pass
 
 
-cdef packed struct _ID:
-    uint8_t id_type
-    char data[ID_SIZE]
+cdef BookConfigContext MD_BOOK5
+cdef BookConfigContext MD_BOOK10
+cdef BookConfigContext MD_BOOK20
 
 
-# Meta info structure
-cdef packed struct _MetaInfo:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
+cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, double timestamp):
+    cdef md_variant* market_data
+
+    market_data = c_md_new(dtype, MD_DEFAULT_ALLOCATOR)
+    if not market_data:
+        raise MemoryError(f'Failed to allocate shared memory for {PyUnicode_FromString(c_md_dtype_name(dtype))}')
+    cdef md_meta* meta_data = <md_meta*> market_data
+
+    if MD_DEFAULT_ALLOCATOR.with_shm:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(SHM_POOL, ticker)
+    else:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(HEAP_POOL, ticker)
+
+    if not meta_data.ticker:
+        raise MemoryError('Failed to intern ticker string')
+
+    meta_data.dtype = dtype
+    meta_data.timestamp = timestamp
+    c_ex_profile_unix_to_datetime(timestamp, &meta_data.dt)
+    meta_data.dt.date.stype = session_type.SESSION_TYPE_NORMINAL
+    return market_data
 
 
-# Internal structure
-cdef packed struct _InternalBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    uint32_t code
+cdef inline md_variant* c_deserialize_buffer(const char* src):
+    market_data = c_md_deserialize(src, MD_DEFAULT_ALLOCATOR)
+
+    if not market_data:
+        raise MemoryError('Failed to deserialize market data from bytes')
+    cdef md_meta* meta_data = <md_meta*> market_data
+
+    cdef const char* ticker = meta_data.ticker
+    if not ticker:
+        raise ValueError('Deserialized market data has null ticker string')
+
+    if MD_DEFAULT_ALLOCATOR.with_shm:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(SHM_POOL, ticker)
+    else:
+        if MD_DEFAULT_ALLOCATOR.with_lock:
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
+        else:
+            meta_data.ticker = c_istr(HEAP_POOL, ticker)
+
+    if not meta_data.ticker:
+        raise MemoryError('Failed to intern ticker string')
+
+    return market_data
 
 
-# OrderBookEntry structure
-cdef packed struct _OrderBookEntry:
-    double price
-    double volume
-    uint64_t n_orders
+cdef inline void c_write_uint128(void* data, uint128_t value):
+    memcpy(data, &value, 16)
 
 
-# OrderBookBuffer structure
-cdef packed struct _OrderBookBuffer:
-    _OrderBookEntry entries[BOOK_SIZE]
+cdef inline uint128_t c_read_uint128(void* data):
+    cdef uint128_t value
+    memcpy(&value, data, 16)
+    return value
 
 
-# BarData structure
-cdef packed struct _CandlestickBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double bar_span
-    double high_price
-    double low_price
-    double open_price
-    double close_price
-    double volume
-    double notional
-    uint64_t trade_count
+cdef inline void c_write_int128(void* data, int128_t value):
+    memcpy(data, &value, 16)
 
 
-# TickDataLite structure
-cdef packed struct _TickDataLiteBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double bid_price
-    double bid_volume
-    double ask_price
-    double ask_volume
-    double last_price
-    double open_price
-    double prev_close
-    double total_traded_volume
-    double total_traded_notional
-    uint64_t total_trade_count
+cdef inline int128_t c_read_int128(void* data):
+    cdef int128_t value
+    memcpy(&value, data, 16)
+    return value
 
 
-# TickData structure
-cdef packed struct _TickDataBuffer:
-    _TickDataLiteBuffer lite
-    double total_bid_volume
-    double total_ask_volume
-    double weighted_bid_price
-    double weighted_ask_price
-    _OrderBookBuffer bid
-    _OrderBookBuffer ask
+cdef void c_set_id(md_id* id_ptr, object id_value)
+cdef object c_get_id(md_id* id_ptr)
+cdef void c_set_long_id(long_md_id* id_ptr, object id_value)
+cdef object c_get_long_id(long_md_id* id_ptr)
 
 
-# TransactionData structure
-cdef packed struct _TransactionDataBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double price
-    double volume
-    uint8_t side
-    double multiplier
-    double notional
-    _ID transaction_id
-    _ID buy_id
-    _ID sell_id
+ctypedef object (*c_from_header_func)(md_variant* market_data, bint owner)
+
+cdef c_from_header_func internal_from_header
+cdef c_from_header_func transaction_from_header
+cdef c_from_header_func order_from_header
+cdef c_from_header_func tick_lite_from_header
+cdef c_from_header_func tick_from_header
+cdef c_from_header_func bar_from_header
+cdef c_from_header_func report_from_header
+cdef c_from_header_func instruction_from_header
 
 
-# OrderData structure
-cdef packed struct _OrderDataBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double price
-    double volume
-    uint8_t side
-    _ID order_id
-    uint8_t order_type
-
-
-# TradeReport structure
-cdef packed struct _TradeReportBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double price
-    double volume
-    uint8_t side
-    double multiplier
-    double notional
-    double fee
-    _ID order_id
-    _ID trade_id
-
-
-# TradeInstruction structure
-cdef packed struct _TradeInstructionBuffer:
-    uint8_t dtype
-    char ticker[TICKER_SIZE]
-    double timestamp
-    double limit_price
-    double volume
-    uint8_t side
-    _ID order_id
-    int32_t order_type
-    double multiplier
-    uint8_t order_state
-    double filled_volume
-    double filled_notional
-    double fee
-    double ts_placed
-    double ts_canceled
-    double ts_finished
-
-
-# Base MarketData structure as a union
-cdef union _MarketDataBuffer:
-    _MetaInfo MetaInfo
-    _InternalBuffer Internal
-    _TransactionDataBuffer TransactionData
-    _OrderDataBuffer OrderData
-    _CandlestickBuffer BarData
-    _TickDataLiteBuffer TickDataLite
-    _TickDataBuffer TickDataFull
-
-    _TradeReportBuffer TradeReport
-    _TradeInstructionBuffer TradeInstruction
-
-
-cdef class InternalData:
+cdef class MarketData:
     cdef dict __dict__
-    cdef _MarketDataBuffer* _data_ptr
-    cdef public uintptr_t _data_addr
-    cdef _InternalBuffer _data
+    cdef readonly uintptr_t data_addr
+    cdef readonly bint owner
 
-    cdef bytes c_to_bytes(self)
-
-    @staticmethod
-    cdef InternalData c_from_bytes(bytes data)
-
-
-# Declare MarketData class
-cdef class _MarketDataVirtualBase:
-    cdef dict __dict__
-    cdef _MarketDataBuffer* _data_ptr
+    cdef md_variant* header
 
     @staticmethod
-    cdef inline size_t c_get_size(uint8_t dtype)
+    cdef inline object c_from_header(md_variant* market_data, bint owner=?)
+
+    cdef inline size_t c_get_size(self)
+
+    cdef inline str c_dtype_name(self)
+
+    cdef inline void c_to_bytes(self, char* out)
 
     @staticmethod
-    cdef inline str c_dtype_name(uint8_t dtype)
-
-    @staticmethod
-    cdef inline object c_ptr_to_data(_MarketDataBuffer* data_ptr)
-
-    @staticmethod
-    cdef inline bytes c_ptr_to_bytes(_MarketDataBuffer* data_ptr)
-
-    @staticmethod
-    cdef inline size_t c_max_size()
-
-    @staticmethod
-    cdef inline size_t c_min_size()
-
-    @staticmethod
-    cdef inline datetime c_to_dt(double timestamp)
-
-
-cdef enum _FilterMode:
-    NO_INTERNAL = 1 << 0
-    NO_CANCEL = 1 << 1
-    NO_AUCTION = 1 << 2
-    NO_ORDER = 1 << 3
-    NO_TRADE = 1 << 4
-    NO_TICK = 1 << 5
+    cdef inline md_variant* c_from_bytes(bytes data)
 
 
 cdef class FilterMode:
-    cdef public uint32_t value
+    cdef public md_filter_flag value
 
     @staticmethod
-    cdef inline bint c_mask_data(_MetaInfo* data_addr, uint32_t filter_mode)
+    cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode)
+
+    cpdef bint mask_data(self, MarketData market_data)
+
+
+cdef class ConfigViewer:
+    pass
+
+
+cdef ConfigViewer CONFIG

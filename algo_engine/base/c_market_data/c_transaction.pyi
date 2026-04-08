@@ -1,10 +1,13 @@
 import enum
 import uuid
-from typing import Any, Literal
-
-from typing_extensions import deprecated
+from math import nan
+from typing import Literal
+from warnings import deprecated
 
 from .c_market_data import MarketData
+
+mid_t = str | int | bytes | uuid.UUID | None
+sign_t = Literal[-1, 0, 1]
 
 
 class OrderType(enum.IntEnum):
@@ -40,27 +43,29 @@ class TransactionDirection(enum.IntEnum):
         Combine direction and offset to create a TransactionSide using | operator.
 
         Example:
+
             >>> TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN
-            >>> # <TransactionSide.SIDE_LONG_OPEN: 10>
+            <TransactionSide.SIDE_LONG_OPEN: 10>
+
         """
         ...
 
     @property
-    def sign(self) -> Literal[-1, 0, 1]:
+    def sign(self) -> sign_t:
         """
         Get the numerical sign representing the transaction direction.
 
         Returns:
             - 1 for long (buy)
             - -1 for short (sell)
-            - 0 for cancel/unknown/neutral
+            - 0 for cancel / unknown / neutral
         """
         ...
 
 
 class TransactionOffset(enum.IntEnum):
     """
-    Enum representing the offset type of a transaction.
+    Enum representing the offset type of transaction.
 
     Attributes:
         OFFSET_CANCEL: Order cancellation
@@ -78,10 +83,17 @@ class TransactionOffset(enum.IntEnum):
         Combine offset and direction to create a TransactionSide using | operator.
 
         Example:
+
             >>> TransactionOffset.OFFSET_OPEN | TransactionDirection.DIRECTION_LONG
-            >>> # <TransactionSide.SIDE_LONG_OPEN: 10>
+            <TransactionSide.SIDE_LONG_OPEN: 10>
+
         """
         ...
+
+
+@deprecated('Use entries from side_t instead')
+class TransactionSideDeprecated(TransactionSide):
+    ...
 
 
 class TransactionSide(enum.IntEnum):
@@ -108,26 +120,26 @@ class TransactionSide(enum.IntEnum):
     SIDE_FAULTY: TransactionSide
 
     # Deprecated aliases
-    ShortOrder: deprecated('Use SIDE_ASK instead')(TransactionSide)
-    AskOrder: deprecated('Use SIDE_ASK instead')(TransactionSide)
-    Ask: deprecated('Use SIDE_ASK instead')(TransactionSide)
-    LongOrder: deprecated('Use SIDE_BID instead')(TransactionSide)
-    BidOrder: deprecated('Use SIDE_BID instead')(TransactionSide)
-    Bid: deprecated('Use SIDE_BID instead')(TransactionSide)
-    ShortFilled: deprecated('Use SIDE_SHORT instead')(TransactionSide)
-    Unwind: deprecated('Use SIDE_SHORT_CLOSE instead')(TransactionSide)
-    Sell: deprecated('Use SIDE_SHORT_CLOSE instead')(TransactionSide)
-    LongFilled: deprecated('Use SIDE_LONG_OPEN instead')(TransactionSide)
-    LongOpen: deprecated('Use SIDE_LONG_OPEN instead')(TransactionSide)
-    Buy: deprecated('Use SIDE_LONG_OPEN instead')(TransactionSide)
-    ShortOpen: deprecated('Use SIDE_SHORT_OPEN instead')(TransactionSide)
-    Short: deprecated('Use SIDE_SHORT_OPEN instead')(TransactionSide)
-    Cover: deprecated('Use SIDE_LONG_CLOSE instead')(TransactionSide)
-    UNKNOWN: deprecated('Use SIDE_UNKNOWN instead')(TransactionSide)
-    CANCEL: deprecated('Use SIDE_CANCEL instead')(TransactionSide)
+    ShortOrder: TransactionSideDeprecated
+    AskOrder: TransactionSideDeprecated
+    Ask: TransactionSideDeprecated
+    LongOrder: TransactionSideDeprecated
+    BidOrder: TransactionSideDeprecated
+    Bid: TransactionSideDeprecated
+    ShortFilled: TransactionSideDeprecated
+    Unwind: TransactionSideDeprecated
+    Sell: TransactionSideDeprecated
+    LongFilled: TransactionSideDeprecated
+    LongOpen: TransactionSideDeprecated
+    Buy: TransactionSideDeprecated
+    ShortOpen: TransactionSideDeprecated
+    Short: TransactionSideDeprecated
+    Cover: TransactionSideDeprecated
+    UNKNOWN: TransactionSideDeprecated
+    CANCEL: TransactionSideDeprecated
 
     @property
-    def sign(self) -> Literal[-1, 0, 1]:
+    def sign(self) -> sign_t:
         """
         Get the numerical sign representing the transaction direction.
 
@@ -178,17 +190,18 @@ class TransactionData(MarketData):
 
     def __init__(
             self,
+            *
             ticker: str,
             timestamp: float,
             price: float,
             volume: float,
             side: int,
             multiplier: float = 1.0,
-            notional: float = ...,
-            transaction_id: str | int | bytes | uuid.UUID | None = None,
-            buy_id: str | int | bytes | uuid.UUID | None = None,
-            sell_id: str | int | bytes | uuid.UUID | None = None,
-            **kwargs: Any
+            notional: float = nan,
+            transaction_id: mid_t = None,
+            buy_id: mid_t = None,
+            sell_id: mid_t = None,
+            **kwargs
     ) -> None:
         """
         Initialize a TransactionData instance.
@@ -200,17 +213,12 @@ class TransactionData(MarketData):
             volume: Transaction volume
             side: Transaction side (see TransactionSide)
             multiplier: Contract multiplier (default 1.0)
-            notional: Optional pre-calculated notional value
+            notional: Optional pre-calculated notional value, if nan, will be computed as price * volume * multiplier
             transaction_id: Unique transaction identifier
             buy_id: Buyer's order identifier
             sell_id: Seller's order identifier
             **kwargs: Additional transaction attributes
         """
-        ...
-
-    @classmethod
-    def from_bytes(cls, data: bytes) -> TransactionData:
-        """Reconstruct from serialized byte data."""
         ...
 
     @classmethod
@@ -226,10 +234,6 @@ class TransactionData(MarketData):
         """
         ...
 
-    def __copy__(self) -> TransactionData:
-        """Create a deep copy of this transaction."""
-        ...
-
     @property
     def price(self) -> float:
         """Get the execution price of this transaction."""
@@ -241,18 +245,18 @@ class TransactionData(MarketData):
         ...
 
     @property
+    def side(self) -> TransactionSide:
+        """Get the TransactionSide enum value for this transaction."""
+        ...
+
+    @property
     def side_int(self) -> int:
         """Get the raw int enum value of the transaction side."""
         ...
 
     @property
-    def side_sign(self) -> Literal[-1, 0, 1]:
+    def side_sign(self) -> sign_t:
         """Get the directional sign of this transaction (-1, 0, 1). See TransactionDirection.side for details."""
-        ...
-
-    @property
-    def side(self) -> TransactionSide:
-        """Get the TransactionSide enum value for this transaction."""
         ...
 
     @property
@@ -266,17 +270,17 @@ class TransactionData(MarketData):
         ...
 
     @property
-    def transaction_id(self) -> str | int | bytes | uuid.UUID | None:
+    def transaction_id(self) -> mid_t:
         """Get the unique identifier for this transaction."""
         ...
 
     @property
-    def buy_id(self) -> str | int | bytes | uuid.UUID | None:
+    def buy_id(self) -> mid_t:
         """Get the buyer's order identifier."""
         ...
 
     @property
-    def sell_id(self) -> str | int | bytes | uuid.UUID | None:
+    def sell_id(self) -> mid_t:
         """Get the seller's order identifier."""
         ...
 
@@ -293,7 +297,7 @@ class TransactionData(MarketData):
 
 class OrderData(MarketData):
     """
-    Market data representing an order (bid/ask) in the order book.
+    Market data representing an order (bid / ask) in the order book.
 
     Represents any action that increases listing volume to the order book.
     The side indicates the side of the order book it affected.
@@ -301,14 +305,15 @@ class OrderData(MarketData):
 
     def __init__(
             self,
+            *
             ticker: str,
             timestamp: float,
             price: float,
             volume: float,
             side: int,
-            order_id: str | int | bytes | uuid.UUID | None = None,
-            order_type: int = ...,
-            **kwargs: Any
+            order_id: mid_t = None,
+            order_type: int = OrderType.ORDER_GENERIC,
+            **kwargs
     ) -> None:
         """
         Initialize an OrderData instance.
@@ -336,28 +341,23 @@ class OrderData(MarketData):
         ...
 
     @property
-    def side_int(self) -> int:
-        """Get the raw integer value of the order side."""
-        ...
-
-    @property
-    def side_sign(self) -> Literal[-1, 0, 1]:
-        """Get the directional sign of this order (-1, 0, 1)."""
-        ...
-
-    @property
     def side(self) -> TransactionSide:
         """Get the TransactionSide enum value for this order."""
         ...
 
     @property
-    def order_id(self) -> str | int | bytes | uuid.UUID | None:
-        """Get the unique order identifier."""
+    def side_int(self) -> int:
+        """Get the raw integer value of the order side."""
         ...
 
     @property
-    def order_type_int(self) -> int:
-        """Get the raw integer value of the order type."""
+    def side_sign(self) -> sign_t:
+        """Get the directional sign of this order (-1, 0, 1)."""
+        ...
+
+    @property
+    def order_id(self) -> mid_t:
+        """Get the unique order identifier."""
         ...
 
     @property
@@ -366,8 +366,8 @@ class OrderData(MarketData):
         ...
 
     @property
-    def market_price(self) -> float:
-        """Get the current market price relevant to this order."""
+    def order_type_int(self) -> int:
+        """Get the raw integer value of the order type."""
         ...
 
     @property
@@ -386,14 +386,18 @@ class TradeData(TransactionData):
 
     def __init__(
             self,
+            *,
             ticker: str,
             timestamp: float,
             trade_price: float,
             trade_volume: float,
-            side: int,
-            order_id: str | int | bytes | uuid.UUID | None = None,
-            order_type: int = ...,
-            **kwargs: Any
+            trade_side: int,
+            multiplier: float = 1.0,
+            notional: float = nan,
+            transaction_id: mid_t = None,
+            buy_id: mid_t = None,
+            sell_id: mid_t = None,
+            **kwargs
     ) -> None:
         """
         Initialize a TradeData instance.
@@ -403,10 +407,13 @@ class TradeData(TransactionData):
             timestamp: Unix timestamp of trade
             trade_price: Execution price
             trade_volume: Trade volume
-            side: Trade side (see TransactionSide)
-            order_id: Related order identifier
-            order_type: Order type (see OrderType from c_market_data for details)
-            **kwargs: Additional trade attributes
+            trade_side: Trade side (see TransactionSide)
+            multiplier: Contract multiplier (default 1.0)
+            notional: Optional pre-calculated notional value, if nan, will be computed as price * volume * multiplier
+            transaction_id: Unique transaction identifier
+            buy_id: Buyer's order identifier
+            sell_id: Seller's order identifier
+            **kwargs: Additional transaction attributes
         """
         ...
 
@@ -418,4 +425,9 @@ class TradeData(TransactionData):
     @property
     def trade_volume(self) -> float:
         """Alias for volume property (trade volume)."""
+        ...
+
+    @property
+    def trade_side(self) -> TransactionSide:
+        """Alias for side property (trade side)."""
         ...

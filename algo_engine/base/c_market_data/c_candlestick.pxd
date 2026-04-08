@@ -1,17 +1,27 @@
-# cython: language_level=3
-from libc.stdint cimport uintptr_t
-
-from .c_market_data cimport _MarketDataBuffer, _CandlestickBuffer
+from .c_market_data cimport md_variant, MarketData
 
 
-cdef class BarData:
-    cdef dict __dict__
-    cdef _MarketDataBuffer* _data_ptr
-    cdef public uintptr_t _data_addr
-    cdef _CandlestickBuffer _data
+cdef class BarData(MarketData):
+    pass
 
-    cdef bytes c_to_bytes(self)
 
-    @staticmethod
-    cdef BarData c_from_bytes(bytes data)
+cdef class DailyBar(BarData):
+    pass
 
+
+cdef inline object bar_from_header(md_variant* market_data, bint owner):
+    cdef ts = market_data.bar_data.meta_info.timestamp
+    cdef DailyBar daily_bar
+    cdef BarData bar_data
+    if ts < 1_0000_00_00:
+        # The DailyBar.timestamp is repurposed to store datetime, in format YYYYMMDD
+        # if the ts is less than 100M, this is highly likely to be a DailyBar, not BarData.
+        daily_bar = DailyBar.__new__(DailyBar)
+        daily_bar.header = market_data
+        daily_bar.owner = owner
+        return daily_bar
+    else:
+        bar_data = BarData.__new__(BarData)
+        bar_data.header = market_data
+        bar_data.owner = owner
+        return bar_data

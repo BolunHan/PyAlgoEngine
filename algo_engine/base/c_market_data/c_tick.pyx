@@ -1,26 +1,23 @@
-# cython: language_level=3
-from collections.abc import Sequence
-
-cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
+from cpython.unicode cimport PyUnicode_AsUTF8
 from libc.math cimport NAN
-from libc.stdint cimport uint64_t
-from libc.stdlib cimport qsort
-from libc.string cimport memcpy, memset
+from libc.stdint cimport uint64_t, uintptr_t
+from libc.stdlib cimport calloc, free
+from libc.string cimport memcpy
 
-from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, _TickDataBuffer, _TickDataLiteBuffer, _OrderBookBuffer, _OrderBookEntry, compare_entries_bid, compare_entries_ask, Side, DataType, BOOK_SIZE
+from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
+from .c_market_data cimport (
+    md_ret_code, md_data_type, md_direction, MD_CFG_BOOK_SIZE,
+    md_orderbook_entry, c_md_orderbook_sort,
+    c_init_buffer, c_md_orderbook_new, c_md_orderbook_free
+)
+from .c_transaction import TransactionDirection, TransactionOffset
 
 
-@cython.freelist(128)
-cdef class TickDataLite:
-    def __cinit__(self):
-        self._data_ptr = <_MarketDataBuffer*> &self._data
-        self._data_addr = <uintptr_t> self._data_ptr
-
+cdef class TickDataLite(MarketData):
     def __init__(
             self,
+            *,
             str ticker,
             double timestamp,
             double last_price,
@@ -35,359 +32,394 @@ cdef class TickDataLite:
             uint64_t total_trade_count=0,
             **kwargs
     ):
-        # Initialize base class fields
-        cdef Py_ssize_t ticker_len
-        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
-        memcpy(<void*> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
-        self._data.timestamp = timestamp
-        self._data.dtype = DataType.DTYPE_TICK_LITE
-        if kwargs: self.__dict__.update(kwargs)
+        self.header = c_init_buffer(
+            md_data_type.DTYPE_TICK_LITE,
+            PyUnicode_AsUTF8(ticker),
+            timestamp
+        )
 
         # Set other fields
-        self._data.last_price = last_price
-        self._data.bid_price = bid_price
-        self._data.bid_volume = bid_volume
-        self._data.ask_price = ask_price
-        self._data.ask_volume = ask_volume
-        self._data.open_price = open_price
-        self._data.prev_close = prev_close
-        self._data.total_traded_volume = total_traded_volume
-        self._data.total_traded_notional = total_traded_notional
-        self._data.total_trade_count = total_trade_count
+        self.header.tick_data_lite.last_price = last_price
+        self.header.tick_data_lite.bid_price = bid_price
+        self.header.tick_data_lite.bid_volume = bid_volume
+        self.header.tick_data_lite.ask_price = ask_price
+        self.header.tick_data_lite.ask_volume = ask_volume
+        self.header.tick_data_lite.open_price = open_price
+        self.header.tick_data_lite.prev_close = prev_close
+        self.header.tick_data_lite.total_traded_volume = total_traded_volume
+        self.header.tick_data_lite.total_traded_notional = total_traded_notional
+        self.header.tick_data_lite.total_trade_count = total_trade_count
+
+        self.data_addr = <uintptr_t> self.header
+        self.owner = True
+
+        if kwargs:
+            self.__dict__.update(kwargs)
 
     def __repr__(self):
-        return f'<TickDataLite>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
+        return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
-    def __reduce__(self):
-        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+    property last_price:
+        def __get__(self):
+            return self.header.tick_data_lite.last_price
 
-    def __setstate__(self, state):
-        if state:
-            self.__dict__.update(state)
+    property bid_price:
+        def __get__(self):
+            return self.header.tick_data_lite.bid_price
 
-    def __copy__(self):
-        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TickDataLiteBuffer))
-        return instance
+    property bid_volume:
+        def __get__(self):
+            return self.header.tick_data_lite.bid_volume
 
-    @classmethod
-    def buffer_size(cls):
-        return sizeof(_TickDataLiteBuffer)
+    property ask_price:
+        def __get__(self):
+            return self.header.tick_data_lite.ask_price
 
-    cdef bytes c_to_bytes(self):
-        return PyBytes_FromStringAndSize(<char*> &self._data, sizeof(self._data))
+    property ask_volume:
+        def __get__(self):
+            return self.header.tick_data_lite.ask_volume
 
-    @staticmethod
-    cdef TickDataLite c_from_bytes(bytes data):
-        cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        memcpy(<void*> &instance._data, <const char*> data, sizeof(_TickDataLiteBuffer))
-        return instance
+    property open_price:
+        def __get__(self):
+            return self.header.tick_data_lite.open_price
 
-    def to_bytes(self) -> bytes:
-        return self.c_to_bytes()
+    property prev_close:
+        def __get__(self):
+            return self.header.tick_data_lite.prev_close
 
-    @classmethod
-    def from_bytes(cls, bytes data):
-        return TickDataLite.c_from_bytes(data)
+    property total_traded_volume:
+        def __get__(self):
+            return self.header.tick_data_lite.total_traded_volume
 
-    @property
-    def ticker(self) -> str:
-        return PyUnicode_FromString(&self._data.ticker[0])
+    property total_traded_notional:
+        def __get__(self):
+            return self.header.tick_data_lite.total_traded_notional
 
-    @property
-    def timestamp(self) -> float:
-        return self._data.timestamp
+    property total_trade_count:
+        def __get__(self):
+            return self.header.tick_data_lite.total_trade_count
 
-    @property
-    def dtype(self) -> int:
-        return self._data.dtype
+    property mid_price:
+        def __get__(self):
+            cdef double bid_price = self.header.tick_data_lite.bid_price
+            cdef double ask_price = self.header.tick_data_lite.ask_price
+            return (bid_price + ask_price) / 2.0
 
-    @property
-    def topic(self) -> str:
-        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
-        return f'{ticker_str}.{self.__class__.__name__}'
-
-    @property
-    def market_time(self) :
-        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
-
-    @property
-    def last_price(self):
-        return self._data.last_price
-
-    @property
-    def bid_price(self):
-        return self._data.bid_price
-
-    @property
-    def bid_volume(self):
-        return self._data.bid_volume
-
-    @property
-    def ask_price(self):
-        return self._data.ask_price
-
-    @property
-    def ask_volume(self):
-        return self._data.ask_volume
-
-    @property
-    def open_price(self):
-        return self._data.open_price
-
-    @property
-    def prev_close(self):
-        return self._data.prev_close
-
-    @property
-    def total_traded_volume(self):
-        return self._data.total_traded_volume
-
-    @property
-    def total_traded_notional(self):
-        return self._data.total_traded_notional
-
-    @property
-    def total_trade_count(self):
-        return self._data.total_trade_count
-
-    @property
-    def mid_price(self):
-        return (self._data.bid_price + self._data.ask_price) / 2.0
-
-    @property
-    def spread(self):
-        return self._data.ask_price - self._data.bid_price
-
-    @property
-    def market_price(self):
-        return self.last_price
+    property spread:
+        def __get__(self):
+            cdef double bid_price = self.header.tick_data_lite.bid_price
+            cdef double ask_price = self.header.tick_data_lite.ask_price
+            return ask_price - bid_price
 
 
 cdef class OrderBook:
-    def __init__(self, uint8_t side = Side.SIDE_UNKNOWN, price: Sequence[float] = None, volume: Sequence[float] = None, n_orders: Sequence[int] = None, is_sorted: bool = False):
-        self.sorted = is_sorted
-        self._owner = True
-
-        if side == Side.SIDE_UNKNOWN or side == Side.SIDE_BID or side == Side.SIDE_ASK:
-            self.side = side
+    def __cinit__(
+            self,
+            *,
+            md_direction direction = md_direction.DIRECTION_UNKNOWN,
+            object price=None,
+            object volume=None,
+            object n_orders=None,
+            bint is_sorted=False,
+            **kwargs
+    ):
+        if direction == md_direction.DIRECTION_UNKNOWN:
+            return
+        elif direction == md_direction.DIRECTION_LONG or direction == md_direction.DIRECTION_SHORT:
+            pass
         else:
-            raise ValueError(f'Invalid side {side}, expect [Side.SIDE_BID, Side.SIDE_ASK]')
+            raise ValueError(f'Invalid Direction {direction}. expecting {TransactionDirection.DIRECTION_SHORT} or {TransactionDirection.DIRECTION_LONG}')
 
-        # Allocate memory for _data
-        self._data = <_OrderBookBuffer*> PyMem_Malloc(sizeof(_OrderBookBuffer))
-        memset(self._data, 0, sizeof(_OrderBookBuffer))
+        cdef size_t book_size = MD_CFG_BOOK_SIZE
+
+        self.header = c_md_orderbook_new(book_size, MD_DEFAULT_ALLOCATOR)
+        if not self.header:
+            raise MemoryError('Failed to allocate memory for OrderBook')
+
+        self.header.direction = direction
+        self.header.size = 0
+        self.header.sorted = is_sorted
+
+        self.owner = True
 
         # If prices, volumes, or n_orders are provided, populate them
         if price is None and self.volume is None:
+            self.header.sorted = True
             return
 
-        n_entries = len(price)
-        assert n_entries  == len(volume)
+        cdef size_t i
+        cdef size_t len_price = 0 if price is None else len(price)
+        cdef size_t len_volume = 0 if volume is None else len(volume)
+        cdef size_t len_n_orders = 0 if n_orders is None else len(n_orders)
+        cdef md_orderbook_entry* entry
 
-        if n_orders is None:
-            for i in range(min(n_entries, BOOK_SIZE)):
-                self._data.entries[i].price = price[i]
-                self._data.entries[i].volume = volume[i]
-                self._data.entries[i].n_orders = 1
-        else:
-            assert n_entries == len(n_orders)
-            for i in range(min(n_entries, BOOK_SIZE)):
-                self._data.entries[i].price = price[i]
-                self._data.entries[i].volume = volume[i]
-                self._data.entries[i].n_orders = n_orders[i]
+        for i in range(self.header.capacity):
+            entry = self.header.entries + i
+
+            # Update price if available
+            if i < len_price:
+                entry.price = price[i]
+                entry.n_orders = 1
+            else:
+                entry.price = NAN
+
+            # Update volume if available
+            if i < len_volume:
+                entry.volume = volume[i]
+                entry.n_orders = 1
+            else:
+                entry.volume = NAN
+
+            # Update n_orders if available
+            if i < len_n_orders:
+                entry.n_orders = n_orders[i]
+            else:
+                entry.n_orders = 0
+
+            if entry.n_orders:
+                self.header.size += 1
 
         self.c_sort()
 
     def __dealloc__(self):
-        """
-        Free allocated memory if this instance owns it.
-        """
-        if self._data is not NULL and self._owner:
-            PyMem_Free(self._data)
-            self._data = NULL
+        if not self.owner:
+            return
+
+        if self.header:
+            c_md_orderbook_free(self.header)
 
     def __getbuffer__(self, Py_buffer *view, int flags):
         # Fill in the Py_buffer structure
-        view.buf = <void*> self._data.entries
+        view.buf = <void*> self.header.entries
         view.obj = self
-        view.len = BOOK_SIZE * sizeof(_OrderBookEntry)
-        view.readonly = 0  # Make the buffer writable
-        view.itemsize = sizeof(double)  # Each field (price, volume, n_orders) is a double
-        view.format = NULL  # 'd' for double
-        view.ndim = 2  # 2D buffer
+        view.len = self.header.capacity * sizeof(md_orderbook_entry)
+        view.readonly = 0
+        view.itemsize = sizeof(double)
+        view.format = NULL
+        view.ndim = 2
 
         # Allocate memory for shape and strides
-        view.shape = <Py_ssize_t*> PyMem_Malloc(2 * sizeof(Py_ssize_t))
-        view.strides = <Py_ssize_t*> PyMem_Malloc(2 * sizeof(Py_ssize_t))
+        view.shape = <Py_ssize_t*> calloc(2, sizeof(Py_ssize_t))
+        view.strides = <Py_ssize_t*> calloc(2, sizeof(Py_ssize_t))
 
         if view.shape == NULL or view.strides == NULL:
-            # PyMem_Free(view.shape)
-            # PyMem_Free(view.strides)
+            if view.shape:
+                free(view.shape)
+            if view.strides:
+                free(view.strides)
             raise MemoryError("Failed to allocate memory for shape and strides")
 
         # Set shape and strides
-        view.shape[0] = BOOK_SIZE  # Number of entries
+        view.shape[0] = self.header.capacity  # Number of entries
         view.shape[1] = 3  # Each entry has 3 fields (price, volume, n_orders)
 
-        view.strides[0] = sizeof(_OrderBookEntry)  # Stride between entries
+        view.strides[0] = sizeof(md_orderbook_entry)  # Stride between entries
         view.strides[1] = sizeof(double)  # Stride between fields within an entry
 
         view.suboffsets = NULL
         view.internal = NULL
 
     def __releasebuffer__(self, Py_buffer *view):
-        # Free allocated memory for shape and strides
-        if view.shape != NULL:
-            PyMem_Free(view.shape)
+        if view.shape:
+            free(view.shape)
             view.shape = NULL
-        if view.strides != NULL:
-            PyMem_Free(view.strides)
+        if view.strides:
+            free(view.strides)
             view.strides = NULL
 
-    def __iter__(self):
-        self.c_sort()
-        self._iter_index = 0
-        return self
-
-    def __next__(self) -> tuple[float, float, int]:
-        while self._iter_index < BOOK_SIZE:
-            entry = self._data.entries[self._iter_index]
-            self._iter_index += 1
-            if entry.n_orders:
-                return entry.price, entry.volume, entry.n_orders
-        raise StopIteration
-
     cdef void c_sort(self):
-        if self.sorted:
-            return  # Skip sorting if already sorted
+        if not self.header:
+            raise RuntimeError('Uninitialized OrderBook cannot be sorted.')
 
-        if self.side == Side.SIDE_UNKNOWN:
-            return  # No way to know the sorting orders
+        cdef int ret_code = c_md_orderbook_sort(self.header)
 
-        if self.side == Side.SIDE_BID:
-            qsort(self._data.entries, BOOK_SIZE, sizeof(_OrderBookEntry), compare_entries_bid)
-        elif self.side == Side.SIDE_ASK:
-            qsort(self._data.entries, BOOK_SIZE, sizeof(_OrderBookEntry), compare_entries_ask)
-        else:
-            raise ValueError(f'Invalid TransactionSide {self.side}.')
-
-        self.sorted = True
+        if ret_code != md_ret_code.MD_OK:
+            raise RuntimeError(f'OrderBook sorting failed with error code {ret_code}.')
 
     cdef double c_loc_volume(self, double p0, double p1):
         self.c_sort()
 
-        cdef double volume = 0.
+        cdef double volume = 0.0
+        cdef md_orderbook_entry* entry
+        cdef size_t i
 
-        for i in range(BOOK_SIZE):
-            if not self._data.entries[i].n_orders:
+        for i in range(self.header.size):
+            entry = self.header.entries + i
+            if not entry.n_orders:
                 break
 
-            if p0 <= self._data.entries[i].price < p1:
-                volume += self._data.entries[i].volume
+            if p0 <= entry.price < p1:
+                volume += entry.volume
 
         return volume
 
     cdef bytes c_to_bytes(self):
-        """
-        Convert the transaction data to bytes.
-        """
-        if self._data == NULL:
+        if not self.header:
             raise ValueError("Cannot convert uninitialized data to bytes")
-
-        return PyBytes_FromStringAndSize(<char*>self._data, sizeof(_OrderBookBuffer))
+        cdef size_t buffer_size = sizeof(md_orderbook) + self.header.capacity * sizeof(md_orderbook_entry);
+        return PyBytes_FromStringAndSize(<char*> self.header, buffer_size)
 
     @staticmethod
-    cdef OrderBook c_from_bytes(bytes data, uint8_t side = Side.SIDE_UNKNOWN):
-        """
-        Create a new instance from bytes.
-        Creates a copy of the data, so the instance owns the memory.
-        """
+    cdef OrderBook c_from_bytes(const char* data):
         cdef OrderBook instance = OrderBook.__new__(OrderBook)
-        cdef const char* data_ptr = <const char*>data
+        cdef const md_orderbook* borrowed = <const md_orderbook*> data
+        cdef size_t book_size = borrowed.capacity
+        cdef size_t buffer_size = sizeof(md_orderbook) + borrowed.capacity * sizeof(md_orderbook_entry);
 
-        instance._owner = True
-        instance._data = <_OrderBookBuffer*> PyMem_Malloc(sizeof(_OrderBookBuffer))
+        cdef md_orderbook* header = c_md_orderbook_new(book_size, MD_DEFAULT_ALLOCATOR)
+        if not header:
+            raise MemoryError('Failed to allocate memory for OrderBook')
 
-        if instance._data == NULL:
-            raise MemoryError("Failed to allocate memory for TransactionData")
+        memcpy(<void*> header, <void*> borrowed, buffer_size)
 
-        memcpy(instance._data, data_ptr, sizeof(_OrderBookBuffer))
-
-        if side is not None:
-            instance.side = side
-
+        instance.header = header
+        instance.owner = True
         return instance
 
-    def at_price(self, price: float) -> tuple[float, float, float]:
-        for i in range(BOOK_SIZE):
-            if self._data.entries[i].price == price and self._data.entries[i].n_orders:
-                return self._data.entries[i].price, self._data.entries[i].volume, self._data.entries[i].n_orders
+    # === Python Interfaces ===
+
+    def __repr__(self):
+        if not self.header:
+            return f'<{self.__class__.__name__}>(Uninitialized)'
+        cdef str orderbook_type = 'bid' if self.header.direction == md_direction.DIRECTION_LONG \
+            else 'ask' if self.header.direction == md_direction.DIRECTION_SHORT \
+            else 'unknown'
+        return f'<{self.__class__.__name__} {orderbook_type}>(size={self.header.size}, capacity={self.header.capacity}, sorted={self.header.sorted})'
+
+    def __len__(self):
+        return self.header.size
+
+    def __iter__(self):
+        self.c_sort()
+        self.iter_index = 0
+        return self
+
+    def __next__(self):
+        cdef md_orderbook_entry* entry
+        while self.iter_index < self.header.size:
+            entry = self.header.entries + self.iter_index
+            self.iter_index += 1
+            return entry.price, entry.volume, entry.n_orders
+        raise StopIteration
+
+    def __getitem__(self, ssize_t idx):
+        self.c_sort()
+        cdef ssize_t ttl = self.header.size
+        if idx >= ttl or idx < -ttl:
+            raise IndexError('OrderBook index out of range')
+        if idx < 0:
+            idx += ttl
+        cdef md_orderbook_entry* entry = self.header.entries + idx
+        return entry.price, entry.volume, entry.n_orders
+
+    cpdef tuple at_price(self, double price):
+        cdef size_t n = self.header.size
+        cdef size_t i
+        cdef md_orderbook_entry* entry
+
+        for i in range(n):
+            entry = self.header.entries + i
+            if entry.price == price:
+                return entry.price, entry.volume, entry.n_orders
 
         raise IndexError(f'price {price} not found!')
 
-    def at_level(self, index: int) -> tuple[float, float, float]:
+    cpdef tuple at_level(self, ssize_t idx):
         self.c_sort()
+        cdef ssize_t ttl = self.header.size
 
-        if 0 <= index < BOOK_SIZE and self._data.entries[index].n_orders:
-            return self._data.entries[index].price, self._data.entries[index].volume, self._data.entries[index].n_orders
+        if idx >= ttl or idx < -ttl:
+            raise IndexError('OrderBook index out of range')
+        if idx < 0:
+            idx += ttl
 
-        raise IndexError(f'level {index} not found!')
+        cdef md_orderbook_entry* entry = self.header.entries + idx
+        return entry.price, entry.volume, entry.n_orders
 
-    # Method to create OrderBook instance from an existing buffer (without owning the data)
     @classmethod
-    def from_buffer(cls, const unsigned char[:] buffer, side: int | object = None):
+    def from_buffer(cls, const unsigned char[:] buffer):
         cdef OrderBook instance = cls.__new__(cls)
-
-        # Point to the buffer data
-        instance._data = <_OrderBookBuffer*> &buffer[0]
-        instance._owner = False
-
-        if side is not None:
-            instance.side = side
-
+        instance.header = <md_orderbook*> &buffer[0]
+        instance.owner = False
         return instance
 
-    def loc_volume(self, double p0, double p1) -> float:
-        return self.c_loc_volume(p0=p0, p1=p1)
+    def loc_volume(self, double p0, double p1):
+        return self.c_loc_volume(p0, p1)
 
     def sort(self):
         return self.c_sort()
 
-    def to_bytes(self) -> bytes:
+    def to_bytes(self):
         return self.c_to_bytes()
 
     @classmethod
-    def from_bytes(bytes data, uint8_t side = Side.SIDE_UNKNOWN):
-        return OrderBook.c_from_bytes(data=data, side=side)
+    def from_bytes(cls, bytes data):
+        return OrderBook.c_from_bytes(<const char*> data)
 
-    # Numpy conversion
     def to_numpy(self):
         import numpy as np
         dtype = [('price', np.float64), ('volume', np.float64), ('n_orders', np.uint64)]
-        arr = np.ndarray(shape=(BOOK_SIZE,), dtype=dtype, buffer=self)
+        arr = np.ndarray(
+            shape=(self.header.capacity,),
+            dtype=dtype,
+            buffer=self
+        )
         return arr
 
-    @property
-    def price(self):
-        return [self._data.entries[i].price for i in range(BOOK_SIZE) if self._data.entries[i].n_orders]
+    property price:
+        def __get__(self):
+            if self.header.size == 0:
+                return None
+            elif self.header.size == self.header.capacity:
+                return self.to_numpy()['price']
+            else:
+                return self.to_numpy()['price'][:self.header.size]
 
-    @property
-    def volume(self):
-        return [self._data.entries[i].volume for i in range(BOOK_SIZE) if self._data.entries[i].n_orders]
+    property volume:
+        def __get__(self):
+            if self.header.size == 0:
+                return None
+            elif self.header.size == self.header.capacity:
+                return self.to_numpy()['volume']
+            else:
+                return self.to_numpy()['volume'][:self.header.size]
 
-    @property
-    def n_orders(self):
-        return [self._data.entries[i].n_orders for i in range(BOOK_SIZE) if self._data.entries[i].n_orders]
+    property n_orders:
+        def __get__(self):
+            if self.header.size == 0:
+                return None
+            elif self.header.size == self.header.capacity:
+                return self.to_numpy()['n_orders']
+            else:
+                return self.to_numpy()['n_orders'][:self.header.size]
+
+    property sorted:
+        def __get__(self):
+            return self.header.sorted
+
+    property side:
+        def __get__(self):
+            return TransactionDirection(self.header.direction) | TransactionOffset.OFFSET_ORDER
+
+    property direction:
+        def __get__(self):
+            return TransactionDirection(self.header.direction)
+
+    property size:
+        def __get__(self):
+            return self.header.size
+
+    property capacity:
+        def __get__(self):
+            return self.header.capacity
 
 
-cdef class TickData:
-    def __cinit__(self):
-        self._data_ptr = <_MarketDataBuffer*> &self._data
-        self._data_addr = <uintptr_t> self._data_ptr
-
+cdef class TickData(MarketData):
     def __init__(
             self,
+            *,
             str ticker,
             double timestamp,
             double last_price,
@@ -402,81 +434,69 @@ cdef class TickData:
             double weighted_ask_price=NAN,
             **kwargs
     ):
-        # Initialize MarketData base
-        cdef Py_ssize_t ticker_len
-        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
-        memcpy(<void*> &self._data.lite.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
-        self._data.lite.timestamp = timestamp
-        self._data.lite.dtype = DataType.DTYPE_TICK
-        # if kwargs: self.__dict__.update(kwargs)
+        self.header = c_init_buffer(
+            md_data_type.DTYPE_TICK,
+            PyUnicode_AsUTF8(ticker),
+            timestamp
+        )
 
         # Set TickDataLite fields
-        self._data.lite.last_price = last_price
-        self._data.lite.bid_price = kwargs.get('bid_price_1', NAN)
-        self._data.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
-        self._data.lite.ask_price = kwargs.get('ask_price_1', NAN)
-        self._data.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
-        self._data.lite.open_price = open_price
-        self._data.lite.prev_close = prev_close
-        self._data.lite.total_traded_volume = total_traded_volume
-        self._data.lite.total_traded_notional = total_traded_notional
-        self._data.lite.total_trade_count = total_trade_count
-        self._data.total_bid_volume = total_bid_volume
-        self._data.total_ask_volume = total_ask_volume
-        self._data.weighted_bid_price = weighted_bid_price
-        self._data.weighted_ask_price = weighted_ask_price
-        # Initialize bid and ask books
-        self.c_init_order_book()
+        self.header.tick_data_full.lite.last_price = last_price
+        self.header.tick_data_full.lite.bid_price = kwargs.get('bid_price_1', NAN)
+        self.header.tick_data_full.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
+        self.header.tick_data_full.lite.ask_price = kwargs.get('ask_price_1', NAN)
+        self.header.tick_data_full.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
+        self.header.tick_data_full.lite.open_price = open_price
+        self.header.tick_data_full.lite.prev_close = prev_close
+        self.header.tick_data_full.lite.total_traded_volume = total_traded_volume
+        self.header.tick_data_full.lite.total_traded_notional = total_traded_notional
+        self.header.tick_data_full.lite.total_trade_count = total_trade_count
+        self.header.tick_data_full.total_bid_volume = total_bid_volume
+        self.header.tick_data_full.total_ask_volume = total_ask_volume
+        self.header.tick_data_full.weighted_bid_price = weighted_bid_price
+        self.header.tick_data_full.weighted_ask_price = weighted_ask_price
 
-        # Parse kwargs to initialize the order books
+        self.bid = OrderBook.__new__(OrderBook, direction=md_direction.DIRECTION_LONG, is_sorted=False)
+        self.ask = OrderBook.__new__(OrderBook, direction=md_direction.DIRECTION_SHORT, is_sorted=False)
+        self.header.tick_data_full.bid = self.bid.header
+        self.header.tick_data_full.ask = self.ask.header
+
+        self.data_addr = <uintptr_t> self.header
+        self.owner = True
+
         if kwargs:
             self.parse(kwargs)
 
     def __repr__(self):
-        return f'<TickData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
-
-    def __reduce__(self):
-        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
-
-    def __setstate__(self, state):
-        if state:
-            self.__dict__.update(state)
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
+        return f'<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, bid={self.bid_price}, ask={self.ask_price})'
 
     def __copy__(self):
-        cdef TickData instance = TickData.__new__(TickData)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TickDataBuffer))
-        instance.c_init_order_book()
+        cdef TickData instance = super().__copy__()
+        cdef md_orderbook* bid_header = c_md_orderbook_new(self.header.tick_data_full.bid.capacity, MD_DEFAULT_ALLOCATOR)
+        cdef md_orderbook* ask_header = c_md_orderbook_new(self.header.tick_data_full.ask.capacity, MD_DEFAULT_ALLOCATOR)
+
+        memcpy(<void*> bid_header, <void*> self.header.tick_data_full.bid, sizeof(md_orderbook) + self.header.tick_data_full.bid.capacity * sizeof(md_orderbook_entry))
+        memcpy(<void*> ask_header, <void*> self.header.tick_data_full.ask, sizeof(md_orderbook) + self.header.tick_data_full.ask.capacity * sizeof(md_orderbook_entry))
+
+        instance.header.tick_data_full.bid = bid_header
+        instance.header.tick_data_full.ask = ask_header
+
+        instance.bid.header = bid_header
+        instance.ask.header = ask_header
         return instance
 
-    cdef c_init_order_book(self):
-        # Initialize bid and ask books
-        self._bid_book = OrderBook.__new__(OrderBook)
-        self._bid_book._data = &self._data.bid
-        self._bid_book.side = Side.SIDE_BID
-
-        self._ask_book = OrderBook.__new__(OrderBook)
-        self._ask_book._data = &self._data.ask
-        self._ask_book.side = Side.SIDE_ASK
-
     cpdef void parse(self, dict kwargs):
-        """
-        Parse keyword arguments to initialize bid and ask books.
-
-        Parameters:
-        -----------
-        kwargs : dict
-            Keyword arguments in the format bid_price_1=10, ask_volume_3=10.23, bid_orders_3=16
-        """
-        cdef int level
-        cdef str key_type, book_type
+        cdef list parts
+        cdef str key
         cdef object value
-        cdef bint[BOOK_SIZE] bid_init
-        cdef bint[BOOK_SIZE] ask_init
+        cdef str key_type, book_type
+        cdef size_t capacity
+        cdef size_t level
+        cdef md_orderbook* orderbook
+        cdef md_orderbook_entry* entry
 
-        memset(&bid_init[0], 0, BOOK_SIZE * sizeof(bint))
-        memset(&ask_init[0], 0, BOOK_SIZE * sizeof(bint))
-
-        # Process each keyword argument
         for key, value in kwargs.items():
             parts = key.split('_')
             if len(parts) != 3:
@@ -484,195 +504,151 @@ cdef class TickData:
                 continue
 
             book_type = parts[0]  # 'bid' or 'ask'
-            key_type = parts[1]   # 'price', 'volume', or 'orders'
+            key_type = parts[1]  # 'price', 'volume', or 'orders'
 
             # Check if there's a level number
             if not parts[2].isdigit():
                 self.__dict__[key] = value
                 continue
 
-            level = int(parts[2]) - 1  # Convert to 0-based index
+            # Convert to 0-based index
+            # if level part is provided 0, it will be converted to SIZE_MAX, which will out of range and be saved by __dict__
+            level = int(parts[2]) - 1
 
-            # Skip if level is out of range
-            if level < 0 or level >= BOOK_SIZE:
+            if book_type == 'bid':
+                orderbook = self.header.tick_data_full.bid
+            elif book_type == 'ask':
+                orderbook = self.header.tick_data_full.ask
+            else:
                 self.__dict__[key] = value
                 continue
 
-            # Store in appropriate book data dictionary
-            if book_type == 'bid':
-                if key_type == 'price':
-                    self._data.bid.entries[level].price = value
-                elif key_type == 'volume':
-                    self._data.bid.entries[level].volume = value
-                elif key_type == 'orders':
-                    self._data.bid.entries[level].n_orders = int(value)
-                else:
-                    self.__dict__[key] = value
-                    continue
-                bid_init[level] = True
-            elif book_type == 'ask':
-                if key_type == 'price':
-                    self._data.ask.entries[level].price = value
-                elif key_type == 'volume':
-                    self._data.ask.entries[level].volume = value
-                elif key_type == 'orders':
-                    self._data.ask.entries[level].n_orders = int(value)
-                else:
-                    self.__dict__[key] = value
-                    continue
-                ask_init[level] = True
+            # Skip if level is out of range
+            capacity = orderbook.capacity
+            if level < 0 or level >= capacity:
+                self.__dict__[key] = value
+                continue
+
+            entry = orderbook.entries + level
+            if key_type == 'price':
+                entry.price = value
+            elif key_type == 'volume':
+                entry.volume = value
+            elif key_type == 'orders' or key_type == 'n_orders':
+                entry.n_orders = int(value)
             else:
                 self.__dict__[key] = value
+                continue
 
-        # Validate and fix the books
-        for i in range(BOOK_SIZE):
-            if bid_init[i] and not self._data.bid.entries[i].n_orders:
-                self._data.bid.entries[i].n_orders = 1
+            if level >= orderbook.size:
+                orderbook.size = level + 1
 
-            if ask_init[i] and not self._data.ask.entries[i].n_orders:
-                self._data.ask.entries[i].n_orders = 1
+            if not entry.n_orders:
+                entry.n_orders = 1
 
         # Sort the books
-        self._bid_book.sort()
-        self._ask_book.sort()
+        cdef int ret_code
 
-    @classmethod
-    def buffer_size(cls):
-        return sizeof(_TickDataBuffer)
+        ret_code = c_md_orderbook_sort(self.header.tick_data_full.bid)
+        if ret_code != md_ret_code.MD_OK:
+            raise RuntimeError(f'OrderBook.bid sorting failed with error code {ret_code}.')
 
-    cdef bytes c_to_bytes(self):
-        return PyBytes_FromStringAndSize(<char*> &self._data, sizeof(self._data))
-
-    @staticmethod
-    cdef TickData c_from_bytes(bytes data):
-        cdef TickData instance = TickData.__new__(TickData)
-        memcpy(<void*> &instance._data, <const char*> data, sizeof(_TickDataBuffer))
-        instance.c_init_order_book()
-        return instance
-
-    def to_bytes(self) -> bytes:
-        return self.c_to_bytes()
-
-    @classmethod
-    def from_bytes(cls, bytes data):
-        return TickData.c_from_bytes(data)
+        ret_code = c_md_orderbook_sort(self.header.tick_data_full.ask)
+        if ret_code != md_ret_code.MD_OK:
+            raise RuntimeError(f'OrderBook.ask sorting failed with error code {ret_code}.')
 
     cpdef TickDataLite lite(self):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        memcpy(<void*> &instance._data, <const char*> &self._data.lite, sizeof(_TickDataLiteBuffer))
+        instance.header = <md_variant*> &self.header.tick_data_full.lite
+        instance.owner = False
         return instance
 
-    @property
-    def ticker(self) -> str:
-        return PyUnicode_FromString(&self._data.lite.ticker[0])
+    property best_bid_price:
+        def __get__(self):
+            return self.header.tick_data_full.bid.entries.price
 
-    @property
-    def timestamp(self) -> float:
-        return self._data.lite.timestamp
+    property best_ask_price:
+        def __get__(self):
+            return self.header.tick_data_full.ask.entries.price
 
-    @property
-    def dtype(self) -> int:
-        return self._data.lite.dtype
+    property best_bid_volume:
+        def __get__(self):
+            return self.header.tick_data_full.bid.entries.volume
 
-    @property
-    def topic(self) -> str:
-        cdef str ticker_str = PyUnicode_FromString(&self._data.lite.ticker[0])
-        return f'{ticker_str}.{self.__class__.__name__}'
+    property best_ask_volume:
+        def __get__(self):
+            return self.header.tick_data_full.ask.entries.volume
 
-    @property
-    def market_time(self) :
-        return _MarketDataVirtualBase.c_to_dt(self._data.lite.timestamp)
+    property last_price:
+        def __get__(self):
+            return self.header.tick_data_full.lite.last_price
 
-    @property
-    def bid(self) -> OrderBook:
-        """Get the bid book."""
-        return self._bid_book
+    property bid_price:
+        def __get__(self):
+            return self.header.tick_data_full.lite.bid_price
 
-    @property
-    def ask(self) -> OrderBook:
-        """Get the ask book."""
-        return self._ask_book
+    property bid_volume:
+        def __get__(self):
+            return self.header.tick_data_full.lite.bid_volume
 
-    @property
-    def best_ask_price(self) -> float:
-        return self.ask.price[0]
+    property ask_price:
+        def __get__(self):
+            return self.header.tick_data_full.lite.ask_price
 
-    @property
-    def best_bid_price(self) -> float:
-        return self.bid.price[0]
+    property ask_volume:
+        def __get__(self):
+            return self.header.tick_data_full.lite.ask_volume
 
-    @property
-    def best_ask_volume(self) -> float:
-        return self.ask.volume[0]
+    property open_price:
+        def __get__(self):
+            return self.header.tick_data_full.lite.open_price
 
-    @property
-    def best_bid_volume(self) -> float:
-        return self.bid.volume[0]
+    property prev_close:
+        def __get__(self):
+            return self.header.tick_data_full.lite.prev_close
 
-    @property
-    def last_price(self):
-        return self._data.lite.last_price
+    property total_traded_volume:
+        def __get__(self):
+            return self.header.tick_data_full.lite.total_traded_volume
 
-    @property
-    def bid_price(self):
-        return self._data.lite.bid_price
+    property total_traded_notional:
+        def __get__(self):
+            return self.header.tick_data_full.lite.total_traded_notional
 
-    @property
-    def bid_volume(self):
-        return self._data.lite.bid_volume
+    property total_trade_count:
+        def __get__(self):
+            return self.header.tick_data_full.lite.total_trade_count
 
-    @property
-    def ask_price(self):
-        return self._data.lite.ask_price
+    property total_bid_volume:
+        def __get__(self):
+            return self.header.tick_data_full.total_bid_volume
 
-    @property
-    def ask_volume(self):
-        return self._data.lite.ask_volume
+    property total_ask_volume:
+        def __get__(self):
+            return self.header.tick_data_full.total_ask_volume
 
-    @property
-    def open_price(self):
-        return self._data.lite.open_price
+    property weighted_bid_price:
+        def __get__(self):
+            return self.header.tick_data_full.weighted_bid_price
 
-    @property
-    def prev_close(self):
-        return self._data.lite.prev_close
+    property weighted_ask_price:
+        def __get__(self):
+            return self.header.tick_data_full.weighted_ask_price
 
-    @property
-    def total_traded_volume(self):
-        return self._data.lite.total_traded_volume
+    property mid_price:
+        def __get__(self):
+            cdef double bid = self.header.tick_data_full.lite.bid_price
+            cdef double ask = self.header.tick_data_full.lite.ask_price
+            return (bid + ask) / 2.0
 
-    @property
-    def total_traded_notional(self):
-        return self._data.lite.total_traded_notional
+    property spread:
+        def __get__(self):
+            cdef double bid = self.header.tick_data_full.lite.bid_price
+            cdef double ask = self.header.tick_data_full.lite.ask_price
+            return ask - bid
 
-    @property
-    def total_trade_count(self):
-        return self._data.lite.total_trade_count
 
-    @property
-    def total_bid_volume(self):
-        return self._data.total_bid_volume
+from . cimport c_market_data
 
-    @property
-    def total_ask_volume(self):
-        return self._data.total_ask_volume
-
-    @property
-    def weighted_bid_price(self):
-        return self._data.weighted_bid_price
-
-    @property
-    def weighted_ask_price(self):
-        return self._data.weighted_ask_price
-
-    @property
-    def mid_price(self):
-        return (self._data.lite.bid_price + self._data.lite.ask_price) / 2.0
-
-    @property
-    def spread(self):
-        return self._data.lite.ask_price - self._data.lite.bid_price
-
-    @property
-    def market_price(self):
-        return self.last_price
+c_market_data.tick_lite_from_header = tick_lite_from_header
+c_market_data.tick_from_header = tick_from_header

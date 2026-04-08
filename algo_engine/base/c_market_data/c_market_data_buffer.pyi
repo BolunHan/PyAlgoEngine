@@ -1,406 +1,351 @@
-from typing import Any, Iterator, Union
+from collections.abc import Iterator
+from typing import Optional, TypeVar, Generic
 
-from .c_candlestick import BarData
-from .c_market_data import MarketData, InternalData
-from .c_tick import TickData, TickDataLite
-from .c_transaction import TransactionData, OrderData
+from .c_market_data import MarketData
 
-MarketDataType = Union[
-    InternalData,
-    TransactionData,
-    OrderData,
-    TickData,
-    TickDataLite,
-    BarData
-]
+MD = TypeVar("MD", bound=MarketData)
 
 
-class MarketDataBuffer:
-    """
-    A memory-efficient buffer for storing and replaying market data.
+class InvalidBufferError(Exception):
+    pass
 
-    Uses a raw memory buffer divided into three parts:
-    1. Header section for metadata
-    2. Pointer array storing offsets to actual data
-    3. Data array storing the market data instances
 
-    The buffer can be sorted for temporal iteration with minimal overhead
-    by only rearranging the pointer array.
-    """
+class NotInSharedMemoryError(Exception):
+    pass
 
-    def __init__(
-            self,
-            buffer: Any,  # Accepts bytes, bytearray or shared memory
-            skip_initialize: bool = False,
-            capacity: int = 0
-    ) -> None:
-        """
-        Initialize the market data buffer.
 
-        Args:
-            buffer: Raw memory buffer to use for storage
-            skip_initialize: If True, won't clear existing buffer contents
-            capacity: Maximum number of items to store (0 = auto-calculate)
-        """
+class BufferFull(Exception):
+    pass
+
+
+class BufferEmpty(Exception):
+    pass
+
+
+class PipeTimeoutError(Exception):
+    pass
+
+
+class BufferCorruptedError(Exception):
+    pass
+
+
+class MarketDataBufferCache:
+    """Mutable staging area for collecting `MarketData` objects before flushing them into a shared buffer."""
+    parent: MarketDataBuffer
+    capacity: int
+    size: int
+
+    def __init__(self, capacity: int, parent: object) -> None:
+        """Allocate internal arrays large enough for `capacity` entries and remember the originating buffer."""
         ...
 
-    def __iter__(self) -> Iterator[MarketDataType]:
-        """
-        Returns an iterator that yields market data in temporal order.
-
-        Resets the iteration index and sorts the pointer array by timestamp.
-        """
-        ...
-
-    def __getitem__(self, idx: int) -> MarketDataType:
-        """
-        Get market data by index position.
-
-        Args:
-            idx: Index in the pointer array (0-based)
-
-        Returns:
-            The market data instance at the given index
-        """
+    def __iter__(self) -> Iterator[MD]:
+        """Yield the cached `MarketData` entries in insertion order."""
         ...
 
     def __len__(self) -> int:
-        """Returns the number of market data items currently stored."""
+        """Return the number of cached entries currently stored."""
         ...
 
-    def __next__(self) -> MarketDataType:
-        """Get the next market data item during iteration."""
+    def __getitem__(self, idx: int) -> MD:
+        """Return the `MarketData` at `idx`, supporting negative indices like a list."""
         ...
 
-    @classmethod
-    def buffer_size(
-            cls,
-            n_internal_data: int = 0,
-            n_transaction_data: int = 0,
-            n_order_data: int = 0,
-            n_tick_data_lite: int = 0,
-            n_tick_data: int = 0,
-            n_bar_data: int = 0
-    ) -> int:
-        """
-        Calculate the required buffer size for given data counts.
+    def __enter__(self) -> MarketDataBufferCache:
+        """Reset the cache so it can be used inside a context manager block."""
+        ...
 
-        Args:
-            n_*_data: Number of each market data type to accommodate
+    def __exit__(self, exc_type, exc_value, traceback) -> Optional[bool]:
+        """Flush cached entries back to the parent `MarketDataBuffer` before clearing the cache."""
+        ...
 
-        Returns:
-            Total required buffer size in bytes
+    def put(self, market_data: MD) -> None:
+        """Append a `MarketData` object to the cache, resizing the backing arrays if required."""
+        ...
+
+    def get(self, idx: int) -> MD:
+        """Retrieve the cached `MarketData` at `idx` without removing it."""
+        ...
+
+    def clear(self) -> None:
+        """Drop all cached references and reset the cache size back to zero."""
+        ...
+
+
+class MarketDataBuffer(Generic[MD]):
+    """
+    Resizable block buffer that stores serialized `MarketData` and exposes Python-friendly accessors.
+
+    Supports a staging area for bucketed writes via `MarketDataBufferCache` to minimize
+    the number of reallocations needed when inserting many entries.
+
+    e.g.
+
+    >>> buffer = MarketDataBuffer(ptr_cap=1024, data_cap=65536)
+    >>> market_data_list = [MarketData(...), MarketData(...), ...]  # some list of MarketData
+    >>> with buffer.cache() as cache:
+    ...     for md in market_data_list:
+    ...         cache.put(md)
+    >>> buffer.sort()
+    """
+
+    def __init__(self, ptr_cap: int, data_cap: int) -> None:
+        """Allocate an new empty block buffer sized for `ptr_cap` pointers and `data_cap` bytes."""
+        ...
+
+    def __iter__(self) -> MarketDataBuffer:
+        """Return the buffer itself after sorting so it can be iterated in chronological order."""
+        ...
+
+    def __getitem__(self, idx: int) -> MD:
+        """Return the `MarketData` stored at `idx`, supporting negative indexing."""
+        ...
+
+    def __len__(self) -> int:
+        """Return how many `MarketData` entries are currently stored."""
+        ...
+
+    def __next__(self) -> MD:
+        """Produce the next `MarketData` in the sorted buffer, raising `StopIteration` at the end."""
+        ...
+
+    def cache(self) -> MarketDataBufferCache:
+        """Create a `MarketDataBufferCache` bound to this buffer for batch writes."""
+        ...
+
+    def put(self, market_data: MD) -> None:
+        """Serialize `market_data` into the buffer, expanding capacity as needed.
+
+        Raises:
+            ValueError: If arguments are invalid.
+            BufferFull: If the buffer lacks capacity for the serialized payload.
         """
         ...
 
-    def put(self, market_data: MarketData) -> None:
-        """
-        Store a market data instance in the buffer.
-
-        Makes a deep copy of the data into the buffer.
-        Any subsequent modifications to the original won't affect the stored copy.
-        """
-        ...
-
-    def update(self, dtype: int, **kwargs: Any) -> None:
-        """
-        Directly update buffer with market data attributes.
-
-        Args:
-            dtype: Market data type (DataType enum value)
-            **kwargs: Constructor arguments for the market data type
-        """
+    def get(self, idx: int) -> MD:
+        """Fetch the `MarketData` at `idx` without mutating the buffer."""
         ...
 
     def sort(self) -> None:
-        """Sort market data by timestamp."""
+        """Sort buffered entries according to their timestamp sequence.
+
+        Raises:
+            InvalidBufferError: If the underlying buffer header is invalid.
+        """
         ...
 
     def to_bytes(self) -> bytes:
-        """Serialize the buffer contents to bytes."""
+        """Serialize the buffer into a bytes object that can be copied or persisted."""
         ...
 
     @classmethod
-    def from_bytes(cls, data: bytes, buffer: Any = None) -> MarketDataBuffer:
-        """
-        Create buffer from serialized data.
-
-        Args:
-            data: Serialized buffer data
-            buffer: Optional target buffer to copy into
-
-        Returns:
-            New MarketDataBuffer instance
-        """
-        ...
-
-    @classmethod
-    def from_buffer(cls, buffer: Any) -> MarketDataBuffer:
-        """
-        Create buffer wrapper around existing memory.
-
-        Args:
-            buffer: Existing buffer (bytes, bytearray or shared memory)
-
-        Returns:
-            New MarketDataBuffer instance sharing the same memory
-        """
+    def from_bytes(cls, data: bytes) -> MarketDataBuffer:
+        """Create a new `MarketDataBuffer` by copying the serialized state contained in `data`."""
         ...
 
     @property
     def ptr_capacity(self) -> int:
-        """Maximum number of pointers/items that can be stored."""
+        """Number of pointer slots currently allocated for the buffer."""
         ...
 
     @property
     def ptr_tail(self) -> int:
-        """Next write position in the pointer array."""
+        """Current pointer tail offset, equivalent to the number of stored entries."""
         ...
 
     @property
     def data_capacity(self) -> int:
-        """Maximum data storage size in bytes."""
+        """Number of data bytes currently reserved in the buffer."""
         ...
 
     @property
     def data_tail(self) -> int:
-        """Next write position in the data array."""
+        """Current data tail offset, representing how many bytes hold serialized payloads."""
         ...
 
 
 class MarketDataRingBuffer:
     """
-    FIFO ring buffer for streaming market data.
-
-    Optimized for low-latency producer/consumer scenarios with
-    blocking iteration support.
+    Fixed-capacity ring buffer that stores serialized `MarketData` and supports
+    low-latency producer/consumer workflows with optional blocking reads.
     """
+    iter_idx: int
 
-    def __init__(self, buffer: Any, capacity: int = 0) -> None:
-        """
-        Initialize the ring buffer.
+    def __init__(self, ptr_cap: int, data_cap: int) -> None:
+        """Allocate a ring buffer sized for `ptr_cap` pointers and `data_cap` bytes of payload storage."""
+        ...
 
-        Args:
-            buffer: Raw memory buffer to use
-            capacity: Maximum items to store (0 = auto-calculate)
-        """
+    def __iter__(self) -> MarketDataRingBuffer:
+        """Return the buffer itself so it can be iterated over the currently stored entries."""
+        ...
+
+    def __getitem__(self, idx: int) -> MarketData:
+        """Return the `MarketData` at `idx`, supporting Python-style negative indexing."""
         ...
 
     def __len__(self) -> int:
-        """Current number of items in the buffer."""
+        """Return the number of `MarketData` entries that can be iterated without blocking."""
         ...
 
-    def __call__(self, timeout: float = -1.0) -> Iterator[MarketDataType]:
-        """
-        Get a blocking iterator for the buffer.
+    def __next__(self) -> MarketData:
+        """Produce the next `MarketData` in the ring, raising `StopIteration` when exhausted."""
+        ...
+
+    def put(self, market_data: MarketData, block: bool = True, timeout: float = 0.0) -> None:
+        """Insert serialized market data into the ring buffer.
 
         Args:
-            timeout: Max seconds to wait for new data (-1 = infinite)
-
-        Yields:
-            Market data items as they arrive
+            market_data: The `MarketData` instance to serialize and append.
+            block: When True, block until space is available or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
 
         Raises:
-            TimeoutError: If timeout reached before data available
+            ValueError: If arguments are invalid.
+            BufferFull: If either the pointer array or backing byte buffer cannot
+                accommodate the serialized payload.
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
         """
         ...
 
-    def is_full(self) -> bool:
-        """Check if the buffer has reached capacity."""
+    def get(self, idx: int) -> MarketData:
+        """Return the item at `idx` without mutating the buffer.
+
+        Args:
+            idx: Zero-based index of the item to fetch. Negative indices are supported.
+
+        Returns:
+            MarketData: The `MarketData` entry stored at the requested index.
+
+        Raises:
+            IndexError: If `idx` falls outside the readable range.
+        """
         ...
 
+    def listen(self, block: bool = True, timeout: float = 0.0) -> MarketData:
+        """Wait for the next entry to become available.
+
+        Args:
+            block: When True, block until data arrives or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
+
+        Returns:
+            MarketData: The next available entry in chronological order.
+
+        Raises:
+            ValueError: If arguments are invalid.
+            BufferEmpty: If no data is available immediately (non-blocking) or before the timeout expires.
+            BufferCorruptedError: If the buffer reports a corrupted offset.
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
+        """
+        ...
+
+    @property
+    def ptr_capacity(self) -> int:
+        """Total pointer slots provisioned for the ring buffer."""
+        ...
+
+    @property
+    def ptr_head(self) -> int:
+        """Head pointer index indicating the next read position."""
+        ...
+
+    @property
+    def ptr_tail(self) -> int:
+        """Tail pointer index that advances with each successful write."""
+        ...
+
+    @property
+    def data_capacity(self) -> int:
+        """Total serialized byte capacity reserved for payload storage."""
+        ...
+
+    @property
+    def data_tail(self) -> int:
+        """Offset of the next free byte within the backing data buffer."""
+        ...
+
+    @property
     def is_empty(self) -> bool:
-        """Check if buffer contains no data."""
-        ...
-
-    def read(self, idx: int) -> bytes:
-        """
-        Get raw bytes for item at index.
-
-        Args:
-            idx: The index position of the pointer array
-
-        Returns:
-            Raw byte data
-        """
-        ...
-
-    def put(self, market_data: MarketData) -> None:
-        """Add market data to the buffer."""
-        ...
-
-    def get(self, idx: int) -> MarketDataType:
-        """
-        Get market data by index.
-
-        Args:
-            idx: The index position of the pointer array
-
-        Returns:
-            Market data instance
-        """
-        ...
-
-    def listen(
-            self,
-            block: bool = True,
-            timeout: float = -1.0
-    ) -> MarketDataType:
-        """
-        Wait for and return the next market data item.
-
-        Args:
-            block: Whether to wait for data if empty
-            timeout: Max seconds to wait (-1 = infinite)
-
-        Returns:
-            Next available market data
-
-        Raises:
-            TimeoutError: If timeout reached before data available
-        """
-        ...
-
-    def collect_info(self) -> dict[str, Any]:
-        """
-        Gather buffer statistics and diagnostics.
-
-        Returns:
-            Dictionary of buffer metrics and state information
-        """
+        """Return `True` when the ring buffer has no readable entries."""
         ...
 
 
 class MarketDataConcurrentBuffer:
-    """
-    Multiprocessing safe ring buffer for producer/consumer workflows.
+    """Concurrent multi-consumer buffer backed by shared memory.
 
-    Supports multiple worker processes consuming the same data stream,
-    with each item only being freed after all workers have consumed it.
-    Designed for use with shared memory (SharedMemory/RawArray).
+    Provides a simple API for multiple workers to consume `MarketData` entries
+    produced by a single writer. Writes can optionally block until space is
+    available, and reads can optionally block until data arrives.
+
+    Example:
+
+    >>> buf = MarketDataConcurrentBuffer(n_workers=2, capacity=1024)
+    >>> buf.put(MarketData(...))
+    >>> md = buf.listen(worker_id=0, block=True, timeout=1.0)
+    >>> md
     """
 
-    def __init__(
-            self,
-            buffer: Any,
-            n_workers: int,
-            dtype: int = 0,
-            capacity: int = 0
-    ) -> None:
-        """
-        Initialize concurrent buffer.
+    def __init__(self, n_workers: int, capacity: int) -> None:
+        """Create a concurrent buffer for `n_workers` with ring capacity `capacity`."""
+        ...
+
+    def put(self, market_data: MarketData, block: bool = True, timeout: float = 0.0) -> None:
+        """Append a `MarketData` to the buffer.
 
         Args:
-            buffer: Shared memory buffer
-            n_workers: Number of worker processes
-            dtype: Specific market data type to store (0 = any)
-            capacity: Maximum items to store (0 = auto-calculate)
+            market_data: The `MarketData` instance to append. If not already in shared memory, it will be COPIED into SHM.
+            block: When True, block until space becomes available or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
+
+        Raises:
+            ValueError: If arguments are invalid.
+            NotInSharedMemoryError: If the data is not SHM-backed. Python / Cython interface will not raise this error but c-API just might.
+            BufferFull: If the buffer is full and non-blocking mode is used.
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
         """
         ...
 
-    def __call__(
-            self,
-            worker_id: int,
-            timeout: float = -1.0
-    ) -> Iterator[MarketDataType]:
-        """
-        Get blocking iterator for a specific worker.
+    def listen(self, worker_id: int, block: bool = True, timeout: float = 0.0) -> MarketData:
+        """Fetch the next item for `worker_id`.
 
         Args:
-            worker_id: Unique worker identifier (0 <= id < n_workers)
-            timeout: Max seconds to wait for new data (-1 = infinite)
-
-        Yields:
-            Market data items for this worker
-        """
-        ...
-
-    def ptr_head(self, worker_id: int) -> int:
-        """
-        Get current read head position for a worker.
-
-        Args:
-            worker_id: Worker identifier
+            worker_id: The consumer slot to read from.
+            block: When True, block until data arrives or the timeout elapses.
+            timeout: Maximum number of seconds to wait when blocking. A value of 0 means wait indefinitely.
 
         Returns:
-            Current pointer array position
+            MarketData: The next available entry for the given worker.
+
+        Raises:
+            ValueError: If arguments are invalid or the worker is disabled.
+            IndexError: If `worker_id` is out of range.
+            BufferEmpty: If no data is available immediately (non-blocking).
+            PipeTimeoutError: If blocking is enabled and the timeout elapses.
         """
         ...
 
-    def data_head(self, worker_id: int) -> int:
-        """
-        Get current data head position for a worker.
-
-        Args:
-            worker_id: Worker identifier
-
-        Returns:
-            Current data array position
-        """
-        ...
-
-    def is_full(self) -> bool:
-        """Check if the buffer has reached capacity."""
+    def is_worker_empty(self, worker_id: int) -> bool:
+        """Return `True` when there is no data available for `worker_id`."""
         ...
 
     def is_empty(self) -> bool:
-        """
-        Check if all workers have consumed all available data.
-        """
+        """Return `True` when there is no data available for any worker."""
         ...
 
-    def read(self, idx: int) -> bytes:
-        """
-        Get raw bytes for item at index.
-
-        Args:
-            idx: The index position of the pointer array
-
-        Returns:
-            Raw byte data
-        """
+    def is_full(self) -> bool:
+        """Return `True` when the buffer cannot accept new entries."""
         ...
 
-    def put(self, market_data: MarketData) -> None:
-        """Add market data to the buffer."""
+    def disable_worker(self, worker_id: int) -> None:
+        """Disable `worker_id`, preventing it from receiving new entries."""
         ...
 
-    def get(self, idx: int) -> MarketDataType:
+    def enable_worker(self, worker_id: int) -> None:
         """
-        Get market data by index.
+        Enable `worker_id`, allowing it to receive new entries.
 
-        Args:
-            idx: The index position of the pointer array
-
-        Returns:
-            Market data instance
-        """
-        ...
-
-    def listen(
-            self,
-            worker_id: int,
-            block: bool = True,
-            timeout: float = -1.0
-    ) -> MarketDataType:
-        """
-        Wait for next data item for specific worker.
-
-        Args:
-            worker_id: Worker identifier
-            block: Whether to wait for data
-            timeout: Max seconds to wait (-1 = infinite)
-
-        Returns:
-            Next market data item for this worker
-        """
-        ...
-
-    def collect_header_info(self) -> dict[str, Any]:
-        """
-        Gather buffer header information.
-
-        Returns:
-            Dictionary of header metrics and state
+        This also resets the worker's read pointer to the current write position.
+        Re-enabling a worker that was already enabled will also reset its read pointer.
         """
         ...

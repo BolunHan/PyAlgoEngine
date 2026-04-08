@@ -2,202 +2,116 @@ import enum
 import json
 import time
 import uuid
-from typing import Literal
 
-cimport cython
-from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
+from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8
 from libc.math cimport NAN, fabs, isnan
-from libc.stdint cimport uint8_t
-from libc.string cimport memcpy
+from libc.stdint cimport int8_t, uintptr_t
 
-from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, DataType, OrderType as E_OrderType, OrderState as E_OrderState, _TradeReportBuffer, _TradeInstructionBuffer
-from .c_transaction cimport TransactionData, TransactionHelper
-from .c_transaction import TransactionSide, OrderType as PyOrderType
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
+from .c_market_data cimport (
+    md_data_type, md_order_type, md_side,
+    c_md_side_sign, c_md_state_name, c_md_side_name, c_md_order_type_name,
+    c_md_state_working, c_md_state_placed, c_md_state_done,
+    c_init_buffer, c_set_long_id, c_get_long_id, c_md_compare_long_id
+)
+from .c_transaction cimport TransactionData
+from .c_transaction import TransactionSide, OrderType
 
 from algo_engine.base import LOGGER
 
 
-# Python wrapper for Direction enum
+cdef object NO_DEFAULT = object()
+
+
 class OrderState(enum.IntEnum):
-    STATE_UNKNOWN = E_OrderState.STATE_UNKNOWN
-    STATE_REJECTED = E_OrderState.STATE_REJECTED     # order rejected
-    STATE_INVALID = E_OrderState.STATE_INVALID       # invalid order
-    STATE_PENDING = E_OrderState.STATE_PENDING       # order not sent
-    STATE_SENT = E_OrderState.STATE_SENT             # order sent (to exchange)
-    STATE_PLACED = E_OrderState.STATE_PLACED         # order placed in exchange
-    STATE_PARTFILLED = E_OrderState.STATE_PARTFILLED # order partial filled
-    STATE_FILLED = E_OrderState.STATE_FILLED         # order fully filled
-    STATE_CANCELING = E_OrderState.STATE_CANCELING   # order canceling
-    STATE_CANCELED = E_OrderState.STATE_CANCELED     # order stopped and canceled
+    STATE_UNKNOWN       = md_order_state.STATE_UNKNOWN
+    STATE_REJECTED      = md_order_state.STATE_REJECTED      # order rejected
+    STATE_INVALID       = md_order_state.STATE_INVALID       # invalid order
+    STATE_PENDING       = md_order_state.STATE_PENDING       # order not sent
+    STATE_SENT          = md_order_state.STATE_SENT          # order sent (to exchange)
+    STATE_PLACED        = md_order_state.STATE_PLACED        # order placed in exchange
+    STATE_PARTFILLED    = md_order_state.STATE_PARTFILLED    # order partial filled
+    STATE_FILLED        = md_order_state.STATE_FILLED        # order fully filled
+    STATE_CANCELING     = md_order_state.STATE_CANCELING     # order canceling
+    STATE_CANCELED      = md_order_state.STATE_CANCELED      # order stopped and canceled
 
     # Alias for compatibility
-    UNKNOWN = STATE_UNKNOWN
-    Rejected = STATE_REJECTED
-    Invalid = STATE_INVALID
-    Pending = STATE_PENDING
-    Sent = STATE_SENT
-    Placed = STATE_PLACED
-    PartFilled = STATE_PARTFILLED
-    Filled = STATE_FILLED
-    Canceling = STATE_CANCELING
-    Canceled = STATE_CANCELED
+    UNKNOWN             = STATE_UNKNOWN
+    Rejected            = STATE_REJECTED
+    Invalid             = STATE_INVALID
+    Pending             = STATE_PENDING
+    Sent                = STATE_SENT
+    Placed              = STATE_PLACED
+    PartFilled          = STATE_PARTFILLED
+    Filled              = STATE_FILLED
+    Canceling           = STATE_CANCELING
+    Canceled            = STATE_CANCELED
 
     def __hash__(self):
         return self.value
 
     @property
     def is_working(self):
-        return OrderStateHelper.is_working(self.value)
+        return c_md_state_working(self.value)
+
+    @property
+    def is_placed(self):
+        return c_md_state_placed(self.value)
 
     @property
     def is_done(self):
-        return OrderStateHelper.is_done(self.value)
+        return c_md_state_done(self.value)
 
     @property
-    def state_name(self) -> str:
-        if self.value == E_OrderState.STATE_UNKNOWN:
-            return 'unknown'
-        elif self.value == E_OrderState.STATE_REJECTED:
-            return 'rejected'
-        elif self.value == E_OrderState.STATE_INVALID:
-            return 'invalid'
-        elif self.value == E_OrderState.STATE_PENDING:
-            return 'pending'
-        elif self.value == E_OrderState.STATE_SENT:
-            return 'sent'
-        elif self.value == E_OrderState.STATE_PLACED:
-            return 'placed'
-        elif self.value == E_OrderState.STATE_PARTFILLED:
-            return 'part-filled'
-        elif self.value == E_OrderState.STATE_FILLED:
-            return 'filled'
-        elif self.value == E_OrderState.STATE_CANCELING:
-            return 'canceling'
-        elif self.value == E_OrderState.STATE_CANCELED:
-            return 'canceled'
+    def state_name(self):
+        return PyUnicode_FromString(c_md_state_name(<md_order_state> self.value))
 
 
-cdef class OrderStateHelper:
-    @staticmethod
-    cdef bint is_working(int order_state):
-        if order_state == E_OrderState.STATE_SENT or order_state == E_OrderState.STATE_PLACED or order_state == E_OrderState.STATE_PARTFILLED or order_state == E_OrderState.STATE_CANCELING:
-            return True
-        return False
-
-    @staticmethod
-    cdef bint is_placed(int order_state):
-        if order_state == E_OrderState.STATE_PLACED or order_state == E_OrderState.STATE_PARTFILLED or order_state == E_OrderState.STATE_CANCELING:
-            return True
-        return False
-
-    @staticmethod
-    cdef bint is_done(int order_state):
-        if order_state == E_OrderState.STATE_FILLED or order_state == E_OrderState.STATE_CANCELED or order_state == E_OrderState.STATE_REJECTED or order_state == E_OrderState.STATE_INVALID:
-            return True
-        return False
-
-
-@cython.freelist(128)
-cdef class TradeReport:
-    def __cinit__(self):
-        self._data_ptr = <_MarketDataBuffer*> &self._data
-
-    def __init__(self, *, ticker: str, double timestamp, double price, double volume, uint8_t side, double notional=0., double multiplier=1., double fee=0., object order_id=None, object trade_id=None, **kwargs):
+cdef class TradeReport(MarketData):
+    def __init__(
+            self,
+            *,
+            str ticker,
+            double timestamp,
+            double price,
+            double volume,
+            md_side side,
+            double notional=NAN,
+            double multiplier=1.,
+            double fee=0.,
+            object order_id=None,
+            object trade_id=NO_DEFAULT,
+            **kwargs
+    ):
         if volume < 0:
             raise ValueError("Volume must be non-negative.")
 
-        # Initialize base class fields
-        cdef Py_ssize_t ticker_len
-        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
-        memcpy(<void*> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
-        self._data.timestamp = timestamp
-        self._data.dtype = DataType.DTYPE_REPORT
-        if kwargs: self.__dict__.update(kwargs)
-        
-        # Initialize report-specific fields
-        self._data.price = price
-        self._data.volume = volume
-        self._data.side = side
-        self._data.multiplier = multiplier
-        self._data.fee = fee
+        self.header = c_init_buffer(
+            md_data_type.DTYPE_REPORT,
+            PyUnicode_AsUTF8(ticker),
+            timestamp
+        )
 
-        # Calculate notional if not provided
-        if notional == 0.0:
-            self._data.notional = price * volume * multiplier
+        self.header.trade_report.price = price
+        self.header.trade_report.volume = volume
+        self.header.trade_report.side = side
+        self.header.trade_report.multiplier = multiplier
+        self.header.trade_report.fee = fee
+
+        if isnan(notional):
+            self.header.trade_report.notional = price * volume * multiplier
         else:
-            self._data.notional = notional
+            self.header.trade_report.notional = notional
 
-        # Initialize IDs
-        if trade_id is None:
-            TransactionHelper.set_id(id_ptr=&self._data.trade_id, id_value=uuid.uuid4())
-        else:
-            TransactionHelper.set_id(id_ptr=&self._data.trade_id, id_value=trade_id)
-        if order_id is None:
-            raise ValueError('Must assign an order_id.')
-        else:
-            TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=order_id)
+        c_set_long_id(&self.header.trade_report.order_id, order_id)
+        c_set_long_id(&self.header.trade_report.trade_id, uuid.uuid4() if trade_id is NO_DEFAULT else trade_id)
 
-    def __eq__(self, other: TradeReport):
-        assert isinstance(other, self.__class__), f'Can only compare with {self.__class__.__name__}'
+        self.data_addr = <uintptr_t> self.header
+        self.owner = True
 
-        # Fast check: only check the order id and trade id.
-        if not self.order_id == other.order_id:
-            return False
-        elif not self.trade_id == other.trade_id:
-            return False
-
-        return True
-
-    def __repr__(self) -> str:
-        side_name = TransactionHelper.pyget_side_name(self._data.side)
-
-        return f"<TradeReport id={self.trade_id}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker} {side_name} {self.volume} at {self.price})"
-
-    def __reduce__(self):
-        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
-
-    def __setstate__(self, state):
-        if state:
-            self.__dict__.update(state)
-
-    def __copy__(self):
-        cdef TradeReport instance = TradeReport.__new__(TradeReport)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TradeReportBuffer))
-        return instance
-
-    cpdef TradeReport reset_order_id(self, object order_id=None):
-        if order_id is None:
-            order_id = uuid.uuid4()
-        TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=order_id)
-        return self
-
-    cpdef TradeReport reset_trade_id(self, object trade_id=None):
-        if trade_id is None:
-            trade_id = uuid.uuid4()
-        TransactionHelper.set_id(id_ptr=&self._data.trade_id, id_value=trade_id)
-        return self
-
-    @classmethod
-    def buffer_size(cls):
-        return sizeof(_TradeReportBuffer)
-
-    cdef bytes c_to_bytes(self):
-        return PyBytes_FromStringAndSize(<char*> &self._data, sizeof(self._data))
-
-    @staticmethod
-    cdef TradeReport c_from_bytes(bytes data):
-        cdef TradeReport instance = TradeReport.__new__(TradeReport)
-        memcpy(<void*> &instance._data, <const char*> data, sizeof(_TradeReportBuffer))
-        return instance
-
-    def to_bytes(self) -> bytes:
-        return self.c_to_bytes()
-
-    @classmethod
-    def from_bytes(cls, bytes data):
-        return TradeReport.c_from_bytes(data)
+        if kwargs:
+            self.__dict__.update(kwargs)
 
     cdef dict c_to_json(self):
         cdef dict json_dict = {
@@ -216,8 +130,7 @@ cdef class TradeReport:
 
     @staticmethod
     cdef TradeReport c_from_json(dict json_dict):
-        cdef TradeReport instance = TradeReport.__new__(
-            TradeReport,
+        cdef TradeReport instance = TradeReport(
             ticker=json_dict['ticker'],
             timestamp=json_dict['timestamp'],
             price=json_dict['price'],
@@ -231,7 +144,35 @@ cdef class TradeReport:
         )
         return instance
 
-    def to_json(self, str fmt='str', **kwargs) -> object:
+    # === Python Interfaces ===
+
+    def __eq__(self, TradeReport other):
+        if not self.order_id == other.order_id:
+            return False
+        elif not self.trade_id == other.trade_id:
+            return False
+
+        return True
+
+    def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
+        cdef str side_name = PyUnicode_FromString(c_md_side_name(self.header.trade_report.side))
+        return f"<{self.__class__.__name__} id={self.trade_id}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker} {side_name} {self.volume} at {self.price})"
+
+    cpdef TradeReport reset_order_id(self, object order_id=NO_DEFAULT):
+        if order_id is NO_DEFAULT:
+            order_id = uuid.uuid4()
+        c_set_long_id(&self.header.trade_report.order_id, order_id)
+        return self
+
+    cpdef TradeReport reset_trade_id(self, object trade_id=NO_DEFAULT):
+        if trade_id is None:
+            trade_id = uuid.uuid4()
+        c_set_long_id(&self.header.trade_report.trade_id, trade_id)
+        return self
+
+    def to_json(self, str fmt='str', **kwargs):
         cdef dict json_dict = self.c_to_json()
 
         if fmt == 'dict':
@@ -248,9 +189,6 @@ cdef class TradeReport:
         cdef dict json_dict = json.loads(json_data)
         return TradeReport.c_from_json(json_data)
 
-    def copy(self):
-        return self.__copy__()
-
     cpdef TransactionData to_trade(self):
         return TransactionData(
             ticker=self.ticker,
@@ -263,177 +201,106 @@ cdef class TradeReport:
             multiplier=self.multiplier
         )
 
-    @property
-    def ticker(self) -> str:
-        return PyUnicode_FromString(&self._data.ticker[0])
+    property price:
+        def __get__(self):
+            return self.header.trade_report.price
 
-    @property
-    def timestamp(self) -> float:
-        return self._data.timestamp
+    property volume:
+        def __get__(self):
+            return self.header.trade_report.volume
 
-    @property
-    def dtype(self) -> int:
-        return self._data.dtype
+    property side:
+        def __get__(self):
+            return TransactionSide(self.header.trade_report.side)
 
-    @property
-    def topic(self) -> str:
-        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
-        return f'{ticker_str}.{self.__class__.__name__}'
+    property side_int:
+        def __get__(self):
+            return self.header.trade_report.side
 
-    @property
-    def market_time(self) :
-        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+    property side_sign:
+        def __get__(self):
+            return c_md_side_sign(<md_side> self.header.trade_report.side)
 
-    @property
-    def price(self) -> float:
-        return self._data.price
+    property multiplier:
+        def __get__(self):
+            return self.header.trade_report.multiplier
 
-    @property
-    def volume(self) -> float:
-        return self._data.volume
+    property notional:
+        def __get__(self):
+            return self.header.trade_report.notional
 
-    @property
-    def side_int(self) -> int:
-        return self._data.side
+    property fee:
+        def __get__(self):
+            return self.header.trade_report.fee
 
-    @property
-    def side_sign(self) -> Literal[-1, 0, 1]:
-        return TransactionHelper.get_sign(self._data.side)
+    property trade_id:
+        def __get__(self):
+            return c_get_long_id(&self.header.trade_report.trade_id)
 
-    @property
-    def side(self) -> TransactionSide:
-        return TransactionSide(self.side_int)
+    property order_id:
+        def __get__(self):
+            return c_get_long_id(&self.header.trade_report.order_id)
 
-    @property
-    def multiplier(self) -> float:
-        return self._data.multiplier
+    property volume_flow:
+        def __get__(self):
+            cdef int8_t sign = c_md_side_sign(<md_side> self.header.trade_report.side)
+            return sign * self.header.trade_report.volume
 
-    @property
-    def notional(self) -> float:
-        return self._data.notional
+    property notional_flow:
+        def __get__(self):
+            cdef int8_t sign = c_md_side_sign(<md_side> self.header.trade_report.side)
+            return sign * self.header.trade_report.notional
 
-    @property
-    def fee(self) -> float:
-        return self._data.fee
-
-    @property
-    def trade_id(self) -> object:
-        return TransactionHelper.get_id(&self._data.trade_id)
-
-    @property
-    def order_id(self) -> object:
-        return TransactionHelper.get_id(&self._data.order_id)
-
-    @property
-    def market_price(self) -> float:
-        """
-        Alias for the transaction price.
-        """
-        return self.price
-
-    @property
-    def volume_flow(self) -> float:
-        cdef int sign = TransactionHelper.get_sign(self._data.side)
-        return sign * self._data.volume
-
-    @property
-    def notional_flow(self) -> float:
-        cdef int sign = TransactionHelper.get_sign(self._data.side)
-        return sign * self._data.notional
-
-    @property
-    def trade_time(self) -> datetime:
-        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+    property trade_time:
+        def __get__(self):
+            return PROFILE.c_timestamp_in_market_session(self.header.meta_info.timestamp)
 
 
-@cython.freelist(128)
-cdef class TradeInstruction:
-    def __cinit__(self):
-        self._data_ptr = <_MarketDataBuffer*> &self._data
-        self.trades = {}
+cdef class TradeInstruction(MarketData):
+    def __init__(
+            self,
+            *,
+            str ticker,
+            double timestamp,
+            md_side side,
+            double volume,
+            md_order_type order_type=md_order_type.ORDER_GENERIC,
+            double limit_price=NAN,
+            double multiplier=1.,
+            object order_id=NO_DEFAULT,
+            **kwargs
+    ):
+        self.header = c_init_buffer(
+            md_data_type.DTYPE_INSTRUCTION,
+            PyUnicode_AsUTF8(ticker),
+            timestamp
+        )
 
-    def __init__(self, *, str ticker, double timestamp, uint8_t side, double volume, uint8_t order_type=0, double limit_price=NAN, double multiplier=1., object order_id=None, **kwargs):
-        if not (volume > 0):
+        if volume <= 0:
             raise ValueError("Volume must be positive")
 
-        # Initialize base class fields
-        cdef Py_ssize_t ticker_len
-        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
-        memcpy(<void*> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
-        self._data.timestamp = timestamp
-        self._data.dtype = DataType.DTYPE_INSTRUCTION
-        if kwargs: self.__dict__.update(kwargs)
-        
-        # Initialize instruction-specific fields
-        self._data.limit_price = limit_price
-        self._data.volume = volume
-        self._data.side = side
-        self._data.order_type = order_type
-        self._data.multiplier = multiplier
+        self.header.trade_instruction.limit_price = limit_price
+        self.header.trade_instruction.volume = volume
+        self.header.trade_instruction.side = side
+        self.header.trade_instruction.order_type = order_type
+        self.header.trade_instruction.multiplier = multiplier
 
-        # Initialize IDs
-        if order_id is None:
-            TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=uuid.uuid4())
-        else:
-            TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=order_id)
+        c_set_long_id(&self.header.trade_instruction.order_id, uuid.uuid4() if order_id is NO_DEFAULT else order_id)
 
-        self._data.order_state = E_OrderState.STATE_PENDING
-        self._data.filled_volume = 0.
-        self._data.filled_notional = 0.
-        self._data.fee = 0.
-        self._data.ts_placed = 0.
-        self._data.ts_canceled = 0.
-        self._data.ts_finished = 0.
+        self.header.trade_instruction.order_state = md_order_state.STATE_PENDING
+        self.header.trade_instruction.filled_volume = 0.
+        self.header.trade_instruction.filled_notional = 0.
+        self.header.trade_instruction.fee = 0.
+        self.header.trade_instruction.ts_placed = 0.
+        self.header.trade_instruction.ts_canceled = 0.
+        self.header.trade_instruction.ts_finished = 0.
+        self.trades = {}
 
-    def __eq__(self, other: TradeInstruction):
-        assert isinstance(other, self.__class__), f'Can only compare with {self.__class__.__name__}'
+        self.data_addr = <uintptr_t> self.header
+        self.owner = True
 
-        # Fast check: only check the order id
-        if not self.order_id == other.order_id:
-            return False
-
-        return True
-
-    def __repr__(self) -> str:
-        side_name = TransactionHelper.pyget_side_name(self._data.side)
-        order_type_name = TransactionHelper.pyget_order_type_name(self._data.order_type)
-
-        if self.limit_price is None or self.order_type_int == E_OrderType.ORDER_MARKET:
-            return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
-        else:
-            return f'<TradeInstruction id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
-
-    def __reduce__(self):
-        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
-
-    def __setstate__(self, state):
-        if state:
-            self.__dict__.update(state)
-
-    def __copy__(self):
-        cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_TradeInstructionBuffer))
-        return instance
-
-    @classmethod
-    def buffer_size(cls):
-        return sizeof(_TradeInstructionBuffer)
-
-    cdef bytes c_to_bytes(self):
-        return PyBytes_FromStringAndSize(<char*> &self._data, sizeof(self._data))
-
-    @staticmethod
-    cdef TradeInstruction c_from_bytes(bytes data):
-        cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
-        memcpy(<void*> &instance._data, <const char*> data, sizeof(_TradeInstructionBuffer))
-        return instance
-
-    def to_bytes(self) -> bytes:
-        return self.c_to_bytes()
-
-    @classmethod
-    def from_bytes(cls, bytes data):
-        return TradeInstruction.c_from_bytes(data)
+        if kwargs:
+            self.__dict__.update(kwargs)
 
     cdef dict c_to_json(self):
         cdef dict json_dict = {
@@ -450,8 +317,7 @@ cdef class TradeInstruction:
 
     @staticmethod
     cdef TradeInstruction c_from_json(dict json_dict):
-        cdef TradeInstruction instance = TradeInstruction.__new__(
-            TradeInstruction,
+        cdef TradeInstruction instance = TradeInstruction(
             ticker=json_dict['ticker'],
             timestamp=json_dict['timestamp'],
             side=json_dict['side'],
@@ -459,11 +325,26 @@ cdef class TradeInstruction:
             order_type=json_dict.get('order_type', 0),
             limit_price=json_dict.get('limit_price', NAN),
             multiplier=json_dict.get('multiplier', 1.),
-            order_id=json_dict.get('order_id', None)
+            order_id=json_dict['order_id']
         )
         return instance
 
-    def to_json(self, str fmt='str', **kwargs) -> object:
+    # === Python Interfaces ===
+
+    def __eq__(self, TradeInstruction other):
+        return self.order_id == other.order_id
+
+    def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
+        cdef str side_name = PyUnicode_FromString(c_md_side_name(self.header.trade_instruction.side))
+        cdef str order_type_name = PyUnicode_FromString(c_md_order_type_name(self.header.trade_instruction.order_type))
+        if isnan(self.header.trade_instruction.limit_price) or self.header.trade_instruction.order_type == md_order_type.ORDER_MARKET:
+            return f'<{self.__class__.__name__} id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
+        else:
+            return f'<{self.__class__.__name__} id={self.order_id}>({self.ticker} {order_type_name} {side_name} {self.volume} limit {self.limit_price:.2f}; filled {self.filled_volume:.2f} @ {self.average_price:.2f} now {self.order_state.state_name})'
+
+    def to_json(self, str fmt='str', **kwargs):
         cdef dict json_dict = self.c_to_json()
         if fmt == 'dict':
             return json_dict
@@ -482,238 +363,236 @@ cdef class TradeInstruction:
     cpdef TradeInstruction reset(self):
         self.trades.clear()
 
-        self._data.order_state = E_OrderState.STATE_PENDING
-        self._data.filled_volume = 0.
-        self._data.filled_notional = 0.
-        self._data.fee = 0.
-        self._data.ts_placed = 0.
-        self._data.ts_canceled = 0.
-        self._data.ts_finished = 0.
+        self.header.trade_instruction.order_state = md_order_state.STATE_PENDING
+        self.header.trade_instruction.filled_volume = 0.
+        self.header.trade_instruction.filled_notional = 0.
+        self.header.trade_instruction.fee = 0.
+        self.header.trade_instruction.ts_placed = 0.
+        self.header.trade_instruction.ts_canceled = 0.
+        self.header.trade_instruction.ts_finished = 0.
 
         return self
 
-    cpdef TradeInstruction reset_order_id(self, object order_id=None):
-        if order_id is None:
+    cpdef TradeInstruction reset_order_id(self, object order_id=NO_DEFAULT):
+        if order_id is NO_DEFAULT:
             order_id = uuid.uuid4()
 
+        cdef TradeReport trade_report
         for trade_report in self.trades.values():
-            trade_report.reset_order_id(order_id=order_id)
-
-        TransactionHelper.set_id(id_ptr=&self._data.order_id, id_value=order_id)
+            c_set_long_id(&trade_report.header.trade_report.order_id, order_id)
+        c_set_long_id(&self.header.trade_instruction.order_id, order_id)
         return self
 
-    cpdef TradeInstruction set_order_state(self, uint8_t order_state, double timestamp=NAN):
+    cpdef TradeInstruction set_order_state(self, md_order_state order_state, double timestamp=NAN):
         if isnan(timestamp):
             timestamp = time.time()
 
-        self._data.order_state = order_state
+        self.header.trade_instruction.order_state = order_state
 
-        if order_state == E_OrderState.STATE_PLACED:
-            self._data.ts_placed = timestamp
-        elif order_state == E_OrderState.STATE_FILLED:
-            self._data.ts_finished = timestamp
-        elif order_state == E_OrderState.STATE_CANCELED:
-            self._data.ts_canceled = timestamp
+        if order_state == md_order_state.STATE_PLACED:
+            self.header.trade_instruction.ts_placed = timestamp
+        elif order_state == md_order_state.STATE_FILLED:
+            self.header.trade_instruction.ts_finished = timestamp
+        elif order_state == md_order_state.STATE_CANCELED:
+            self.header.trade_instruction.ts_canceled = timestamp
 
         return self
 
     cpdef TradeInstruction fill(self, TradeReport trade_report):
         # Check order_id match by comparing Python objects
-        if not TransactionHelper.compare_id(&self._data.order_id, &trade_report._data.order_id):
+        if not c_md_compare_long_id(&self.header.trade_instruction.order_id, &trade_report.header.trade_report.order_id):
             LOGGER.warning(f'Order ID mismatch! Instruction: {self.order_id}, Report: {trade_report.order_id}')
             return self
 
         # Check for duplicate trade
-        if trade_report.trade_id in self.trades:
+        cdef object trade_id = c_get_long_id(&trade_report.header.trade_report.trade_id)
+        if trade_id in self.trades:
             LOGGER.warning(f'Duplicated trade received!\nInstruction {self}.\nReport {trade_report}.')
             return self
 
         # Check multiplier consistency
-        if isnan(self._data.multiplier):
-            self._data.multiplier = trade_report._data.multiplier
-        elif self._data.multiplier != trade_report._data.multiplier:
+        cdef double multiplier = trade_report.header.trade_report.multiplier
+        if isnan(self.header.trade_instruction.multiplier):
+            self.header.trade_instruction.multiplier = multiplier
+        elif self.header.trade_instruction.multiplier != multiplier:
             raise ValueError(f'Multiplier not match for order {self} and report {trade_report}.')
 
         # Check volume doesn't exceed order volume
-        if trade_report._data.volume + self._data.filled_volume > self._data.volume:
+        cdef double trade_volume = trade_report.header.trade_report.volume
+        cdef double trade_notional = trade_report.header.trade_report.notional
+        cdef double trade_fee = trade_report.header.trade_report.fee
+        cdef double timestamp = trade_report.header.meta_info.timestamp
+
+        if trade_volume + self.header.trade_instruction.filled_volume > self.header.trade_instruction.volume:
             trades_str = '\n\t'.join([str(x) for x in self.trades.values()]) + f'\n\t<new> {trade_report}'
             LOGGER.warning('Fatal error!\nTradeInstruction: \n\t{}\nTradeReport:\n\t{}'.format(str(self), trades_str))
             raise ValueError('Fatal error! trade reports filled volume exceed order volume!')
 
         # Only process if there's volume
-        if trade_report._data.volume:
-
-            # Update filled values
-            self._data.filled_volume += trade_report._data.volume
-            self._data.filled_notional += trade_report._data.notional
-            self._data.fee += trade_report._data.fee
+        self.header.trade_instruction.filled_volume += trade_volume
+        self.header.trade_instruction.filled_notional += fabs(trade_notional)
+        self.header.trade_instruction.fee += trade_fee
 
         # Update order state
-        if self._data.filled_volume == self.volume:
-            self.set_order_state(order_state=E_OrderState.STATE_FILLED, timestamp=trade_report._data.timestamp)
-            self._data.ts_finished = trade_report._data.timestamp
-        elif self._data.filled_volume > 0:
-            self.set_order_state(order_state=E_OrderState.STATE_PARTFILLED)
+        if self.header.trade_instruction.filled_volume == self.volume:
+            self.set_order_state(md_order_state.STATE_FILLED, timestamp)
+            self.header.trade_instruction.ts_finished = timestamp
+        elif self.header.trade_instruction.filled_volume > 0:
+            self.set_order_state(md_order_state.STATE_PARTFILLED)
 
         # Add to trades dictionary
-        self.trades[trade_report.trade_id] = trade_report
-
+        self.trades[trade_id] = trade_report
         return self
 
     cpdef TradeInstruction add_trade(self, TradeReport trade_report):
-        self._data.fee += trade_report._data.fee
-        self._data.filled_volume += trade_report._data.volume
-        self._data.filled_notional += fabs(trade_report._data.notional)
+        cdef object trade_id = c_get_long_id(&trade_report.header.trade_report.trade_id)
+        cdef double trade_volume = trade_report.header.trade_report.volume
+        cdef double trade_notional = trade_report.header.trade_report.notional
+        cdef double trade_fee = trade_report.header.trade_report.fee
+        cdef double timestamp = trade_report.header.meta_info.timestamp
+
+        self.header.trade_instruction.filled_volume += trade_volume
+        self.header.trade_instruction.filled_notional += fabs(trade_notional)
+        self.header.trade_instruction.fee += trade_fee
 
         if self.filled_volume == self.volume:
-            self.set_order_state(order_state=E_OrderState.STATE_FILLED, timestamp=trade_report._data.timestamp)
+            self.set_order_state(md_order_state.STATE_FILLED, timestamp)
         elif self.filled_volume > 0:
-            self.set_order_state(order_state=E_OrderState.STATE_PARTFILLED)
+            self.set_order_state(md_order_state.STATE_PARTFILLED)
 
-        self.trades[trade_report.trade_id] = trade_report
+        self.trades[trade_id] = trade_report
         return self
 
     cpdef TradeInstruction cancel_order(self, double timestamp=NAN):
-        self.set_order_state(order_state=E_OrderState.STATE_CANCELING, timestamp=timestamp)
+        self.set_order_state(md_order_state.STATE_CANCELING, timestamp)
         return self
 
     cpdef TradeInstruction canceled(self, double timestamp=NAN):
-        self.set_order_state(order_state=E_OrderState.STATE_CANCELED, timestamp=timestamp)
+        self.set_order_state(md_order_state.STATE_CANCELED, timestamp)
         return self
 
-    @property
-    def ticker(self) -> str:
-        return PyUnicode_FromString(&self._data.ticker[0])
+    property is_working:
+        def __get__(self):
+            return c_md_state_working(self.header.trade_instruction.order_state)
 
-    @property
-    def timestamp(self) -> float:
-        return self._data.timestamp
+    property is_placed:
+        def __get__(self):
+            return c_md_state_placed(self.header.trade_instruction.order_state)
 
-    @property
-    def dtype(self) -> int:
-        return self._data.dtype
+    property is_done:
+        def __get__(self):
+            return c_md_state_done(self.header.trade_instruction.order_state)
 
-    @property
-    def topic(self) -> str:
-        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
-        return f'{ticker_str}.{self.__class__.__name__}'
+    property limit_price:
+        def __get__(self):
+            return self.header.trade_instruction.limit_price
 
-    @property
-    def market_time(self) :
-        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+    property volume:
+        def __get__(self):
+            return self.header.trade_instruction.volume
 
-    @property
-    def is_working(self) -> bool:
-        return OrderStateHelper.is_working(order_state=self._data.order_state)
+    property side:
+        def __get__(self):
+            return TransactionSide(self.header.trade_instruction.side)
 
-    @property
-    def is_placed(self) -> bool:
-        return OrderStateHelper.is_placed(order_state=self._data.order_state)
+    property side_int:
+        def __get__(self):
+            return self.header.trade_instruction.side
 
-    @property
-    def is_done(self) -> bool:
-        return OrderStateHelper.is_done(order_state=self._data.order_state)
+    property side_sign:
+        def __get__(self):
+            return c_md_side_sign(<md_side> self.header.trade_instruction.side)
 
-    @property
-    def limit_price(self) -> float:
-        return self._data.limit_price
+    property order_type:
+        def __get__(self):
+            return OrderType(self.header.trade_instruction.order_type)
 
-    @property
-    def volume(self) -> float:
-        return self._data.volume
+    property order_type_int:
+        def __get__(self):
+            return self.header.trade_instruction.order_type
 
-    @property
-    def side_int(self) -> int:
-        return self._data.side
+    property order_state:
+        def __get__(self):
+            return OrderState(self.header.trade_instruction.order_state)
 
-    @property
-    def side_sign(self) -> Literal[-1, 0, 1]:
-        return TransactionHelper.get_sign(self._data.side)
+    property order_state_int:
+        def __get__(self):
+            return self.header.trade_instruction.order_state
 
-    @property
-    def side(self) -> TransactionSide:
-        return TransactionSide(self.side_int)
+    property multiplier:
+        def __get__(self):
+            return self.header.trade_instruction.multiplier
 
-    @property
-    def order_type_int(self) -> int:
-        return self._data.order_type
+    property filled_volume:
+        def __get__(self):
+            return self.header.trade_instruction.filled_volume
 
-    @property
-    def order_type(self) -> PyOrderType:
-        return PyOrderType(self.order_type_int)
+    property working_volume:
+        def __get__(self):
+            cdef double total_volume = self.header.trade_instruction.volume
+            cdef double filled_volume = self.header.trade_instruction.filled_volume
+            return total_volume - filled_volume
 
-    @property
-    def order_state_int(self) -> int:
-        return self._data.order_state
+    property filled_notional:
+        def __get__(self):
+            return self.header.trade_instruction.filled_notional
 
-    @property
-    def order_state(self) -> OrderState:
-        return OrderState(self.order_state_int)
+    property fee:
+        def __get__(self):
+            return self.header.trade_instruction.fee
 
-    @property
-    def multiplier(self) -> float:
-        return self._data.multiplier
+    property order_id:
+        def __get__(self):
+            return c_get_long_id(&self.header.trade_instruction.order_id)
 
-    @property
-    def filled_volume(self) -> float:
-        return self._data.filled_volume
-
-    @property
-    def working_volume(self):
-        return self._data.volume - self._data.filled_volume
-
-    @property
-    def filled_notional(self) -> float:
-        return self._data.filled_notional
-
-    @property
-    def fee(self) -> float:
-        return self._data.fee
-
-    @property
-    def order_id(self) -> object:
-        return TransactionHelper.get_id(&self._data.order_id)
-
-    @property
-    def average_price(self):
-        if self.filled_volume != 0:
-            return self._data.filled_notional / self._data.filled_volume / self._data.multiplier
-        else:
+    property average_price:
+        def __get__(self):
+            cdef double filled_volume = self.header.trade_instruction.volume
+            cdef double filled_notional = self.header.trade_instruction.filled_notional
+            cdef double multiplier = self.header.trade_instruction.multiplier
+            if filled_volume and multiplier:
+                return filled_notional / filled_volume / multiplier
             return NAN
 
-    @property
-    def start_time(self) -> datetime:
-        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+    property start_time:
+        def __get__(self):
+            return PROFILE.c_timestamp_in_market_session(self.header.meta_info.timestamp)
 
-    @property
-    def placed_ts(self) -> float:
-        return self._data.ts_placed
+    property placed_ts:
+        def __get__(self):
+            return self.header.trade_instruction.ts_placed
 
-    @property
-    def canceled_ts(self) -> float:
-        return self._data.ts_canceled
+    property canceled_ts:
+        def __get__(self):
+            return self.header.trade_instruction.ts_canceled
 
-    @property
-    def finished_ts(self) -> float:
-        return self._data.ts_finished
+    property finished_ts:
+        def __get__(self):
+            return self.header.trade_instruction.ts_finished
 
-    @property
-    def placed_time(self) -> datetime | None:
-        cdef double ts_placed = self._data.ts_placed
-        if ts_placed:
-            return _MarketDataVirtualBase.c_to_dt(ts_placed)
-        return None
+    property placed_time:
+        def __get__(self):
+            cdef double ts_placed = self.header.trade_instruction.ts_placed
+            if ts_placed:
+                return PROFILE.c_timestamp_in_market_session(ts_placed)
+            return None
 
-    @property
-    def canceled_time(self):
-        cdef double ts_canceled = self._data.ts_canceled
-        if ts_canceled:
-            return _MarketDataVirtualBase.c_to_dt(ts_canceled)
-        return None
+    property canceled_time:
+        def __get__(self):
+            cdef double ts_canceled = self.header.trade_instruction.ts_canceled
+            if ts_canceled:
+                return PROFILE.c_timestamp_in_market_session(ts_canceled)
+            return None
 
-    @property
-    def finished_time(self):
-        cdef double ts_finished = self._data.ts_finished
-        if ts_finished:
-            return _MarketDataVirtualBase.c_to_dt(ts_finished)
-        return None
+    property finished_time:
+        def __get__(self):
+            cdef double ts_finished = self.header.trade_instruction.ts_finished
+            if ts_finished:
+                return PROFILE.c_timestamp_in_market_session(ts_finished)
+            return None
+
+
+from . cimport c_market_data
+
+c_market_data.report_from_header = report_from_header
+c_market_data.instruction_from_header = instruction_from_header

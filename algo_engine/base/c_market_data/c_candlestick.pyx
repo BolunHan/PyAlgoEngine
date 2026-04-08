@@ -1,294 +1,252 @@
-# cython: language_level=3
-from typing import Literal
-
-cimport cython
-from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime, date, timedelta
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8AndSize
+from cpython.unicode cimport PyUnicode_AsUTF8
 from libc.math cimport NAN
-from libc.string cimport memcpy
-from libc.stdint cimport uint64_t
+from libc.stdint cimport uint64_t, uintptr_t
 
-from .c_market_data cimport _MarketDataVirtualBase, TICKER_SIZE, _MarketDataBuffer, _CandlestickBuffer, DataType
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
+from .c_market_data cimport md_data_type, c_init_buffer
 
 
-@cython.freelist(128)
-cdef class BarData:
-    def __cinit__(self):
-        self._data_ptr = <_MarketDataBuffer*> &self._data
-        self._data_addr = <uintptr_t> self._data_ptr
+cdef class BarData(MarketData):
+    def __init__(
+            self,
+            *,
+            str ticker,
+            double timestamp,
+            double high_price,
+            double low_price,
+            double open_price,
+            double close_price,
+            double volume=0.0,
+            double notional=0.0,
+            uint64_t trade_count=0,
+            double start_timestamp=0.,
+            object bar_span=None,
+            **kwargs
+    ):
+        self.header = c_init_buffer(
+            md_data_type.DTYPE_BAR,
+            PyUnicode_AsUTF8(ticker),
+            timestamp
+        )
 
-    def __init__(self, *, str ticker, double timestamp, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint64_t trade_count=0, double start_timestamp=0., object bar_span=None, **kwargs):
-        # Initialize base class fields
-        cdef Py_ssize_t ticker_len
-        cdef const char* ticker_ptr = PyUnicode_AsUTF8AndSize(ticker, &ticker_len)
-        memcpy(<void*> &self._data.ticker, ticker_ptr, min(ticker_len, TICKER_SIZE - 1))
-        self._data.timestamp = timestamp
-        self._data.dtype = DataType.DTYPE_BAR
-        if kwargs: self.__dict__.update(kwargs)
-        
+        cdef double bar_span_seconds
         if bar_span is None:
             if not start_timestamp:
                 raise ValueError('Must assign either start_timestamp or bar_span or both.')
             else:
-                bar_span = timestamp - start_timestamp
+                bar_span_seconds = timestamp - start_timestamp
         else:
             if isinstance(bar_span, timedelta):
-                bar_span = bar_span.total_seconds()
+                bar_span_seconds = bar_span.total_seconds()
             else:
-                bar_span = float(bar_span)
+                bar_span_seconds = <double> bar_span
 
         # Initialize bar-specific fields
-        self._data.high_price = high_price
-        self._data.low_price = low_price
-        self._data.open_price = open_price
-        self._data.close_price = close_price
-        self._data.volume = volume
-        self._data.notional = notional
-        self._data.trade_count = trade_count
-        self._data.bar_span = bar_span
+        self.header.bar_data.high_price = high_price
+        self.header.bar_data.low_price = low_price
+        self.header.bar_data.open_price = open_price
+        self.header.bar_data.close_price = close_price
+        self.header.bar_data.volume = volume
+        self.header.bar_data.notional = notional
+        self.header.bar_data.trade_count = trade_count
+        self.header.bar_data.bar_span = bar_span_seconds
 
-    def __repr__(self) -> str:
-        return f"<BarData>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+        self.data_addr = <uintptr_t> self.header
+        self.owner = True
 
-    def __reduce__(self):
-        return self.__class__.from_bytes, (self.to_bytes(),), self.__dict__
+        if kwargs:
+            self.__dict__.update(kwargs)
 
-    def __setstate__(self, state):
-        if state:
-            self.__dict__.update(state)
+    def __repr__(self):
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
+        return f"<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
 
-    def __copy__(self):
-        cdef BarData instance = BarData.__new__(BarData)
-        memcpy(<void*> &instance._data, <const char*> &self._data, sizeof(_CandlestickBuffer))
-        return instance
-
-    def __setitem__(self, key: str, value: float | int):
+    def __setitem__(self, str key, object value):
         if key == 'high_price':
-            self._data.high_price = value
+            self.header.bar_data.high_price = value
         elif key == 'low_price':
-            self._data.low_price = value
+            self.header.bar_data.low_price = value
         elif key == 'open_price':
-            self._data.open_price = value
+            self.header.bar_data.open_price = value
         elif key == 'close_price':
-            self._data.close_price = value
+            self.header.bar_data.close_price = value
         elif key == 'volume':
-            self._data.volume = value
+            self.header.bar_data.volume = value
         elif key == 'notional':
-            self._data.notional = value
+            self.header.bar_data.notional = value
         elif key == 'trade_count':
-            self._data.trade_count = value
+            self.header.bar_data.trade_count = value
         else:
             raise KeyError(f'Can not set {key} to the value {value}.')
 
-    def __getitem__(self, key: str) -> float | int:
+    def __getitem__(self, str key):
         if key == 'high_price':
-            return self._data.high_price
+            return self.header.bar_data.high_price
         elif key == 'low_price':
-            return self._data.low_price
+            return self.header.bar_data.low_price
         elif key == 'open_price':
-            return self._data.open_price
+            return self.header.bar_data.open_price
         elif key == 'close_price':
-            return self._data.close_price
+            return self.header.bar_data.close_price
         elif key == 'volume':
-            return self._data.volume
+            return self.header.bar_data.volume
         elif key == 'notional':
-            return self._data.notional
+            return self.header.bar_data.notional
         elif key == 'trade_count':
-            return self._data.trade_count
+            return self.header.bar_data.trade_count
         else:
             raise KeyError(f'Can not get {key} value.')
 
-    @classmethod
-    def buffer_size(cls):
-        return sizeof(_CandlestickBuffer)
+    property high_price:
+        def __get__(self):
+            return self.header.bar_data.high_price
 
-    cdef bytes c_to_bytes(self):
-        return PyBytes_FromStringAndSize(<char*> &self._data, sizeof(self._data))
+    property low_price:
+        def __get__(self):
+            return self.header.bar_data.low_price
 
-    @staticmethod
-    cdef BarData c_from_bytes(bytes data):
-        cdef BarData instance = BarData.__new__(BarData)
-        memcpy(<void*> &instance._data, <const char*> data, sizeof(_CandlestickBuffer))
-        return instance
+    property open_price:
+        def __get__(self):
+            return self.header.bar_data.open_price
 
-    def to_bytes(self) -> bytes:
-        return self.c_to_bytes()
+    property close_price:
+        def __get__(self):
+            return self.header.bar_data.close_price
 
-    @classmethod
-    def from_bytes(cls, bytes data):
-        return BarData.c_from_bytes(data)
+    property volume:
+        def __get__(self):
+            return self.header.bar_data.volume
 
-    @property
-    def ticker(self) -> str:
-        return PyUnicode_FromString(&self._data.ticker[0])
+    property notional:
+        def __get__(self):
+            return self.header.bar_data.notional
 
-    @property
-    def timestamp(self) -> float:
-        return self._data.timestamp
+    property trade_count:
+        def __get__(self):
+            return self.header.bar_data.trade_count
 
-    @property
-    def dtype(self) -> int:
-        return self._data.dtype
+    property start_timestamp:
+        def __get__(self):
+            return self.header.bar_data.meta_info.timestamp - self.header.bar_data.bar_span
 
-    @property
-    def topic(self) -> str:
-        cdef str ticker_str = PyUnicode_FromString(&self._data.ticker[0])
-        return f'{ticker_str}.{self.__class__.__name__}'
+    property bar_span_seconds:
+        def __get__(self):
+            return self.header.bar_data.bar_span
 
-    @property
-    def market_time(self) :
-        return _MarketDataVirtualBase.c_to_dt(self._data.timestamp)
+    property bar_span:
+        def __get__(self):
+            return timedelta(seconds=self.header.bar_data.bar_span)
 
-    @property
-    def high_price(self) -> float:
-        return self._data.high_price
+    property vwap:
+        def __get__(self):
+            if self.header.bar_data.volume <= 0:
+                return NAN
+            return self.header.bar_data.notional / self.header.bar_data.volume
 
-    @property
-    def low_price(self) -> float:
-        return self._data.low_price
+    property bar_type:
+        def __get__(self):
+            cdef double bar_span = self.header.bar_data.bar_span
+            if bar_span > 3600.0:
+                return 'Hourly-Plus'
+            elif bar_span == 3600.0:
+                return 'Hourly'
+            elif bar_span > 60.0:
+                return 'Minute-Plus'
+            elif bar_span == 60.0:
+                return 'Minute'
+            else:
+                return 'Sub-Minute'
 
-    @property
-    def open_price(self) -> float:
-        return self._data.open_price
+    property bar_end_time:
+        def __get__(self):
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
 
-    @property
-    def close_price(self) -> float:
-        return self._data.close_price
-
-    @property
-    def volume(self) -> float:
-        return self._data.volume
-
-    @property
-    def notional(self) -> float:
-        return self._data.notional
-
-    @property
-    def trade_count(self) -> int:
-        return self._data.trade_count
-
-    @property
-    def start_timestamp(self) -> float:
-        return self._data.timestamp - self._data.bar_span
-
-    @property
-    def bar_span_seconds(self) -> float:
-        return self._data.bar_span
-
-    @property
-    def bar_span(self) -> timedelta:
-        return timedelta(seconds=self._data.bar_span)
-
-    @property
-    def vwap(self) -> float:
-        if self._data.volume <= 0:
-            return NAN
-        return self._data.notional / self._data.volume
-
-    @property
-    def bar_type(self) -> Literal['Hourly-Plus', 'Hourly', 'Minute-Plus', 'Minute', 'Sub-Minute']:
-        bar_span = self._data.bar_span
-
-        if bar_span > 3600:
-            return 'Hourly-Plus'
-        elif bar_span == 3600:
-            return 'Hourly'
-        elif bar_span > 60:
-            return 'Minute-Plus'
-        elif bar_span == 60:
-            return 'Minute'
-        else:
-            return 'Sub-Minute'
-
-    @property
-    def bar_end_time(self) -> datetime:
-        return _MarketDataVirtualBase.c_to_dt(self.timestamp)
-
-    @property
-    def bar_start_time(self) -> datetime:
-        return _MarketDataVirtualBase.c_to_dt(self.start_timestamp)
-
-    @property
-    def market_price(self) -> float:
-        return self.close_price
+    property bar_start_time:
+        def __get__(self):
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp - self.header.bar_data.bar_span)
 
 
-class DailyBar(BarData):
-    def __init__(self, str ticker, date market_date, double high_price, double low_price, double open_price, double close_price, double volume=0.0, double notional=0.0, uint64_t trade_count=0, int bar_span=1, **kwargs):
-        timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
+cdef class DailyBar(BarData):
+    def __init__(
+            self,
+            *,
+            str ticker,
+            date market_date,
+            double high_price,
+            double low_price,
+            double open_price,
+            double close_price,
+            double volume=0.0,
+            double notional=0.0,
+            uint64_t trade_count=0,
+            int bar_span=1,
+            **kwargs
+    ):
+        cdef double timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
 
-        super().__init__(ticker=ticker, timestamp=timestamp, high_price=high_price, low_price=low_price, open_price=open_price, close_price=close_price, volume=volume, notional=notional, trade_count=trade_count, bar_span=bar_span, **kwargs)
+        super().__init__(
+            ticker=ticker,
+            timestamp=timestamp,
+            high_price=high_price,
+            low_price=low_price,
+            open_price=open_price,
+            close_price=close_price,
+            volume=volume,
+            notional=notional,
+            trade_count=trade_count,
+            bar_span=bar_span,
+            **kwargs
+        )
 
     def __repr__(self) -> str:
-        if (bar_span := super().bar_span_seconds) == 1:
-            return f"<DailyBar>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+        if not self.header:
+            return f"<{self.__class__.__name__}>(Uninitialized)"
+        cdef double bar_span_seconds = self.header.bar_data.bar_span
+        cdef uint64_t bar_span = <uint64_t> bar_span_seconds
+        if bar_span == 1:
+            return f"<{self.__class__.__name__}>([{self.market_date}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
         else:
-            return f"<DailyBar>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
+            return f"<{self.__class__.__name__}>([{self.market_date}] {self.ticker}, span={bar_span}d, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
 
-    @property
-    def market_date(self) -> date:
-        """
-        The market date of the bar.
+    property market_date:
+        def __get__(self):
+            cdef size_t int_date = int(self.timestamp)
+            cdef size_t y, m, d, _m
+            y, _m = divmod(int_date, 10000)
+            m, d = divmod(_m, 100)
+            return date(year=y, month=m, day=d)
 
-        Returns:
-            date: The market date of the bar.
-        """
+    property market_time:
+        def __get__(self):
+            return self.market_date
 
-        int_date = int(self.timestamp)
-        y, _m = divmod(int_date, 10000)
-        m, d = divmod(_m, 100)
+    property bar_start_time:
+        def __get__(self):
+            return self.market_date - self.bar_span
 
-        return date(year=y, month=m, day=d)
+    property bar_end_time:
+        def __get__(self):
+            return self.market_date
 
-    @property
-    def market_time(self) -> date:
-        """
-        The market date of the bar (same as `market_date`).
+    property bar_span:
+        def __get__(self):
+            cdef double bar_span_seconds = self.header.bar_data.bar_span
+            return timedelta(days=bar_span_seconds)
 
-        Returns:
-            date: The market date of the bar.
-        """
-        return self.market_date
+    property bar_type:
+        def __get__(self):
+            cdef double bar_span_seconds = self.header.bar_data.bar_span
+            cdef uint64_t bar_span = <uint64_t> bar_span_seconds
+            if bar_span_seconds == 1.0:
+                return 'Daily'
+            elif bar_span_seconds > 1.0:
+                return 'Daily-Plus'
+            else:
+                raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {bar_span_seconds}.')
 
-    @property
-    def bar_start_time(self) -> date:
-        """
-        The start date of the bar period.
 
-        Returns:
-            date: The start date of the bar.
-        """
-        return self.market_date - self.bar_span
+from . cimport c_market_data
 
-    @property
-    def bar_end_time(self) -> date:
-        """
-        The end date of the bar period.
-
-        Returns:
-            date: The end date of the bar.
-        """
-        return self.market_date
-
-    @property
-    def bar_span(self) -> timedelta:
-        return timedelta(days=super().bar_span_seconds)
-
-    @property
-    def bar_type(self) -> Literal['Daily', 'Daily-Plus']:
-        """
-        Determines the type of the bar based on its span.
-
-        Returns:
-            Literal['Daily', 'Daily-Plus']: The type of the bar.
-
-        Raises:
-            ValueError: If `bar_span` is not valid for a daily bar.
-        """
-        if (bar_span := super().bar_span_seconds) == 1:
-            return 'Daily'
-        elif bar_span > 1:
-            return 'Daily-Plus'
-        else:
-            raise ValueError(f'Invalid bar_span for {self.__class__.__name__}! Expect an int greater or equal to 1, got {super().bar_span}.')
+c_market_data.bar_from_header = bar_from_header

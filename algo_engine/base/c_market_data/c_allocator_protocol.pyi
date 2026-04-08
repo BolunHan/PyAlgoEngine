@@ -50,17 +50,17 @@ class EnvConfigContext:
 
 MD_SHARED: EnvConfigContext
 """
-EnvConfigContext instance to set flag for algo_engine.c_market_data_ng to use SHM allocator.
+EnvConfigContext instance to set flag for algo_engine.c_market_data to use SHM allocator.
 """
 
 MD_LOCKED: EnvConfigContext
 """
-EnvConfigContext instance to set flag for algo_engine.c_market_data_ng to use thread safe mode.
+EnvConfigContext instance to set flag for algo_engine.c_market_data to use thread safe mode.
 """
 
 MD_FREELIST: EnvConfigContext
 """
-EnvConfigContext instance to set flag for algo_engine.c_market_data_ng to use freelist. Have no effect when in MD_SHARED mode, which enforces its own free list.
+EnvConfigContext instance to set flag for algo_engine.c_market_data to use freelist. Have no effect when in MD_SHARED mode, which enforces its own free list.
 """
 
 
