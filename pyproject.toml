@@ -36,16 +36,14 @@ Issues = "https://github.com/BolunHan/PyAlgoEngine/issues"
 
 [tool.setuptools.package-data]
 "algo_engine.base" = ["*.pyx", "*.pxd", "*.h", "*.c"]
-"algo_engine.base.c_market_data_ng" = ["*.pyx", "*.pxd", "*.h", "*.c"]
+"algo_engine.base.c_market_data" = ["*.pyx", "*.pxd", "*.h", "*.c"]
 "algo_engine.exchange_profile" = ["*.pyx", "*.pxd", "*.h", "*.c"]
 "algo_engine.engine" = ["*.pxd"]
 
 [tool.setuptools.packages.find]
 exclude = [
     "algo_engine.profile._*",
-    "algo_engine.base.native_market_data",
-    #"algo_engine.base.c_market_data",
-    "algo_engine.base.c_market_data_buffer_supported*",
+    "algo_engine.base.c_market_data_deprecated*",
 ]
 
 [tool.setuptools.dynamic]

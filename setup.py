@@ -1,11 +1,12 @@
 import os
 import shutil
+import sys
 from contextlib import suppress
 from pathlib import Path
 
 import event_engine
 from Cython.Build import cythonize
-from setuptools import setup, Extension
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 
@@ -32,7 +33,6 @@ class BuildExtWithConfig(build_ext):
         self.remove_pxd(
             [
                 "algo_engine.base.c_market_data",
-                "algo_engine.base.c_market_data_ng",
                 "algo_engine.profile",
                 "algo_engine.exchange_profile"
             ]
@@ -43,7 +43,6 @@ class BuildExtWithConfig(build_ext):
         self.inject_pxd(
             [
                 "algo_engine.base.c_market_data",
-                "algo_engine.base.c_market_data_ng",
                 "algo_engine.profile",
                 "algo_engine.exchange_profile"
             ]
@@ -88,36 +87,6 @@ extensions = [
     Extension(
         name="algo_engine.profile.c_cn",
         sources=["algo_engine/profile/c_cn.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.base.c_market_data.c_market_data",
-        sources=["algo_engine/base/c_market_data/c_market_data.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.base.c_market_data.c_transaction",
-        sources=["algo_engine/base/c_market_data/c_transaction.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.base.c_market_data.c_candlestick",
-        sources=["algo_engine/base/c_market_data/c_candlestick.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.base.c_market_data.c_tick",
-        sources=["algo_engine/base/c_market_data/c_tick.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.base.c_market_data.c_market_data_buffer",
-        sources=["algo_engine/base/c_market_data/c_market_data_buffer.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.base.c_market_data.c_trade_utils",
-        sources=["algo_engine/base/c_market_data/c_trade_utils.pyx"],
         extra_compile_args=["-O3"]
     ),
     Extension(
@@ -176,49 +145,49 @@ if os.name == 'posix':
         ),
         # === Market Data Cython Extensions ===
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_allocator_protocol",
-            sources=["algo_engine/base/c_market_data_ng/c_allocator_protocol.pyx"],
+            name="algo_engine.base.c_market_data.c_allocator_protocol",
+            sources=["algo_engine/base/c_market_data/c_allocator_protocol.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_market_data",
-            sources=["algo_engine/base/c_market_data_ng/c_market_data.pyx"],
+            name="algo_engine.base.c_market_data.c_market_data",
+            sources=["algo_engine/base/c_market_data/c_market_data.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_internal",
-            sources=["algo_engine/base/c_market_data_ng/c_internal.pyx"],
+            name="algo_engine.base.c_market_data.c_internal",
+            sources=["algo_engine/base/c_market_data/c_internal.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_transaction",
-            sources=["algo_engine/base/c_market_data_ng/c_transaction.pyx"],
+            name="algo_engine.base.c_market_data.c_transaction",
+            sources=["algo_engine/base/c_market_data/c_transaction.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_tick",
-            sources=["algo_engine/base/c_market_data_ng/c_tick.pyx"],
+            name="algo_engine.base.c_market_data.c_tick",
+            sources=["algo_engine/base/c_market_data/c_tick.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_candlestick",
-            sources=["algo_engine/base/c_market_data_ng/c_candlestick.pyx"],
+            name="algo_engine.base.c_market_data.c_candlestick",
+            sources=["algo_engine/base/c_market_data/c_candlestick.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_trade_utils",
-            sources=["algo_engine/base/c_market_data_ng/c_trade_utils.pyx"],
+            name="algo_engine.base.c_market_data.c_trade_utils",
+            sources=["algo_engine/base/c_market_data/c_trade_utils.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
-            name="algo_engine.base.c_market_data_ng.c_market_data_buffer",
-            sources=["algo_engine/base/c_market_data_ng/c_market_data_buffer.pyx"],
+            name="algo_engine.base.c_market_data.c_market_data_buffer",
+            sources=["algo_engine/base/c_market_data/c_market_data_buffer.pyx"],
             extra_compile_args=["-O3"]
         ),
     ])
 
 setup(
     name="algo_engine",
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(extensions, force="--force" in sys.argv),
     cmdclass={"build_ext": BuildExtWithConfig},
 )
