@@ -33,8 +33,8 @@ class BuildExtWithConfig(build_ext):
         self.remove_pxd(
             [
                 "algo_engine.base.c_market_data",
-                "algo_engine.profile",
-                "algo_engine.exchange_profile"
+                "algo_engine.exchange_profile",
+                "algo_engine.engine"
             ]
         )
 
@@ -43,8 +43,8 @@ class BuildExtWithConfig(build_ext):
         self.inject_pxd(
             [
                 "algo_engine.base.c_market_data",
-                "algo_engine.profile",
-                "algo_engine.exchange_profile"
+                "algo_engine.exchange_profile",
+                "algo_engine.engine"
             ]
         )
 
@@ -79,27 +79,16 @@ class BuildExtWithConfig(build_ext):
 
 # Define the extensions
 extensions = [
-    Extension(
-        name="algo_engine.profile.c_base",
-        sources=["algo_engine/profile/c_base.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.profile.c_cn",
-        sources=["algo_engine/profile/c_cn.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.engine.c_market_engine",
-        sources=["algo_engine/engine/c_market_engine.pyx"],
-        extra_compile_args=["-O3"]
-    ),
-    Extension(
-        name="algo_engine.engine.c_event_engine",
-        sources=["algo_engine/engine/c_event_engine.pyx"],
-        include_dirs=[*event_engine.get_include()],
-        extra_compile_args=["-O3"]
-    )
+    # Extension(
+    #     name="algo_engine.profile.c_base",
+    #     sources=["algo_engine/profile/c_base.pyx"],
+    #     extra_compile_args=["-O3"]
+    # ),
+    # Extension(
+    #     name="algo_engine.profile.c_cn",
+    #     sources=["algo_engine/profile/c_cn.pyx"],
+    #     extra_compile_args=["-O3"]
+    # ),
 ]
 
 if os.name == 'posix':
@@ -184,6 +173,19 @@ if os.name == 'posix':
             sources=["algo_engine/base/c_market_data/c_market_data_buffer.pyx"],
             extra_compile_args=["-O3"]
         ),
+        # === MDS Cython Extensions ===
+        Extension(
+            name="algo_engine.engine.c_market_engine",
+            sources=["algo_engine/engine/c_market_engine.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        # === EventEngine Integration Cython Extensions ===
+        Extension(
+            name="algo_engine.engine.c_event_engine",
+            sources=["algo_engine/engine/c_event_engine.pyx"],
+            include_dirs=[*event_engine.get_include()],
+            extra_compile_args=["-O3"]
+        )
     ])
 
 setup(
