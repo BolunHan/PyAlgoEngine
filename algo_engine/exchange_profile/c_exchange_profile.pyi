@@ -95,6 +95,24 @@ def local_utc_offset_seconds() -> int:
     ...
 
 
+def unix_to_datetime(unix_ts: float) -> datetime.datetime:
+    """Convert a UNIX timestamp to a timezone-aware datetime in the local timezone.
+
+    This function is used internally for timestamp conversions in the exchange
+    profile. It takes a UNIX timestamp (seconds since epoch) and returns a
+    datetime object that is aware of the local timezone, which is necessary
+    for accurate conversions to session times.
+
+    Args:
+        unix_ts: The UNIX timestamp to convert.
+    Returns:
+        A timezone-aware datetime object corresponding to the provided timestamp in the local timezone.
+    Raises:
+        ValueError: If the provided timestamp is negative or otherwise invalid.
+    """
+    ...
+
+
 TimeLike = SessionTime | datetime.time
 
 

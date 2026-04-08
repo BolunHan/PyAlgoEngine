@@ -57,6 +57,10 @@ cdef extern from "c_ex_profile_base.h":
         uint8_t day
         session_type stype
 
+    ctypedef struct session_datetime_t:
+        session_time_t time
+        session_date_t date
+
     ctypedef struct session_time_range_t:
         session_time_t start
         session_time_t end
@@ -137,6 +141,7 @@ cdef extern from "c_ex_profile_base.h":
     uint8_t c_ex_profile_days_in_month(uint16_t year, uint8_t month) noexcept nogil
     c_bool c_ex_profile_date_is_valid(const session_date_t* date) noexcept nogil
     uint32_t c_ex_profile_date_to_ordinal(const session_date_t* date) noexcept nogil
+    uint32_t c_ex_profile_unix_to_ordinal(double unix_ts, double tz_offset_seconds) noexcept nogil
     int c_ex_profile_date_from_ordinal(uint32_t ordinal, session_date_t* out) noexcept nogil
     int c_ex_profile_date_from_year_day(uint16_t year, uint32_t day_of_year, session_date_t* out) noexcept nogil
     int c_ex_profile_next_day(const session_date_t* date, session_date_t* out) noexcept nogil
@@ -171,6 +176,11 @@ cdef extern from "c_ex_profile_base.h":
 
 cdef extern from "c_ex_profile_cn.h":
     extern const exchange_profile EX_PROFILE_CN
+
+
+cpdef double local_utc_offset_seconds()
+cdef int c_ex_profile_unix_to_datetime(double unix_ts, session_datetime_t* out)
+cpdef py_datetime unix_to_datetime(double unix_ts)
 
 
 cdef class SessionTime:

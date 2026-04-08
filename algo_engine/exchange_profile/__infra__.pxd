@@ -53,6 +53,7 @@ from .c_exchange_profile cimport (
     c_ex_profile_days_in_month,
     c_ex_profile_date_is_valid,
     c_ex_profile_date_to_ordinal,
+    c_ex_profile_unix_to_ordinal,
     c_ex_profile_date_from_ordinal,
     c_ex_profile_date_from_year_day,
     c_ex_profile_next_day,
@@ -78,6 +79,10 @@ from .c_exchange_profile cimport (
     c_ex_profile_nearest_trading_date,
     c_ex_profile_is_trading_day,
     c_ex_profile_trading_days_between,
+
+    local_utc_offset_seconds,
+    c_ex_profile_unix_to_datetime,
+    unix_to_datetime,
 
     SessionTime,
     SessionTimeRange,

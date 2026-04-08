@@ -34,8 +34,23 @@ class AuctionPhase(enum.IntEnum):
     DONE = auction_phase.AUCTION_PHASE_DONE
 
 
-def local_utc_offset_seconds():
+cpdef double local_utc_offset_seconds():
     return c_utc_offset_seconds()
+
+
+cdef int c_ex_profile_unix_to_datetime(double unix_ts, session_datetime_t* out):
+    cdef int ret_code = c_ex_profile_session_time_from_unix(unix_ts, &out.time)
+    if ret_code == 0:
+        return c_ex_profile_date_from_ordinal(c_ex_profile_unix_to_ordinal(unix_ts, EX_PROFILE.tz_offset_seconds if EX_PROFILE else 0.0), &out.date)
+    return ret_code
+
+
+cpdef py_datetime unix_to_datetime(double unix_ts):
+    cdef session_datetime_t dt
+    cdef int ret_code = c_ex_profile_unix_to_datetime(unix_ts, &dt)
+    if ret_code != 0:
+        raise ValueError(f'unix_ts: {unix_ts} out of range.')
+    return py_datetime.__new__(py_datetime, dt.date.year, dt.date.month, dt.date.day, dt.time.hour, dt.time.minute, dt.time.second, dt.time.nanosecond // 1000, PROFILE.time_zone)
 
 
 cdef class SessionTime:

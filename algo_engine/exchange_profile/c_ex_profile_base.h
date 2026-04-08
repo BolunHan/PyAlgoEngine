@@ -31,7 +31,7 @@
 #endif
 
 #ifndef UNIX_EPOCH_ORDINAL
-#define UNIX_EPOCH_ORDINAL ((int64_t) 719163)
+#define UNIX_EPOCH_ORDINAL ((uint32_t) 719163)
 #endif
 
 #ifndef EX_PROFILE_ID_SIZE
@@ -104,6 +104,11 @@ typedef struct session_date_t {
     uint8_t      day;    // 1-31
     session_type stype;
 } session_date_t;
+
+typedef struct session_datetime_t {
+    session_time_t time;
+    session_date_t date;
+} session_datetime_t;
 
 typedef struct session_time_range_t {
     session_time_t start;
@@ -195,6 +200,7 @@ static inline bool                     c_ex_profile_is_leap_year(uint16_t year);
 static inline uint8_t                  c_ex_profile_days_in_month(uint16_t year, uint8_t month);
 static inline bool                     c_ex_profile_date_is_valid(const session_date_t* date);
 static inline uint32_t                 c_ex_profile_date_to_ordinal(const session_date_t* date);
+static inline uint32_t                 c_ex_profile_unix_to_ordinal(double unix_ts, double tz_offset_seconds);
 static inline int                      c_ex_profile_date_from_ordinal(uint32_t ordinal, session_date_t* out);
 static inline int                      c_ex_profile_date_from_year_day(uint16_t year, uint32_t day_of_year, session_date_t* out);
 static inline int                      c_ex_profile_next_day(const session_date_t* date, session_date_t* out);
@@ -280,8 +286,8 @@ static inline double c_ex_profile_unix_to_ts(double unix_ts) {
 static inline double c_ex_profile_ts_to_elapsed(double ts) {
     if (!EX_PROFILE) return 0.0;
 
-    if (ts <= EX_PROFILE->session_start_ts) return 0.0;
-    if (ts >= EX_PROFILE->session_end_ts) return EX_PROFILE->session_length_seconds;
+    if (ts <= EX_PROFILE->session_start_ts) return ts - EX_PROFILE->session_start_ts;
+    if (ts >= EX_PROFILE->session_end_ts) return EX_PROFILE->session_length_seconds + ts - EX_PROFILE->session_end_ts;
 
     double               break_elapsed = 0;
     const session_break* current_break = EX_PROFILE->session_breaks;
@@ -352,6 +358,14 @@ static inline uint32_t c_ex_profile_date_to_ordinal(const session_date_t* date) 
     }
     ordinal += (uint32_t) date->day;
 
+    return ordinal;
+}
+
+static inline uint32_t c_ex_profile_unix_to_ordinal(double unix_ts, double tz_offset_seconds) {
+    double shifted = unix_ts + tz_offset_seconds;
+    if (shifted < 0.0) return (uint32_t) -1;
+    uint32_t days = (uint32_t) (shifted / (double) SECONDS_PER_DAY);
+    uint32_t ordinal = UNIX_EPOCH_ORDINAL + days;
     return ordinal;
 }
 
@@ -825,19 +839,8 @@ static inline int c_ex_profile_session_date_from_unix(double unix_ts, session_da
     if (!out) return -1;
     if (!isfinite(unix_ts)) return -1;
 
-    int64_t days = 0;
-    int64_t ordinal = 0;
-
-    double  shifted_ts = unix_ts + (EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0);
-    if (!isfinite(shifted_ts)) return -1;
-
-    double days_floor = floor(shifted_ts / (double) SECONDS_PER_DAY);
-    if (days_floor < (double) INT64_MIN || days_floor > (double) INT64_MAX) return -1;
-    days = (int64_t) days_floor;
-
-    ordinal = UNIX_EPOCH_ORDINAL + days;
-    if (ordinal < 1 || ordinal > (int64_t) EX_PROFILE_MAX_ORDINAL) return -1;
-
+    uint32_t ordinal = c_ex_profile_unix_to_ordinal(unix_ts, EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0);
+    if (ordinal < 1 || ordinal > EX_PROFILE_MAX_ORDINAL) return -1;
     if (c_ex_profile_date_from_ordinal((uint32_t) ordinal, out) != 0) return -1;
     out->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(out->year, out->month, out->day) : SESSION_TYPE_NORMINAL;
     return 0;
