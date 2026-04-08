@@ -2,7 +2,7 @@ import abc
 from datetime import datetime, date
 
 from algo_engine.base import MarketData, InternalData
-from algo_engine.exchange_profile import Profile
+from algo_engine.exchange_profile import ExchangeProfile
 
 MDS: MarketDataService
 
@@ -149,7 +149,7 @@ class MarketDataService:
         profile (Profile): The active market profile.
         max_subscription (int): Maximum number of subscriptions allowed.
     """
-    profile: Profile
+    profile: ExchangeProfile
     max_subscription: int
 
     def __len__(self) -> int:
@@ -159,6 +159,7 @@ class MarketDataService:
         Returns:
             Number of tickers with available data.
         """
+        ...
 
     def __call__(self, market_data: MarketData):
         """
@@ -167,6 +168,7 @@ class MarketDataService:
         Args:
             market_data (MarketData): Incoming data.
         """
+        ...
 
     def __getitem__(self, monitor_id: str) -> MarketDataMonitor:
         """
@@ -178,6 +180,7 @@ class MarketDataService:
         Returns:
             MarketDataMonitor: The corresponding monitor.
         """
+        ...
 
     def on_internal_data(self, internal_data: InternalData) -> None:
         """
@@ -186,6 +189,7 @@ class MarketDataService:
         Args:
             internal_data (InternalData): The internal protocol message.
         """
+        ...
 
     def on_market_data(self, market_data: MarketData) -> None:
         """
@@ -194,6 +198,7 @@ class MarketDataService:
         Args:
             market_data (MarketData): Incoming data.
         """
+        ...
 
     def get_market_price(self, ticker: str) -> float:
         """
@@ -205,6 +210,7 @@ class MarketDataService:
         Returns:
             float: Latest price or NaN if unavailable.
         """
+        ...
 
     def add_monitor(self, monitor: MarketDataMonitor, **kwargs) -> None:
         """
@@ -216,6 +222,7 @@ class MarketDataService:
         Args:
             monitor (MarketDataMonitor): The monitor to add.
         """
+        ...
 
     def pop_monitor(self, monitor_id: str, **kwargs) -> None:
         """
@@ -224,11 +231,13 @@ class MarketDataService:
         Args:
             monitor_id (str): The ID of the monitor to remove.
         """
+        ...
 
     def clear(self):
         """
         Reset the service to its initial state.
         """
+        ...
 
     @property
     def market_price(self) -> dict[str, float]:
@@ -238,6 +247,7 @@ class MarketDataService:
         Returns:
             A dictionary mapping tickers to prices.
         """
+        ...
 
     @property
     def market_time(self) -> datetime | None:
@@ -247,6 +257,7 @@ class MarketDataService:
         Returns:
             A `datetime` object or None.
         """
+        ...
 
     @property
     def market_date(self) -> date | None:
@@ -256,15 +267,17 @@ class MarketDataService:
         Returns:
             A `date` object or None.
         """
+        ...
 
     @property
-    def timestamp(self) -> float | None:
+    def timestamp(self) -> float:
         """
         UNIX timestamp of the latest market data.
 
         Returns:
-            A float or None.
+            A float, can be NAN if not initialized.
         """
+        ...
 
     @property
     def monitor(self) -> dict[str, MarketDataMonitor]:
@@ -274,6 +287,16 @@ class MarketDataService:
         Returns:
             The monitor registry. Caution: not a copy.
         """
+
+    @property
+    def n_subscribed(self) -> int:
+        """
+        Number of tickers currently subscribed.
+
+        Returns:
+            The count of unique tickers with data.
+        """
+        ...
 
     @property
     def monitor_manager(self) -> MonitorManager:
