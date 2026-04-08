@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Optional, TypeVar, Generic
+from typing import Generic, Optional, TypeVar
 
 from .c_market_data import MarketData
 
@@ -90,8 +90,12 @@ class MarketDataBuffer(Generic[MD]):
     >>> buffer.sort()
     """
 
-    def __init__(self, ptr_cap: int, data_cap: int) -> None:
-        """Allocate an new empty block buffer sized for `ptr_cap` pointers and `data_cap` bytes."""
+    def __init__(self, ptr_cap: int = ..., data_cap: int = ...) -> None:
+        """Allocate a new empty block buffer sized for `ptr_cap` pointers and `data_cap` bytes.
+        Args:
+            ptr_cap: [Optional] Initial number of pointer slots to allocate for the buffer. Default defined by compile-time constant ``MD_BUF_PTR_DEFAULT_CAP``.
+            data_cap: [Optional] Initial number of bytes to reserve for serialized `MarketData` payloads. Default defined by compile-time constant ``MD_BUF_DATA_DEFAULT_CAP``.
+        """
         ...
 
     def __iter__(self) -> MarketDataBuffer:
