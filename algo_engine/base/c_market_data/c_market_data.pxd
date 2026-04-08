@@ -346,83 +346,13 @@ cdef BookConfigContext MD_BOOK5
 cdef BookConfigContext MD_BOOK10
 cdef BookConfigContext MD_BOOK20
 
+cdef md_variant* c_init_buffer(md_data_type dtype, const char* ticker, double timestamp)
+cdef md_variant* c_deserialize_buffer(const char* src)
 
-cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, double timestamp):
-    cdef md_variant* market_data
-
-    market_data = c_md_new(dtype, MD_DEFAULT_ALLOCATOR)
-    if not market_data:
-        raise MemoryError(f'Failed to allocate shared memory for {PyUnicode_FromString(c_md_dtype_name(dtype))}')
-    cdef md_meta* meta_data = <md_meta*> market_data
-
-    if MD_DEFAULT_ALLOCATOR.with_shm:
-        if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker)
-    else:
-        if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker)
-
-    if not meta_data.ticker:
-        raise MemoryError('Failed to intern ticker string')
-
-    meta_data.dtype = dtype
-    meta_data.timestamp = timestamp
-    c_ex_profile_unix_to_datetime(timestamp, &meta_data.dt)
-    meta_data.dt.date.stype = session_type.SESSION_TYPE_NORMINAL
-    return market_data
-
-
-cdef inline md_variant* c_deserialize_buffer(const char* src):
-    market_data = c_md_deserialize(src, MD_DEFAULT_ALLOCATOR)
-
-    if not market_data:
-        raise MemoryError('Failed to deserialize market data from bytes')
-    cdef md_meta* meta_data = <md_meta*> market_data
-
-    cdef const char* ticker = meta_data.ticker
-    if not ticker:
-        raise ValueError('Deserialized market data has null ticker string')
-
-    if MD_DEFAULT_ALLOCATOR.with_shm:
-        if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker)
-    else:
-        if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
-        else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker)
-
-    if not meta_data.ticker:
-        raise MemoryError('Failed to intern ticker string')
-
-    return market_data
-
-
-cdef inline void c_write_uint128(void* data, uint128_t value):
-    memcpy(data, &value, 16)
-
-
-cdef inline uint128_t c_read_uint128(void* data):
-    cdef uint128_t value
-    memcpy(&value, data, 16)
-    return value
-
-
-cdef inline void c_write_int128(void* data, int128_t value):
-    memcpy(data, &value, 16)
-
-
-cdef inline int128_t c_read_int128(void* data):
-    cdef int128_t value
-    memcpy(&value, data, 16)
-    return value
-
+cdef void c_write_uint128(void* data, uint128_t value)
+cdef uint128_t c_read_uint128(void* data)
+cdef void c_write_int128(void* data, int128_t value)
+cdef int128_t c_read_int128(void* data)
 
 cdef void c_set_id(md_id* id_ptr, object id_value)
 cdef object c_get_id(md_id* id_ptr)
