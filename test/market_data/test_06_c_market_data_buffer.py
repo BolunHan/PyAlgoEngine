@@ -2,7 +2,7 @@ import random
 import time
 import unittest
 
-from algo_engine.base.c_market_data_ng.c_market_data_buffer import (
+from algo_engine.base.c_market_data.c_market_data_buffer import (
     MarketDataBuffer,
     MarketDataBufferCache,
 )

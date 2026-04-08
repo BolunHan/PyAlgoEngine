@@ -2,12 +2,12 @@ import math
 import unittest
 import uuid
 
-from algo_engine.base.c_market_data_ng.c_trade_utils import (
+from algo_engine.base.c_market_data.c_trade_utils import (
     OrderState,
     TradeInstruction,
     TradeReport,
 )
-from algo_engine.base.c_market_data_ng.c_transaction import TransactionSide, OrderType
+from algo_engine.base.c_market_data.c_transaction import TransactionSide, OrderType
 
 
 class TestOrderState(unittest.TestCase):

@@ -2,8 +2,8 @@ import math
 import unittest
 from datetime import date, timedelta
 
-from algo_engine.base.c_market_data_ng.c_candlestick import BarData, DailyBar
-from algo_engine.base.c_market_data_ng.c_market_data import MarketData
+from algo_engine.base.c_market_data.c_candlestick import BarData, DailyBar
+from algo_engine.base.c_market_data.c_market_data import MarketData
 
 
 class TestBarData(unittest.TestCase):

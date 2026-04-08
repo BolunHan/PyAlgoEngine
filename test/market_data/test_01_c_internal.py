@@ -1,8 +1,8 @@
 import unittest
 
-from algo_engine.base.c_market_data_ng.c_allocator_protocol import MD_SHARED, MD_FREELIST
-from algo_engine.base.c_market_data_ng.c_internal import InternalData
-from algo_engine.base.c_market_data_ng.c_market_data import MarketData
+from algo_engine.base.c_market_data.c_allocator_protocol import MD_SHARED, MD_FREELIST
+from algo_engine.base.c_market_data.c_internal import InternalData
+from algo_engine.base.c_market_data.c_market_data import MarketData
 
 
 class TestInternalData(unittest.TestCase):

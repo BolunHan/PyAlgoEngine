@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, pathlib.Path(__file__).parents[2] / 'algo_engine')
 
-from algo_engine.exchange_profile import PROFILE, PROFILE_CN
+from algo_engine.exchange_profile import PROFILE, PROFILE_CN, unix_to_datetime
 
 # ---------- Config ----------
 TS = 1700000000  # fixed timestamp for consistency
@@ -37,6 +37,10 @@ def hybrid():
     return datetime.fromtimestamp(TS, PROFILE.time_zone)
 
 
+def u2dt():
+    return unix_to_datetime(TS)
+
+
 class TestDTConversionPerformance(unittest.TestCase):
     """Performance benchmark for timestamp -> datetime conversions.
 
@@ -62,6 +66,7 @@ class TestDTConversionPerformance(unittest.TestCase):
         t_aware_fixed = timeit.timeit("aware_fixed()", globals=globals(), number=N)
         t_profile_convert = timeit.timeit("profile_convert()", globals=globals(), number=N)
         t_hybrid = timeit.timeit("hybrid()", globals=globals(), number=N)
+        t_u2dt = timeit.timeit("u2dt()", globals=globals(), number=N)
 
         print('Results:')
         print(f'{naive()=}')
@@ -69,13 +74,15 @@ class TestDTConversionPerformance(unittest.TestCase):
         print(f'{aware_fixed()=}')
         print(f'{profile_convert()=}')
         print(f'{hybrid()=}')
+        print(f'{u2dt()=}')
 
-        print(f"Iterations: {N:,}")
+        print(f"\n====Iterations: {N:,} ====")
         print(f"Naive           : {t_naive:.6f} sec ({t_naive / N * 1e9:.1f} ns/op)")
         print(f"With TZ         : {t_aware:.6f} sec ({t_aware / N * 1e9:.1f} ns/op)")
         print(f"Fixed offset    : {t_aware_fixed:.6f} sec ({t_aware_fixed / N * 1e9:.1f} ns/op)")
         print(f"PROFILE Convert : {t_profile_convert:.6f} sec ({t_profile_convert / N * 1e9:.1f} ns/op)")
         print(f"Hybrid          : {t_hybrid:.6f} sec ({t_hybrid / N * 1e9:.1f} ns/op)")
+        print(f"u2dt            : {t_u2dt:.6f} sec ({t_u2dt / N * 1e9:.1f} ns/op)")
 
 
 if __name__ == "__main__":

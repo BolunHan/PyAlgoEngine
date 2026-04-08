@@ -1,6 +1,6 @@
 import unittest
 
-from algo_engine.base.c_market_data_ng import c_market_data as md
+from algo_engine.base.c_market_data import c_market_data as md
 
 FilterMode = md.FilterMode
 
