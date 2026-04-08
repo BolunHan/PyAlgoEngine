@@ -39,9 +39,6 @@ from .c_exchange_profile cimport (
     EX_TRADE_CALENDAR_CACHE,
     EX_PROFILE_ACTIVATION_LISTENERS,
 
-    EX_PROFILE_DEFAULT,
-    EX_PROFILE_CN,
-
     c_utc_offset_seconds,
     c_ex_profile_time_compare,
     c_ex_profile_time_to_ts,
@@ -90,9 +87,9 @@ from .c_exchange_profile cimport (
     SessionDateRange,
     CallAuction,
     SessionBreak,
-    ExchangeProfile
-)
+    ExchangeProfile,
 
-from .c_profile_dispatcher cimport PROFILE
-from .c_profile_default cimport PROFILE_DEFAULT
-from .c_profile_cn cimport EX_PROFILE_CN
+    PROFILE,
+    EX_PROFILE_DEFAULT, PROFILE_DEFAULT,
+    EX_PROFILE_CN, PROFILE_CN
+)

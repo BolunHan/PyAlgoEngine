@@ -678,6 +678,13 @@ cdef class ExchangeProfile:
             raise ValueError(f'unix_ts: {unix_ts} out of range.')
         return py_datetime.__new__(py_datetime, out_date.year, out_date.month, out_date.day, out_time.hour, out_time.minute, out_time.second, out_time.nanosecond // 1000, self.time_zone)
 
+    cdef inline py_date c_timestamp_to_date(self, double unix_ts):
+        cdef session_date_t out_date
+        cdef int ret_code = c_ex_profile_session_date_from_unix(unix_ts, &out_date)
+        if ret_code != 0:
+            raise ValueError(f'unix_ts: {unix_ts} out of range.')
+        return py_date.__new__(py_datetime, out_date.year, out_date.month, out_date.day)
+
     cdef inline double c_timestamp_to_seconds(self, double t, bint break_adjusted):
         cdef double ts = c_ex_profile_unix_to_ts(t)
         if break_adjusted:

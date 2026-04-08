@@ -271,6 +271,10 @@ cdef class ExchangeProfile:
 
     cdef inline bint c_date_in_market_session(self, py_date market_date)
 
+    cdef inline py_datetime c_timestamp_to_datetime(self, double unix_ts)
+
+    cdef inline py_date c_timestamp_to_date(self, double unix_ts)
+
     cdef inline double c_time_to_seconds(self, py_time t, bint break_adjusted)
 
     cdef inline double c_timestamp_to_seconds(self, double t, bint break_adjusted)
@@ -286,8 +290,6 @@ cdef class ExchangeProfile:
     cdef inline ssize_t c_trading_days_between(self, py_date start_date, py_date end_date)
 
     cdef inline py_date c_nearest_trading_date(self, py_date market_date, bint previous)
-
-    cdef inline py_datetime c_timestamp_to_datetime(self, double unix_ts)
 
 
 cdef ExchangeProfile PROFILE
