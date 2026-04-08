@@ -1,8 +1,8 @@
 from libcpp cimport bool as c_bool
 from cpython.object cimport PyObject
 
-from ..base.c_market_data_ng.c_market_data cimport MarketData, md_variant, md_internal
-from ..base.c_market_data_ng.c_internal cimport InternalData
+from ..base.c_market_data.c_market_data cimport MarketData, md_variant, md_internal
+from ..base.c_market_data.c_internal cimport InternalData
 from ..exchange_profile.c_exchange_profile cimport ExchangeProfile
 
 

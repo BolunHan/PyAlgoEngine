@@ -8,7 +8,7 @@ from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy, strdup
 
 from . import LOGGER
-from ..base.c_market_data_ng.c_market_data cimport MarketData, md_data_type, c_md_get_price, c_md_dtype_name
+from ..base.c_market_data.c_market_data cimport MarketData, md_data_type, c_md_get_price, c_md_dtype_name
 from ..exchange_profile.c_exchange_profile cimport PROFILE, ExchangeProfile
 
 

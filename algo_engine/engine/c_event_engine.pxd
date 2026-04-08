@@ -1,6 +1,6 @@
 from event_engine.capi cimport Topic, EventEngineEx
 
-from ..base.c_market_data_ng.c_market_data cimport MarketData
+from ..base.c_market_data.c_market_data cimport MarketData
 
 
 cdef class TopicSet:
