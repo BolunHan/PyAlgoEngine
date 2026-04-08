@@ -6,6 +6,8 @@ from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE, PyObject
 from cpython.unicode cimport PyUnicode_FromString
 from libc.stdlib cimport calloc, free
 
+from . import LOGGER
+
 
 class SessionType(enum.IntEnum):
     NON_TRADING = session_type.SESSION_TYPE_NON_TRADING
@@ -603,6 +605,7 @@ cdef class ExchangeProfile:
     cdef void c_listener_adapter(const exchange_profile* previous_profile, const exchange_profile* new_profile, void* user_data) noexcept:
         cdef ExchangeProfile py_profile = <ExchangeProfile> <PyObject*> user_data
         py_profile.c_bind(new_profile)
+        LOGGER.info(f'Active ExchangeProfile switched: {PyUnicode_FromString(previous_profile.profile_id)} -> {PyUnicode_FromString(new_profile.profile_id)}')
 
     cdef inline void c_bind(self, const exchange_profile* header):
         self.header = header

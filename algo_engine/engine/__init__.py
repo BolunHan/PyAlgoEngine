@@ -31,7 +31,10 @@ from .c_market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorM
 from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .trade_engine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile
 
-__all__ = ['EVENT_ENGINE', 'TOPIC', 'TopicSet',
-           'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
-           'MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton',
-           'DirectMarketAccess', 'Balance', 'PositionManagementService', 'Inventory', 'RiskProfile']
+__all__ = [
+    'LOGGER',
+    'EVENT_ENGINE', 'TOPIC', 'TopicSet',
+    'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
+    'MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton',
+    'DirectMarketAccess', 'Balance', 'PositionManagementService', 'Inventory', 'RiskProfile'
+]

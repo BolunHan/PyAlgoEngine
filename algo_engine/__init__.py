@@ -24,12 +24,14 @@ from . import utils
 
 def set_logger(logger: logging.Logger):
     from . import base
+    from . import exchange_profile
     from . import engine
     from . import backtest
     from . import strategy
     from . import apps
 
     base.set_logger(logger=logger)
+    exchange_profile.set_logger(logger=logger.getChild('ExchangeProfile'))
     engine.set_logger(logger=logger.getChild('Engine'))
     backtest.set_logger(logger=logger.getChild('BackTest'))
     strategy.set_logger(logger=logger.getChild('Strategy'))
