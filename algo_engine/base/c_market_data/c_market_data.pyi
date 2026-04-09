@@ -1,9 +1,8 @@
 import ctypes
 import enum
-from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Annotated, Any, Self
+from typing import Annotated, Self
 from warnings import deprecated
 
 from .c_allocator_protocol import EnvConfigContext
@@ -36,50 +35,8 @@ class DataType(enum.IntEnum):
     DTYPE_INSTRUCTION: DataType
 
 
-class EnvConfigContext:
-    """Context manager for temporary environment configuration changes."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        """
-        Initialize the context with configuration changes.
-
-        Args:
-            **kwargs: Configuration key-value pairs to set temporarily
-        """
-        ...
-
-    def __enter__(self) -> EnvConfigContext:
-        """Enter the context, applying configuration changes."""
-        ...
-
-    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: Any) -> None:
-        """Exit the context, reverting configuration changes."""
-        ...
-
-    def __call__(self, func: Callable[[...], Any]) -> Callable[[...], Any]:
-        """Decorator to apply the context to a function."""
-        ...
-
-    def __or__(self, other: EnvConfigContext) -> EnvConfigContext:
-        """
-        Combine two EnvConfigContext instances.
-
-        Args:
-            other: Another EnvConfigContext instance
-
-        Returns:
-            A new EnvConfigContext with combined configurations
-        """
-        ...
-
-    def __invert__(self) -> EnvConfigContext:
-        """
-        Invert the EnvConfigContext.
-
-        Returns:
-            A new EnvConfigContext that reverts the configurations set in the original.
-        """
-        ...
+class BookConfigContext(EnvConfigContext):
+    pass
 
 
 class MarketData(object):
@@ -102,7 +59,7 @@ class MarketData(object):
 
     To config the environment for a block of code, use the EnvConfigContext as a context manager or decorator.
     e.g.
-    >>> from algo_engine.base import InternalData
+    >>> from algo_engine.base import InternalData, MD_SHARED, MD_LOCKED
     >>> with MD_SHARED | MD_LOCKED:
     ...     data = InternalData(...)
 
@@ -260,6 +217,7 @@ class MarketData(object):
     @property
     def price(self) -> float:
         """alias of market_price"""
+        ...
 
     @property
     def address(self) -> str | None:
@@ -273,21 +231,18 @@ class FilterMode:
 
     Each filter flag corresponds to a specific type of market data:
     - NO_INTERNAL: Filter out InternalData messages
-    - NO_CANCEL: Filter out OrderData messages with cancel actions
-    - NO_AUCTION: Filter out Auction-related messages
+    - NO_CANCEL: Filter out TransactionData messages with cancel actions
+    - NO_AUCTION: Filter out open-call-auction, close-call-auction messages
+    - NO_BREAK: Filter out pre-open, closed, session-break and session-suspended messages
     - NO_ORDER: Filter out all OrderData messages
     - NO_TRADE: Filter out all TransactionData messages
     - NO_TICK: Filter out all TickData messages
-
-    Attributes:
-        value (int): The underlying integer value of the bitmask
     """
-    value: int
 
-    # Class-level constants
     NO_INTERNAL: FilterMode
     NO_CANCEL: FilterMode
     NO_AUCTION: FilterMode
+    NO_BREAK: FilterMode
     NO_ORDER: FilterMode
     NO_TRADE: FilterMode
     NO_TICK: FilterMode
@@ -298,14 +253,25 @@ class FilterMode:
         Args:
             value: Initial bitmask value.
         """
+        ...
 
-    @classmethod
-    def all(cls) -> FilterMode:
-        """Create a FilterMode with all filter flags enabled.
+    def __int__(self) -> int:
+        """Get the integer value of the filter.
 
         Returns:
-            FilterMode: A filter that blocks all message types
+            int: The integer bitmask value
         """
+        ...
+
+    def __eq__(self, other: FilterMode) -> bool:
+        """Check if two FilterMode instances are equal.
+
+        Args:
+            other: Another FilterMode instance to compare with
+        Returns:
+            bool: True if both instances have the same bitmask value, False otherwise
+        """
+        ...
 
     def __or__(self, other: FilterMode) -> FilterMode:
         """Combine filters using bitwise OR.
@@ -316,6 +282,7 @@ class FilterMode:
         Returns:
             FilterMode: New combined filter
         """
+        ...
 
     def __and__(self, other: FilterMode) -> FilterMode:
         """Intersect filters using bitwise AND.
@@ -326,6 +293,7 @@ class FilterMode:
         Returns:
             FilterMode: New intersected filter
         """
+        ...
 
     def __invert__(self):
         """
@@ -334,6 +302,7 @@ class FilterMode:
         Returns:
             FilterMode: a new inverted filter.
         """
+        ...
 
     def __contains__(self, other: FilterMode) -> bool:
         """Check if this filter contains all flags of another filter.
@@ -344,6 +313,7 @@ class FilterMode:
         Returns:
             bool: True if all flags in other are set in this filter
         """
+        ...
 
     def __repr__(self) -> str:
         """Return a string representation of the filter.
@@ -351,16 +321,74 @@ class FilterMode:
         Returns:
             str: String showing hex value and active flags
         """
+        ...
+
+    def __class_getitem__(cls, value: int) -> FilterMode:
+        """Allow instantiation using subscript notation, e.g. FilterMode[0x03].
+
+        Args:
+            value: Integer value to create the FilterMode from
+
+        Returns:
+            FilterMode: New instance with the given value
+        """
+        ...
+
+    @classmethod
+    def all(cls) -> FilterMode:
+        """Create a FilterMode with all filter flags enabled.
+
+        Returns:
+            FilterMode: A filter that blocks all message types
+        """
+        ...
+
+    def get_flags(self) -> list[str]:
+        """Get a list of active filter flags in this FilterMode.
+
+        Returns:
+            list[str]: List of flag names that are active in this filter
+        """
+        ...
 
     def mask_data(self, market_data: MarketData) -> bool:
         """Check if market data passes through this filter.
+        A wrapper of underlying C function ``c_md_filter``.
 
         Args:
-            market_data: Market data object to check
+            market_data: Market data object to check, Must be a instance of ``algo_engine.base.MarketData`` or its subclass.
 
         Returns:
             bool: True if data should pass through filter
         """
+        ...
+
+    @property
+    def value(self) -> int:
+        """Get the integer bitmask value of this filter.
+
+        Returns:
+            int: The integer value representing the active filter flags
+        """
+        ...
+
+    @property
+    def name(self) -> str:
+        """Get a human-readable name for this filter mode.
+
+        Returns:
+            str: A string representing the active filter flags
+        """
+        ...
+
+    @property
+    def flags(self) -> list[FilterMode]:
+        """Get a list of individual FilterMode flags that are active in this filter.
+
+        Returns:
+            list[FilterMode]: List of FilterMode instances representing active flags
+        """
+        ...
 
 
 class ConfigViewer(object):
@@ -375,40 +403,49 @@ class ConfigViewer(object):
         ...
 
     @property
-    def DEBUG(self):
+    def DEBUG(self) -> bool:
+        """[COMPILER DIRECTIVE] Whether the library is compiled in debug mode."""
         ...
 
     @property
-    def BOOK_SIZE(self):
+    def BOOK_SIZE(self) -> int:
+        """[COMPILER DIRECTIVE] The maximum number of price levels in the order book for OrderBook and TickData."""
         ...
 
     @property
-    def ID_SIZE(self):
+    def ID_SIZE(self) -> int:
+        """[COMPILER DIRECTIVE] The maximum size of OrderData and TransactionData."""
         ...
 
     @property
-    def LONG_ID_SIZE(self):
+    def LONG_ID_SIZE(self) -> int:
+        """[COMPILER DIRECTIVE] The maximum size of TradeReport and TradeInstruction (long_md_id supported)."""
         ...
 
     @deprecated
     @property
-    def MAX_WORKERS(self):
+    def MAX_WORKERS(self) -> int:
+        """[COMPILER DIRECTIVE] The maximum number of worker threads for concurrent processing. Deprecated, no longer has any effect."""
         ...
 
     @property
-    def MD_CFG_LOCKED(self):
+    def MD_CFG_LOCKED(self) -> bool:
+        """[RUNTIME CONFIG] Whether the MarketData default allocator configured to run in thread-safe mode. Defaults to False."""
         ...
 
     @property
-    def MD_CFG_SHARED(self):
+    def MD_CFG_SHARED(self) -> bool:
+        """[RUNTIME CONFIG] Whether the MarketData default allocator configured to allocate buffer in shared memory. Defaults to True."""
         ...
 
     @property
-    def MD_CFG_FREELIST(self):
+    def MD_CFG_FREELIST(self) -> bool:
+        """[RUNTIME CONFIG] Whether the MarketData default allocator configured to use freelist when deallocating buffer. Note that MD_CFG_SHARED enforces its own freelist. Defaults to True."""
         ...
 
     @property
-    def MD_CFG_BOOK_SIZE(self):
+    def MD_CFG_BOOK_SIZE(self) -> int:
+        """[RUNTIME CONFIG] The default book size for order book related market data (OrderBook, TickData). Defaults to the compile-time BOOK_SIZE."""
         ...
 
 
