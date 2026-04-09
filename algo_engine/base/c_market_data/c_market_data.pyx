@@ -450,15 +450,41 @@ cdef class MarketData:
 
 cdef class FilterMode:
     # Class-level constants for flags
-    NO_INTERNAL = FilterMode.__new__(FilterMode, md_filter_flag.NO_INTERNAL)
-    NO_CANCEL = FilterMode.__new__(FilterMode, md_filter_flag.NO_CANCEL)
-    NO_AUCTION = FilterMode.__new__(FilterMode, md_filter_flag.NO_AUCTION)
-    NO_ORDER = FilterMode.__new__(FilterMode, md_filter_flag.NO_ORDER)
-    NO_TRADE = FilterMode.__new__(FilterMode, md_filter_flag.NO_TRADE)
-    NO_TICK = FilterMode.__new__(FilterMode, md_filter_flag.NO_TICK)
+    NO_INTERNAL     = FilterMode.__new__(FilterMode, md_filter_flag.NO_INTERNAL)
+    NO_CANCEL       = FilterMode.__new__(FilterMode, md_filter_flag.NO_CANCEL)
+    NO_AUCTION      = FilterMode.__new__(FilterMode, md_filter_flag.NO_AUCTION)
+    NO_BREAK        = FilterMode.__new__(FilterMode, md_filter_flag.NO_BREAK)
+    NO_ORDER        = FilterMode.__new__(FilterMode, md_filter_flag.NO_ORDER)
+    NO_TRADE        = FilterMode.__new__(FilterMode, md_filter_flag.NO_TRADE)
+    NO_TICK         = FilterMode.__new__(FilterMode, md_filter_flag.NO_TICK)
 
     def __cinit__(self, md_filter_flag value):
         self.value = value
+
+    cdef list c_get_flags(self):
+        cdef flags = []
+        cdef md_filter_flag flag = self.value
+        if md_filter_flag.NO_INTERNAL & flag:
+            flags.append("NO_INTERNAL")
+        if md_filter_flag.NO_CANCEL & flag:
+            flags.append("NO_CANCEL")
+        if md_filter_flag.NO_AUCTION & flag:
+            flags.append("NO_AUCTION")
+        if md_filter_flag.NO_BREAK & flag:
+            flags.append("NO_BREAK")
+        if md_filter_flag.NO_ORDER & flag:
+            flags.append("NO_ORDER")
+        if md_filter_flag.NO_TRADE & flag:
+            flags.append("NO_TRADE")
+        if md_filter_flag.NO_TICK & flag:
+            flags.append("NO_TICK")
+        return flags
+
+    def __int__(self):
+        return self.value
+
+    def __eq__(self, FilterMode other):
+        return isinstance(other, self.__class__) and other.value == self.value
 
     def __or__(self, FilterMode other):
         return FilterMode.__new__(FilterMode, self.value | other.value)
@@ -472,6 +498,7 @@ cdef class FilterMode:
             md_filter_flag.NO_INTERNAL |
             md_filter_flag.NO_CANCEL |
             md_filter_flag.NO_AUCTION |
+            md_filter_flag.NO_BREAK |
             md_filter_flag.NO_ORDER |
             md_filter_flag.NO_TRADE |
             md_filter_flag.NO_TICK
@@ -482,14 +509,15 @@ cdef class FilterMode:
         return (self.value & other.value) == other.value
 
     def __repr__(self):
-        flags = []
-        if md_filter_flag.NO_INTERNAL & self.value: flags.append("NO_INTERNAL")
-        if md_filter_flag.NO_CANCEL & self.value: flags.append("NO_CANCEL")
-        if md_filter_flag.NO_AUCTION & self.value: flags.append("NO_AUCTION")
-        if md_filter_flag.NO_ORDER & self.value: flags.append("NO_ORDER")
-        if md_filter_flag.NO_TRADE & self.value: flags.append("NO_TRADE")
-        if md_filter_flag.NO_TICK & self.value: flags.append("NO_TICK")
-        return f"<FilterMode {self.value:#0x}: {' | '.join(flags) or 'None'}>"
+        return f"<{self.__class__.__name__}: {self.value:#0x}>({self.name})"
+
+    def __dir__(self):
+        return ['name', 'flags', 'value',
+                '__int__', '__eq__', '__or__', '__and__', '__invert__', '__contains__',
+                'all', 'get_flags', 'mask_data']
+
+    def __class_getitem__(cls, md_filter_flag value):
+        return cls.__new__(cls, value)
 
     @staticmethod
     cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode):
@@ -500,9 +528,36 @@ cdef class FilterMode:
     def all(cls):
         return FilterMode.__new__(FilterMode, MD_FILTER_ALL)
 
+    def get_flags(self):
+        return self.c_get_flags()
+
     cpdef bint mask_data(self, MarketData market_data):
         cdef c_bool passed = c_md_filter(market_data.header, self.value)
         return passed
+
+    property name:
+        def __get__(self):
+            return '|'.join(self.c_get_flags()) or 'None'
+
+    property flags:
+        def __get__(self):
+            cdef flags = []
+            cdef md_filter_flag flag = self.value
+            if md_filter_flag.NO_INTERNAL & flag:
+                flags.append(FilterMode.NO_INTERNAL)
+            if md_filter_flag.NO_CANCEL & flag:
+                flags.append(FilterMode.NO_CANCEL)
+            if md_filter_flag.NO_AUCTION & flag:
+                flags.append(FilterMode.NO_AUCTION)
+            if md_filter_flag.NO_BREAK & flag:
+                flags.append(FilterMode.NO_BREAK)
+            if md_filter_flag.NO_ORDER & flag:
+                flags.append(FilterMode.NO_ORDER)
+            if md_filter_flag.NO_TRADE & flag:
+                flags.append(FilterMode.NO_TRADE)
+            if md_filter_flag.NO_TICK & flag:
+                flags.append(FilterMode.NO_TICK)
+            return flags
 
 
 cdef class ConfigViewer:

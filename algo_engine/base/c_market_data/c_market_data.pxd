@@ -165,9 +165,12 @@ cdef extern from "c_market_data.h":
         NO_INTERNAL
         NO_CANCEL
         NO_AUCTION
+        NO_BREAK
         NO_ORDER
         NO_TRADE
         NO_TICK
+
+        MD_FILTER_FLAG_COUNT
 
     ctypedef struct md_meta:
         md_data_type dtype
@@ -301,7 +304,6 @@ cdef extern from "c_market_data.h":
         MD_ERR_OOR
         MD_ERR_OOM
 
-    const size_t MD_FILTER_FLAG_COUNT
     const md_filter_flag MD_FILTER_ALL
 
     void c_usleep(unsigned int usec) noexcept nogil
@@ -393,7 +395,9 @@ cdef class MarketData:
 
 
 cdef class FilterMode:
-    cdef public md_filter_flag value
+    cdef readonly md_filter_flag value
+
+    cdef list c_get_flags(self)
 
     @staticmethod
     cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode)

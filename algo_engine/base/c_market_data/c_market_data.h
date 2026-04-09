@@ -188,11 +188,12 @@ typedef enum md_filter_flag {
     NO_INTERNAL         = 1 << 0,
     NO_CANCEL           = 1 << 1,
     NO_AUCTION          = 1 << 2,
-    NO_ORDER            = 1 << 3,
-    NO_TRADE            = 1 << 4,
-    NO_TICK             = 1 << 5,
+    NO_BREAK            = 1 << 3,
+    NO_ORDER            = 1 << 4,
+    NO_TRADE            = 1 << 5,
+    NO_TICK             = 1 << 6,
 
-    MD_FILTER_FLAG_COUNT = 5
+    MD_FILTER_FLAG_COUNT = 6
 } md_filter_flag;
 
 #define MD_FILTER_ALL ((1 << MD_FILTER_FLAG_COUNT) - 1)
@@ -1308,6 +1309,11 @@ static inline bool c_md_filter(const md_variant* market_data, md_filter_flag fla
     if (flags & NO_AUCTION) {
         session_phase phase = market_data->meta_info.dt.time.phase;
         if (phase == SESSION_PHASE_OPEN_AUCTION || phase == SESSION_PHASE_CLOSE_AUCTION) return false;
+    }
+
+    if (flags & NO_BREAK) {
+        session_phase phase = market_data->meta_info.dt.time.phase;
+        if (phase == SESSION_PHASE_BREAK || phase == SESSION_PHASE_PREOPEN || phase == SESSION_PHASE_SUSPENDED || phase == SESSION_PHASE_CLOSED) return false;
     }
 
     if (flags & NO_ORDER && dtype == DTYPE_ORDER) {
