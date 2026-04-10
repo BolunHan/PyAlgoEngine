@@ -4,10 +4,18 @@ algo\_engine.profile package
 Submodules
 ----------
 
-algo\_engine.profile.cn module
-------------------------------
+algo\_engine.profile.c\_base module
+-----------------------------------
 
-.. automodule:: algo_engine.profile.cn
+.. automodule:: algo_engine.profile.c_base
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.profile.c\_cn module
+---------------------------------
+
+.. automodule:: algo_engine.profile.c_cn
    :members:
    :show-inheritance:
    :undoc-members:

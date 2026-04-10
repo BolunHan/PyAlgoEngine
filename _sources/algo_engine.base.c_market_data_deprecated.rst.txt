@@ -1,0 +1,61 @@
+algo\_engine.base.c\_market\_data\_deprecated package
+=====================================================
+
+Submodules
+----------
+
+algo\_engine.base.c\_market\_data\_deprecated.c\_candlestick module
+-------------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated.c_candlestick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data\_deprecated.c\_market\_data module
+--------------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated.c_market_data
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data\_deprecated.c\_market\_data\_buffer module
+----------------------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated.c_market_data_buffer
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data\_deprecated.c\_tick module
+------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated.c_tick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data\_deprecated.c\_trade\_utils module
+--------------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated.c_trade_utils
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data\_deprecated.c\_transaction module
+-------------------------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated.c_transaction
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.base.c_market_data_deprecated
+   :members:
+   :show-inheritance:
+   :undoc-members:

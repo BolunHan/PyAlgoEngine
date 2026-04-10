@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.apps.backtest.doc_server &mdash; PyAlgoEngine 0.8.3 documentation</title>
+  <title>algo_engine.apps.backtest.doc_server &mdash; PyAlgoEngine 0.10.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=7f96dc5e"></script>
-      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/documentation_options.js?v=82662543"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
@@ -61,6 +61,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../../algo_engine.html">algo_engine</a></li>
           <li class="breadcrumb-item"><a href="../../apps.html">algo_engine.apps</a></li>
       <li class="breadcrumb-item active">algo_engine.apps.backtest.doc_server</li>
       <li class="wy-breadcrumbs-aside">
@@ -75,14 +76,14 @@
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">NotRequired</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NotRequired</span><span class="p">,</span> <span class="n">TypedDict</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">DocServer</span><span class="p">,</span> <span class="n">DocTheme</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">TradeData</span><span class="p">,</span> <span class="n">TransactionData</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">Profile</span><span class="p">,</span> <span class="n">PROFILE</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ts_indices</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.apps</span><span class="w"> </span><span class="kn">import</span> <span class="n">DocServer</span><span class="p">,</span> <span class="n">DocTheme</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MarketData</span><span class="p">,</span> <span class="n">TradeData</span><span class="p">,</span> <span class="n">TransactionData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.exchange_profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ts_indices</span>
 
 
 <div class="viewcode-block" id="StickTheme">
@@ -97,11 +98,9 @@
 
 <div class="viewcode-block" id="StickTheme.__init__">
 <a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.doc_server.StickTheme.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="p">,</span> <span class="n">style</span><span class="p">:</span> <span class="n">ColorStyle</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">profile</span>
-
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">style</span><span class="p">:</span> <span class="n">ColorStyle</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">profile</span><span class="o">.</span><span class="n">profile_id</span> <span class="o">==</span> <span class="s1">&#39;cn&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">profile_id</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CN_STOCK&#39;</span><span class="p">]:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_style</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws_style</span>
@@ -142,11 +141,10 @@
 
 <div class="viewcode-block" id="CandleStick.__init__">
 <a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.doc_server.CandleStick.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span> <span class="n">x_axis</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="p">:</span> <span class="n">DocTheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span> <span class="n">x_axis</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="p">:</span> <span class="n">DocTheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">ticker</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_date</span> <span class="o">=</span> <span class="n">start_date</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">end_date</span> <span class="o">=</span> <span class="n">end_date</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">profile</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_indices</span><span class="p">()</span> <span class="k">if</span> <span class="n">x_axis</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x_axis</span>
 
@@ -158,7 +156,7 @@
             <span class="n">update_interval</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;update_interval&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">StickTheme</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">StickTheme</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">:</span> <span class="n">CandleStick</span><span class="o">.</span><span class="n">ActiveBarData</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{</span>
@@ -182,16 +180,16 @@
 <span class="sd">        from start date to end date, with given interval, in seconds</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">calendar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">)</span>
+        <span class="n">calendar</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">)</span>
         <span class="n">timestamps</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">market_date</span> <span class="ow">in</span> <span class="n">calendar</span><span class="p">:</span>
             <span class="n">_ts_indices</span> <span class="o">=</span> <span class="n">ts_indices</span><span class="p">(</span>
                 <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
                 <span class="n">interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span>
-                <span class="n">session_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">session_start</span><span class="p">,</span>
-                <span class="n">session_end</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">session_end</span><span class="p">,</span>
-                <span class="n">session_break</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">session_break</span><span class="p">,</span>
-                <span class="n">time_zone</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">,</span>
+                <span class="n">session_start</span><span class="o">=</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">session_start</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">(),</span>
+                <span class="n">session_end</span><span class="o">=</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">session_end</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">(),</span>
+                <span class="n">session_break</span><span class="o">=</span><span class="p">[(</span><span class="n">session_break</span><span class="o">.</span><span class="n">break_start</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">(),</span> <span class="n">session_break</span><span class="o">.</span><span class="n">break_end</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">())</span> <span class="k">for</span> <span class="n">session_break</span> <span class="ow">in</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_breaks</span><span class="p">],</span>
+                <span class="n">time_zone</span><span class="o">=</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">time_zone</span><span class="p">,</span>
                 <span class="n">ts_mode</span><span class="o">=</span><span class="s1">&#39;both&#39;</span>
             <span class="p">)</span>
 
@@ -308,7 +306,7 @@
 <a class="viewcode-back" href="../../../../algo_engine.apps.backtest.html#algo_engine.apps.backtest.doc_server.CandleStick.pipe">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]):</span>
         <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;idx&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># to ensure bar rendered in the center of the interval</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;market_time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_start&#39;</span><span class="p">],</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">))</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;market_time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_start&#39;</span><span class="p">]))</span>
         <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">])</span>
         <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">])</span>
         <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;cs.high_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">])</span>
@@ -386,7 +384,7 @@
             <span class="n">source</span><span class="o">=</span><span class="n">source</span>
         <span class="p">)</span>
 
-        <span class="n">plot</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">major_label_overrides</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)}</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">major_label_overrides</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)}</span>
         <span class="n">plot</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">min_interval</span> <span class="o">=</span> <span class="mf">1.</span>
         <span class="n">tools</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">renderers</span> <span class="o">=</span> <span class="p">[</span><span class="n">_candlestick</span><span class="p">]</span>
 

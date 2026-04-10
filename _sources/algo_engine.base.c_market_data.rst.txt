@@ -4,10 +4,10 @@ algo\_engine.base.c\_market\_data package
 Submodules
 ----------
 
-algo\_engine.base.c\_market\_data.buffer\_test module
------------------------------------------------------
+algo\_engine.base.c\_market\_data.c\_allocator\_protocol module
+---------------------------------------------------------------
 
-.. automodule:: algo_engine.base.c_market_data.buffer_test
+.. automodule:: algo_engine.base.c_market_data.c_allocator_protocol
    :members:
    :show-inheritance:
    :undoc-members:
@@ -16,6 +16,14 @@ algo\_engine.base.c\_market\_data.c\_candlestick module
 -------------------------------------------------------
 
 .. automodule:: algo_engine.base.c_market_data.c_candlestick
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.base.c\_market\_data.c\_internal module
+----------------------------------------------------
+
+.. automodule:: algo_engine.base.c_market_data.c_internal
    :members:
    :show-inheritance:
    :undoc-members:

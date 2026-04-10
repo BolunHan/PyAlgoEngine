@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.apps.demo.test &mdash; PyAlgoEngine 0.8.3 documentation</title>
+  <title>algo_engine.apps.demo.test &mdash; PyAlgoEngine 0.10.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=7f96dc5e"></script>
-      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/documentation_options.js?v=82662543"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
@@ -61,6 +61,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../../algo_engine.html">algo_engine</a></li>
           <li class="breadcrumb-item"><a href="../../apps.html">algo_engine.apps</a></li>
       <li class="breadcrumb-item active">algo_engine.apps.demo.test</li>
       <li class="wy-breadcrumbs-aside">
@@ -75,16 +76,17 @@
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.apps.backtest</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebApp</span><span class="p">,</span> <span class="n">LOGGER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.apps.backtest</span><span class="w"> </span><span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">WebApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Progress</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE_CN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.exchange_profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE_CN</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fake_data</span>
 
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../../algo_engine.apps.demo.html#algo_engine.apps.demo.test.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">PROFILE_CN</span><span class="o">.</span><span class="n">override_profile</span><span class="p">()</span>
+    <span class="n">PROFILE_CN</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span>
+
     <span class="n">ticker</span> <span class="o">=</span> <span class="s1">&#39;000016.SH&#39;</span>
     <span class="n">market_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
 

@@ -11,6 +11,7 @@ Subpackages
    algo_engine.backtest
    algo_engine.base
    algo_engine.engine
+   algo_engine.exchange_profile
    algo_engine.monitor
    algo_engine.profile
    algo_engine.strategy

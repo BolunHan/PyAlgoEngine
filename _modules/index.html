@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview: module code &mdash; PyAlgoEngine 0.8.3 documentation</title>
+  <title>Overview: module code &mdash; PyAlgoEngine 0.10.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=7f96dc5e"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/documentation_options.js?v=82662543"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
@@ -71,7 +71,8 @@
              
   <h1>All modules for which code is available</h1>
 <ul><li><a href="_ctypes.html">_ctypes</a></li>
-<li><a href="algo_engine/apps.html">algo_engine.apps</a></li>
+<li><a href="algo_engine.html">algo_engine</a></li>
+<ul><li><a href="algo_engine/apps.html">algo_engine.apps</a></li>
 <ul><li><a href="algo_engine/apps/backtest/doc_server.html">algo_engine.apps.backtest.doc_server</a></li>
 <li><a href="algo_engine/apps/backtest/tester.html">algo_engine.apps.backtest.tester</a></li>
 <li><a href="algo_engine/apps/backtest/web_app.html">algo_engine.apps.backtest.web_app</a></li>
@@ -82,29 +83,30 @@
 </ul></ul><li><a href="algo_engine/backtest/metrics.html">algo_engine.backtest.metrics</a></li>
 <li><a href="algo_engine/backtest/replay.html">algo_engine.backtest.replay</a></li>
 <li><a href="algo_engine/backtest/sim_match.html">algo_engine.backtest.sim_match</a></li>
-<li><a href="algo_engine/base/c_market_data.html">algo_engine.base.c_market_data</a></li>
-<ul><li><a href="algo_engine/base/c_market_data/c_candlestick.html">algo_engine.base.c_market_data.c_candlestick</a></li>
+<li><a href="algo_engine/base/c_heap_allocator.html">algo_engine.base.c_heap_allocator</a></li>
+<li><a href="algo_engine/base/c_intern_string.html">algo_engine.base.c_intern_string</a></li>
+<li><a href="algo_engine/base/c_market_data/c_allocator_protocol.html">algo_engine.base.c_market_data.c_allocator_protocol</a></li>
+<li><a href="algo_engine/base/c_market_data/c_candlestick.html">algo_engine.base.c_market_data.c_candlestick</a></li>
+<li><a href="algo_engine/base/c_market_data/c_internal.html">algo_engine.base.c_market_data.c_internal</a></li>
 <li><a href="algo_engine/base/c_market_data/c_market_data.html">algo_engine.base.c_market_data.c_market_data</a></li>
 <li><a href="algo_engine/base/c_market_data/c_market_data_buffer.html">algo_engine.base.c_market_data.c_market_data_buffer</a></li>
 <li><a href="algo_engine/base/c_market_data/c_tick.html">algo_engine.base.c_market_data.c_tick</a></li>
 <li><a href="algo_engine/base/c_market_data/c_trade_utils.html">algo_engine.base.c_market_data.c_trade_utils</a></li>
 <li><a href="algo_engine/base/c_market_data/c_transaction.html">algo_engine.base.c_market_data.c_transaction</a></li>
-</ul><li><a href="algo_engine/base/console_utils.html">algo_engine.base.console_utils</a></li>
+<li><a href="algo_engine/base/c_shm_allocator.html">algo_engine.base.c_shm_allocator</a></li>
+<li><a href="algo_engine/base/console_utils.html">algo_engine.base.console_utils</a></li>
 <li><a href="algo_engine/base/finance_decimal.html">algo_engine.base.finance_decimal</a></li>
-<li><a href="algo_engine/base/native_market_data/market_utils_posix.html">algo_engine.base.native_market_data.market_utils_posix</a></li>
-<li><a href="algo_engine/base/native_market_data/trade_utils_native.html">algo_engine.base.native_market_data.trade_utils_native</a></li>
-<li><a href="algo_engine/base/technical_analysis.html">algo_engine.base.technical_analysis</a></li>
 <li><a href="algo_engine/base/telemetrics.html">algo_engine.base.telemetrics</a></li>
 <li><a href="algo_engine/engine.html">algo_engine.engine</a></li>
 <ul><li><a href="algo_engine/engine/algo_engine.html">algo_engine.engine.algo_engine</a></li>
-<li><a href="algo_engine/engine/market_engine.html">algo_engine.engine.market_engine</a></li>
+<li><a href="algo_engine/engine/c_event_engine.html">algo_engine.engine.c_event_engine</a></li>
+<li><a href="algo_engine/engine/c_market_engine.html">algo_engine.engine.c_market_engine</a></li>
 <li><a href="algo_engine/engine/trade_engine.html">algo_engine.engine.trade_engine</a></li>
-</ul><li><a href="algo_engine/monitor/advanced_data_interface.html">algo_engine.monitor.advanced_data_interface</a></li>
-<li><a href="algo_engine/profile.html">algo_engine.profile</a></li>
-<ul><li><a href="algo_engine/profile/cn.html">algo_engine.profile.cn</a></li>
-</ul><li><a href="algo_engine/strategy/strategy_engine.html">algo_engine.strategy.strategy_engine</a></li>
+</ul><li><a href="algo_engine/exchange_profile/c_exchange_profile.html">algo_engine.exchange_profile.c_exchange_profile</a></li>
+<li><a href="algo_engine/monitor/advanced_data_interface.html">algo_engine.monitor.advanced_data_interface</a></li>
+<li><a href="algo_engine/strategy/strategy_engine.html">algo_engine.strategy.strategy_engine</a></li>
 <li><a href="algo_engine/utils/data_utils.html">algo_engine.utils.data_utils</a></li>
-</ul>
+</ul></ul>
 
            </div>
           </div>

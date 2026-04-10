@@ -12,18 +12,26 @@ algo\_engine.engine.algo\_engine module
    :show-inheritance:
    :undoc-members:
 
-algo\_engine.engine.event\_engine module
-----------------------------------------
+algo\_engine.engine.c\_event\_engine module
+-------------------------------------------
 
-.. automodule:: algo_engine.engine.event_engine
+.. automodule:: algo_engine.engine.c_event_engine
    :members:
    :show-inheritance:
    :undoc-members:
 
-algo\_engine.engine.market\_engine module
------------------------------------------
+algo\_engine.engine.c\_market\_engine module
+--------------------------------------------
 
-.. automodule:: algo_engine.engine.market_engine
+.. automodule:: algo_engine.engine.c_market_engine
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.engine.event\_engine module
+----------------------------------------
+
+.. automodule:: algo_engine.engine.event_engine
    :members:
    :show-inheritance:
    :undoc-members:

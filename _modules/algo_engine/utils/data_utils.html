@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.utils.data_utils &mdash; PyAlgoEngine 0.8.3 documentation</title>
+  <title>algo_engine.utils.data_utils &mdash; PyAlgoEngine 0.10.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=7f96dc5e"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/documentation_options.js?v=82662543"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -61,6 +61,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../algo_engine.html">algo_engine</a></li>
       <li class="breadcrumb-item active">algo_engine.utils.data_utils</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -80,78 +81,151 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">Profile</span><span class="p">,</span> <span class="n">PROFILE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..exchange_profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE</span><span class="p">,</span> <span class="n">SessionDate</span><span class="p">,</span> <span class="n">SessionTime</span><span class="p">,</span> <span class="n">SessionBreak</span><span class="p">,</span> <span class="n">SessionTimeRange</span>
 
 
 <span class="nd">@overload</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">session_start</span><span class="p">,</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">session_break</span><span class="p">,</span> <span class="n">time_zone</span><span class="p">,</span> <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span> <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span>
+        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="n">SessionDate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
     <span class="o">...</span>
 
 
 <span class="nd">@overload</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">session_start</span><span class="p">,</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">session_break</span><span class="p">,</span> <span class="n">time_zone</span><span class="p">,</span> <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span> <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;datetime&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span>
+        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="n">SessionDate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;datetime&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span>
+        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="n">SessionDate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;session_time&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SessionTime</span><span class="p">]:</span>
     <span class="o">...</span>
 
 
 <div class="viewcode-block" id="ts_indices">
 <a class="viewcode-back" href="../../../algo_engine.utils.html#algo_engine.utils.data_utils.ts_indices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span>
-        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
-        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
-        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">session_break</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">time_zone</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">tzinfo</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">market_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="n">SessionDate</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
+        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
-        <span class="n">ts_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;datetime&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;timestamp&#39;</span>
+        <span class="n">ts_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;datetime&#39;</span><span class="p">,</span> <span class="s1">&#39;session_time&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="c1"># Regularize input parameters</span>
     <span class="k">if</span> <span class="n">market_date</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">market_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">):</span>
+        <span class="n">market_date</span> <span class="o">=</span> <span class="n">SessionDate</span><span class="o">.</span><span class="n">from_pydate</span><span class="p">(</span><span class="n">market_date</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+        <span class="n">market_date</span> <span class="o">=</span> <span class="n">SessionDate</span><span class="o">.</span><span class="n">from_pydate</span><span class="p">(</span><span class="n">market_date</span><span class="o">.</span><span class="n">date</span><span class="p">())</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">SessionDate</span><span class="p">):</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid market_date </span><span class="si">{</span><span class="n">market_date</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">session_start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">start_ts</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_start_ts</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_start</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+        <span class="n">start_ts</span> <span class="o">=</span> <span class="n">SessionTime</span><span class="o">.</span><span class="n">from_pytime</span><span class="p">(</span><span class="n">session_start</span><span class="p">)</span><span class="o">.</span><span class="n">ts</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_start</span><span class="p">,</span> <span class="n">SessionTime</span><span class="p">):</span>
+        <span class="n">start_ts</span> <span class="o">=</span> <span class="n">session_start</span><span class="o">.</span><span class="n">ts</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid session_start </span><span class="si">{</span><span class="n">session_start</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">session_end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">end_ts</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_end_ts</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_end</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">):</span>
+        <span class="n">end_ts</span> <span class="o">=</span> <span class="n">SessionTime</span><span class="o">.</span><span class="n">from_pytime</span><span class="p">(</span><span class="n">session_end</span><span class="p">)</span><span class="o">.</span><span class="n">ts</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_end</span><span class="p">,</span> <span class="n">SessionTime</span><span class="p">):</span>
+        <span class="n">end_ts</span> <span class="o">=</span> <span class="n">session_end</span><span class="o">.</span><span class="n">ts</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid session_end </span><span class="si">{</span><span class="n">session_end</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">):</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">):</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">SessionTimeRange</span><span class="p">):</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span><span class="o">.</span><span class="n">elapsed_seconds</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid interval </span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">session_breaks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">breaks_ts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">session_break</span><span class="o">.</span><span class="n">break_start_ts</span><span class="p">,</span> <span class="n">session_break</span><span class="o">.</span><span class="n">break_end_ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">session_break</span> <span class="ow">in</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_breaks</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_breaks</span><span class="p">,</span> <span class="n">SessionBreak</span><span class="p">):</span>
+        <span class="n">breaks_ts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">session_breaks</span><span class="o">.</span><span class="n">break_start_ts</span><span class="p">,</span> <span class="n">session_breaks</span><span class="o">.</span><span class="n">break_end_ts</span><span class="p">)]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_breaks</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">breaks_ts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">False</span><span class="p">),</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kc">False</span><span class="p">))</span> <span class="k">for</span> <span class="n">session_break</span> <span class="ow">in</span> <span class="n">session_breaks</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid session_breaks </span><span class="si">{</span><span class="n">session_breaks</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+
+    <span class="n">market_date</span><span class="p">:</span> <span class="n">SessionDate</span>
+    <span class="n">md_ts</span> <span class="o">=</span> <span class="n">market_date</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+    <span class="n">start_ts</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">end_ts</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">breaks_ts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span>
 
     <span class="c1"># this is supposed to be the end_time of the given candle stick</span>
-    <span class="n">market_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">session_start</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">session_end</span><span class="p">:</span>
-        <span class="n">session_end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
-    <span class="c1"># session end in next day</span>
-    <span class="k">elif</span> <span class="n">session_end</span> <span class="o">&lt;</span> <span class="n">session_start</span><span class="p">:</span>
-        <span class="n">session_end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">session_end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">session_end</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
-
+    <span class="n">ts</span> <span class="o">=</span> <span class="n">start_ts</span> <span class="o">+</span> <span class="n">interval</span>
     <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
-        <span class="n">session_end</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+        <span class="n">end_ts</span> <span class="o">+=</span> <span class="n">interval</span>
 
     <span class="n">ts_index</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">while</span> <span class="n">market_time</span> <span class="o">&lt;=</span> <span class="n">session_end</span><span class="p">:</span>
+    <span class="k">while</span> <span class="n">ts</span> <span class="o">&lt;=</span> <span class="n">end_ts</span><span class="p">:</span>
         <span class="c1"># check if the given market_time is in session break</span>
         <span class="n">in_session</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="k">if</span> <span class="n">session_break</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">break_range</span> <span class="ow">in</span> <span class="n">session_break</span><span class="p">:</span>
-                <span class="n">break_start</span><span class="p">,</span> <span class="n">break_end</span> <span class="o">=</span> <span class="n">break_range</span>
-
-                <span class="k">if</span> <span class="n">break_start</span> <span class="o">&lt;</span> <span class="n">market_time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">break_end</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">breaks_ts</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">break_start</span><span class="p">,</span> <span class="n">break_end</span> <span class="ow">in</span> <span class="n">breaks_ts</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">break_start</span> <span class="o">&lt;</span> <span class="n">ts</span> <span class="o">&lt;=</span> <span class="n">break_end</span><span class="p">:</span>
                     <span class="n">in_session</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="k">break</span>
 
         <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;start&#39;</span> <span class="ow">or</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
-            <span class="n">_market_time</span> <span class="o">=</span> <span class="n">market_time</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+            <span class="n">_ts</span> <span class="o">=</span> <span class="n">ts</span> <span class="o">-</span> <span class="n">interval</span>
         <span class="k">elif</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span>
-            <span class="n">_market_time</span> <span class="o">=</span> <span class="n">market_time</span>
+            <span class="n">_ts</span> <span class="o">=</span> <span class="n">ts</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ts_mode </span><span class="si">{</span><span class="n">ts_mode</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">in_session</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span>
-                <span class="n">timestamp</span> <span class="o">=</span> <span class="n">_market_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
-                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_ts</span> <span class="o">+</span> <span class="n">md_ts</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;datetime&#39;</span><span class="p">:</span>
-                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_market_time</span><span class="p">)</span>
+                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="n">_ts</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;session_time&#39;</span><span class="p">:</span>
+                <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SessionTime</span><span class="o">.</span><span class="n">from_ts</span><span class="p">(</span><span class="n">_ts</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ts_format </span><span class="si">{</span><span class="n">ts_format</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
 
-        <span class="n">market_time</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">interval</span><span class="p">)</span>
+        <span class="n">ts</span> <span class="o">+=</span> <span class="n">interval</span>
 
     <span class="k">return</span> <span class="n">ts_index</span></div>
 
@@ -160,7 +234,6 @@
 <div class="viewcode-block" id="fake_daily_data">
 <a class="viewcode-back" href="../../../algo_engine.utils.html#algo_engine.utils.data_utils.fake_daily_data">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fake_daily_data</span><span class="p">(</span>
-        <span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
         <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span>
         <span class="n">p0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span>
@@ -169,11 +242,7 @@
         <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
     <span class="k">if</span> <span class="n">calendar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="kn">import</span><span class="w"> </span><span class="nn">exchange_calendars</span>
-        <span class="n">market</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;market&#39;</span><span class="p">,</span> <span class="s1">&#39;SSE&#39;</span><span class="p">)</span>
-        <span class="n">calendar</span> <span class="o">=</span> <span class="n">exchange_calendars</span><span class="o">.</span><span class="n">get_calendar</span><span class="p">(</span><span class="n">market</span><span class="p">)</span>
-        <span class="n">sessions</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">sessions_in_range</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
-        <span class="n">calendar</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">sessions</span><span class="p">])</span>
+        <span class="n">calendar</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">to_pydate</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)]</span>
 
     <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttl_days&#39;</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
     <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;risk_free_rate&#39;</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
@@ -197,7 +266,7 @@
     <span class="n">open_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="n">low_price</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">high_price</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-        <span class="s1">&#39;date&#39;</span><span class="p">:</span> <span class="n">calendar</span><span class="p">,</span>
+        <span class="s1">&#39;date&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">calendar</span><span class="p">),</span>
         <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
         <span class="s1">&#39;high_price&#39;</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
         <span class="s1">&#39;low_price&#39;</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
@@ -216,36 +285,13 @@
         <span class="n">p0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">100.</span><span class="p">,</span>
         <span class="n">volatility</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.20</span><span class="p">,</span>
         <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.</span><span class="p">,</span>
-        <span class="n">profile</span><span class="p">:</span> <span class="n">Profile</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">session_break</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILE</span>
-
-    <span class="n">session_start</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_start</span> <span class="k">if</span> <span class="n">session_start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_start</span>
-    <span class="n">session_end</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_end</span> <span class="k">if</span> <span class="n">session_end</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_end</span>
-    <span class="n">session_break</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">session_break</span> <span class="k">if</span> <span class="n">session_break</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">session_break</span>
-    <span class="n">time_zone</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time_zone&#39;</span><span class="p">,</span> <span class="n">profile</span><span class="o">.</span><span class="n">time_zone</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">session_start</span><span class="p">:</span>
-        <span class="n">session_start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span>
-
-    <span class="n">_ts_indices</span> <span class="o">=</span> <span class="n">ts_indices</span><span class="p">(</span>
-        <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
-        <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span>
-        <span class="n">session_start</span><span class="o">=</span><span class="n">session_start</span><span class="p">,</span>
-        <span class="n">session_end</span><span class="o">=</span><span class="n">session_end</span><span class="p">,</span>
-        <span class="n">session_break</span><span class="o">=</span><span class="n">session_break</span><span class="p">,</span>
-        <span class="n">time_zone</span><span class="o">=</span><span class="n">time_zone</span><span class="p">,</span>
-        <span class="n">ts_mode</span><span class="o">=</span><span class="s1">&#39;end&#39;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">ts_indices</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttl_days&#39;</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
     <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;risk_free_rate&#39;</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
-    <span class="n">num_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">_ts_indices</span><span class="p">)</span>
+    <span class="n">num_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
     <span class="n">obs_volatility</span> <span class="o">=</span> <span class="n">volatility</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ttl_days</span> <span class="o">*</span> <span class="n">num_obs</span><span class="p">)</span>
     <span class="n">obs_risk_free_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">risk_free_rate</span><span class="p">)</span> <span class="o">/</span> <span class="n">ttl_days</span> <span class="o">/</span> <span class="n">num_obs</span>
 
@@ -267,7 +313,7 @@
     <span class="n">low_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">low_price</span><span class="p">,</span> <span class="n">open_price</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">_ts_indices</span><span class="p">,</span>
+        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">indices</span><span class="p">,</span>
         <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
         <span class="s1">&#39;high_price&#39;</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
         <span class="s1">&#39;low_price&#39;</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>

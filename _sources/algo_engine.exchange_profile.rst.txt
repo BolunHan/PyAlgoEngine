@@ -1,0 +1,45 @@
+algo\_engine.exchange\_profile package
+======================================
+
+Submodules
+----------
+
+algo\_engine.exchange\_profile.c\_exchange\_profile module
+----------------------------------------------------------
+
+.. automodule:: algo_engine.exchange_profile.c_exchange_profile
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.exchange\_profile.c\_profile\_cn module
+----------------------------------------------------
+
+.. automodule:: algo_engine.exchange_profile.c_profile_cn
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.exchange\_profile.c\_profile\_default module
+---------------------------------------------------------
+
+.. automodule:: algo_engine.exchange_profile.c_profile_default
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+algo\_engine.exchange\_profile.c\_profile\_dispatcher module
+------------------------------------------------------------
+
+.. automodule:: algo_engine.exchange_profile.c_profile_dispatcher
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: algo_engine.exchange_profile
+   :members:
+   :show-inheritance:
+   :undoc-members:
