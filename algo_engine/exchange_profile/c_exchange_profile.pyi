@@ -10,6 +10,7 @@ __all__ = [
     "SessionTimeRange",
     "SessionDate",
     "SessionDateRange",
+    "SessionDateTime",
     "CallAuction",
     "SessionBreak",
     "ExchangeProfile",
