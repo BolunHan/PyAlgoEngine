@@ -31,4 +31,9 @@ extern bool                        EX_PROFILE_CN_IS_ACTIVATED;
 extern const session_date_range_t* EX_PROFILE_CN_TRADE_CALENDAR;
 extern const exchange_profile      EX_PROFILE_CN;
 
+extern bool                        c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* list, size_t n);
+extern bool                        c_ex_profile_cn_is_holiday(const session_date_t* date);
+extern bool                        c_ex_profile_cn_is_circuit_break(const session_date_t* date);
+extern void                        c_ex_profile_cn_get_calendar(void);
+
 #endif /* C_EX_PROFILE_CN_H */

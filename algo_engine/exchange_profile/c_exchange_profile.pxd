@@ -177,6 +177,12 @@ cdef extern from "c_ex_profile_base.h":
 cdef extern from "c_ex_profile_cn.h":
     extern const exchange_profile EX_PROFILE_CN
 
+    c_bool c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* date_list, size_t n) noexcept nogil
+    c_bool c_ex_profile_cn_is_holiday(const session_date_t* date) noexcept nogil
+    c_bool c_ex_profile_cn_is_circuit_break(const session_date_t* date) noexcept nogil
+    void c_ex_profile_cn_get_calendar() noexcept nogil
+
+
 
 cpdef double local_utc_offset_seconds()
 cdef int c_ex_profile_unix_to_datetime(double unix_ts, session_datetime_t* out)

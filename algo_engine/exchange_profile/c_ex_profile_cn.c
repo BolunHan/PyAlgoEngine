@@ -775,11 +775,6 @@ const session_break EX_PROFILE_CN_BREAK = {
 
 // ========== Forward Declaration ==========
 
-static inline bool           c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* list, size_t n);
-static inline bool           c_ex_profile_cn_is_holiday(const session_date_t* date);
-static inline bool           c_ex_profile_cn_is_circuit_break(const session_date_t* date);
-static inline void           c_ex_profile_cn_get_calendar(void);
-
 static void                  c_ex_profile_on_activate_cn(const exchange_profile* profile);
 static void                  c_ex_profile_on_deactivate_cn(const exchange_profile* profile);
 static session_date_range_t* c_ex_profile_trade_calendar_cn(const session_date_t* start_date, const session_date_t* end_date);
@@ -789,24 +784,24 @@ static session_type          c_ex_profile_resolve_session_type_cn(uint16_t year,
 
 // ========== Utilities Functions ==========
 
-static inline bool c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* list, size_t n) {
+bool c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* list, size_t n) {
     if (!date || !list) return false;
     for (size_t i = 0; i < n; ++i)
         if (c_ex_profile_date_compare(date, list + i) == 0) return true;
     return false;
 }
 
-static inline bool c_ex_profile_cn_is_holiday(const session_date_t* date) {
+bool c_ex_profile_cn_is_holiday(const session_date_t* date) {
     if (c_ex_profile_cn_date_in_list(date, EX_PROFILE_CN_HOLIDAYS_PRECOMPUTED, EX_PROFILE_CN_HOLIDAYS_PRECOMPUTED_COUNT)) return true;
     if (c_ex_profile_cn_date_in_list(date, EX_PROFILE_CN_HOLIDAYS_ESTIMATED, EX_PROFILE_CN_HOLIDAYS_ESTIMATED_COUNT)) return true;
     return false;
 }
 
-static inline bool c_ex_profile_cn_is_circuit_break(const session_date_t* date) {
+bool c_ex_profile_cn_is_circuit_break(const session_date_t* date) {
     return c_ex_profile_cn_date_in_list(date, EX_PROFILE_CN_CIRCUIT_BREAK_DATES, EX_PROFILE_CN_CIRCUIT_BREAK_DATES_COUNT);
 }
 
-static inline void c_ex_profile_cn_get_calendar(void) {
+void c_ex_profile_cn_get_calendar(void) {
     if (EX_PROFILE_CN_TRADE_CALENDAR) return;
     session_date_t        start = {.year = EX_PROFILE_CN_PROFILE_MIN_YEAR, .month = 1u, .day = 1u, .stype = SESSION_TYPE_NON_TRADING};
     session_date_t        end = {.year = EX_PROFILE_CN_PROFILE_MAX_YEAR, .month = 12u, .day = 31u, .stype = SESSION_TYPE_NON_TRADING};
