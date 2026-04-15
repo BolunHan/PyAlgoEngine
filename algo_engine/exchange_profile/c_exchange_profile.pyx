@@ -498,6 +498,24 @@ cdef class SessionDateRange:
             return self.header.n_days
 
 
+cdef class SessionDateTime:
+    def __dealloc__(self):
+        if not self.owner:
+            return
+
+        if self.header:
+            free(<void*> self.header)
+
+    @staticmethod
+    cdef SessionDateTime c_from_header(session_datetime_t* header, bint owner=False):
+        cdef SessionDateTime instance = SessionDateTime.__new__(SessionDateTime)
+        instance.header = header
+        instance.owner = owner
+        instance.time = SessionTime.c_from_header(&header.time, False)
+        instance.date = SessionDate.c_from_header(&header.date, False)
+        return instance
+
+
 cdef class CallAuction:
     def __init__(self):
         raise NotImplementedError(f'{self.__class__.__name__} should not be initialized from python interface.')

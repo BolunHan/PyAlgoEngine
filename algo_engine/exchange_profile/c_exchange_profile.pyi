@@ -367,6 +367,18 @@ class SessionDateRange(object):
     def dates(self) -> tuple[SessionDate, ...]: ...
 
 
+class SessionDateTime(object):
+    """A combined date and time representation for exchange sessions.
+    Simplest wrapper around a C struct that contains a SessionDate and SessionTime.
+    """
+
+    @property
+    def time(self) -> SessionTime: ...
+
+    @property
+    def date(self) -> SessionDate: ...
+
+
 class CallAuction(object):
     """Call auction metadata describing auction windows inside a trading day.
 

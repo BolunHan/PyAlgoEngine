@@ -224,6 +224,17 @@ cdef class SessionDateRange:
     cpdef list to_list(self)
 
 
+cdef class SessionDateTime:
+    cdef session_datetime_t* header
+    cdef bint owner
+
+    cdef readonly SessionTime time
+    cdef readonly SessionDate date
+
+    @staticmethod
+    cdef SessionDateTime c_from_header(session_datetime_t* header, bint owner=?)
+
+
 cdef class CallAuction:
     cdef const call_auction* header
 
