@@ -20,6 +20,7 @@ from .c_exchange_profile cimport (
     session_date_t,
     session_time_range_t,
     session_date_range_t,
+    session_datetime_t,
     call_auction,
     session_break,
 
@@ -85,6 +86,7 @@ from .c_exchange_profile cimport (
     SessionTimeRange,
     SessionDate,
     SessionDateRange,
+    SessionDateTime,
     CallAuction,
     SessionBreak,
     ExchangeProfile,
