@@ -378,6 +378,11 @@ class SessionDateTime(object):
     @property
     def date(self) -> SessionDate: ...
 
+    @classmethod
+    def from_pydatetime(cls, t: datetime.datetime) -> SessionDateTime: ...
+
+    def to_pydatetime(self) -> datetime.datetime: ...
+
 
 class CallAuction(object):
     """Call auction metadata describing auction windows inside a trading day.

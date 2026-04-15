@@ -5,6 +5,7 @@ from cpython.datetime cimport timedelta
 from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE, PyObject
 from cpython.unicode cimport PyUnicode_FromString
 from libc.stdlib cimport calloc, free
+from libc.string cimport memcpy
 
 from . import LOGGER
 
@@ -515,6 +516,37 @@ cdef class SessionDateTime:
         instance.date = SessionDate.c_from_header(&header.date, False)
         return instance
 
+    def __repr__(self):
+        cdef str repr_str = (f'{self.header.date.year:4d}-{self.header.date.month:02d}-{self.header.date.day:02d} '
+                             f'{self.header.time.hour:02d}:{self.header.time.minute:02d}:{self.header.time.second:02d}')
+        if self.header.time.nanosecond:
+            return f'<{self.__class__.__name__}>({repr_str}.{self.header.time.nanosecond // 1000})'
+        return f'<{self.__class__.__name__}>({repr_str})'
+
+    @classmethod
+    def from_pydatetime(cls, py_datetime t):
+        cdef session_datetime_t* header = <session_datetime_t*> calloc(1, sizeof(session_datetime_t))
+        if not header:
+            raise MemoryError(f'Failed to allocate buffer for {cls}')
+        cdef SessionTime tmp_time = SessionTime.from_pytime(t.time())
+        cdef SessionDate tmp_date = SessionDate.from_pydate(t.date())
+        memcpy(&header.time, tmp_time.header, sizeof(session_time_t))
+        memcpy(&header.date, tmp_date.header, sizeof(session_date_t))
+        return SessionDateTime.c_from_header(header, True)
+
+    def to_pydatetime(self):
+        return py_datetime.__new__(
+            py_datetime,
+            self.header.date.year,
+            self.header.date.month,
+            self.header.date.day,
+            self.header.time.hour,
+            self.header.time.minute,
+            self.header.time.second,
+            self.header.time.nanosecond // 1000,
+            PROFILE.time_zone
+        )
+
 
 cdef class CallAuction:
     def __init__(self):
@@ -1021,4 +1053,5 @@ cdef ExchangeProfile PROFILE_DEFAULT = ExchangeProfile.c_from_header(&EX_PROFILE
 globals()['PROFILE_DEFAULT'] = PROFILE_DEFAULT
 
 cdef ExchangeProfile PROFILE_CN = ExchangeProfile.c_from_header(&EX_PROFILE_CN)
+c_ex_profile_cn_get_calendar()
 globals()['PROFILE_CN'] = PROFILE_CN
