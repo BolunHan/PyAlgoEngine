@@ -363,10 +363,10 @@ static inline uint32_t c_ex_profile_date_to_ordinal(const session_date_t* date) 
 
 static inline uint32_t c_ex_profile_unix_to_ordinal(double unix_ts, double tz_offset_seconds) {
     double shifted = unix_ts + tz_offset_seconds;
-    if (shifted < 0.0) return (uint32_t) -1;
-    uint32_t days = (uint32_t) (shifted / (double) SECONDS_PER_DAY);
-    uint32_t ordinal = UNIX_EPOCH_ORDINAL + days;
-    return ordinal;
+    double days = floor(shifted / (double) SECONDS_PER_DAY);
+    double ordinal = UNIX_EPOCH_ORDINAL + days;
+    if (ordinal < 1.0 || ordinal > (double) EX_PROFILE_MAX_ORDINAL) return (uint32_t) -1;
+    return (uint32_t) ordinal;
 }
 
 static inline int c_ex_profile_date_from_ordinal(uint32_t ordinal, session_date_t* out) {
