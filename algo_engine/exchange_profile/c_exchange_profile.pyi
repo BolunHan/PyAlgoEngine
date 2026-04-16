@@ -1,6 +1,7 @@
 import datetime
 import enum
-from typing import Self
+from datetime import timedelta
+from typing import Self, overload, override
 
 __all__ = [
     "SessionType",
@@ -240,20 +241,66 @@ class SessionTimeRange(object):
 DateLike = SessionDate | datetime.date
 
 
-class SessionDate(object):
+class SessionDate(datetime.date):
     """Represents a calendar date in the exchange profile.
 
-    The class mirrors the C-backed ``session_date_t`` structure and provides
-    construction, conversion, arithmetic and validation helpers.
+    ``SessionDate`` subclasses ``datetime.date`` and mirrors a C-backed
+    ``session_date_t`` header used by exchange-profile operations. Because
+    ``datetime.date`` allocates its date payload in ``__new__`` at the C level,
+    a ``SessionDate`` can exist in two distinct states depending on whether
+    ``__init__`` was executed.
+
+    Fully initialized (bound):
+        Both the Python date payload and the internal C header pointer are
+        valid. Created via ``SessionDate(year, month, day)`` or any class
+        factory (``from_pydate``, ``from_unix``, ``from_ordinal``,
+        ``fromisoformat``, ``fromisocalendar``, ``today``)::
+
+            >>> sd = SessionDate(2024, 11, 11)
+            >>> repr(sd)
+            '<SessionDate>(2024-11-11)'
+            >>> sd.addr
+            '0x55b3aff65a10'
+
+    Partially initialized (unbound):
+        The Python date payload is valid (``year``/``month``/``day`` readable),
+        but the internal C header pointer is null. Arises when only ``__new__``
+        runs without ``__init__``, for example via ``SessionDate.__new__(...)``
+        or inherited ``datetime.date`` classmethods that are not overridden::
+
+            >>> partial_sd = SessionDate.__new__(SessionDate, 2024, 11, 11)
+            >>> repr(partial_sd)
+            '<SessionDate Unbound>(2024-11-11)'
+            >>> partial_sd.addr
+            '0x0'
+
+    For an unbound SessionDate instance, calling any method that relies on the internal C header
+    (e.g. ``to_pydate()``, ``to_ordinal()``, ``is_valid()``, ``session_type``, etc.) will automatically call ``c_sync()`` cython internal method,
+    which will attempt to initialize the C header based on the Python date payload.
+
+    Unbound instance has a different __hash__ value, dict lookup will treat it as a different key.
+    For a consistent behavior, it is recommended to always use the fully initialized (bound) SessionDate instances.
+    The only known way to create unbound instances is via ``SessionDate.__new__``. All other methods are tested to return fully bound instances.
+    Use ``test.exchange_profile.test_03_c_exchange_profile_date_initialization_contract`` to verify the expected behavior across different python major versions.
+    ``datetime.date`` API is not within Limited-ABI, and is subjected to change across python versions, use with caution.
+
+    ``SessionDateStandalone`` provides a implementation of SessionDate that does not rely on ``datetime.date``.
+    For cross-platform / version programming, it may be safer to use ``SessionDateStandalone`` instead of ``SessionDate``.
     """
 
     def __init__(self, year: int, month: int, day: int) -> None: ...
 
     def __hash__(self) -> int: ...
 
-    def __format__(self, format_spec: str) -> str: ...
+    @overload
+    def __sub__(self, other: timedelta) -> SessionDate: ...
 
+    @overload
     def __sub__(self, other: DateLike) -> SessionDateRange: ...
+
+    def __sub__(self, other): ...
+
+    def __rsub__(self, other: DateLike) -> SessionDateRange: ...
 
     def __lt__(self, other: DateLike) -> bool: ...
 
@@ -295,7 +342,9 @@ class SessionDate(object):
 
     def is_weekend(self) -> bool: ...
 
-    def ctime(self) -> str: ...
+    def fork(self) -> SessionDate:
+        """Create a new SessionDate instance with the same underlying C struct (not owned), but a separate Python wrapper."""
+        ...
 
     @classmethod
     def fromisocalendar(cls, year: int, week: int, weekday: int) -> SessionDate: ...
@@ -314,6 +363,99 @@ class SessionDate(object):
     def timestamp(self) -> float:
         """Return the UNIX timestamp (seconds since epoch) corresponding to this date at midnight in the profile's local time zone."""
         ...
+
+    @property
+    def year(self) -> int: ...
+
+    @property
+    def month(self) -> int: ...
+
+    @property
+    def day(self) -> int: ...
+
+    @property
+    def session_type(self) -> SessionType: ...
+
+    @property
+    def addr(self) -> str:
+        """Return the memory address of the underlying C struct as a hex string (for debugging purposes)."""
+        ...
+
+
+DateLikeStandalone = SessionDateStandalone | DateLike
+
+
+class SessionDateStandalone(object):
+    """A standalone implementation of SessionDate that does not rely on datetime.date.
+    Most of the signature is the same as ``SessionDate``, but without ``fork()`` and ``.addr`` property.
+    And it is guaranteed to have valid ``session_date_t* header`` initialized.
+    """
+
+    def __init__(self, year: int, month: int, day: int) -> None: ...
+
+    def __hash__(self) -> int: ...
+
+    def __format__(self, format_spec: str) -> str: ...
+
+    def __sub__(self, other: DateLikeStandalone) -> SessionDateRange: ...
+
+    def __lt__(self, other: DateLikeStandalone) -> bool: ...
+
+    def __le__(self, other: DateLikeStandalone) -> bool: ...
+
+    def __eq__(self, other: DateLikeStandalone) -> bool: ...
+
+    def __ne__(self, other: DateLikeStandalone) -> bool: ...
+
+    def __gt__(self, other: DateLikeStandalone) -> bool: ...
+
+    def __ge__(self, other: DateLikeStandalone) -> bool: ...
+
+    @staticmethod
+    def is_leap_year(year: int) -> bool: ...
+
+    @staticmethod
+    def days_in_month(year: int, month: int) -> int: ...
+
+    @classmethod
+    def today(cls) -> SessionDateStandalone: ...
+
+    @classmethod
+    def from_unix(cls, unix_ts: float) -> SessionDateStandalone: ...
+
+    @classmethod
+    def from_ordinal(cls, ordinal: int) -> SessionDateStandalone: ...
+
+    @classmethod
+    def from_pydate(cls, dt: datetime.date) -> SessionDateStandalone: ...
+
+    def to_pydate(self) -> datetime.date: ...
+
+    def to_ordinal(self) -> int: ...
+
+    def add_days(self, days: int) -> SessionDateStandalone: ...
+
+    def is_valid(self) -> bool: ...
+
+    def is_weekend(self) -> bool: ...
+
+    def ctime(self) -> str: ...
+
+    @classmethod
+    def fromisocalendar(cls, year: int, week: int, weekday: int) -> SessionDateStandalone: ...
+
+    @classmethod
+    def fromisoformat(cls, date_str: str) -> SessionDateStandalone: ...
+
+    def isocalendar(self) -> tuple[int, int, int]: ...
+
+    def isoformat(self, *args, **kwargs) -> str: ...
+
+    def strftime(self, format: str) -> str: ...
+
+    def weekday(self) -> int: ...
+
+    def timestamp(self) -> float: ...
 
     @property
     def year(self) -> int: ...
