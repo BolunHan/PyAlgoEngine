@@ -173,6 +173,9 @@ cdef extern from "c_ex_profile_base.h":
     c_bool c_ex_profile_is_trading_day(const session_date_t* market_date) noexcept nogil
     int c_ex_profile_trading_days_between(const session_date_t* start_date, const session_date_t* end_date, ssize_t* out) noexcept nogil
 
+    int c_ex_profile_session_datetime_from_unix(double unix_ts, session_datetime_t* out) noexcept nogil
+    int c_ex_profile_session_datetime_update(session_datetime_t* dt, double unix_ts) noexcept nogil
+
 
 cdef extern from "c_ex_profile_cn.h":
     extern const exchange_profile EX_PROFILE_CN

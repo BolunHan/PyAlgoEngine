@@ -108,6 +108,9 @@ typedef struct session_date_t {
 typedef struct session_datetime_t {
     session_time_t time;
     session_date_t date;
+    double         unix_ts;
+    double         ts;
+    uint32_t       ordinal;
 } session_datetime_t;
 
 typedef struct session_time_range_t {
@@ -231,6 +234,9 @@ static inline int                      c_ex_profile_session_trading_days_after(c
 static inline int                      c_ex_profile_nearest_trading_date(const session_date_t* market_date, bool previous, session_date_t* out);
 static inline bool                     c_ex_profile_is_trading_day(const session_date_t* market_date);
 static inline int                      c_ex_profile_trading_days_between(const session_date_t* start_date, const session_date_t* end_date, ssize_t* out);
+
+static inline int                      c_ex_profile_session_datetime_from_unix(double unix_ts, session_datetime_t* out);
+static inline int                      c_ex_profile_session_datetime_update(session_datetime_t* dt, double unix_ts);
 
 // ========== Utilities Functions (session_time_t) ==========
 
@@ -1059,6 +1065,46 @@ static inline int c_ex_profile_trading_days_between(const session_date_t* start_
     ssize_t end_idx = c_ex_profile_session_date_index(end_date, EX_TRADE_CALENDAR_CACHE);
     if (start_idx == -1 || end_idx == -1) return -1;
     *out = end_idx - start_idx;
+    return 0;
+}
+
+// ========== Public APIs (session_datetime_t) ==========
+
+static inline int c_ex_profile_session_datetime_from_unix(double unix_ts, session_datetime_t* out) {
+    if (!out) return -1;
+    if (!isfinite(unix_ts)) return -1;
+
+    double   tz_offset = EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0;
+    uint32_t ordinal = c_ex_profile_unix_to_ordinal(unix_ts, tz_offset);
+    double   ts = fmod(unix_ts + tz_offset, (double) SECONDS_PER_DAY);
+
+    if (ordinal < 1 || ordinal > EX_PROFILE_MAX_ORDINAL) return -1;
+    out->date.stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(out->date.year, out->date.month, out->date.day) : SESSION_TYPE_NORMINAL;
+
+    if (c_ex_profile_date_from_ordinal(ordinal, &out->date) != 0) return -1;
+    if (c_ex_profile_session_time_from_ts(ts, &out->time) != 0) return -1;
+
+    out->unix_ts = unix_ts;
+    out->ts = ts;
+    out->ordinal = ordinal;
+    return 0;
+}
+
+static inline int c_ex_profile_session_datetime_update(session_datetime_t* dt, double unix_ts) {
+    double   tz_offset = EX_PROFILE ? EX_PROFILE->tz_offset_seconds : 0.0;
+    uint32_t ordinal = c_ex_profile_unix_to_ordinal(unix_ts, tz_offset);
+    double   ts = fmod(unix_ts + tz_offset, (double) SECONDS_PER_DAY);
+
+    if (ordinal != dt->ordinal) {
+        if (ordinal < 1 || ordinal > EX_PROFILE_MAX_ORDINAL) return -1;
+        dt->date.stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(dt->date.year, dt->date.month, dt->date.day) : SESSION_TYPE_NORMINAL;
+        if (c_ex_profile_date_from_ordinal(ordinal, &dt->date) != 0) return -1;
+        dt->ordinal = ordinal;
+    }
+
+    if (c_ex_profile_session_time_from_ts(ts, &dt->time) != 0) return -1;
+    dt->unix_ts = unix_ts;
+    dt->ts = ts;
     return 0;
 }
 

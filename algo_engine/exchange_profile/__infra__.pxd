@@ -77,6 +77,8 @@ from .c_exchange_profile cimport (
     c_ex_profile_nearest_trading_date,
     c_ex_profile_is_trading_day,
     c_ex_profile_trading_days_between,
+    c_ex_profile_session_datetime_from_unix,
+    c_ex_profile_session_datetime_update,
 
     local_utc_offset_seconds,
     c_ex_profile_unix_to_datetime,
