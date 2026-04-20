@@ -1007,10 +1007,20 @@ cdef class ExchangeProfile:
             breaks.append(SessionBreak.c_from_header(current_break))
             current_break = current_break.next
         self.session_breaks = tuple(breaks)
-        self.time_zone = timezone(
-            offset=timedelta(seconds=<Py_ssize_t> header.tz_offset_seconds),
-            name=PyUnicode_FromString(header.time_zone)
-        ) if header.time_zone else None
+
+        cdef double local_tz_offset = c_utc_offset_seconds()
+        if header.tz_offset_seconds == local_tz_offset:
+            self.time_zone = None
+        elif header.time_zone:
+            self.time_zone = timezone(
+                offset=timedelta(seconds=<Py_ssize_t> header.tz_offset_seconds),
+                name=PyUnicode_FromString(header.time_zone)
+            )
+        else:
+            self.time_zone = timezone(
+                offset=timedelta(seconds=<Py_ssize_t> header.tz_offset_seconds),
+                name=f'{self.profile_id} Specific TimeZone'
+            )
 
     cdef inline bint c_time_in_market_session(self, py_time t):
         cdef double ts = c_ex_profile_time_to_ts(t.hour, t.minute, t.second, t.microsecond * 1000)
