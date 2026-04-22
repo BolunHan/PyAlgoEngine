@@ -217,270 +217,6 @@ cdef class SessionTimeRange:
             return self.header.elapsed_seconds
 
 
-cdef class SessionDateStandalone:
-    def __cinit__(self, uint16_t year, uint8_t month, uint8_t day, *, bint no_alloc=False):
-        if no_alloc:
-            return
-        self.header = c_ex_profile_session_date_new(year, month, day)
-        if not self.header:
-            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
-        self.owner = True
-
-    def __dealloc__(self):
-        if not self.owner:
-            return
-
-        if self.header:
-            free(<void*> self.header)
-
-    @staticmethod
-    cdef SessionDateStandalone c_from_header(const session_date_t* header, bint owner):
-        cdef SessionDateStandalone instance = SessionDateStandalone.__new__(SessionDateStandalone, 0, 0, 0, no_alloc=True)
-        instance.header = header
-        instance.owner = owner
-        return instance
-
-    # === Python Interfaces ===
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}>({self.header.year:4d}-{self.header.month:02d}-{self.header.day:02d})'
-
-    def __hash__(self):
-        return c_ex_profile_date_to_ordinal(self.header)
-
-    def __format__(self, str format_spec):
-        return self.to_pydate().__format__(format_spec)
-
-    def __sub__(self, object other):
-        cdef session_date_t* dt_to = <session_date_t*> self.header
-        cdef session_date_t* dt_from
-
-        if isinstance(other, SessionDateStandalone):
-            dt_from = <session_date_t*> (<SessionDateStandalone> other).header
-            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, dt_to), True)
-
-        cdef session_date_t tmp_dt
-        if isinstance(other, py_date):
-            tmp_dt.year = PyDateTime_GET_YEAR(other)
-            tmp_dt.month = PyDateTime_GET_MONTH(other)
-            tmp_dt.day = PyDateTime_GET_DAY(other)
-            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(&tmp_dt, dt_to), True)
-
-        cdef session_date_t* new_dt = <session_date_t*> calloc(1, sizeof(session_date_t))
-        cdef Py_ssize_t days_diff
-        cdef int ret_code
-        if isinstance(other, timedelta):
-            days_diff = PyDateTime_DELTA_GET_DAYS(other)
-            if days_diff == 0:
-                return self.fork()
-            if days_diff > 0:
-                ret_code = c_ex_profile_days_before(dt_to, days_diff, new_dt)
-            elif days_diff < 0:
-                ret_code = c_ex_profile_days_after(dt_to, -days_diff, new_dt)
-            if ret_code == 0:
-                return SessionDateStandalone.c_from_header(new_dt, True)
-            raise ValueError(f"Resulting date out of range for {self.__class__.__name__} - timedelta: {other}")
-        raise TypeError(f'Can not subtract {self.__class__.__name__} with {other.__class__.__name__}')
-
-    def __rsub__(self, object other):
-        cdef session_date_t* dt_to
-        cdef session_date_t* dt_from = <session_date_t*> self.header
-
-        if isinstance(other, SessionDateStandalone):
-            dt_to = <session_date_t*> (<SessionDateStandalone> other).header
-            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, dt_to), True)
-
-        cdef session_date_t tmp_dt
-        if isinstance(other, py_date):
-            tmp_dt.year = PyDateTime_GET_YEAR(other)
-            tmp_dt.month = PyDateTime_GET_MONTH(other)
-            tmp_dt.day = PyDateTime_GET_DAY(other)
-            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, &tmp_dt), True)
-        raise TypeError(f'Can not subtract {self.__class__.__name__} with {other.__class__.__name__}')
-
-    def __add__(self, object other):
-        cdef session_date_t* new_dt = <session_date_t*> calloc(1, sizeof(session_date_t))
-        if not isinstance(other, timedelta):
-            raise TypeError(f'Can only add timedelta to {self.__class__.__name__}, not {other.__class__.__name__}')
-        cdef Py_ssize_t days_diff = PyDateTime_DELTA_GET_DAYS(other)
-        if days_diff > 0:
-            ret_code = c_ex_profile_days_after(self.header, days_diff, new_dt)
-        elif days_diff < 0:
-            ret_code = c_ex_profile_days_before(self.header, -days_diff, new_dt)
-        if ret_code == 0:
-            return SessionDateStandalone.c_from_header(new_dt, True)
-        raise ValueError(f"Resulting date out of range for {self.__class__.__name__} + timedelta: {other}")
-
-    def __iadd__(self, object other):
-        if not isinstance(other, timedelta):
-            raise TypeError(f'Can only add timedelta to {self.__class__.__name__}, not {other.__class__.__name__}')
-        cdef Py_ssize_t days_diff = PyDateTime_DELTA_GET_DAYS(other)
-        if days_diff > 0:
-            ret_code = c_ex_profile_days_after(self.header, days_diff, <session_date_t*> self.header)
-        elif days_diff < 0:
-            ret_code = c_ex_profile_days_before(self.header, -days_diff, <session_date_t*> self.header)
-        if ret_code == 0:
-            return self
-        raise ValueError(f"Resulting date out of range for {self.__class__.__name__} + timedelta: {other}")
-
-    def __richcmp__(self, object other, int op):
-        cdef int cmp
-        if isinstance(other, SessionDateStandalone):
-            cmp = c_ex_profile_date_compare(self.header, (<SessionDateStandalone> other).header)
-        elif isinstance(other, py_date):
-            cmp = c_ex_profile_date_compare(self.header, (<SessionDateStandalone> SessionDateStandalone.from_pydate(other)).header)
-        else:
-            raise TypeError(f'Can not compare {self.__class__.__name__} with {other.__class__.__name__}')
-
-        if op == Py_LT:
-            return cmp < 0
-        elif op == Py_LE:
-            return cmp <= 0
-        elif op == Py_EQ:
-            return cmp == 0
-        elif op == Py_NE:
-            return cmp != 0
-        elif op == Py_GT:
-            return cmp > 0
-        elif op == Py_GE:
-            return cmp >= 0
-        else:
-            raise ValueError(f'Invalid comparison operator: {op}')
-
-    def __copy__(self):
-        return self.fork()
-
-    def __deepcopy__(self, memo):
-        cdef session_date_t* new_header = <session_date_t*> calloc(1, sizeof(session_date_t))
-        if not new_header:
-            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
-        memcpy(new_header, self.header, sizeof(session_date_t))
-        return SessionDateStandalone.c_from_header(new_header, True)
-
-    def __reduce__(self):
-        return (self.__class__.from_pydate, (self.to_pydate(),))
-
-    @staticmethod
-    def is_leap_year(uint16_t year):
-        return c_ex_profile_is_leap_year(year)
-
-    @staticmethod
-    def days_in_month(uint16_t year, uint8_t month):
-        return c_ex_profile_days_in_month(year, month)
-
-    @classmethod
-    def today(cls):
-        return cls.from_pydate(py_date.today())
-
-    @classmethod
-    def unix_to_ordinal(cls, double unix_ts):
-        cdef uint32_t ordinal = c_ex_profile_unix_to_ordinal(unix_ts, EX_PROFILE.tz_offset_seconds if EX_PROFILE else 0.0)
-        return ordinal
-
-    @classmethod
-    def from_unix(cls, double unix_ts):
-        cdef session_date_t* header = <session_date_t*> calloc(1, sizeof(session_date_t))
-        if not header:
-            raise MemoryError(f'Failed to allocate memory for {cls.__name__}')
-        cdef int ret_code = c_ex_profile_session_date_from_unix(unix_ts, header)
-        if ret_code != 0:
-            free(header)
-            raise RuntimeError(f'c_ex_profile_session_date_from_unix failed with err code: {ret_code}')
-        cdef SessionDateStandalone instance = cls.__new__(cls, 0, 0, 0, no_alloc=True)
-        instance.header = header
-        instance.owner = True
-        return instance
-
-    @classmethod
-    def from_ordinal(cls, uint32_t ordinal):
-        cdef session_date_t* header = <session_date_t*> calloc(1, sizeof(session_date_t))
-        if not header:
-            raise MemoryError(f'Failed to allocate memory for {cls.__name__}')
-        cdef int ret_code = c_ex_profile_date_from_ordinal(ordinal, header)
-        if ret_code != 0:
-            free(header)
-            raise RuntimeError(f'c_ex_profile_date_from_ordinal failed with err code: {ret_code}')
-        cdef SessionDateStandalone instance = cls.__new__(cls, 0, 0, 0, no_alloc=True)
-        instance.header = header
-        instance.owner = True
-        return instance
-
-    @classmethod
-    def from_pydate(cls, py_date dt):
-        return cls.__new__(cls, dt.year, dt.month, dt.day)
-
-    def to_pydate(self):
-        return py_date(self.header.year, self.header.month, self.header.day)
-
-    def to_ordinal(self):
-        return c_ex_profile_date_to_ordinal(self.header)
-
-    def add_days(self, Py_ssize_t days):
-        cdef session_date_t* out = <session_date_t*> calloc(1, sizeof(session_date_t))
-        if not out:
-            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
-        if days > 0:
-            ret_code = c_ex_profile_days_after(self.header, days, out)
-            if ret_code != 0:
-                raise RuntimeError(f'c_ex_profile_days_after failed with err code: {ret_code}')
-        else:
-            ret_code = c_ex_profile_days_before(self.header, -days, out)
-            if ret_code != 0:
-                raise RuntimeError(f'c_ex_profile_days_before failed with err code: {ret_code}')
-        return SessionDateStandalone.c_from_header(out, True)
-
-    def is_valid(self):
-        return c_ex_profile_date_is_valid(self.header)
-
-    def is_weekend(self):
-        return c_ex_profile_is_weekend(self.header)
-
-    cpdef SessionDateStandalone fork(self):
-        return SessionDateStandalone.c_from_header(self.header, False)
-
-    def ctime(self):
-        return self.to_pydate().ctime()
-
-    @classmethod
-    def fromisocalendar(cls, int year, int week, int weekday):
-        return cls.from_pydate(py_date.fromisocalendar(year, week, weekday))
-
-    @classmethod
-    def fromisoformat(cls, str date_str):
-        return cls.from_pydate(py_date.fromisoformat(date_str))
-
-    def isocalendar(self):
-        return self.to_pydate().isocalendar()
-
-    def isoformat(self, *args, **kwargs):
-        return self.to_pydate().isoformat(*args, **kwargs)
-
-    def strftime(self, format):
-        return self.to_pydate().strftime(format)
-
-    def weekday(self):
-        return self.to_pydate().weekday()
-
-    def timestamp(self):
-        return c_ex_profile_session_date_to_unix(self.header)
-
-    property year:
-        def __get__(self):
-            return self.header.year
-
-    property month:
-        def __get__(self):
-            return self.header.month
-
-    property day:
-        def __get__(self):
-            return self.header.day
-
-    property session_type:
-        def __get__(self):
-            return SessionType(self.header.stype)
-
-
 cdef class SessionDate(py_date):
     def __init__(self, uint16_t year, uint8_t month, uint8_t day):
         self.header = c_ex_profile_session_date_new(year, month, day)
@@ -770,6 +506,278 @@ cdef class SessionDate(py_date):
             return f'{<uintptr_t> self.header:#0x}'
 
 
+cdef class SessionDateEx:
+    def __cinit__(self, uint16_t year, uint8_t month, uint8_t day, *, bint no_alloc=False):
+        if no_alloc:
+            return
+        self.header = c_ex_profile_session_date_new(year, month, day)
+        if not self.header:
+            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+        self.owner = True
+
+    def __dealloc__(self):
+        if not self.owner:
+            return
+
+        if self.header:
+            free(<void*> self.header)
+
+    @staticmethod
+    cdef SessionDateEx c_from_header(const session_date_t* header, bint owner):
+        cdef SessionDateEx instance = SessionDateEx.__new__(SessionDateEx, 0, 0, 0, no_alloc=True)
+        instance.header = header
+        instance.owner = owner
+        return instance
+
+    # === Python Interfaces ===
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}>({self.header.year:4d}-{self.header.month:02d}-{self.header.day:02d})'
+
+    def __hash__(self):
+        return c_ex_profile_date_to_ordinal(self.header)
+
+    def __format__(self, str format_spec):
+        return self.to_pydate().__format__(format_spec)
+
+    def __sub__(self, object other):
+        cdef session_date_t* dt_to = <session_date_t*> self.header
+        cdef session_date_t* dt_from
+
+        if isinstance(other, SessionDateEx):
+            dt_from = <session_date_t*> (<SessionDateEx> other).header
+            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, dt_to), True)
+
+        cdef session_date_t tmp_dt
+        if isinstance(other, py_date):
+            tmp_dt.year = PyDateTime_GET_YEAR(other)
+            tmp_dt.month = PyDateTime_GET_MONTH(other)
+            tmp_dt.day = PyDateTime_GET_DAY(other)
+            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(&tmp_dt, dt_to), True)
+
+        cdef session_date_t* new_dt = <session_date_t*> calloc(1, sizeof(session_date_t))
+        cdef Py_ssize_t days_diff
+        cdef int ret_code
+        if isinstance(other, timedelta):
+            days_diff = PyDateTime_DELTA_GET_DAYS(other)
+            if days_diff == 0:
+                return self.fork()
+            if days_diff > 0:
+                ret_code = c_ex_profile_days_before(dt_to, days_diff, new_dt)
+            elif days_diff < 0:
+                ret_code = c_ex_profile_days_after(dt_to, -days_diff, new_dt)
+            if ret_code == 0:
+                return SessionDateEx.c_from_header(new_dt, True)
+            raise ValueError(f"Resulting date out of range for {self.__class__.__name__} - timedelta: {other}")
+        raise TypeError(f'Can not subtract {self.__class__.__name__} with {other.__class__.__name__}')
+
+    def __rsub__(self, object other):
+        cdef session_date_t* dt_to
+        cdef session_date_t* dt_from = <session_date_t*> self.header
+
+        if isinstance(other, SessionDateEx):
+            dt_to = <session_date_t*> (<SessionDateEx> other).header
+            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, dt_to), True)
+
+        cdef session_date_t tmp_dt
+        if isinstance(other, py_date):
+            tmp_dt.year = PyDateTime_GET_YEAR(other)
+            tmp_dt.month = PyDateTime_GET_MONTH(other)
+            tmp_dt.day = PyDateTime_GET_DAY(other)
+            return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, &tmp_dt), True)
+        raise TypeError(f'Can not subtract {self.__class__.__name__} with {other.__class__.__name__}')
+
+    def __add__(self, object other):
+        cdef session_date_t* new_dt = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not new_dt:
+            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+        if not isinstance(other, timedelta):
+            raise TypeError(f'Can only add timedelta to {self.__class__.__name__}, not {other.__class__.__name__}')
+        cdef int ret_code
+        cdef Py_ssize_t days_diff = PyDateTime_DELTA_GET_DAYS(other)
+        if days_diff == 0:
+            return self.fork()
+        elif days_diff > 0:
+            ret_code = c_ex_profile_days_after(self.header, days_diff, new_dt)
+        else:
+            ret_code = c_ex_profile_days_before(self.header, -days_diff, new_dt)
+        if ret_code == 0:
+            return SessionDateEx.c_from_header(new_dt, True)
+        raise ValueError(f"Resulting date out of range for {self.__class__.__name__} + timedelta: {other}")
+
+    def __iadd__(self, object other):
+        if not isinstance(other, timedelta):
+            raise TypeError(f'Can only add timedelta to {self.__class__.__name__}, not {other.__class__.__name__}')
+        cdef int ret_code
+        cdef Py_ssize_t days_diff = PyDateTime_DELTA_GET_DAYS(other)
+        if days_diff == 0:
+            return self.fork()
+        elif days_diff > 0:
+            ret_code = c_ex_profile_days_after(self.header, days_diff, <session_date_t*> self.header)
+        else:
+            ret_code = c_ex_profile_days_before(self.header, -days_diff, <session_date_t*> self.header)
+        if ret_code == 0:
+            return self
+        raise ValueError(f"Resulting date out of range for {self.__class__.__name__} + timedelta: {other}")
+
+    def __richcmp__(self, object other, int op):
+        cdef int cmp
+        if isinstance(other, SessionDateEx):
+            cmp = c_ex_profile_date_compare(self.header, (<SessionDateEx> other).header)
+        elif isinstance(other, py_date):
+            cmp = c_ex_profile_date_compare(self.header, (<SessionDateEx> SessionDateEx.from_pydate(other)).header)
+        else:
+            raise TypeError(f'Can not compare {self.__class__.__name__} with {other.__class__.__name__}')
+
+        if op == Py_LT:
+            return cmp < 0
+        elif op == Py_LE:
+            return cmp <= 0
+        elif op == Py_EQ:
+            return cmp == 0
+        elif op == Py_NE:
+            return cmp != 0
+        elif op == Py_GT:
+            return cmp > 0
+        elif op == Py_GE:
+            return cmp >= 0
+        else:
+            raise ValueError(f'Invalid comparison operator: {op}')
+
+    def __copy__(self):
+        return self.fork()
+
+    def __deepcopy__(self, memo):
+        cdef session_date_t* new_header = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not new_header:
+            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+        memcpy(new_header, self.header, sizeof(session_date_t))
+        return SessionDateEx.c_from_header(new_header, True)
+
+    def __reduce__(self):
+        return (self.__class__.from_pydate, (self.to_pydate(),))
+
+    @staticmethod
+    def is_leap_year(uint16_t year):
+        return c_ex_profile_is_leap_year(year)
+
+    @staticmethod
+    def days_in_month(uint16_t year, uint8_t month):
+        return c_ex_profile_days_in_month(year, month)
+
+    @classmethod
+    def today(cls):
+        return cls.from_pydate(py_date.today())
+
+    @classmethod
+    def unix_to_ordinal(cls, double unix_ts):
+        cdef uint32_t ordinal = c_ex_profile_unix_to_ordinal(unix_ts, EX_PROFILE.tz_offset_seconds if EX_PROFILE else 0.0)
+        return ordinal
+
+    @classmethod
+    def from_unix(cls, double unix_ts):
+        cdef session_date_t* header = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not header:
+            raise MemoryError(f'Failed to allocate memory for {cls.__name__}')
+        cdef int ret_code = c_ex_profile_session_date_from_unix(unix_ts, header)
+        if ret_code != 0:
+            free(header)
+            raise RuntimeError(f'c_ex_profile_session_date_from_unix failed with err code: {ret_code}')
+        cdef SessionDateEx instance = cls.__new__(cls, 0, 0, 0, no_alloc=True)
+        instance.header = header
+        instance.owner = True
+        return instance
+
+    @classmethod
+    def from_ordinal(cls, uint32_t ordinal):
+        cdef session_date_t* header = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not header:
+            raise MemoryError(f'Failed to allocate memory for {cls.__name__}')
+        cdef int ret_code = c_ex_profile_date_from_ordinal(ordinal, header)
+        if ret_code != 0:
+            free(header)
+            raise RuntimeError(f'c_ex_profile_date_from_ordinal failed with err code: {ret_code}')
+        cdef SessionDateEx instance = cls.__new__(cls, 0, 0, 0, no_alloc=True)
+        instance.header = header
+        instance.owner = True
+        return instance
+
+    @classmethod
+    def from_pydate(cls, py_date dt):
+        return cls.__new__(cls, dt.year, dt.month, dt.day)
+
+    def to_pydate(self):
+        return py_date(self.header.year, self.header.month, self.header.day)
+
+    def to_ordinal(self):
+        return c_ex_profile_date_to_ordinal(self.header)
+
+    def add_days(self, Py_ssize_t days):
+        cdef session_date_t* out = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not out:
+            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+        if days > 0:
+            ret_code = c_ex_profile_days_after(self.header, days, out)
+            if ret_code != 0:
+                raise RuntimeError(f'c_ex_profile_days_after failed with err code: {ret_code}')
+        else:
+            ret_code = c_ex_profile_days_before(self.header, -days, out)
+            if ret_code != 0:
+                raise RuntimeError(f'c_ex_profile_days_before failed with err code: {ret_code}')
+        return SessionDateEx.c_from_header(out, True)
+
+    def is_valid(self):
+        return c_ex_profile_date_is_valid(self.header)
+
+    def is_weekend(self):
+        return c_ex_profile_is_weekend(self.header)
+
+    cpdef SessionDateEx fork(self):
+        return SessionDateEx.c_from_header(self.header, False)
+
+    def ctime(self):
+        return self.to_pydate().ctime()
+
+    @classmethod
+    def fromisocalendar(cls, int year, int week, int weekday):
+        return cls.from_pydate(py_date.fromisocalendar(year, week, weekday))
+
+    @classmethod
+    def fromisoformat(cls, str date_str):
+        return cls.from_pydate(py_date.fromisoformat(date_str))
+
+    def isocalendar(self):
+        return self.to_pydate().isocalendar()
+
+    def isoformat(self, *args, **kwargs):
+        return self.to_pydate().isoformat(*args, **kwargs)
+
+    def strftime(self, format):
+        return self.to_pydate().strftime(format)
+
+    def weekday(self):
+        return self.to_pydate().weekday()
+
+    def timestamp(self):
+        return c_ex_profile_session_date_to_unix(self.header)
+
+    property year:
+        def __get__(self):
+            return self.header.year
+
+    property month:
+        def __get__(self):
+            return self.header.month
+
+    property day:
+        def __get__(self):
+            return self.header.day
+
+    property session_type:
+        def __get__(self):
+            return SessionType(self.header.stype)
+
+
 cdef class SessionDateRange:
     def __cinit__(self, SessionDate start_date, SessionDate end_date, *, bint no_alloc=False):
         if no_alloc:
@@ -889,7 +897,7 @@ cdef class SessionDateTime:
         instance.header = header
         instance.owner = owner
         instance.time = SessionTime.c_from_header(&header.time, False)
-        instance.date = SessionDate.c_from_header(&header.date, False)
+        instance.date = SessionDateEx.c_from_header(&header.date, False)
         return instance
 
     def __repr__(self):
@@ -905,7 +913,7 @@ cdef class SessionDateTime:
         if not header:
             raise MemoryError(f'Failed to allocate buffer for {cls}')
         cdef SessionTime tmp_time = SessionTime.from_pytime(t.time())
-        cdef SessionDate tmp_date = SessionDate.from_pydate(t.date())
+        cdef SessionDateEx tmp_date = SessionDateEx.from_pydate(t.date())
         memcpy(&header.time, tmp_time.header, sizeof(session_time_t))
         memcpy(&header.date, tmp_date.header, sizeof(session_date_t))
         return SessionDateTime.c_from_header(header, True)
@@ -922,6 +930,26 @@ cdef class SessionDateTime:
             self.header.time.nanosecond // 1000,
             PROFILE.time_zone
         )
+
+    def fork(self):
+        return SessionDateTime.c_from_header(self.header, False)
+
+    def update(self, double unix_ts):
+        cdef int ret_code = c_ex_profile_session_datetime_update(self.header, unix_ts)
+        if ret_code != 0:
+            raise RuntimeError(f'c_ex_profile_session_datetime_update failed with err code: {ret_code}')
+        return self
+
+    @classmethod
+    def from_unix(cls, double unix_ts):
+        cdef session_datetime_t* header = <session_datetime_t*> calloc(1, sizeof(session_datetime_t))
+        if not header:
+            raise MemoryError(f'Failed to allocate buffer for {cls}')
+        cdef int ret_code = c_ex_profile_session_datetime_from_unix(unix_ts, header)
+        if ret_code != 0:
+            free(header)
+            raise RuntimeError(f'c_ex_profile_session_datetime_from_unix failed with err code: {ret_code}')
+        return SessionDateTime.c_from_header(header, True)
 
     property timestamp:
         def __get__(self):

@@ -214,16 +214,6 @@ cdef class SessionTimeRange:
     cdef SessionTimeRange c_from_header(const session_time_range_t* header, bint owner)
 
 
-cdef class SessionDateStandalone:
-    cdef const session_date_t* header
-    cdef bint owner
-
-    @staticmethod
-    cdef SessionDateStandalone c_from_header(const session_date_t* header, bint owner)
-
-    cpdef SessionDateStandalone fork(self)
-
-
 cdef class SessionDate(py_date):
     cdef const session_date_t* header
     cdef bint owner
@@ -234,6 +224,16 @@ cdef class SessionDate(py_date):
     cdef const session_date_t* c_sync(self)
 
     cpdef SessionDate fork(self)
+
+
+cdef class SessionDateEx:
+    cdef const session_date_t* header
+    cdef bint owner
+
+    @staticmethod
+    cdef SessionDateEx c_from_header(const session_date_t* header, bint owner)
+
+    cpdef SessionDateEx fork(self)
 
 
 cdef class SessionDateRange:
@@ -255,7 +255,7 @@ cdef class SessionDateTime:
     cdef bint owner
 
     cdef readonly SessionTime time
-    cdef readonly SessionDate date
+    cdef readonly SessionDateEx date
 
     @staticmethod
     cdef SessionDateTime c_from_header(session_datetime_t* header, bint owner=?)
