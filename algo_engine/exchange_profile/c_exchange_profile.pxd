@@ -60,6 +60,9 @@ cdef extern from "c_ex_profile_base.h":
     ctypedef struct session_datetime_t:
         session_time_t time
         session_date_t date
+        double unix_ts
+        double ts
+        uint32_t ordinal
 
     ctypedef struct session_time_range_t:
         session_time_t start
@@ -217,6 +220,8 @@ cdef class SessionDateStandalone:
 
     @staticmethod
     cdef SessionDateStandalone c_from_header(const session_date_t* header, bint owner)
+
+    cpdef SessionDateStandalone fork(self)
 
 
 cdef class SessionDate(py_date):

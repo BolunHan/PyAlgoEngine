@@ -276,7 +276,7 @@ cdef class SessionDateStandalone:
             if days_diff > 0:
                 ret_code = c_ex_profile_days_before(dt_to, days_diff, new_dt)
             elif days_diff < 0:
-                ret_code = c_ex_profile_days_after(dt_to, days_diff, new_dt)
+                ret_code = c_ex_profile_days_after(dt_to, -days_diff, new_dt)
             if ret_code == 0:
                 return SessionDateStandalone.c_from_header(new_dt, True)
             raise ValueError(f"Resulting date out of range for {self.__class__.__name__} - timedelta: {other}")
@@ -297,6 +297,31 @@ cdef class SessionDateStandalone:
             tmp_dt.day = PyDateTime_GET_DAY(other)
             return SessionDateRange.c_from_header(c_ex_profile_session_drange_between(dt_from, &tmp_dt), True)
         raise TypeError(f'Can not subtract {self.__class__.__name__} with {other.__class__.__name__}')
+
+    def __add__(self, object other):
+        cdef session_date_t* new_dt = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not isinstance(other, timedelta):
+            raise TypeError(f'Can only add timedelta to {self.__class__.__name__}, not {other.__class__.__name__}')
+        cdef Py_ssize_t days_diff = PyDateTime_DELTA_GET_DAYS(other)
+        if days_diff > 0:
+            ret_code = c_ex_profile_days_after(self.header, days_diff, new_dt)
+        elif days_diff < 0:
+            ret_code = c_ex_profile_days_before(self.header, -days_diff, new_dt)
+        if ret_code == 0:
+            return SessionDateStandalone.c_from_header(new_dt, True)
+        raise ValueError(f"Resulting date out of range for {self.__class__.__name__} + timedelta: {other}")
+
+    def __iadd__(self, object other):
+        if not isinstance(other, timedelta):
+            raise TypeError(f'Can only add timedelta to {self.__class__.__name__}, not {other.__class__.__name__}')
+        cdef Py_ssize_t days_diff = PyDateTime_DELTA_GET_DAYS(other)
+        if days_diff > 0:
+            ret_code = c_ex_profile_days_after(self.header, days_diff, <session_date_t*> self.header)
+        elif days_diff < 0:
+            ret_code = c_ex_profile_days_before(self.header, -days_diff, <session_date_t*> self.header)
+        if ret_code == 0:
+            return self
+        raise ValueError(f"Resulting date out of range for {self.__class__.__name__} + timedelta: {other}")
 
     def __richcmp__(self, object other, int op):
         cdef int cmp
@@ -322,6 +347,19 @@ cdef class SessionDateStandalone:
         else:
             raise ValueError(f'Invalid comparison operator: {op}')
 
+    def __copy__(self):
+        return self.fork()
+
+    def __deepcopy__(self, memo):
+        cdef session_date_t* new_header = <session_date_t*> calloc(1, sizeof(session_date_t))
+        if not new_header:
+            raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
+        memcpy(new_header, self.header, sizeof(session_date_t))
+        return SessionDateStandalone.c_from_header(new_header, True)
+
+    def __reduce__(self):
+        return (self.__class__.from_pydate, (self.to_pydate(),))
+
     @staticmethod
     def is_leap_year(uint16_t year):
         return c_ex_profile_is_leap_year(year)
@@ -333,6 +371,11 @@ cdef class SessionDateStandalone:
     @classmethod
     def today(cls):
         return cls.from_pydate(py_date.today())
+
+    @classmethod
+    def unix_to_ordinal(cls, double unix_ts):
+        cdef uint32_t ordinal = c_ex_profile_unix_to_ordinal(unix_ts, EX_PROFILE.tz_offset_seconds if EX_PROFILE else 0.0)
+        return ordinal
 
     @classmethod
     def from_unix(cls, double unix_ts):
@@ -372,23 +415,28 @@ cdef class SessionDateStandalone:
     def to_ordinal(self):
         return c_ex_profile_date_to_ordinal(self.header)
 
-    def add_days(self, size_t days):
+    def add_days(self, Py_ssize_t days):
         cdef session_date_t* out = <session_date_t*> calloc(1, sizeof(session_date_t))
         if not out:
             raise MemoryError(f'Failed to allocate memory for {self.__class__.__name__}')
-        cdef int ret_code = c_ex_profile_days_after(self.header, days, out)
-        if ret_code != 0:
-            raise RuntimeError(f'c_ex_profile_days_after failed with err code: {ret_code}')
-        cdef SessionDateStandalone instance = self.__class__.__new__(self.__class__, 0, 0, 0, no_alloc=True)
-        instance.header = out
-        instance.owner = True
-        return instance
+        if days > 0:
+            ret_code = c_ex_profile_days_after(self.header, days, out)
+            if ret_code != 0:
+                raise RuntimeError(f'c_ex_profile_days_after failed with err code: {ret_code}')
+        else:
+            ret_code = c_ex_profile_days_before(self.header, -days, out)
+            if ret_code != 0:
+                raise RuntimeError(f'c_ex_profile_days_before failed with err code: {ret_code}')
+        return SessionDateStandalone.c_from_header(out, True)
 
     def is_valid(self):
         return c_ex_profile_date_is_valid(self.header)
 
     def is_weekend(self):
         return c_ex_profile_is_weekend(self.header)
+
+    cpdef SessionDateStandalone fork(self):
+        return SessionDateStandalone.c_from_header(self.header, False)
 
     def ctime(self):
         return self.to_pydate().ctime()
@@ -514,7 +562,7 @@ cdef class SessionDate(py_date):
             if days_diff > 0:
                 ret_code = c_ex_profile_days_before(dt_to, days_diff, new_dt)
             elif days_diff < 0:
-                ret_code = c_ex_profile_days_after(dt_to, days_diff, new_dt)
+                ret_code = c_ex_profile_days_after(dt_to, -days_diff, new_dt)
             if ret_code == 0:
                 return SessionDate.c_from_header(new_dt, True)
             raise ValueError(f"Resulting date out of range for {self.__class__.__name__} - timedelta: {other}")
@@ -874,6 +922,18 @@ cdef class SessionDateTime:
             self.header.time.nanosecond // 1000,
             PROFILE.time_zone
         )
+
+    property timestamp:
+        def __get__(self):
+            return self.header.unix_ts
+
+    property ts:
+        def __get__(self):
+            return self.header.ts
+
+    property ordinal:
+        def __get__(self):
+            return self.header.ordinal
 
 
 cdef class CallAuction:
