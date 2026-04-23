@@ -86,7 +86,7 @@ from .c_exchange_profile cimport (
 
     SessionTime,
     SessionTimeRange,
-    SessionDate,
+    SessionDate, SessionDateEx,
     SessionDateRange,
     SessionDateTime,
     CallAuction,
