@@ -42,9 +42,8 @@ cpdef double local_utc_offset_seconds():
 
 
 cdef int c_ex_profile_unix_to_datetime(double unix_ts, session_datetime_t* out):
-    cdef int ret_code = c_ex_profile_session_time_from_unix(unix_ts, &out.time)
-    if ret_code == 0:
-        return c_ex_profile_date_from_ordinal(c_ex_profile_unix_to_ordinal(unix_ts, EX_PROFILE.tz_offset_seconds if EX_PROFILE else 0.0), &out.date)
+    # This simple wrapper is to resolve cython linkage issue, c_ex_profile_session_datetime_from_unix is static and this method is not.
+    cdef int ret_code = c_ex_profile_session_datetime_from_unix(unix_ts, out)
     return ret_code
 
 
@@ -260,7 +259,7 @@ cdef class SessionDate(py_date):
 
     def __repr__(self):
         if self.header:
-            return f'<{self.__class__.__name__}>({self.header.year:4d}-{self.header.month:02d}-{self.header.day:02d})'
+            return f'<{self.__class__.__name__}>({self.header.year:04d}-{self.header.month:02d}-{self.header.day:02d})'
         return f'<{self.__class__.__name__} Unbound>({self.isoformat()})'
 
     def __hash__(self):
@@ -532,7 +531,7 @@ cdef class SessionDateEx:
     # === Python Interfaces ===
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}>({self.header.year:4d}-{self.header.month:02d}-{self.header.day:02d})'
+        return f'<{self.__class__.__name__}>({self.header.year:04d}-{self.header.month:02d}-{self.header.day:02d})'
 
     def __hash__(self):
         return c_ex_profile_date_to_ordinal(self.header)
@@ -901,7 +900,7 @@ cdef class SessionDateTime:
         return instance
 
     def __repr__(self):
-        cdef str repr_str = (f'{self.header.date.year:4d}-{self.header.date.month:02d}-{self.header.date.day:02d} '
+        cdef str repr_str = (f'{self.header.date.year:04d}-{self.header.date.month:02d}-{self.header.date.day:02d} '
                              f'{self.header.time.hour:02d}:{self.header.time.minute:02d}:{self.header.time.second:02d}')
         if self.header.time.nanosecond:
             return f'<{self.__class__.__name__}>({repr_str}.{self.header.time.nanosecond // 1000})'
