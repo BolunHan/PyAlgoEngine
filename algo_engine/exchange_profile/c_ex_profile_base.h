@@ -1079,9 +1079,8 @@ static inline int c_ex_profile_session_datetime_from_unix(double unix_ts, sessio
     double   ts = fmod(unix_ts + tz_offset, (double) SECONDS_PER_DAY);
 
     if (ordinal < 1 || ordinal > EX_PROFILE_MAX_ORDINAL) return -1;
-    out->date.stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(out->date.year, out->date.month, out->date.day) : SESSION_TYPE_NORMINAL;
-
     if (c_ex_profile_date_from_ordinal(ordinal, &out->date) != 0) return -1;
+    out->date.stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(out->date.year, out->date.month, out->date.day) : SESSION_TYPE_NORMINAL;
     if (c_ex_profile_session_time_from_ts(ts, &out->time) != 0) return -1;
 
     out->unix_ts = unix_ts;
