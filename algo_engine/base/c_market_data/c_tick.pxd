@@ -30,7 +30,7 @@ cdef class TickData(MarketData):
 
     cpdef void parse(self, dict kwargs)
 
-    cpdef TickDataLite lite(self)
+    cpdef TickDataLite lite(self, bint copy=?)
 
 
 cdef inline object tick_lite_from_header(md_variant* market_data, bint owner):

@@ -316,8 +316,28 @@ class TickData(MarketData):
         """Parse the order book info and additional market data from keyword arguments."""
         ...
 
-    def lite(self) -> TickDataLite:
-        """Get the lightweight TickDataLite representation."""
+    def lite(self, copy: bool = False) -> TickDataLite:
+        """Extract lite market data with controlled ownership semantics.
+
+        Args:
+            copy (bool): If False (default), returns a non-owning view to the
+                embedded lite data, In this case, the dtype field of the meta_info will not be updated to TickDataLite, instead it will remain as TickData (As the underlying buffer is shared).
+                If True, allocates and returns an independently owned copy of the lite data.
+
+        Returns:
+            TickDataLite: A view or copy of the lite tick data.
+                When copy=False: non-owning view (owner=False), data persists
+                    with parent TickData lifetime.
+                When copy=True: independently owned copy (owner=True), caller
+                    is responsible for memory management.
+
+        Examples:
+            # Lightweight view (zero-copy, efficient)
+            view = tick_data.lite()
+
+            # Independent copy (safe for long-term storage and when an accurate dtype required)
+            owned_copy = tick_data.lite(copy=True)
+        """
         ...
 
     @property

@@ -9,6 +9,7 @@ from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from .c_market_data cimport (
     md_ret_code, md_data_type, md_direction, MD_CFG_BOOK_SIZE,
     md_orderbook_entry, c_md_orderbook_sort,
+    md_meta, md_tick_data_lite,
     c_init_buffer, c_md_orderbook_new, c_md_orderbook_free
 )
 from .c_transaction import TransactionDirection, TransactionOffset
@@ -557,10 +558,24 @@ cdef class TickData(MarketData):
         if ret_code != md_ret_code.MD_OK:
             raise RuntimeError(f'OrderBook.ask sorting failed with error code {ret_code}.')
 
-    cpdef TickDataLite lite(self):
+    cpdef TickDataLite lite(self, bint copy=False):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-        instance.header = <md_variant*> &self.header.tick_data_full.lite
-        instance.owner = False
+        if not copy:
+            instance.header = <md_variant*> &self.header.tick_data_full.lite
+            instance.owner = False
+            return instance
+        cdef md_variant* tk_lite = c_init_buffer(
+            md_data_type.DTYPE_TICK_LITE,
+            self.header.meta_info.ticker,
+            self.header.meta_info.timestamp
+        )
+        memcpy(
+            <char*> tk_lite + sizeof(md_meta),
+            <char*> &self.header.tick_data_full.lite + sizeof(md_meta),
+            sizeof(md_tick_data_lite) - sizeof(md_meta)
+        )
+        instance.header = tk_lite
+        instance.owner = True
         return instance
 
     property best_bid_price:
