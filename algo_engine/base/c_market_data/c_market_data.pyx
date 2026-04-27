@@ -7,7 +7,7 @@ from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_AsUTF8
 from libc.stdint cimport UINT64_MAX, INT64_MIN, int64_t
 from libc.string cimport memset, memcpy
 
-from ...exchange_profile.c_exchange_profile cimport PROFILE, SessionTime, SessionDate
+from ...exchange_profile.c_exchange_profile cimport PROFILE, SessionTime, SessionDate, SessionDateTime
 
 
 class DataType(enum.IntEnum):
@@ -419,6 +419,10 @@ cdef class MarketData:
     property session_date:
         def __get__(self):
             return SessionDate.c_from_header(&self.header.meta_info.dt.date, False)
+
+    property session_datetime:
+        def __get__(self):
+            return SessionDateTime.c_from_header(&self.header.meta_info.dt, False)
 
     property dtype:
         def __get__(self):
