@@ -194,6 +194,124 @@ class TestTickData(unittest.TestCase):
 
         assert regen_1.to_bytes() == regen_2.to_bytes() == blob
 
+    def test_02_lite_view_reference(self):
+        """Verify lite(copy=False) returns non-owning view to embedded lite data."""
+        tick = TickData(
+            ticker='LITE_VIEW',
+            timestamp=300.0,
+            last_price=105.0,
+            bid_price_1=104.0,
+            bid_volume_1=12.0,
+            ask_price_1=106.0,
+            ask_volume_1=11.0,
+            open_price=98.0,
+            prev_close=99.0,
+            total_traded_volume=500.0,
+            total_traded_notional=50000.0,
+            total_trade_count=100,
+        )
+
+        # Get view with copy=False (default)
+        lite_view = tick.lite(copy=False)
+
+        # Verify non-owning view properties
+        self.assertFalse(lite_view.owner)
+        self.assertEqual(lite_view.ticker, 'LITE_VIEW')
+        self.assertEqual(lite_view.timestamp, 300.0)
+        self.assertEqual(lite_view.last_price, 105.0)
+        self.assertEqual(lite_view.bid_price, 104.0)
+        self.assertEqual(lite_view.bid_volume, 12.0)
+        self.assertEqual(lite_view.ask_price, 106.0)
+        self.assertEqual(lite_view.ask_volume, 11.0)
+        self.assertEqual(lite_view.open_price, 98.0)
+        self.assertEqual(lite_view.prev_close, 99.0)
+        self.assertEqual(lite_view.total_traded_volume, 500.0)
+        self.assertEqual(lite_view.total_traded_notional, 50000.0)
+        self.assertEqual(lite_view.total_trade_count, 100)
+
+    def test_03_lite_owned_copy(self):
+        """Verify lite(copy=True) returns independently owned copy."""
+        tick = TickData(
+            ticker='LITE_COPY',
+            timestamp=400.0,
+            last_price=110.0,
+            bid_price_1=109.0,
+            bid_volume_1=15.0,
+            ask_price_1=111.0,
+            ask_volume_1=14.0,
+            open_price=100.0,
+            prev_close=101.0,
+            total_traded_volume=1000.0,
+            total_traded_notional=100000.0,
+            total_trade_count=200,
+        )
+
+        # Get owned copy with copy=True
+        lite_copy = tick.lite(copy=True)
+
+        # Verify owned copy properties
+        self.assertTrue(lite_copy.owner)
+        self.assertEqual(lite_copy.ticker, 'LITE_COPY')
+        self.assertEqual(lite_copy.timestamp, 400.0)
+        self.assertEqual(lite_copy.last_price, 110.0)
+        self.assertEqual(lite_copy.bid_price, 109.0)
+        self.assertEqual(lite_copy.bid_volume, 15.0)
+        self.assertEqual(lite_copy.ask_price, 111.0)
+        self.assertEqual(lite_copy.ask_volume, 14.0)
+        self.assertEqual(lite_copy.open_price, 100.0)
+        self.assertEqual(lite_copy.prev_close, 101.0)
+        self.assertEqual(lite_copy.total_traded_volume, 1000.0)
+        self.assertEqual(lite_copy.total_traded_notional, 100000.0)
+        self.assertEqual(lite_copy.total_trade_count, 200)
+
+    def test_04_lite_copy_independence(self):
+        """Verify copy/view data consistency and independence."""
+        tick = TickData(
+            ticker='LITE_INDEPENDENCE',
+            timestamp=500.0,
+            last_price=115.0,
+            bid_price_1=114.0,
+            bid_volume_1=20.0,
+            ask_price_1=116.0,
+            ask_volume_1=19.0,
+            open_price=102.0,
+            prev_close=103.0,
+            total_traded_volume=1500.0,
+            total_traded_notional=150000.0,
+            total_trade_count=300,
+        )
+
+        # Get both view and copy
+        lite_view = tick.lite(copy=False)
+        lite_copy = tick.lite(copy=True)
+
+        # Verify both have identical data
+        self.assertEqual(lite_view.last_price, lite_copy.last_price)
+        self.assertEqual(lite_view.bid_price, lite_copy.bid_price)
+        self.assertEqual(lite_view.ask_price, lite_copy.ask_price)
+        self.assertEqual(lite_view.bid_volume, lite_copy.bid_volume)
+        self.assertEqual(lite_view.ask_volume, lite_copy.ask_volume)
+        self.assertEqual(lite_view.open_price, lite_copy.open_price)
+        self.assertEqual(lite_view.prev_close, lite_copy.prev_close)
+        self.assertEqual(lite_view.total_traded_volume, lite_copy.total_traded_volume)
+        self.assertEqual(lite_view.total_traded_notional, lite_copy.total_traded_notional)
+        self.assertEqual(lite_view.total_trade_count, lite_copy.total_trade_count)
+
+        # Verify ownership difference
+        self.assertFalse(lite_view.owner)
+        self.assertTrue(lite_copy.owner)
+
+        # Verify copy can be serialized and deserialized independently
+        copy_bytes = lite_copy.to_bytes()
+        restored_copy = TickDataLite.from_bytes(copy_bytes)
+
+        # Verify restored copy has same data values
+        self.assertEqual(restored_copy.last_price, 115.0)
+        self.assertEqual(restored_copy.bid_price, 114.0)
+        self.assertEqual(restored_copy.ask_price, 116.0)
+        self.assertEqual(restored_copy.bid_volume, 20.0)
+        self.assertEqual(restored_copy.ask_volume, 19.0)
+
 
 if __name__ == '__main__':
     unittest.main()
