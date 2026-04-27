@@ -45,6 +45,25 @@ class ColoredFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+class DuplicateWarningFilter(logging.Filter):
+    """Filter that lets each WARNING message pass only once per handler."""
+
+    def __init__(self, name: str = ''):
+        super().__init__(name=name)
+        self._seen_warnings: set[str] = set()
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno != logging.WARNING:
+            return True
+
+        message = record.getMessage()
+        if message in self._seen_warnings:
+            return False
+
+        self._seen_warnings.add(message)
+        return True
+
+
 def get_logger(**kwargs) -> logging.Logger:
     level = kwargs.get('level', LOG_LEVEL)
     stream_io = kwargs.get('stream_io', sys.stdout)
@@ -60,10 +79,12 @@ def get_logger(**kwargs) -> logging.Logger:
 
     if stream_io:
         have_handler = False
+        stream_handler: logging.StreamHandler | None = None
         for handler in LOGGER.handlers:
             # noinspection PyUnresolvedReferences
-            if type(handler) == logging.StreamHandler and handler.stream == stream_io:
+            if isinstance(handler, logging.StreamHandler) and handler.stream == stream_io:
                 have_handler = True
+                stream_handler = handler
                 break
 
         if not have_handler:
@@ -71,7 +92,12 @@ def get_logger(**kwargs) -> logging.Logger:
             logger_ch.setLevel(level=level)
             logger_ch.setFormatter(fmt=formatter)
             LOGGER.addHandler(logger_ch)
+            stream_handler = logger_ch
 
+        if stream_handler is not None and not any(isinstance(flt, DuplicateWarningFilter) for flt in stream_handler.filters):
+            stream_handler.addFilter(DuplicateWarningFilter())
+
+    assert LOGGER is not None
     return LOGGER
 
 
