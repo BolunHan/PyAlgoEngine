@@ -558,7 +558,7 @@ cdef class TickData(MarketData):
         if ret_code != md_ret_code.MD_OK:
             raise RuntimeError(f'OrderBook.ask sorting failed with error code {ret_code}.')
 
-    cpdef TickDataLite lite(self, bint copy=False):
+    cpdef TickDataLite lite(self, bint copy=True):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
         if not copy:
             instance.header = <md_variant*> &self.header.tick_data_full.lite
