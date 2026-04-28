@@ -3,6 +3,7 @@ __version__ = "0.10.3.post2"
 import functools
 import logging
 import os
+import pathlib
 import traceback
 
 from .base.telemetrics import LOGGER
@@ -51,13 +52,25 @@ except ImportError:
 
 
 @functools.cache
-def get_include():
+def get_include() -> list[str]:
     import os
     from .base import CONFIG
 
-    res_dir = os.path.dirname(__file__)
+    res_dir = pathlib.Path(__file__).parent
     LOGGER.info(f'Building with <PyAlgoEngine> version: "{__version__}", resource directory: "{res_dir}", config: "{CONFIG}".')
-    return res_dir
+
+    scr_dir = [
+        os.path.realpath(res_dir),
+        os.path.realpath(res_dir / 'base'),
+        os.path.realpath(res_dir / 'base' / 'c_market_data'),
+        os.path.realpath(res_dir / 'exchange_profile'),
+        os.path.realpath(res_dir / 'engine'),
+    ]
+
+    import event_engine
+    dep_dir = event_engine.get_include()
+
+    return scr_dir + dep_dir
 
 
 __all__ = [
