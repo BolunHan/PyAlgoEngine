@@ -47,7 +47,7 @@ cdef class MarketDataService:
     cdef readonly double timestamp
     cdef readonly size_t n_subscribed
     cdef readonly dict monitor
-    cdef MonitorManager monitor_manager
+    cdef readonly MonitorManager monitor_manager
 
     cdef void c_subscription_buffer_extend(self)
 
