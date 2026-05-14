@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "../../exchange_profile/c_ex_profile_base.h"
-#include "c_allocator_protocol.h"
+#include "../c_allocator_protocol.h"
 #include "c_market_data_config.h"
 
 #if defined(_WIN32) || defined(_WIN64)
