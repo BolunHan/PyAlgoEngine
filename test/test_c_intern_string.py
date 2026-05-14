@@ -23,60 +23,85 @@ class TestCInternString(unittest.TestCase):
 
     def test_intern_and_size_and_len(self):
         pool = cis.POOL
-        # initial size (may be zero)
         initial_size = pool.size
-        # intern a few strings
         s1 = pool.istr('alpha')
         s2 = pool.istr('beta')
-        s3 = pool.istr('alpha')  # same as s1
+        size_after_two = pool.size
+        s3 = pool.istr('alpha')  # already interned, must not grow size
 
-        # size should have increased at least for the unique strings
-        self.assertGreaterEqual(pool.size, initial_size)
-        # len() should match pool.size
+        # two unique strings must increase size by exactly 2 (or 0 if already present)
+        self.assertGreaterEqual(size_after_two, initial_size)
+        # re-interning 'alpha' must not change size
+        self.assertEqual(pool.size, size_after_two)
+        # len() must match pool.size
         self.assertEqual(len(pool), pool.size)
 
-        # interning the same string should return a value (non-None)
         self.assertIsNotNone(s1)
         self.assertIsNotNone(s2)
         self.assertIsNotNone(s3)
 
     def test_internalized_iteration_and_internstring_api(self):
         pool = cis.POOL
-        # Ensure at least one string is present
-        pool.istr('gamma')
+        # Ensure 'gamma' is present and retrieve it directly
+        inst = pool.istr('gamma')
+        inst2 = pool['gamma']
 
         internalized = list(pool.internalized())
-        # internalized yields InternString instances or compatible objects
-        self.assertTrue(len(internalized) >= 1)
+        self.assertGreaterEqual(len(internalized), 1)
 
-        inst = internalized[0]
         # string property should return a Python string
-        self.assertTrue(hasattr(inst, 'string'))
         pystr = inst.string
         self.assertIsInstance(pystr, str)
+        self.assertEqual(pystr, 'gamma')
 
         # repr should not crash
         _ = repr(inst)
 
-        # equality and gt should work against Python strings and other InternString
-        inst2 = pool['gamma']
+        # equality between two InternString objects for the same key
         self.assertTrue(inst == inst2)
         self.assertFalse(inst != inst2)
         # compare with Python string (should not raise)
-        _ = (inst == pystr)
+        self.assertTrue(inst == 'gamma')
 
-        # hash() should be available (may be an int or raise if uninitialized)
-        try:
-            h = hash(inst)
-            self.assertIsInstance(h, int)
-        except Exception:
-            # acceptable if object is uninitialized in this build
-            pass
+        # hash() must return an int
+        h = hash(inst)
+        self.assertIsInstance(h, int)
 
-    def test_pool_singleton_and_no_double_init(self):
-        no_alloc = InternStringPool.__new__(InternStringPool, False)
-        with self.assertRaises(RuntimeError):
-            _ = InternStringPool()
+    def test_stable_pointer_and_no_double_count(self):
+        pool = cis.POOL
+        key = 'stable_ptr_test'
+        s1 = pool.istr(key)
+        size_after_first = pool.size
+        s2 = pool.istr(key)
+        # Re-interning must not grow the pool
+        self.assertEqual(pool.size, size_after_first)
+        # Both InternString objects must point to the same internalized copy
+        self.assertEqual(s1.address, s2.address)
+        # The internalized string must equal the original key
+        self.assertEqual(s1.string, key)
+
+    def test_getitem_missing_key_raises(self):
+        pool = cis.POOL
+        with self.assertRaises(KeyError):
+            _ = pool['__key_that_was_never_interned__']
+
+    def test_internstring_properties(self):
+        pool = cis.POOL
+        inst = pool.istr('prop_test_key')
+
+        # hash_value: non-None int (FNV-1a never produces 0 in practice)
+        hv = inst.hash_value
+        self.assertIsNotNone(hv)
+        self.assertIsInstance(hv, int)
+
+        # address: hex string
+        addr = inst.address
+        self.assertIsInstance(addr, str)
+        self.assertTrue(addr.startswith('0x'), msg=f'Expected hex address, got: {addr!r}')
+
+        # intern_pool: round-trips back to an InternStringPool
+        ip = inst.pool
+        self.assertIsInstance(ip, InternStringPool)
 
     def test_inter_multiprocess(self):
         POOL.istr('cat')
