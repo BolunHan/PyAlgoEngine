@@ -80,18 +80,7 @@ class BuildExtWithConfig(build_ext):
 
 
 # Define the extensions
-extensions = [
-    # Extension(
-    #     name="algo_engine.profile.c_base",
-    #     sources=["algo_engine/profile/c_base.pyx"],
-    #     extra_compile_args=["-O3"]
-    # ),
-    # Extension(
-    #     name="algo_engine.profile.c_cn",
-    #     sources=["algo_engine/profile/c_cn.pyx"],
-    #     extra_compile_args=["-O3"]
-    # ),
-]
+extensions = []
 
 if os.name == 'posix':
     extensions.extend([
@@ -104,6 +93,11 @@ if os.name == 'posix':
         Extension(
             name="algo_engine.base.c_heap_allocator",
             sources=["algo_engine/base/c_heap_allocator.pyx"],
+            extra_compile_args=["-O3"]
+        ),
+        Extension(
+            name="algo_engine.base.c_allocator_protocol",
+            sources=["algo_engine/base/c_allocator_protocol.pyx"],
             extra_compile_args=["-O3"]
         ),
         Extension(
@@ -135,11 +129,6 @@ if os.name == 'posix':
             extra_compile_args=["-O3"]
         ),
         # === Market Data Cython Extensions ===
-        Extension(
-            name="algo_engine.base.c_market_data.c_allocator_protocol",
-            sources=["algo_engine/base/c_market_data/c_allocator_protocol.pyx"],
-            extra_compile_args=["-O3"]
-        ),
         Extension(
             name="algo_engine.base.c_market_data.c_market_data",
             sources=["algo_engine/base/c_market_data/c_market_data.pyx"],
