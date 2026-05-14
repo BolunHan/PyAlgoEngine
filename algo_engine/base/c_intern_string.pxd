@@ -1,6 +1,6 @@
 from libc.stdint cimport uint64_t
 
-from .c_shm_allocator cimport shm_allocator_ctx
+from .c_allocator_protocol cimport allocator_protocol
 
 
 cdef extern from "pthread.h":
@@ -19,23 +19,31 @@ cdef extern from "c_intern_string.h":
         istr_entry* next;
 
     ctypedef struct istr_map:
-        shm_allocator_ctx* allocator
+        pthread_mutex_t lock
+        istr_entry* pool
         size_t capacity
         size_t size
         istr_entry* first
-        istr_entry* pool
-        pthread_mutex_t* lock
-        pthread_mutex_t  local_lock
 
     # === Functions ===
     uint64_t fnv1a_hash(const char* key, size_t key_length)
-    istr_map* c_istr_map_new(size_t capacity, shm_allocator_ctx* allocator)
-    void c_istr_map_free(istr_map* map)
-    int c_istr_map_extend(istr_map* map, size_t new_capacity)
-    const istr_entry* c_istr_map_lookup(istr_map* map, const char* key)
-    const istr_entry* c_istr_map_lookup_synced(istr_map* map, const char* key)
-    const char* c_istr(istr_map* map, const char* key)
-    const char* c_istr_synced(istr_map* map, const char* key)
+    istr_map* c_istr_map_new(size_t capacity, allocator_protocol* allocator)
+    void c_istr_map_free(istr_map* imap)
+    int c_istr_map_extend(istr_map* imap, size_t new_capacity)
+    int c_istr_map_extend_synced(istr_map* imap, size_t new_capacity)
+    const istr_entry* c_istr_map_lookup(const istr_map* imap, const char* key)
+    const istr_entry* c_istr_map_lookup_synced(const istr_map* imap, const char* key)
+    const char* c_istr(istr_map* imap, const char* key, const istr_entry** out_entry)
+    const char* c_istr_synced(istr_map* imap, const char* key, const istr_entry** out_entry)
+
+
+cdef class InternString:
+    cdef readonly InternStringPool pool
+    cdef const char* internalized
+    cdef uint64_t hash
+
+    @staticmethod
+    cdef InternString c_from_entry(const istr_entry* entry, InternStringPool pool)
 
 
 cdef class InternStringPool:
@@ -45,21 +53,10 @@ cdef class InternStringPool:
     @staticmethod
     cdef InternStringPool c_from_header(const istr_map* header, bint owner=*)
 
-    cdef const char* c_istr(self, const char* string, bint with_lock=*)
-
-    cpdef InternString istr(self, str string, bint with_lock=*)
+    cpdef InternString istr(self, str string)
 
 
 cdef istr_map* C_POOL
 cdef InternStringPool POOL
 cdef istr_map* C_INTRA_POOL
 cdef InternStringPool INTRA_POOL
-
-
-cdef class InternString:
-    cdef const istr_map* pool
-    cdef const char* internalized
-    cdef uint64_t hash
-
-    @staticmethod
-    cdef InternString c_from_entry(const istr_entry* entry, istr_map* pool)

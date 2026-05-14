@@ -34,12 +34,11 @@ class InternStringPool(object):
         implementation-defined (may raise or return an uninitialized view).
         """
 
-    def istr(self, string: str, with_lock: bool = False) -> InternString:
+    def istr(self, string: str) -> InternString:
         """Intern (or lookup) ``string`` in the pool and return a view.
 
         Parameters
         - string: the Python str to intern
-        - with_lock: whether to acquire the pool lock during insertion
         """
 
     def internalized(self) -> Generator[InternString]:
@@ -87,7 +86,7 @@ class InternString(object):
         """Return a short, informative representation (safe to call)."""
 
     @property
-    def intern_pool(self) -> InternStringPool:
+    def pool(self) -> InternStringPool:
         """Return the ``InternStringPool`` that owns this interned entry."""
 
     @property
