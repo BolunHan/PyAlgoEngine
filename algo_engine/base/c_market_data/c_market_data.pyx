@@ -317,11 +317,11 @@ cdef class MarketData:
 
     def __copy__(self):
         cdef object cls = self.__class__
-        cdef MarketData instance = <MarketData> cls.__new__(cls)
         cdef md_data_type dtype = self.header.meta_info.dtype
         cdef md_variant* header = c_md_new(dtype, MD_DEFAULT_ALLOCATOR)
         cdef size_t size = c_md_get_size(self.header.meta_info.dtype)
-        memcpy(<void*> instance.header, <const char*> self.header, size)
+        memcpy(<void*> header, <void*> self.header, size)
+        cdef MarketData instance = MarketData.c_from_header(header, True)
         instance.__dict__.update(self.__dict__)
         return instance
 
