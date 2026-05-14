@@ -1,8 +1,8 @@
 from libcpp cimport bool as c_bool
 from libc.stdint cimport uint8_t, uint64_t
 
-from ..c_heap_allocator cimport heap_allocator, C_ALLOCATOR as HEAP_ALLOCATOR
-from ..c_shm_allocator cimport shm_allocator, shm_allocator_ctx, C_ALLOCATOR as SHM_ALLOCATOR
+from .c_heap_allocator cimport heap_allocator, C_ALLOCATOR as HEAP_ALLOCATOR
+from .c_shm_allocator cimport shm_allocator, shm_allocator_ctx, C_ALLOCATOR as SHM_ALLOCATOR
 
 
 cdef extern from "c_allocator_protocol.h":

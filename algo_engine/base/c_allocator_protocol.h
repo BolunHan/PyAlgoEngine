@@ -5,8 +5,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../c_heap_allocator.h"
-#include "../c_shm_allocator.h"
+
+#include "./c_heap_allocator.h"
+#include "./c_shm_allocator.h"
 
 // ========== Constants ==========
 
@@ -18,16 +19,20 @@
 #define MD_ALLOC_MAGIC 0xCFBBBBFCULL
 #endif
 
+#ifndef MD_DEALLOC_MAGIC
+#define MD_DEALLOC_MAGIC 0xDEADDEADULL
+#endif
+
 // ========== Structs ==========
 
 typedef struct allocator_protocol {
-    shm_allocator* shm_allocator;
+    shm_allocator*     shm_allocator;
     shm_allocator_ctx* shm_allocator_ctx;
-    heap_allocator* heap_allocator;
-    bool with_lock;
-    bool with_shm;
-    bool with_freelist;
-    size_t size;
+    heap_allocator*    heap_allocator;
+    bool               with_lock;
+    bool               with_shm;
+    bool               with_freelist;
+    size_t             size;
 #if MD_ALLOC_VIGILANT > 0
     uint64_t magic;
 #endif
@@ -37,19 +42,19 @@ typedef struct allocator_protocol {
 // ========== Forward Declaration ==========
 
 static inline allocator_protocol* c_md_allocator_protocol_new(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
-static inline void c_md_allocator_protocol_free(allocator_protocol* protocol);
+static inline void                c_md_allocator_protocol_free(allocator_protocol* protocol);
 
 static inline allocator_protocol* c_md_protocol_from_ptr(const void* ptr);
-static inline void* c_md_alloc(size_t size, allocator_protocol* schematic);
-static inline void c_md_free(void* ptr);
-static inline char* c_md_strdup(const char* src, allocator_protocol* allocator);
-static inline void* c_md_realloc(void* src, size_t new_size, allocator_protocol* allocator);
+static inline void*               c_md_alloc(size_t size, allocator_protocol* schematic);
+static inline void                c_md_free(void* ptr);
+static inline char*               c_md_strdup(const char* src, allocator_protocol* allocator);
+static inline void*               c_md_realloc(void* src, size_t new_size, allocator_protocol* allocator);
 
 // ========== Utilities Functions ==========
 
 static inline allocator_protocol* c_md_allocator_protocol_new(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock) {
     if (size == 0) return NULL;
-    size_t ttl_size = sizeof(allocator_protocol) + size;
+    size_t              ttl_size = sizeof(allocator_protocol) + size;
     allocator_protocol* protocol;
 
     if (shm_allocator) {
@@ -89,7 +94,7 @@ static inline void c_md_allocator_protocol_free(allocator_protocol* protocol) {
 
 #if MD_ALLOC_VIGILANT > 0
     // Invalidate magic to catch double free or invalid free attempts
-    protocol->magic = 0;
+    protocol->magic = MD_DEALLOC_MAGIC;
 #endif
     bool with_lock = protocol->with_lock;
     bool with_shm = protocol->with_shm;
@@ -100,12 +105,12 @@ static inline void c_md_allocator_protocol_free(allocator_protocol* protocol) {
         abort();
     }
     else if (with_shm) {
-        shm_allocator* shm_allocator = protocol->shm_allocator;
+        shm_allocator*   shm_allocator = protocol->shm_allocator;
         pthread_mutex_t* lock = with_lock ? &shm_allocator->lock : NULL;
         c_shm_free((void*) protocol, lock);
     }
     else if (with_freelist) {
-        heap_allocator* heap_allocator = protocol->heap_allocator;
+        heap_allocator*  heap_allocator = protocol->heap_allocator;
         pthread_mutex_t* lock = with_lock ? &heap_allocator->lock : NULL;
         c_heap_free((void*) protocol, lock);
     }
@@ -121,9 +126,15 @@ static inline allocator_protocol* c_md_protocol_from_ptr(const void* ptr) {
     allocator_protocol* protocol = (allocator_protocol*) ((char*) ptr - offsetof(allocator_protocol, buf));
 #if MD_ALLOC_VIGILANT > 0
     if (protocol->magic != MD_ALLOC_MAGIC) {
-        fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: Magic mismatch! Attempting to c_md_protocol_from_ptr a non-md-allocated pointer!\n");
-        fprintf(stderr, "[MD_ALLOC_VIGILANT] Expected magic: 0x%llx, Got: 0x%llx\n", (unsigned long long) MD_ALLOC_MAGIC, (unsigned long long) protocol->magic);
-        fprintf(stderr, "[MD_ALLOC_VIGILANT] This is likely a regular malloc / calloc'd pointer or already freed!\n");
+        if (protocol->magic == MD_DEALLOC_MAGIC) {
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: Use-after-free detected in c_md_protocol_from_ptr!\n");
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] Pointer %p was already freed (dealloc magic: 0x%llx).\n", ptr, (unsigned long long) MD_DEALLOC_MAGIC);
+        }
+        else {
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: Magic mismatch in c_md_protocol_from_ptr! Not a md-allocated pointer!\n");
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] Expected: 0x%llx, Got: 0x%llx\n", (unsigned long long) MD_ALLOC_MAGIC, (unsigned long long) protocol->magic);
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] This is likely a raw malloc / calloc'd pointer.\n");
+        }
         fflush(stderr);
         abort();
     }
@@ -145,10 +156,10 @@ static inline void* c_md_alloc(size_t size, allocator_protocol* schematic) {
     }
 
     if (schematic->with_shm) {
-        bool with_lock = schematic->with_lock;
+        bool               with_lock = schematic->with_lock;
         shm_allocator_ctx* ctx = schematic->shm_allocator_ctx;
-        shm_allocator* allocator = schematic->shm_allocator;
-        pthread_mutex_t* lock = with_lock ? &allocator->lock : NULL;
+        shm_allocator*     allocator = schematic->shm_allocator;
+        pthread_mutex_t*   lock = with_lock ? &allocator->lock : NULL;
         clone = (allocator_protocol*) c_shm_request(ctx, sizeof(allocator_protocol) + size, 0, lock);
         if (!clone) return NULL;
         clone->shm_allocator = allocator;
@@ -157,8 +168,8 @@ static inline void* c_md_alloc(size_t size, allocator_protocol* schematic) {
         clone->with_shm = 1;
     }
     else if (schematic->with_freelist) {
-        bool with_lock = schematic->with_lock;
-        heap_allocator* allocator = schematic->heap_allocator;
+        bool             with_lock = schematic->with_lock;
+        heap_allocator*  allocator = schematic->heap_allocator;
         pthread_mutex_t* lock = with_lock ? &allocator->lock : NULL;
         clone = (allocator_protocol*) c_heap_request(allocator, sizeof(allocator_protocol) + size, 0, lock);
         if (!clone) return NULL;
@@ -185,9 +196,15 @@ static inline void c_md_free(void* ptr) {
 
 #if MD_ALLOC_VIGILANT > 0
     if (protocol->magic != MD_ALLOC_MAGIC) {
-        fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: Magic mismatch! Attempting to c_md_free a non-md-allocated pointer!\n");
-        fprintf(stderr, "[MD_ALLOC_VIGILANT] Expected magic: 0x%llx, Got: 0x%llx\n", (unsigned long long) MD_ALLOC_MAGIC, (unsigned long long) protocol->magic);
-        fprintf(stderr, "[MD_ALLOC_VIGILANT] This is likely a regular malloc / calloc'd pointer or already freed!\n");
+        if (protocol->magic == MD_DEALLOC_MAGIC) {
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: Double free detected in c_md_free!\n");
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] Pointer %p was already freed (dealloc magic: 0x%llx).\n", ptr, (unsigned long long) MD_DEALLOC_MAGIC);
+        }
+        else {
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: Magic mismatch in c_md_free! Not a md-allocated pointer!\n");
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] Expected: 0x%llx, Got: 0x%llx\n", (unsigned long long) MD_ALLOC_MAGIC, (unsigned long long) protocol->magic);
+            fprintf(stderr, "[MD_ALLOC_VIGILANT] This is likely a raw malloc / calloc'd pointer.\n");
+        }
         fflush(stderr);
         abort();
     }
@@ -199,7 +216,7 @@ static inline void c_md_free(void* ptr) {
 static inline char* c_md_strdup(const char* src, allocator_protocol* allocator) {
     if (!src) return NULL;
     size_t len = strlen(src);
-    char* trg = (char*) c_md_alloc(len + 1, allocator);
+    char*  trg = (char*) c_md_alloc(len + 1, allocator);
     if (!trg) return NULL;
     memcpy(trg, src, len);
     return trg;
@@ -213,8 +230,8 @@ static inline void* c_md_realloc(void* src, size_t new_size, allocator_protocol*
     }
 
     allocator_protocol* protocol = c_md_protocol_from_ptr(src);
-    size_t copy_size = protocol->size < new_size ? protocol->size : new_size;
-    void* new_ptr = c_md_alloc(new_size, allocator);
+    size_t              copy_size = protocol->size < new_size ? protocol->size : new_size;
+    void*               new_ptr = c_md_alloc(new_size, allocator);
     if (!new_ptr) return NULL;
     memcpy(new_ptr, src, copy_size);
     c_md_free(src);
