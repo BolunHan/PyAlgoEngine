@@ -33,7 +33,8 @@ def check_cython_module(cython_module) -> bool:
 
 from .finance_decimal import FinancialDecimal
 
-from .c_market_data.c_allocator_protocol import EnvConfigContext, AllocatorProtocol, MD_SHARED, MD_LOCKED, MD_FREELIST
+from .c_allocator_protocol import EnvConfigContext, AllocatorProtocol, MD_SHARED, MD_LOCKED, MD_FREELIST
+
 from .c_market_data.c_market_data import BookConfigContext, MD_BOOK5, MD_BOOK10, MD_BOOK20, DataType, MarketData, FilterMode, CONFIG
 from .c_market_data.c_internal import InternalData
 from .c_market_data.c_transaction import OrderType, TransactionDirection, TransactionOffset, TransactionSide, TransactionData, OrderData, TradeData
