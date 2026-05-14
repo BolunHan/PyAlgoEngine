@@ -1,19 +1,3 @@
-from .c_allocator_protocol cimport (
-    MD_CFG_LOCKED,
-    MD_CFG_SHARED,
-    MD_CFG_FREELIST,
-
-    EnvConfigContext,
-    MD_SHARED,
-    MD_LOCKED,
-    MD_FREELIST,
-
-    AllocatorProtocol,
-    MD_DEFAULT_ALLOCATOR,
-    MD_SHM_ALLOCATOR,
-    MD_HEAP_ALLOCATOR
-)
-
 from .c_market_data cimport (
     # === Global flags ===
     DEBUG,
