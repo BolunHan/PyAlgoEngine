@@ -126,10 +126,10 @@ static inline md_variant* c_md_send_to_shm(md_variant* market_data, allocator_pr
     const char* interned_ticker;
     if (market_data->meta_info.ticker) {
         if (shm_allocator->with_lock) {
-            interned_ticker = c_istr_synced(shm_pool, market_data->meta_info.ticker);
+            interned_ticker = c_istr_synced(shm_pool, market_data->meta_info.ticker, NULL);
         }
         else {
-            interned_ticker = c_istr(shm_pool, market_data->meta_info.ticker);
+            interned_ticker = c_istr(shm_pool, market_data->meta_info.ticker, NULL);
         }
         if (!interned_ticker) return NULL;
     }

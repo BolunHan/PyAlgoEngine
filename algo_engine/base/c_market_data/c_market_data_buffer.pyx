@@ -3,9 +3,9 @@ from cpython.ref cimport Py_XINCREF, Py_XDECREF
 from libc.stdlib cimport calloc, realloc, free
 from libc.string cimport memcpy, memset
 
-from .c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR, c_md_protocol_from_ptr
-from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, md_ret_code
+from ..c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR, c_md_protocol_from_ptr
 from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
+from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, md_ret_code
 
 
 class InvalidBufferError(Exception):

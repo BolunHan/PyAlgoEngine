@@ -1,9 +1,9 @@
 from libcpp cimport bool as c_bool
 from cpython.object cimport PyObject
 
-from .c_allocator_protocol cimport allocator_protocol
-from .c_market_data cimport md_variant
+from ..c_allocator_protocol cimport allocator_protocol
 from ..c_intern_string cimport istr_map
+from .c_market_data cimport md_variant
 
 
 cdef extern from "c_market_data_buffer.h":
