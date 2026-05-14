@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Annotated, Self
 from warnings import deprecated
 
-from .c_allocator_protocol import EnvConfigContext
+from ..c_allocator_protocol import EnvConfigContext
 from ...exchange_profile import SessionDate, SessionTime
 
 

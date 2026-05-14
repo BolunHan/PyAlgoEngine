@@ -59,14 +59,14 @@ cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, do
 
     if MD_DEFAULT_ALLOCATOR.with_shm:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker, NULL)
         else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker)
+            meta_data.ticker = c_istr(SHM_POOL, ticker, NULL)
     else:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker, NULL)
         else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker)
+            meta_data.ticker = c_istr(HEAP_POOL, ticker, NULL)
 
     if not meta_data.ticker:
         raise MemoryError('Failed to intern ticker string')
@@ -91,14 +91,14 @@ cdef inline md_variant* c_deserialize_buffer(const char* src):
 
     if MD_DEFAULT_ALLOCATOR.with_shm:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker)
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker, NULL)
         else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker)
+            meta_data.ticker = c_istr(SHM_POOL, ticker, NULL)
     else:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker)
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker, NULL)
         else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker)
+            meta_data.ticker = c_istr(HEAP_POOL, ticker, NULL)
 
     if not meta_data.ticker:
         raise MemoryError('Failed to intern ticker string')
@@ -405,7 +405,7 @@ cdef class MarketData:
                 self.header.meta_info.ticker = NULL
                 return
             cdef const char* scr = PyUnicode_AsUTF8(value)
-            cdef const char* istr = c_istr_synced(SHM_POOL if MD_CFG_SHARED else HEAP_POOL, scr)
+            cdef const char* istr = c_istr_synced(SHM_POOL if MD_CFG_SHARED else HEAP_POOL, scr, NULL)
             self.header.meta_info.ticker = istr
 
     property timestamp:
