@@ -5,7 +5,7 @@ from libc.string cimport memcpy, memset
 
 from ..c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR, c_md_protocol_from_ptr
 from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_istr, c_istr_synced
-from .c_market_data cimport MarketData, c_md_serialized_size, c_md_deserialize, md_ret_code
+from .c_market_data cimport MarketData, c_md_serialized_size, c_deserialize_buffer, md_ret_code
 
 
 class InvalidBufferError(Exception):
@@ -194,7 +194,7 @@ cdef class MarketDataBuffer:
         cdef const char* blob = NULL
         cdef int ret_code = c_md_block_buffer_get(self.header, idx, &blob)
         if ret_code == md_ret_code.MD_OK:
-            return c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
+            return c_deserialize_buffer(blob)
         elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError('Invalid args')
         elif ret_code == md_ret_code.MD_ERR_BUF_EMPTY:
@@ -336,7 +336,7 @@ cdef class MarketDataRingBuffer:
         cdef const char* blob = NULL
         cdef int ret_code = c_md_ring_buffer_get(self.header, idx, &blob)
         if ret_code == md_ret_code.MD_OK:
-            return c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
+            return c_deserialize_buffer(blob)
         elif ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
             raise ValueError('Invalid args')
         elif ret_code == md_ret_code.MD_ERR_BUF_EMPTY:
@@ -352,7 +352,7 @@ cdef class MarketDataRingBuffer:
         cdef md_variant* md
 
         if not ret_code:
-            md = c_md_deserialize(blob, MD_DEFAULT_ALLOCATOR)
+            md = c_deserialize_buffer(blob)
             return md
 
         if ret_code == md_ret_code.MD_ERR_INVALID_INPUT:
