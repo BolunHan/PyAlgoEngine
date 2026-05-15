@@ -316,7 +316,6 @@ cdef class MarketData:
             self.__dict__.update(state)
 
     def __copy__(self):
-        cdef object cls = self.__class__
         cdef md_data_type dtype = self.header.meta_info.dtype
         cdef md_variant* header = c_md_new(dtype, MD_DEFAULT_ALLOCATOR)
         cdef size_t size = c_md_get_size(self.header.meta_info.dtype)
