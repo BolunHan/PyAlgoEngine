@@ -1,6 +1,6 @@
 import unittest
 
-from algo_engine.base.c_market_data.c_allocator_protocol import MD_SHARED, MD_FREELIST
+from algo_engine.base import MD_SHARED, MD_FREELIST
 from algo_engine.base.c_market_data.c_internal import InternalData
 from algo_engine.base.c_market_data.c_market_data import MarketData
 
