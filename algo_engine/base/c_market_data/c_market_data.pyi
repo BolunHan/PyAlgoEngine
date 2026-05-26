@@ -6,7 +6,7 @@ from typing import Annotated, Self
 from warnings import deprecated
 
 from ..c_allocator_protocol import EnvConfigContext
-from ...exchange_profile import SessionDate, SessionTime
+from ...exchange_profile import SessionDate, SessionDateTime, SessionTime
 
 
 @dataclass
@@ -177,6 +177,11 @@ class MarketData(object):
     @property
     def session_date(self) -> SessionDate:
         """Get the Pre-calculated SessionDate object representing the session date of this market data."""
+        ...
+
+    @property
+    def session_datetime(self) -> SessionDateTime:
+        """Get the Pre-calculated SessionDateTime object representing the session date and time of this market data."""
         ...
 
     @property
