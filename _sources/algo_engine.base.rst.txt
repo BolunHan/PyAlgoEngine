@@ -13,6 +13,14 @@ Subpackages
 Submodules
 ----------
 
+algo\_engine.base.c\_allocator\_protocol module
+-----------------------------------------------
+
+.. automodule:: algo_engine.base.c_allocator_protocol
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 algo\_engine.base.c\_heap\_allocator module
 -------------------------------------------
 

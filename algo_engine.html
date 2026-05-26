@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine package &mdash; PyAlgoEngine 0.10.0 documentation</title>
+  <title>algo_engine package &mdash; PyAlgoEngine 0.10.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=82662543"></script>
+      <script src="_static/documentation_options.js?v=da6fbbfd"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -302,7 +302,6 @@
 <li class="toctree-l2"><a class="reference internal" href="algo_engine.base.html#subpackages">Subpackages</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.base.c_market_data.html">algo_engine.base.c_market_data package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.c_market_data.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_allocator_protocol">algo_engine.base.c_market_data.c_allocator_protocol module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_candlestick">algo_engine.base.c_market_data.c_candlestick module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_internal">algo_engine.base.c_market_data.c_internal module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_market_data">algo_engine.base.c_market_data.c_market_data module</a></li>
@@ -327,6 +326,19 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="algo_engine.base.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algo_engine.base.html#module-algo_engine.base.c_allocator_protocol">algo_engine.base.c_allocator_protocol module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.addr"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol.addr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.buf"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol.buf</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.size"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol.size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.with_freelist"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol.with_freelist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.with_lock"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol.with_lock</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.with_shm"><code class="docutils literal notranslate"><span class="pre">AllocatorProtocol.with_shm</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.EnvConfigContext"><code class="docutils literal notranslate"><span class="pre">EnvConfigContext</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="algo_engine.base.html#module-algo_engine.base.c_heap_allocator">algo_engine.base.c_heap_allocator module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_heap_allocator.HeapAllocator"><code class="docutils literal notranslate"><span class="pre">HeapAllocator</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_heap_allocator.HeapAllocator.active_page"><code class="docutils literal notranslate"><span class="pre">HeapAllocator.active_page</span></code></a></li>
@@ -368,11 +380,12 @@
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString"><code class="docutils literal notranslate"><span class="pre">InternString</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.address"><code class="docutils literal notranslate"><span class="pre">InternString.address</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.hash_value"><code class="docutils literal notranslate"><span class="pre">InternString.hash_value</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.intern_pool"><code class="docutils literal notranslate"><span class="pre">InternString.intern_pool</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.pool"><code class="docutils literal notranslate"><span class="pre">InternString.pool</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.string"><code class="docutils literal notranslate"><span class="pre">InternString.string</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool"><code class="docutils literal notranslate"><span class="pre">InternStringPool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.__init__"><code class="docutils literal notranslate"><span class="pre">InternStringPool.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.address"><code class="docutils literal notranslate"><span class="pre">InternStringPool.address</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.internalized"><code class="docutils literal notranslate"><span class="pre">InternStringPool.internalized()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.istr"><code class="docutils literal notranslate"><span class="pre">InternStringPool.istr()</span></code></a></li>
@@ -556,6 +569,11 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.telemetrics.ColoredFormatter.format"><code class="docutils literal notranslate"><span class="pre">ColoredFormatter.format()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.telemetrics.DuplicateWarningFilter"><code class="docutils literal notranslate"><span class="pre">DuplicateWarningFilter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.telemetrics.DuplicateWarningFilter.__init__"><code class="docutils literal notranslate"><span class="pre">DuplicateWarningFilter.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.telemetrics.DuplicateWarningFilter.filter"><code class="docutils literal notranslate"><span class="pre">DuplicateWarningFilter.filter()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.telemetrics.get_logger"><code class="docutils literal notranslate"><span class="pre">get_logger()</span></code></a></li>
 </ul>
 </li>
@@ -595,6 +613,7 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.owner"><code class="docutils literal notranslate"><span class="pre">MarketData.owner</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.price"><code class="docutils literal notranslate"><span class="pre">MarketData.price</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.session_date"><code class="docutils literal notranslate"><span class="pre">MarketData.session_date</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.session_datetime"><code class="docutils literal notranslate"><span class="pre">MarketData.session_datetime</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.session_time"><code class="docutils literal notranslate"><span class="pre">MarketData.session_time</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.ticker"><code class="docutils literal notranslate"><span class="pre">MarketData.ticker</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.base.html#algo_engine.base.MarketData.timestamp"><code class="docutils literal notranslate"><span class="pre">MarketData.timestamp</span></code></a></li>
@@ -1158,6 +1177,7 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.market_price"><code class="docutils literal notranslate"><span class="pre">MarketDataService.market_price</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.market_time"><code class="docutils literal notranslate"><span class="pre">MarketDataService.market_time</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.monitor"><code class="docutils literal notranslate"><span class="pre">MarketDataService.monitor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.monitor_manager"><code class="docutils literal notranslate"><span class="pre">MarketDataService.monitor_manager</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.n_subscribed"><code class="docutils literal notranslate"><span class="pre">MarketDataService.n_subscribed</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.on_internal_data"><code class="docutils literal notranslate"><span class="pre">MarketDataService.on_internal_data()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.on_market_data"><code class="docutils literal notranslate"><span class="pre">MarketDataService.on_market_data()</span></code></a></li>
@@ -1359,6 +1379,7 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.market_price"><code class="docutils literal notranslate"><span class="pre">MarketDataService.market_price</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.market_time"><code class="docutils literal notranslate"><span class="pre">MarketDataService.market_time</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.monitor"><code class="docutils literal notranslate"><span class="pre">MarketDataService.monitor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.monitor_manager"><code class="docutils literal notranslate"><span class="pre">MarketDataService.monitor_manager</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.n_subscribed"><code class="docutils literal notranslate"><span class="pre">MarketDataService.n_subscribed</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.on_internal_data"><code class="docutils literal notranslate"><span class="pre">MarketDataService.on_internal_data()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.MarketDataService.on_market_data"><code class="docutils literal notranslate"><span class="pre">MarketDataService.on_market_data()</span></code></a></li>
@@ -1578,10 +1599,12 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate"><code class="docutils literal notranslate"><span class="pre">SessionDate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.__init__"><code class="docutils literal notranslate"><span class="pre">SessionDate.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.add_days"><code class="docutils literal notranslate"><span class="pre">SessionDate.add_days()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.ctime"><code class="docutils literal notranslate"><span class="pre">SessionDate.ctime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.addr"><code class="docutils literal notranslate"><span class="pre">SessionDate.addr</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.day"><code class="docutils literal notranslate"><span class="pre">SessionDate.day</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.days_in_month"><code class="docutils literal notranslate"><span class="pre">SessionDate.days_in_month()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.fork"><code class="docutils literal notranslate"><span class="pre">SessionDate.fork()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.from_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_ordinal()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.from_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_pydate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_unix()</span></code></a></li>
@@ -1590,17 +1613,42 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.is_leap_year"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_leap_year()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.is_valid"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.is_weekend"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_weekend()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.isocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDate.isocalendar()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.isoformat"><code class="docutils literal notranslate"><span class="pre">SessionDate.isoformat()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.month"><code class="docutils literal notranslate"><span class="pre">SessionDate.month</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.session_type"><code class="docutils literal notranslate"><span class="pre">SessionDate.session_type</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.strftime"><code class="docutils literal notranslate"><span class="pre">SessionDate.strftime()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDate.timestamp()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.to_ordinal()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.to_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDate.to_pydate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.today"><code class="docutils literal notranslate"><span class="pre">SessionDate.today()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.weekday"><code class="docutils literal notranslate"><span class="pre">SessionDate.weekday()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.unix_to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.unix_to_ordinal()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.year"><code class="docutils literal notranslate"><span class="pre">SessionDate.year</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx"><code class="docutils literal notranslate"><span class="pre">SessionDateEx</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.add_days"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.add_days()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.ctime"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.ctime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.day"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.day</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.days_in_month"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.days_in_month()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.fork"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.fork()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.from_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.from_ordinal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.from_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.from_pydate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.from_unix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.fromisocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.fromisocalendar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.fromisoformat"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.fromisoformat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.is_leap_year"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.is_leap_year()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.is_valid"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.is_weekend"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.is_weekend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.isocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.isocalendar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.isoformat"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.isoformat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.month"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.month</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.session_type"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.session_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.strftime"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.strftime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.timestamp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.to_ordinal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.to_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.to_pydate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.today"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.today()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.unix_to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.unix_to_ordinal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.weekday"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.weekday()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.year"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.year</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateRange"><code class="docutils literal notranslate"><span class="pre">SessionDateRange</span></code></a><ul>
@@ -1610,6 +1658,19 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateRange.n_days"><code class="docutils literal notranslate"><span class="pre">SessionDateRange.n_days</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateRange.start_date"><code class="docutils literal notranslate"><span class="pre">SessionDateRange.start_date</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateRange.to_list"><code class="docutils literal notranslate"><span class="pre">SessionDateRange.to_list()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime"><code class="docutils literal notranslate"><span class="pre">SessionDateTime</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.date"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.date</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.fork"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.fork()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.from_pydatetime"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.from_pydatetime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.from_unix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.ordinal</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.time"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.timestamp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.to_pydatetime"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.to_pydatetime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.ts"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.ts</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.update"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.update()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionPhase"><code class="docutils literal notranslate"><span class="pre">SessionPhase</span></code></a><ul>
@@ -1663,10 +1724,12 @@
 <li class="toctree-l2"><a class="reference internal" href="algo_engine.exchange_profile.html#module-algo_engine.exchange_profile.c_profile_dispatcher">algo_engine.exchange_profile.c_profile_dispatcher module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="algo_engine.exchange_profile.html#module-algo_engine.exchange_profile">Module contents</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate"><code class="docutils literal notranslate"><span class="pre">SessionDate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.__init__"><code class="docutils literal notranslate"><span class="pre">SessionDate.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.add_days"><code class="docutils literal notranslate"><span class="pre">SessionDate.add_days()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.ctime"><code class="docutils literal notranslate"><span class="pre">SessionDate.ctime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.addr"><code class="docutils literal notranslate"><span class="pre">SessionDate.addr</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.day"><code class="docutils literal notranslate"><span class="pre">SessionDate.day</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.days_in_month"><code class="docutils literal notranslate"><span class="pre">SessionDate.days_in_month()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.fork"><code class="docutils literal notranslate"><span class="pre">SessionDate.fork()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.from_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_ordinal()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.from_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_pydate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_unix()</span></code></a></li>
@@ -1675,17 +1738,42 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.is_leap_year"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_leap_year()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.is_valid"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.is_weekend"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_weekend()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.isocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDate.isocalendar()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.isoformat"><code class="docutils literal notranslate"><span class="pre">SessionDate.isoformat()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.month"><code class="docutils literal notranslate"><span class="pre">SessionDate.month</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.session_type"><code class="docutils literal notranslate"><span class="pre">SessionDate.session_type</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.strftime"><code class="docutils literal notranslate"><span class="pre">SessionDate.strftime()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDate.timestamp()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.to_ordinal()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.to_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDate.to_pydate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.today"><code class="docutils literal notranslate"><span class="pre">SessionDate.today()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.weekday"><code class="docutils literal notranslate"><span class="pre">SessionDate.weekday()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.unix_to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.unix_to_ordinal()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.year"><code class="docutils literal notranslate"><span class="pre">SessionDate.year</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx"><code class="docutils literal notranslate"><span class="pre">SessionDateEx</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.add_days"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.add_days()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.ctime"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.ctime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.day"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.day</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.days_in_month"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.days_in_month()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.fork"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.fork()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.from_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.from_ordinal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.from_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.from_pydate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.from_unix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.fromisocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.fromisocalendar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.fromisoformat"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.fromisoformat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.is_leap_year"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.is_leap_year()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.is_valid"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.is_valid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.is_weekend"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.is_weekend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.isocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.isocalendar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.isoformat"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.isoformat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.month"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.month</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.session_type"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.session_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.strftime"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.strftime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.timestamp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.to_ordinal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.to_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.to_pydate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.today"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.today()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.unix_to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.unix_to_ordinal()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.weekday"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.weekday()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.year"><code class="docutils literal notranslate"><span class="pre">SessionDateEx.year</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateRange"><code class="docutils literal notranslate"><span class="pre">SessionDateRange</span></code></a><ul>
@@ -1718,6 +1806,19 @@
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTimeRange.elapsed_seconds"><code class="docutils literal notranslate"><span class="pre">SessionTimeRange.elapsed_seconds</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTimeRange.end_time"><code class="docutils literal notranslate"><span class="pre">SessionTimeRange.end_time</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTimeRange.start_time"><code class="docutils literal notranslate"><span class="pre">SessionTimeRange.start_time</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime"><code class="docutils literal notranslate"><span class="pre">SessionDateTime</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.date"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.date</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.fork"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.fork()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.from_pydatetime"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.from_pydatetime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.from_unix()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.ordinal</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.time"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.timestamp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.to_pydatetime"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.to_pydatetime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.ts"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.ts</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.update"><code class="docutils literal notranslate"><span class="pre">SessionDateTime.update()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.CallAuction"><code class="docutils literal notranslate"><span class="pre">CallAuction</span></code></a><ul>
@@ -1952,7 +2053,7 @@
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-algo_engine" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="algo_engine.get_include">
-<span class="sig-prename descclassname"><span class="pre">algo_engine.</span></span><span class="sig-name descname"><span class="pre">get_include</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine.html#get_include"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.get_include" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">algo_engine.</span></span><span class="sig-name descname"><span class="pre">get_include</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/algo_engine.html#get_include"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.get_include" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </section>

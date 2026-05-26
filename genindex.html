@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; PyAlgoEngine 0.10.0 documentation</title>
+  <title>Index &mdash; PyAlgoEngine 0.10.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=82662543"></script>
+      <script src="_static/documentation_options.js?v=da6fbbfd"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -165,6 +165,8 @@
 </li>
         <li><a href="algo_engine.base.html#algo_engine.base.BarData.__init__">(algo_engine.base.BarData method)</a>
 </li>
+        <li><a href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.__init__">(algo_engine.base.c_intern_string.InternStringPool method)</a>
+</li>
         <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.BarData.__init__">(algo_engine.base.c_market_data.BarData method)</a>
 </li>
         <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_candlestick.BarData.__init__">(algo_engine.base.c_market_data.c_candlestick.BarData method)</a>
@@ -236,6 +238,8 @@
         <li><a href="algo_engine.base.html#algo_engine.base.ShellTransfer.__init__">(algo_engine.base.ShellTransfer method)</a>
 </li>
         <li><a href="algo_engine.base.html#algo_engine.base.telemetrics.ColoredFormatter.__init__">(algo_engine.base.telemetrics.ColoredFormatter method)</a>
+</li>
+        <li><a href="algo_engine.base.html#algo_engine.base.telemetrics.DuplicateWarningFilter.__init__">(algo_engine.base.telemetrics.DuplicateWarningFilter method)</a>
 </li>
         <li><a href="algo_engine.base.html#algo_engine.base.TickData.__init__">(algo_engine.base.TickData method)</a>
 </li>
@@ -311,11 +315,15 @@
 </li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionBreak.__init__">(algo_engine.exchange_profile.c_exchange_profile.SessionBreak method)</a>
 </li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.__init__">(algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.CallAuction.__init__">(algo_engine.exchange_profile.CallAuction method)</a>
 </li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.ExchangeProfile.__init__">(algo_engine.exchange_profile.ExchangeProfile method)</a>
 </li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionBreak.__init__">(algo_engine.exchange_profile.SessionBreak method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.__init__">(algo_engine.exchange_profile.SessionDate method)</a>
 </li>
         <li><a href="algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.__init__">(algo_engine.monitor.advanced_data_interface.MinuteBarMonitor method)</a>
 </li>
@@ -397,7 +405,11 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.add_days">add_days() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.add_days">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.add_days">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.add_days">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.backtest.html#algo_engine.backtest.Replay.add_eod">add_eod() (algo_engine.backtest.Replay method)</a>
@@ -470,8 +482,14 @@
 </li>
       <li><a href="algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.add_trades_batch">add_trades_batch() (algo_engine.backtest.metrics.TradeMetrics method)</a>
 </li>
-      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol.addr">addr (algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol attribute)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.addr">addr (algo_engine.base.c_allocator_protocol.AllocatorProtocol attribute)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.addr">(algo_engine.exchange_profile.c_exchange_profile.SessionDate attribute)</a>
 </li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.addr">(algo_engine.exchange_profile.SessionDate attribute)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.base.html#algo_engine.base.c_heap_allocator.HeapMemoryBlock.address">address (algo_engine.base.c_heap_allocator.HeapMemoryBlock attribute)</a>
 
       <ul>
@@ -603,6 +621,13 @@
 </li>
       </ul></li>
       <li>
+    algo_engine.base.c_allocator_protocol
+
+      <ul>
+        <li><a href="algo_engine.base.html#module-algo_engine.base.c_allocator_protocol">module</a>
+</li>
+      </ul></li>
+      <li>
     algo_engine.base.c_heap_allocator
 
       <ul>
@@ -621,13 +646,6 @@
 
       <ul>
         <li><a href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data">module</a>
-</li>
-      </ul></li>
-      <li>
-    algo_engine.base.c_market_data.c_allocator_protocol
-
-      <ul>
-        <li><a href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_allocator_protocol">module</a>
 </li>
       </ul></li>
       <li>
@@ -700,6 +718,8 @@
         <li><a href="algo_engine.base.html#module-algo_engine.base.finance_decimal">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     algo_engine.base.telemetrics
 
@@ -707,8 +727,6 @@
         <li><a href="algo_engine.base.html#module-algo_engine.base.telemetrics">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     algo_engine.engine
 
@@ -866,7 +884,7 @@
       </ul></li>
       <li><a href="algo_engine.base.html#algo_engine.base.c_heap_allocator.HeapMemoryPage.allocator">allocator (algo_engine.base.c_heap_allocator.HeapMemoryPage attribute)</a>
 </li>
-      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol">AllocatorProtocol (class in algo_engine.base.c_market_data.c_allocator_protocol)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol">AllocatorProtocol (class in algo_engine.base.c_allocator_protocol)</a>
 </li>
       <li><a href="algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.Action.append">append() (algo_engine.apps.sim_input.client.Action method)</a>
 </li>
@@ -1310,7 +1328,7 @@
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionBreak.break_start_ts">(algo_engine.exchange_profile.SessionBreak attribute)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol.buf">buf (algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol attribute)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.buf">buf (algo_engine.base.c_allocator_protocol.AllocatorProtocol attribute)</a>
 
       <ul>
         <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data_buffer.MarketDataBuffer.buf">(algo_engine.base.c_market_data.c_market_data_buffer.MarketDataBuffer attribute)</a>
@@ -1854,10 +1872,10 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TerminalStyle.CSELECTED">(algo_engine.base.TerminalStyle attribute)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.ctime">ctime() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.ctime">ctime() (algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
 
       <ul>
-        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.ctime">(algo_engine.exchange_profile.SessionDate method)</a>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.ctime">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.base.html#algo_engine.base.console_utils.TerminalStyle.CURL">CURL (algo_engine.base.console_utils.TerminalStyle attribute)</a>
@@ -2016,6 +2034,12 @@
         <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.DataType">(class in algo_engine.base.c_market_data.c_market_data)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.date">date (algo_engine.exchange_profile.c_exchange_profile.SessionDateTime attribute)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.date">(algo_engine.exchange_profile.SessionDateTime attribute)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateRange.dates">dates (algo_engine.exchange_profile.c_exchange_profile.SessionDateRange attribute)</a>
 
       <ul>
@@ -2025,13 +2049,21 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.day">day (algo_engine.exchange_profile.c_exchange_profile.SessionDate attribute)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.day">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx attribute)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.day">(algo_engine.exchange_profile.SessionDate attribute)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.day">(algo_engine.exchange_profile.SessionDateEx attribute)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.days_in_month">days_in_month() (algo_engine.exchange_profile.c_exchange_profile.SessionDate static method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.days_in_month">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx static method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.days_in_month">(algo_engine.exchange_profile.SessionDate static method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.days_in_month">(algo_engine.exchange_profile.SessionDateEx static method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile.deactivate">deactivate() (algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile method)</a>
@@ -2108,14 +2140,14 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TransactionDirection.DIRECTION_UNKNOWN">(algo_engine.base.TransactionDirection attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.engine.html#algo_engine.engine.DirectMarketAccess">DirectMarketAccess (class in algo_engine.engine)</a>
 
       <ul>
         <li><a href="algo_engine.engine.html#algo_engine.engine.trade_engine.DirectMarketAccess">(class in algo_engine.engine.trade_engine)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data_buffer.MarketDataConcurrentBuffer.disable_worker">disable_worker() (algo_engine.base.c_market_data.c_market_data_buffer.MarketDataConcurrentBuffer method)</a>
 
       <ul>
@@ -2280,6 +2312,8 @@
         <li><a href="algo_engine.base.html#algo_engine.base.InteractiveShell.duplicate">(algo_engine.base.InteractiveShell method)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.base.html#algo_engine.base.telemetrics.DuplicateWarningFilter">DuplicateWarningFilter (class in algo_engine.base.telemetrics)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -2321,9 +2355,7 @@
       <li><a href="algo_engine.base.html#algo_engine.base.EnvConfigContext">EnvConfigContext (class in algo_engine.base)</a>
 
       <ul>
-        <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.EnvConfigContext">(class in algo_engine.base.c_market_data)</a>
-</li>
-        <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.EnvConfigContext">(class in algo_engine.base.c_market_data.c_allocator_protocol)</a>
+        <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.EnvConfigContext">(class in algo_engine.base.c_allocator_protocol)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.engine.html#algo_engine.engine.c_event_engine.TopicSet.eod">eod (algo_engine.engine.c_event_engine.TopicSet attribute)</a>
@@ -2492,6 +2524,8 @@
         <li><a href="algo_engine.engine.html#algo_engine.engine.AlgoTemplate.filled_volume">(algo_engine.engine.AlgoTemplate property)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.base.html#algo_engine.base.telemetrics.DuplicateWarningFilter.filter">filter() (algo_engine.base.telemetrics.DuplicateWarningFilter method)</a>
+</li>
       <li><a href="algo_engine.base.html#algo_engine.base.FilterMode">FilterMode (class in algo_engine.base)</a>
 
       <ul>
@@ -2544,6 +2578,20 @@
         <li><a href="algo_engine.base.html#algo_engine.base.OrderData.flow">(algo_engine.base.OrderData attribute)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.fork">fork() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.fork">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.fork">(algo_engine.exchange_profile.c_exchange_profile.SessionDateTime method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.fork">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.fork">(algo_engine.exchange_profile.SessionDateEx method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.fork">(algo_engine.exchange_profile.SessionDateTime method)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.base.html#algo_engine.base.telemetrics.ColoredFormatter.format">format() (algo_engine.base.telemetrics.ColoredFormatter method)</a>
 </li>
       <li><a href="algo_engine.base.html#algo_engine.base.console_utils.Progress.format_progress">format_progress() (algo_engine.base.console_utils.Progress method)</a>
@@ -2576,8 +2624,6 @@
         <li><a href="algo_engine.base.html#algo_engine.base.OrderBook.from_buffer">(algo_engine.base.OrderBook class method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData.from_bytes">from_bytes() (algo_engine.base.c_market_data.c_market_data.MarketData class method)</a>
 
       <ul>
@@ -2598,6 +2644,8 @@
         <li><a href="algo_engine.base.html#algo_engine.base.OrderBook.from_bytes">(algo_engine.base.OrderBook class method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.html#algo_engine.base.finance_decimal.FinancialDecimal.from_float">from_float() (algo_engine.base.finance_decimal.FinancialDecimal class method)</a>
 
       <ul>
@@ -2651,7 +2699,11 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.from_ordinal">from_ordinal() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.from_ordinal">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.from_ordinal">(algo_engine.exchange_profile.SessionDate class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.from_ordinal">(algo_engine.exchange_profile.SessionDateEx class method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData.from_ptr">from_ptr() (algo_engine.base.c_market_data.c_market_data.MarketData static method)</a>
@@ -2665,7 +2717,17 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.from_pydate">from_pydate() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.from_pydate">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.from_pydate">(algo_engine.exchange_profile.SessionDate class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.from_pydate">(algo_engine.exchange_profile.SessionDateEx class method)</a>
+</li>
+      </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.from_pydatetime">from_pydatetime() (algo_engine.exchange_profile.c_exchange_profile.SessionDateTime class method)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.from_pydatetime">(algo_engine.exchange_profile.SessionDateTime class method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionTime.from_pytime">from_pytime() (algo_engine.exchange_profile.c_exchange_profile.SessionTime class method)</a>
@@ -2701,21 +2763,37 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.from_unix">from_unix() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.from_unix">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.from_unix">(algo_engine.exchange_profile.c_exchange_profile.SessionDateTime class method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.from_unix">(algo_engine.exchange_profile.SessionDate class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.from_unix">(algo_engine.exchange_profile.SessionDateEx class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.from_unix">(algo_engine.exchange_profile.SessionDateTime class method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.fromisocalendar">fromisocalendar() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.fromisocalendar">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.fromisocalendar">(algo_engine.exchange_profile.SessionDate class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.fromisocalendar">(algo_engine.exchange_profile.SessionDateEx class method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.fromisoformat">fromisoformat() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.fromisoformat">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionTime.fromisoformat">(algo_engine.exchange_profile.c_exchange_profile.SessionTime class method)</a>
 </li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.fromisoformat">(algo_engine.exchange_profile.SessionDate class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.fromisoformat">(algo_engine.exchange_profile.SessionDateEx class method)</a>
 </li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTime.fromisoformat">(algo_engine.exchange_profile.SessionTime class method)</a>
 </li>
@@ -2946,8 +3024,6 @@
         <li><a href="algo_engine.base.html#algo_engine.base.console_utils.InteractiveShell">(class in algo_engine.base.console_utils)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.intern_pool">intern_pool (algo_engine.base.c_intern_string.InternString attribute)</a>
-</li>
       <li><a href="algo_engine.base.html#algo_engine.base.InternalData">InternalData (class in algo_engine.base)</a>
 
       <ul>
@@ -3071,7 +3147,11 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.is_leap_year">is_leap_year() (algo_engine.exchange_profile.c_exchange_profile.SessionDate static method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.is_leap_year">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx static method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.is_leap_year">(algo_engine.exchange_profile.SessionDate static method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.is_leap_year">(algo_engine.exchange_profile.SessionDateEx static method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile.is_market_session">is_market_session() (algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile method)</a>
@@ -3117,13 +3197,21 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.is_valid">is_valid() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.is_valid">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.is_valid">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.is_valid">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.is_weekend">is_weekend() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.is_weekend">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.is_weekend">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.is_weekend">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data_buffer.MarketDataConcurrentBuffer.is_worker_empty">is_worker_empty() (algo_engine.base.c_market_data.c_market_data_buffer.MarketDataConcurrentBuffer method)</a>
@@ -3148,18 +3236,18 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TradeInstruction.is_working">(algo_engine.base.TradeInstruction attribute)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.isocalendar">isocalendar() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.isocalendar">isocalendar() (algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
 
       <ul>
-        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.isocalendar">(algo_engine.exchange_profile.SessionDate method)</a>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.isocalendar">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.isoformat">isoformat() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.isoformat">isoformat() (algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
 
       <ul>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionTime.isoformat">(algo_engine.exchange_profile.c_exchange_profile.SessionTime method)</a>
 </li>
-        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.isoformat">(algo_engine.exchange_profile.SessionDate method)</a>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.isoformat">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTime.isoformat">(algo_engine.exchange_profile.SessionTime method)</a>
 </li>
@@ -3572,8 +3660,6 @@
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTime.microsecond">(algo_engine.exchange_profile.SessionTime attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_tick.TickData.mid_price">mid_price (algo_engine.base.c_market_data.c_tick.TickData attribute)</a>
 
       <ul>
@@ -3588,6 +3674,8 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TickDataLite.mid_price">(algo_engine.base.TickDataLite attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.html#algo_engine.base.console_utils.Progress.MINI">MINI (algo_engine.base.console_utils.Progress attribute)</a>
 
       <ul>
@@ -3644,13 +3732,13 @@
 </li>
         <li><a href="algo_engine.base.html#module-algo_engine.base">algo_engine.base</a>
 </li>
+        <li><a href="algo_engine.base.html#module-algo_engine.base.c_allocator_protocol">algo_engine.base.c_allocator_protocol</a>
+</li>
         <li><a href="algo_engine.base.html#module-algo_engine.base.c_heap_allocator">algo_engine.base.c_heap_allocator</a>
 </li>
         <li><a href="algo_engine.base.html#module-algo_engine.base.c_intern_string">algo_engine.base.c_intern_string</a>
 </li>
         <li><a href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data">algo_engine.base.c_market_data</a>
-</li>
-        <li><a href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_allocator_protocol">algo_engine.base.c_market_data.c_allocator_protocol</a>
 </li>
         <li><a href="algo_engine.base.c_market_data.html#module-algo_engine.base.c_market_data.c_candlestick">algo_engine.base.c_market_data.c_candlestick</a>
 </li>
@@ -3727,6 +3815,12 @@
         <li><a href="algo_engine.base.html#algo_engine.base.ShellTransfer.monitor">(algo_engine.base.ShellTransfer method)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataService.monitor_manager">monitor_manager (algo_engine.engine.c_market_engine.MarketDataService attribute)</a>
+
+      <ul>
+        <li><a href="algo_engine.engine.html#algo_engine.engine.MarketDataService.monitor_manager">(algo_engine.engine.MarketDataService attribute)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.engine.html#algo_engine.engine.MonitorManager">MonitorManager (class in algo_engine.engine)</a>
 
       <ul>
@@ -3736,7 +3830,11 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.month">month (algo_engine.exchange_profile.c_exchange_profile.SessionDate attribute)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.month">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx attribute)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.month">(algo_engine.exchange_profile.SessionDate attribute)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.month">(algo_engine.exchange_profile.SessionDateEx attribute)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_trade_utils.TradeInstruction.multiplier">multiplier (algo_engine.base.c_market_data.c_trade_utils.TradeInstruction attribute)</a>
@@ -4419,6 +4517,12 @@
         <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_transaction.OrderType">(class in algo_engine.base.c_market_data.c_transaction)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.ordinal">ordinal (algo_engine.exchange_profile.c_exchange_profile.SessionDateTime attribute)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.ordinal">(algo_engine.exchange_profile.SessionDateTime attribute)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.base.html#algo_engine.base.console_utils.Progress.output">output() (algo_engine.base.console_utils.Progress method)</a>
 
       <ul>
@@ -4543,6 +4647,8 @@
         <li><a href="algo_engine.engine.html#algo_engine.engine.trade_engine.PositionManagementService.pnl">(algo_engine.engine.trade_engine.PositionManagementService method)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.pool">pool (algo_engine.base.c_intern_string.InternString attribute)</a>
+</li>
       <li><a href="algo_engine.engine.html#algo_engine.engine.Balance.pop">pop() (algo_engine.engine.Balance method)</a>
 
       <ul>
@@ -5119,6 +5225,14 @@
         <li><a href="algo_engine.base.html#algo_engine.base.MarketData.session_date">(algo_engine.base.MarketData attribute)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData.session_datetime">session_datetime (algo_engine.base.c_market_data.c_market_data.MarketData attribute)</a>
+
+      <ul>
+        <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.MarketData.session_datetime">(algo_engine.base.c_market_data.MarketData attribute)</a>
+</li>
+        <li><a href="algo_engine.base.html#algo_engine.base.MarketData.session_datetime">(algo_engine.base.MarketData attribute)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile.session_end">session_end (algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile attribute)</a>
 
       <ul>
@@ -5166,7 +5280,11 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.session_type">session_type (algo_engine.exchange_profile.c_exchange_profile.SessionDate attribute)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.session_type">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx attribute)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.session_type">(algo_engine.exchange_profile.SessionDate attribute)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.session_type">(algo_engine.exchange_profile.SessionDateEx attribute)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionBreak">SessionBreak (class in algo_engine.exchange_profile)</a>
@@ -5181,10 +5299,22 @@
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate">(class in algo_engine.exchange_profile.c_exchange_profile)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx">SessionDateEx (class in algo_engine.exchange_profile)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx">(class in algo_engine.exchange_profile.c_exchange_profile)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateRange">SessionDateRange (class in algo_engine.exchange_profile)</a>
 
       <ul>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateRange">(class in algo_engine.exchange_profile.c_exchange_profile)</a>
+</li>
+      </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime">SessionDateTime (class in algo_engine.exchange_profile)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime">(class in algo_engine.exchange_profile.c_exchange_profile)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionPhase">SessionPhase (class in algo_engine.exchange_profile)</a>
@@ -5421,6 +5551,8 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TransactionSide.SIDE_NEUTRAL_OPEN">(algo_engine.base.TransactionSide attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_transaction.TransactionSide.SIDE_SHORT">SIDE_SHORT (algo_engine.base.c_market_data.c_transaction.TransactionSide attribute)</a>
 
       <ul>
@@ -5437,8 +5569,6 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TransactionSide.SIDE_SHORT_CANCEL">(algo_engine.base.TransactionSide attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_transaction.TransactionSide.SIDE_SHORT_CLOSE">SIDE_SHORT_CLOSE (algo_engine.base.c_market_data.c_transaction.TransactionSide attribute)</a>
 
       <ul>
@@ -5517,12 +5647,12 @@
       </ul></li>
       <li><a href="algo_engine.engine.html#algo_engine.engine.Singleton">Singleton (class in algo_engine.engine)</a>
 </li>
-      <li><a href="algo_engine.base.html#algo_engine.base.c_heap_allocator.HeapMemoryBlock.size">size (algo_engine.base.c_heap_allocator.HeapMemoryBlock attribute)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.size">size (algo_engine.base.c_allocator_protocol.AllocatorProtocol attribute)</a>
 
       <ul>
-        <li><a href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.size">(algo_engine.base.c_intern_string.InternStringPool attribute)</a>
+        <li><a href="algo_engine.base.html#algo_engine.base.c_heap_allocator.HeapMemoryBlock.size">(algo_engine.base.c_heap_allocator.HeapMemoryBlock attribute)</a>
 </li>
-        <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol.size">(algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol attribute)</a>
+        <li><a href="algo_engine.base.html#algo_engine.base.c_intern_string.InternStringPool.size">(algo_engine.base.c_intern_string.InternStringPool attribute)</a>
 </li>
         <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data_buffer.MarketDataBufferCache.size">(algo_engine.base.c_market_data.c_market_data_buffer.MarketDataBufferCache attribute)</a>
 </li>
@@ -5781,10 +5911,10 @@
 </li>
       <li><a href="algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.stream">stream() (algo_engine.apps.bokeh_server.DocServer method)</a>
 </li>
-      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.strftime">strftime() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.strftime">strftime() (algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
 
       <ul>
-        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.strftime">(algo_engine.exchange_profile.SessionDate method)</a>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.strftime">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.base.html#algo_engine.base.c_intern_string.InternString.string">string (algo_engine.base.c_intern_string.InternString attribute)</a>
@@ -5901,6 +6031,12 @@
         <li><a href="algo_engine.engine.html#algo_engine.engine.trade_engine.Inventory.tickers">(algo_engine.engine.trade_engine.Inventory property)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.time">time (algo_engine.exchange_profile.c_exchange_profile.SessionDateTime attribute)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.time">(algo_engine.exchange_profile.SessionDateTime attribute)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile.time_to_seconds">time_to_seconds() (algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile method)</a>
 
       <ul>
@@ -5936,13 +6072,21 @@
 </li>
         <li><a href="algo_engine.engine.html#algo_engine.engine.trade_engine.DirectMarketAccess.timestamp">(algo_engine.engine.trade_engine.DirectMarketAccess property)</a>
 </li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.timestamp">(algo_engine.exchange_profile.c_exchange_profile.SessionDateTime attribute)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.timestamp">(algo_engine.exchange_profile.SessionDateTime attribute)</a>
+</li>
         <li><a href="algo_engine.monitor.html#algo_engine.monitor.advanced_data_interface.PyOrderBook.timestamp">(algo_engine.monitor.advanced_data_interface.PyOrderBook attribute)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.timestamp">timestamp() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.timestamp">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.timestamp">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.timestamp">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile.timestamp_to_datetime">timestamp_to_datetime() (algo_engine.exchange_profile.c_exchange_profile.ExchangeProfile method)</a>
@@ -6064,13 +6208,27 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.to_ordinal">to_ordinal() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.to_ordinal">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.to_ordinal">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.to_ordinal">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.to_pydate">to_pydate() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.to_pydate">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.to_pydate">(algo_engine.exchange_profile.SessionDate method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.to_pydate">(algo_engine.exchange_profile.SessionDateEx method)</a>
+</li>
+      </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.to_pydatetime">to_pydatetime() (algo_engine.exchange_profile.c_exchange_profile.SessionDateTime method)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.to_pydatetime">(algo_engine.exchange_profile.SessionDateTime method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionTime.to_pytime">to_pytime() (algo_engine.exchange_profile.c_exchange_profile.SessionTime method)</a>
@@ -6098,9 +6256,15 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.today">today() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.today">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.today">(algo_engine.exchange_profile.SessionDate class method)</a>
 </li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.today">(algo_engine.exchange_profile.SessionDateEx class method)</a>
+</li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.toggle_auto_work">toggle_auto_work() (algo_engine.apps.sim_input.client.AutoWorkClient method)</a>
 </li>
       <li><a href="algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.toggle_mock">toggle_mock() (algo_engine.apps.sim_input.client.AutoWorkClient method)</a>
@@ -6113,8 +6277,6 @@
         <li><a href="algo_engine.base.html#algo_engine.base.MarketData.topic">(algo_engine.base.MarketData attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.engine.html#algo_engine.engine.event_engine.TOPIC">TOPIC (in module algo_engine.engine.event_engine)</a>
 </li>
       <li><a href="algo_engine.engine.html#algo_engine.engine.TopicSet">TopicSet (class in algo_engine.engine)</a>
@@ -6377,9 +6539,13 @@
         <li><a href="algo_engine.base.html#algo_engine.base.InteractiveShell.trim_ansi">(algo_engine.base.InteractiveShell class method)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionTime.ts">ts (algo_engine.exchange_profile.c_exchange_profile.SessionTime attribute)</a>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.ts">ts (algo_engine.exchange_profile.c_exchange_profile.SessionDateTime attribute)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionTime.ts">(algo_engine.exchange_profile.c_exchange_profile.SessionTime attribute)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.ts">(algo_engine.exchange_profile.SessionDateTime attribute)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionTime.ts">(algo_engine.exchange_profile.SessionTime attribute)</a>
 </li>
       </ul></li>
@@ -6435,6 +6601,16 @@
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.unix_to_datetime">(in module algo_engine.exchange_profile.c_exchange_profile)</a>
 </li>
       </ul></li>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.unix_to_ordinal">unix_to_ordinal() (algo_engine.exchange_profile.c_exchange_profile.SessionDate class method)</a>
+
+      <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.unix_to_ordinal">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.unix_to_ordinal">(algo_engine.exchange_profile.SessionDate class method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.unix_to_ordinal">(algo_engine.exchange_profile.SessionDateEx class method)</a>
+</li>
+      </ul></li>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_trade_utils.OrderState.UNKNOWN">UNKNOWN (algo_engine.base.c_market_data.c_trade_utils.OrderState attribute)</a>
 
       <ul>
@@ -6469,6 +6645,8 @@
         <li><a href="algo_engine.apps.backtest.html#algo_engine.apps.backtest.tester.Tester.unregister_ticker">(algo_engine.apps.backtest.tester.Tester method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_transaction.TransactionSide.Unwind">Unwind (algo_engine.base.c_market_data.c_transaction.TransactionSide attribute)</a>
 
       <ul>
@@ -6477,8 +6655,6 @@
         <li><a href="algo_engine.base.html#algo_engine.base.TransactionSide.Unwind">(algo_engine.base.TransactionSide attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="algo_engine.engine.html#algo_engine.engine.PositionManagementService.unwind_all">unwind_all() (algo_engine.engine.PositionManagementService method)</a>
 
       <ul>
@@ -6515,6 +6691,10 @@
         <li><a href="algo_engine.apps.html#algo_engine.apps.bokeh_server.DocServer.update">(algo_engine.apps.bokeh_server.DocServer method)</a>
 </li>
         <li><a href="algo_engine.backtest.html#algo_engine.backtest.metrics.TradeMetrics.update">(algo_engine.backtest.metrics.TradeMetrics method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateTime.update">(algo_engine.exchange_profile.c_exchange_profile.SessionDateTime method)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateTime.update">(algo_engine.exchange_profile.SessionDateTime method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.apps.sim_input.html#algo_engine.apps.sim_input.client.AutoWorkClient.update_status">update_status() (algo_engine.apps.sim_input.client.AutoWorkClient method)</a>
@@ -6645,10 +6825,10 @@
         <li><a href="algo_engine.apps.backtest.html#algo_engine.apps.backtest.web_app.WebApp">(class in algo_engine.apps.backtest.web_app)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.weekday">weekday() (algo_engine.exchange_profile.c_exchange_profile.SessionDate method)</a>
+      <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.weekday">weekday() (algo_engine.exchange_profile.c_exchange_profile.SessionDateEx method)</a>
 
       <ul>
-        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.weekday">(algo_engine.exchange_profile.SessionDate method)</a>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.weekday">(algo_engine.exchange_profile.SessionDateEx method)</a>
 </li>
       </ul></li>
       <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_tick.TickData.weighted_ask_price">weighted_ask_price (algo_engine.base.c_market_data.c_tick.TickData attribute)</a>
@@ -6673,11 +6853,11 @@
         <li><a href="algo_engine.base.html#algo_engine.base.Progress.width">(algo_engine.base.Progress property)</a>
 </li>
       </ul></li>
-      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol.with_freelist">with_freelist (algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol attribute)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.with_freelist">with_freelist (algo_engine.base.c_allocator_protocol.AllocatorProtocol attribute)</a>
 </li>
-      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol.with_lock">with_lock (algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol attribute)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.with_lock">with_lock (algo_engine.base.c_allocator_protocol.AllocatorProtocol attribute)</a>
 </li>
-      <li><a href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol.with_shm">with_shm (algo_engine.base.c_market_data.c_allocator_protocol.AllocatorProtocol attribute)</a>
+      <li><a href="algo_engine.base.html#algo_engine.base.c_allocator_protocol.AllocatorProtocol.with_shm">with_shm (algo_engine.base.c_allocator_protocol.AllocatorProtocol attribute)</a>
 </li>
       <li><a href="algo_engine.engine.html#algo_engine.engine.algo_engine.AlgoTemplate.work">work() (algo_engine.engine.algo_engine.AlgoTemplate method)</a>
 
@@ -6770,7 +6950,11 @@
       <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDate.year">year (algo_engine.exchange_profile.c_exchange_profile.SessionDate attribute)</a>
 
       <ul>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.c_exchange_profile.SessionDateEx.year">(algo_engine.exchange_profile.c_exchange_profile.SessionDateEx attribute)</a>
+</li>
         <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDate.year">(algo_engine.exchange_profile.SessionDate attribute)</a>
+</li>
+        <li><a href="algo_engine.exchange_profile.html#algo_engine.exchange_profile.SessionDateEx.year">(algo_engine.exchange_profile.SessionDateEx attribute)</a>
 </li>
       </ul></li>
   </ul></td>
