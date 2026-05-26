@@ -35,6 +35,7 @@ cdef extern from "c_ex_profile_base.h":
         SESSION_PHASE_SUSPENDED
         SESSION_PHASE_CLOSE_AUCTION
         SESSION_PHASE_CLOSED
+        SESSION_PHASE_MASK
 
     ctypedef enum auction_phase:
         AUCTION_PHASE_ACTIVE
@@ -42,20 +43,21 @@ cdef extern from "c_ex_profile_base.h":
         AUCTION_PHASE_FROZEN
         AUCTION_PHASE_UNCROSSING
         AUCTION_PHASE_DONE
+        AUCTION_PHASE_MASK
 
     ctypedef struct session_time_t:
-        double elapsed_seconds
-        uint8_t hour
-        uint8_t minute
-        uint8_t second
+        double   elapsed_seconds
         uint32_t nanosecond
-        session_phase phase
+        uint8_t  hour
+        uint8_t  minute
+        uint8_t  second
+        uint8_t  phase
 
     ctypedef struct session_date_t:
         uint16_t year
         uint8_t month
         uint8_t day
-        session_type stype
+        uint8_t stype
 
     ctypedef struct session_datetime_t:
         session_time_t time

@@ -71,38 +71,57 @@ typedef enum session_type {
 } session_type;
 
 typedef enum session_phase {
-    SESSION_PHASE_UNKNOWN,
-    SESSION_PHASE_PREOPEN,
-    SESSION_PHASE_OPEN_AUCTION,
-    SESSION_PHASE_CONTINUOUS,
-    SESSION_PHASE_BREAK,
-    SESSION_PHASE_SUSPENDED,
-    SESSION_PHASE_CLOSE_AUCTION,
-    SESSION_PHASE_CLOSED
+    // 0b1000 << 4 : trading bitmask
+    // 0b0100 << 4 : auction bitmask
+    // 0b00xx << 4 : variant code
+    SESSION_PHASE_UNKNOWN = 0x00,        // 0b0000 << 4
+    SESSION_PHASE_BREAK = 0x10,          // 0b0001 << 4
+    SESSION_PHASE_SUSPENDED = 0x20,      // 0b0010 << 4
+    SESSION_PHASE_CLOSED = 0x30,         // 0b0011 << 4
+    SESSION_PHASE_PREOPEN = 0x40,        // 0b0100 << 4
+    SESSION_PHASE_OPEN_AUCTION = 0x80,   // 0b1100 << 4
+    SESSION_PHASE_CLOSE_AUCTION = 0xC0,  // 0b1101 << 4
+    SESSION_PHASE_CONTINUOUS = 0xD0,     // 0b1000 << 4
+
+    SESSION_PHASE_MASK = 0xF0
 } session_phase;
 
 typedef enum auction_phase {
-    AUCTION_PHASE_ACTIVE,
-    AUCTION_PHASE_NO_CANCEL,
-    AUCTION_PHASE_FROZEN,
-    AUCTION_PHASE_UNCROSSING,
-    AUCTION_PHASE_DONE,
+    AUCTION_PHASE_NONE = 0x00,
+    AUCTION_PHASE_ACTIVE = 0x01,
+    AUCTION_PHASE_NO_CANCEL = 0x02,
+    AUCTION_PHASE_FROZEN = 0x03,
+    AUCTION_PHASE_UNCROSSING = 0x04,
+    AUCTION_PHASE_DONE = 0x05,
+
+    AUCTION_PHASE_MASK = 0x0F
 } auction_phase;
 
+// typedef struct session_time_t {
+//     double        elapsed_seconds;
+//     uint8_t       hour;
+//     uint8_t       minute;
+//     uint8_t       second;
+//     uint32_t      nanosecond;
+//     session_phase phase;
+// } session_time_t;
+
 typedef struct session_time_t {
-    double        elapsed_seconds;
-    uint8_t       hour;
-    uint8_t       minute;
-    uint8_t       second;
-    uint32_t      nanosecond;
-    session_phase phase;
+    double   elapsed_seconds;
+    uint32_t nanosecond;
+    uint8_t  hour;
+    uint8_t  minute;
+    uint8_t  second;
+    uint8_t  phase;  // for cache line friendliness, session_phase is stored as uint8_t
+    // In the future, the auction_phase will also be stored in this struct, as the lower 4-bits of the phase byte.
+    // For now, it is not stored but, using == to compare phase with session_phase enum is not recommended, use bitmasking with SESSION_PHASE_MASK instead.
 } session_time_t;
 
 typedef struct session_date_t {
-    uint16_t     year;   // 0-9999
-    uint8_t      month;  // 1-12
-    uint8_t      day;    // 1-31
-    session_type stype;
+    uint16_t year;   // 0-9999
+    uint8_t  month;  // 1-12
+    uint8_t  day;    // 1-31
+    uint8_t  stype;  // session_type, stored as uint8_t for cache line friendliness.
 } session_date_t;
 
 typedef struct session_datetime_t {
@@ -759,7 +778,7 @@ static inline session_time_t* c_ex_profile_session_time_new(uint8_t hour, uint8_
 
     // Calculate elapsed seconds since continuous session start
     out->elapsed_seconds = c_ex_profile_ts_to_elapsed(ts);
-    out->phase = EX_PROFILE->resolve_session_phase(ts);
+    out->phase = (uint8_t) (EX_PROFILE->resolve_session_phase(ts));
     return out;
 }
 
@@ -776,7 +795,7 @@ static inline int c_ex_profile_session_time_from_ts(double ts, session_time_t* o
     out->second = second;
     out->nanosecond = nanosecond;
     out->elapsed_seconds = c_ex_profile_ts_to_elapsed(ts);
-    out->phase = EX_PROFILE ? EX_PROFILE->resolve_session_phase(ts) : SESSION_PHASE_UNKNOWN;
+    out->phase = (uint8_t) (EX_PROFILE ? EX_PROFILE->resolve_session_phase(ts) : SESSION_PHASE_UNKNOWN);
     return 0;
 }
 
