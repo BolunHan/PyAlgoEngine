@@ -385,13 +385,13 @@ static inline int c_shm_page_map(shm_allocator* allocator, shm_page_ctx* page_ct
         page_meta->prev_name[0] = '\0';
     }
     else {
-        strncpy(page_meta->prev_name, allocator->active_page, SHM_NAME_LEN - 1);
+        memcpy(page_meta->prev_name, allocator->active_page, SHM_NAME_LEN);
         page_meta->prev_name[SHM_NAME_LEN - 1] = '\0';
     }
 
     // Step 4: Update allocator state
     allocator->mapped_size += page_capacity;
-    strncpy(allocator->active_page, page_meta->shm_name, SHM_NAME_LEN - 1);
+    memcpy(allocator->active_page, page_meta->shm_name, SHM_NAME_LEN);
     allocator->active_page[SHM_NAME_LEN - 1] = '\0';
     allocator->mapped_pages++;
 
