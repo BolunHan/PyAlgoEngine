@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.base.c_market_data package &mdash; PyAlgoEngine 0.10.5 documentation</title>
+  <title>algo_engine.base.c_market_data package &mdash; PyAlgoEngine 0.10.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=da6fbbfd"></script>
+      <script src="_static/documentation_options.js?v=ed973197"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -356,38 +356,43 @@
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.c_market_data.c_market_data.</span></span><span class="sig-name descname"><span class="pre">FilterMode</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.AUTO">
+<span class="sig-name descname"><span class="pre">AUTO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x1&gt;(AUTO)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.AUTO" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_AUCTION">
-<span class="sig-name descname"><span class="pre">NO_AUCTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x4&gt;(NO_AUCTION)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_AUCTION" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_AUCTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x8&gt;(NO_AUCTION)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_AUCTION" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_BREAK">
-<span class="sig-name descname"><span class="pre">NO_BREAK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x8&gt;(NO_BREAK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_BREAK" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_BREAK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x10&gt;(NO_BREAK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_BREAK" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_CANCEL">
-<span class="sig-name descname"><span class="pre">NO_CANCEL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x2&gt;(NO_CANCEL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_CANCEL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_CANCEL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x4&gt;(NO_CANCEL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_CANCEL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_INTERNAL">
-<span class="sig-name descname"><span class="pre">NO_INTERNAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x1&gt;(NO_INTERNAL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_INTERNAL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_INTERNAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x2&gt;(NO_INTERNAL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_INTERNAL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_ORDER">
-<span class="sig-name descname"><span class="pre">NO_ORDER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x10&gt;(NO_ORDER)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_ORDER" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_ORDER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x20&gt;(NO_ORDER)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_ORDER" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_TICK">
-<span class="sig-name descname"><span class="pre">NO_TICK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x40&gt;(NO_TICK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_TICK" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_TICK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x80&gt;(NO_TICK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_TICK" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.NO_TRADE">
-<span class="sig-name descname"><span class="pre">NO_TRADE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x20&gt;(NO_TRADE)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_TRADE" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_TRADE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x40&gt;(NO_TRADE)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.NO_TRADE" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2078,38 +2083,43 @@
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.c_market_data.</span></span><span class="sig-name descname"><span class="pre">FilterMode</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.AUTO">
+<span class="sig-name descname"><span class="pre">AUTO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x1&gt;(AUTO)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.AUTO" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_AUCTION">
-<span class="sig-name descname"><span class="pre">NO_AUCTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x4&gt;(NO_AUCTION)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_AUCTION" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_AUCTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x8&gt;(NO_AUCTION)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_AUCTION" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_BREAK">
-<span class="sig-name descname"><span class="pre">NO_BREAK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x8&gt;(NO_BREAK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_BREAK" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_BREAK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x10&gt;(NO_BREAK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_BREAK" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_CANCEL">
-<span class="sig-name descname"><span class="pre">NO_CANCEL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x2&gt;(NO_CANCEL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_CANCEL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_CANCEL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x4&gt;(NO_CANCEL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_CANCEL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_INTERNAL">
-<span class="sig-name descname"><span class="pre">NO_INTERNAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x1&gt;(NO_INTERNAL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_INTERNAL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_INTERNAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x2&gt;(NO_INTERNAL)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_INTERNAL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_ORDER">
-<span class="sig-name descname"><span class="pre">NO_ORDER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x10&gt;(NO_ORDER)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_ORDER" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_ORDER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x20&gt;(NO_ORDER)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_ORDER" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_TICK">
-<span class="sig-name descname"><span class="pre">NO_TICK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x40&gt;(NO_TICK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_TICK" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_TICK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x80&gt;(NO_TICK)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_TICK" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.NO_TRADE">
-<span class="sig-name descname"><span class="pre">NO_TRADE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x20&gt;(NO_TRADE)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_TRADE" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NO_TRADE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;FilterMode:</span> <span class="pre">0x40&gt;(NO_TRADE)</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.NO_TRADE" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
