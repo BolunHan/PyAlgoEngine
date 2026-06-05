@@ -185,18 +185,19 @@ typedef enum md_data_type {
 } md_data_type;
 
 typedef enum md_filter_flag {
-    NO_INTERNAL         = 1 << 0,
-    NO_CANCEL           = 1 << 1,
-    NO_AUCTION          = 1 << 2,
-    NO_BREAK            = 1 << 3,
-    NO_ORDER            = 1 << 4,
-    NO_TRADE            = 1 << 5,
-    NO_TICK             = 1 << 6,
+    MD_FILTER_AUTO          = 1 << 0,
+    MD_FILTER_NO_INTERNAL   = 1 << 1,
+    MD_FILTER_NO_CANCEL     = 1 << 2,
+    MD_FILTER_NO_AUCTION    = 1 << 3,
+    MD_FILTER_NO_BREAK      = 1 << 4,
+    MD_FILTER_NO_ORDER      = 1 << 5,
+    MD_FILTER_NO_TRADE      = 1 << 6,
+    MD_FILTER_NO_TICK       = 1 << 7,
 
-    MD_FILTER_FLAG_COUNT = 6
+    MD_FILTER_FLAG_COUNT = 8
 } md_filter_flag;
 
-#define MD_FILTER_ALL ((1 << MD_FILTER_FLAG_COUNT) - 1)
+#define MD_FILTER_ALL (((1 << MD_FILTER_FLAG_COUNT) - 1) & ~MD_FILTER_AUTO)
 
 // ========== Structs ==========
 
@@ -1297,34 +1298,34 @@ static inline bool c_md_filter(const md_variant* market_data, md_filter_flag fla
     if (!market_data) return false;
     md_data_type dtype = market_data->meta_info.dtype;
 
-    if (flags & NO_INTERNAL && dtype == DTYPE_INTERNAL) {
+    if (flags & MD_FILTER_NO_INTERNAL && dtype == DTYPE_INTERNAL) {
         return false;
     }
 
-    if (flags & NO_CANCEL && dtype == DTYPE_TRANSACTION) {
+    if (flags & MD_FILTER_NO_CANCEL && dtype == DTYPE_TRANSACTION) {
         md_side side = market_data->transaction_data.side;
         if (c_md_side_offset(side) == OFFSET_CANCEL) return false;
     }
 
-    if (flags & NO_AUCTION) {
+    if (flags & MD_FILTER_NO_AUCTION) {
         session_phase phase = market_data->meta_info.dt.time.phase;
         if (phase == SESSION_PHASE_OPEN_AUCTION || phase == SESSION_PHASE_CLOSE_AUCTION) return false;
     }
 
-    if (flags & NO_BREAK) {
+    if (flags & MD_FILTER_NO_BREAK) {
         session_phase phase = market_data->meta_info.dt.time.phase;
         if (phase == SESSION_PHASE_BREAK || phase == SESSION_PHASE_PREOPEN || phase == SESSION_PHASE_SUSPENDED || phase == SESSION_PHASE_CLOSED) return false;
     }
 
-    if (flags & NO_ORDER && dtype == DTYPE_ORDER) {
+    if (flags & MD_FILTER_NO_ORDER && dtype == DTYPE_ORDER) {
         return false;
     }
 
-    if (flags & NO_TRADE && dtype == DTYPE_TRANSACTION) {
+    if (flags & MD_FILTER_NO_TRADE && dtype == DTYPE_TRANSACTION) {
         return false;
     }
 
-    if (flags & NO_TICK && (dtype == DTYPE_TICK || dtype == DTYPE_TICK_LITE)) {
+    if (flags & MD_FILTER_NO_TICK && (dtype == DTYPE_TICK || dtype == DTYPE_TICK_LITE)) {
         return false;
     }
 

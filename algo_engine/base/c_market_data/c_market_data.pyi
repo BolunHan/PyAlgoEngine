@@ -235,6 +235,7 @@ class FilterMode:
     A pseudo-IntEnum bitmask class for filtering different types of market data.
 
     Each filter flag corresponds to a specific type of market data:
+    - AUTO: Empty placeholder, for subsequential process to update. with this flag on, the value of this FilterMode instance can be altered.
     - NO_INTERNAL: Filter out InternalData messages
     - NO_CANCEL: Filter out TransactionData messages with cancel actions
     - NO_AUCTION: Filter out open-call-auction, close-call-auction messages
@@ -244,6 +245,7 @@ class FilterMode:
     - NO_TICK: Filter out all TickData messages
     """
 
+    AUTO: FilterMode
     NO_INTERNAL: FilterMode
     NO_CANCEL: FilterMode
     NO_AUCTION: FilterMode

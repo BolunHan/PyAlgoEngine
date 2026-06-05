@@ -162,13 +162,14 @@ cdef extern from "c_market_data.h":
         DTYPE_INSTRUCTION
 
     ctypedef enum md_filter_flag:
-        NO_INTERNAL
-        NO_CANCEL
-        NO_AUCTION
-        NO_BREAK
-        NO_ORDER
-        NO_TRADE
-        NO_TICK
+        MD_FILTER_AUTO
+        MD_FILTER_NO_INTERNAL
+        MD_FILTER_NO_CANCEL
+        MD_FILTER_NO_AUCTION
+        MD_FILTER_NO_BREAK
+        MD_FILTER_NO_ORDER
+        MD_FILTER_NO_TRADE
+        MD_FILTER_NO_TICK
 
         MD_FILTER_FLAG_COUNT
 

@@ -453,13 +453,14 @@ cdef class MarketData:
 
 cdef class FilterMode:
     # Class-level constants for flags
-    NO_INTERNAL     = FilterMode.__new__(FilterMode, md_filter_flag.NO_INTERNAL)
-    NO_CANCEL       = FilterMode.__new__(FilterMode, md_filter_flag.NO_CANCEL)
-    NO_AUCTION      = FilterMode.__new__(FilterMode, md_filter_flag.NO_AUCTION)
-    NO_BREAK        = FilterMode.__new__(FilterMode, md_filter_flag.NO_BREAK)
-    NO_ORDER        = FilterMode.__new__(FilterMode, md_filter_flag.NO_ORDER)
-    NO_TRADE        = FilterMode.__new__(FilterMode, md_filter_flag.NO_TRADE)
-    NO_TICK         = FilterMode.__new__(FilterMode, md_filter_flag.NO_TICK)
+    AUTO        = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_AUTO)
+    NO_INTERNAL = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_INTERNAL)
+    NO_CANCEL   = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_CANCEL)
+    NO_AUCTION  = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_AUCTION)
+    NO_BREAK    = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_BREAK)
+    NO_ORDER    = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_ORDER)
+    NO_TRADE    = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_TRADE)
+    NO_TICK     = FilterMode.__new__(FilterMode, md_filter_flag.MD_FILTER_NO_TICK)
 
     def __cinit__(self, md_filter_flag value):
         self.value = value
@@ -467,19 +468,21 @@ cdef class FilterMode:
     cdef list c_get_flags(self):
         cdef flags = []
         cdef md_filter_flag flag = self.value
-        if md_filter_flag.NO_INTERNAL & flag:
+        if md_filter_flag.MD_FILTER_AUTO & flag:
+            flags.append("AUTO")
+        if md_filter_flag.MD_FILTER_NO_INTERNAL & flag:
             flags.append("NO_INTERNAL")
-        if md_filter_flag.NO_CANCEL & flag:
+        if md_filter_flag.MD_FILTER_NO_CANCEL & flag:
             flags.append("NO_CANCEL")
-        if md_filter_flag.NO_AUCTION & flag:
+        if md_filter_flag.MD_FILTER_NO_AUCTION & flag:
             flags.append("NO_AUCTION")
-        if md_filter_flag.NO_BREAK & flag:
+        if md_filter_flag.MD_FILTER_NO_BREAK & flag:
             flags.append("NO_BREAK")
-        if md_filter_flag.NO_ORDER & flag:
+        if md_filter_flag.MD_FILTER_NO_ORDER & flag:
             flags.append("NO_ORDER")
-        if md_filter_flag.NO_TRADE & flag:
+        if md_filter_flag.MD_FILTER_NO_TRADE & flag:
             flags.append("NO_TRADE")
-        if md_filter_flag.NO_TICK & flag:
+        if md_filter_flag.MD_FILTER_NO_TICK & flag:
             flags.append("NO_TICK")
         return flags
 
@@ -498,13 +501,14 @@ cdef class FilterMode:
     def __invert__(self):
         # Invert all bits except those beyond our known flags
         inverted_value = ~self.value & (
-            md_filter_flag.NO_INTERNAL |
-            md_filter_flag.NO_CANCEL |
-            md_filter_flag.NO_AUCTION |
-            md_filter_flag.NO_BREAK |
-            md_filter_flag.NO_ORDER |
-            md_filter_flag.NO_TRADE |
-            md_filter_flag.NO_TICK
+            md_filter_flag.MD_FILTER_AUTO |
+            md_filter_flag.MD_FILTER_NO_INTERNAL |
+            md_filter_flag.MD_FILTER_NO_CANCEL |
+            md_filter_flag.MD_FILTER_NO_AUCTION |
+            md_filter_flag.MD_FILTER_NO_BREAK |
+            md_filter_flag.MD_FILTER_NO_ORDER |
+            md_filter_flag.MD_FILTER_NO_TRADE |
+            md_filter_flag.MD_FILTER_NO_TICK
         )
         return FilterMode.__new__(FilterMode, inverted_value)
 
@@ -546,19 +550,21 @@ cdef class FilterMode:
         def __get__(self):
             cdef flags = []
             cdef md_filter_flag flag = self.value
-            if md_filter_flag.NO_INTERNAL & flag:
+            if md_filter_flag.MD_FILTER_AUTO & flag:
+                flags.append(FilterMode.AUTO)
+            if md_filter_flag.MD_FILTER_NO_INTERNAL & flag:
                 flags.append(FilterMode.NO_INTERNAL)
-            if md_filter_flag.NO_CANCEL & flag:
+            if md_filter_flag.MD_FILTER_NO_CANCEL & flag:
                 flags.append(FilterMode.NO_CANCEL)
-            if md_filter_flag.NO_AUCTION & flag:
+            if md_filter_flag.MD_FILTER_NO_AUCTION & flag:
                 flags.append(FilterMode.NO_AUCTION)
-            if md_filter_flag.NO_BREAK & flag:
+            if md_filter_flag.MD_FILTER_NO_BREAK & flag:
                 flags.append(FilterMode.NO_BREAK)
-            if md_filter_flag.NO_ORDER & flag:
+            if md_filter_flag.MD_FILTER_NO_ORDER & flag:
                 flags.append(FilterMode.NO_ORDER)
-            if md_filter_flag.NO_TRADE & flag:
+            if md_filter_flag.MD_FILTER_NO_TRADE & flag:
                 flags.append(FilterMode.NO_TRADE)
-            if md_filter_flag.NO_TICK & flag:
+            if md_filter_flag.MD_FILTER_NO_TICK & flag:
                 flags.append(FilterMode.NO_TICK)
             return flags
 
