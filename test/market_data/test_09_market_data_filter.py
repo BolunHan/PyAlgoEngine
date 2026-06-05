@@ -50,6 +50,7 @@ class TestFilterMode(unittest.TestCase):
                 FilterMode.NO_INTERNAL
                 | FilterMode.NO_CANCEL
                 | FilterMode.NO_AUCTION
+                | FilterMode.NO_BREAK
                 | FilterMode.NO_ORDER
                 | FilterMode.NO_TRADE
                 | FilterMode.NO_TICK
