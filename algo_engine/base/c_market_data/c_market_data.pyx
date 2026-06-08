@@ -534,9 +534,10 @@ cdef class FilterMode:
         return self
 
     def __invert__(self):
-        # Invert all bits except those beyond our known flags
+        # Invert all known bits except AUTO, then preserve the original AUTO bit.
+        # AUTO is a meta-flag — it should not be toggled by inversion.
+        cdef md_filter_flag auto_bit = <md_filter_flag> (self.value & md_filter_flag.MD_FILTER_AUTO)
         inverted_value = ~self.value & (
-            md_filter_flag.MD_FILTER_AUTO |
             md_filter_flag.MD_FILTER_NO_INTERNAL |
             md_filter_flag.MD_FILTER_NO_CANCEL |
             md_filter_flag.MD_FILTER_NO_AUCTION |
@@ -545,7 +546,7 @@ cdef class FilterMode:
             md_filter_flag.MD_FILTER_NO_TRADE |
             md_filter_flag.MD_FILTER_NO_TICK
         )
-        return FilterMode.__new__(FilterMode, inverted_value)
+        return FilterMode.__new__(FilterMode, inverted_value | auto_bit)
 
     def __contains__(self, md_filter_flag other):
         return (self.value & other) == other
@@ -583,6 +584,12 @@ cdef class FilterMode:
     cpdef bint mask_data(self, MarketData market_data):
         cdef c_bool passed = c_md_filter(market_data.header, self.value)
         return passed
+
+    cpdef void freeze(self):
+        self.frozen = True
+
+    cpdef void unfreeze(self):
+        self.frozen = False
 
     property name:
         def __get__(self):

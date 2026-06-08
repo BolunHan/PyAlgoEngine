@@ -230,7 +230,12 @@ class MarketData(object):
         ...
 
 
-class FilterMode:
+class _FilterModeMeta(type):
+    """Metaclass allowing FilterMode[value] to construct an instance."""
+    def __getitem__(cls, value: int) -> FilterMode: ...
+
+
+class FilterMode(object, metaclass=_FilterModeMeta):
     """
     A pseudo-IntEnum bitmask class for filtering different types of market data.
 
@@ -270,52 +275,99 @@ class FilterMode:
         """
         ...
 
-    def __eq__(self, other: FilterMode) -> bool:
+    def __eq__(self, other: int | FilterMode) -> bool:
         """Check if two FilterMode instances are equal.
 
         Args:
-            other: Another FilterMode instance to compare with
+            other: Another FilterMode instance or raw integer bitmask to compare with
         Returns:
-            bool: True if both instances have the same bitmask value, False otherwise
+            bool: True if both have the same bitmask value, False otherwise
         """
         ...
 
-    def __or__(self, other: FilterMode) -> FilterMode:
+    def __or__(self, other: int | FilterMode) -> FilterMode:
         """Combine filters using bitwise OR.
 
         Args:
-            other: Another FilterMode value
+            other: Another FilterMode value or raw integer bitmask
 
         Returns:
             FilterMode: New combined filter
         """
         ...
 
-    def __and__(self, other: FilterMode) -> FilterMode:
+    def __and__(self, other: int | FilterMode) -> FilterMode:
         """Intersect filters using bitwise AND.
 
         Args:
-            other: Another FilterMode value
+            other: Another FilterMode value or raw integer bitmask
 
         Returns:
             FilterMode: New intersected filter
         """
         ...
 
-    def __invert__(self):
-        """
-        Bitwise NOT operator (~)
+    def __xor__(self, other: int | FilterMode) -> FilterMode:
+        """Combine filters using bitwise XOR.
+
+        Args:
+            other: Another FilterMode value or raw integer bitmask
 
         Returns:
-            FilterMode: a new inverted filter.
+            FilterMode: New filter with XOR'd bits
         """
         ...
 
-    def __contains__(self, other: FilterMode) -> bool:
+    def __ior__(self, other: int | FilterMode) -> FilterMode:
+        """In-place bitwise OR. Raises ValueError if instance is frozen.
+
+        Args:
+            other: Another FilterMode value or raw integer bitmask
+
+        Returns:
+            FilterMode: self (modified in-place)
+        """
+        ...
+
+    def __iand__(self, other: int | FilterMode) -> FilterMode:
+        """In-place bitwise AND. Raises ValueError if instance is frozen.
+
+        Args:
+            other: Another FilterMode value or raw integer bitmask
+
+        Returns:
+            FilterMode: self (modified in-place)
+        """
+        ...
+
+    def __ixor__(self, other: int | FilterMode) -> FilterMode:
+        """In-place bitwise XOR. Raises ValueError if instance is frozen.
+
+        Args:
+            other: Another FilterMode value or raw integer bitmask
+
+        Returns:
+            FilterMode: self (modified in-place)
+        """
+        ...
+
+    def __invert__(self):
+        """
+        Bitwise NOT operator (~).
+
+        Inverts all known filter flags. The AUTO meta-flag is **preserved as-is**
+        and never toggled by inversion.
+
+        Returns:
+            FilterMode: a new inverted filter with AUTO bit unchanged.
+        """
+        ...
+
+    def __contains__(self, other: int | FilterMode) -> bool:
         """Check if this filter contains all flags of another filter.
 
         Args:
-            other: FilterMode to test against
+            other: FilterMode or raw integer bitmask to test against
 
         Returns:
             bool: True if all flags in other are set in this filter
@@ -327,17 +379,6 @@ class FilterMode:
 
         Returns:
             str: String showing hex value and active flags
-        """
-        ...
-
-    def __class_getitem__(cls, value: int) -> FilterMode:
-        """Allow instantiation using subscript notation, e.g. FilterMode[0x03].
-
-        Args:
-            value: Integer value to create the FilterMode from
-
-        Returns:
-            FilterMode: New instance with the given value
         """
         ...
 
@@ -367,6 +408,45 @@ class FilterMode:
 
         Returns:
             bool: True if data should pass through filter
+        """
+        ...
+
+    def enable_flags(self, flag_to_enable: int | FilterMode) -> bool:
+        """Enable a filter flag on this instance. Raises ValueError if frozen.
+
+        Args:
+            flag_to_enable: The flag bitmask to enable
+
+        Returns:
+            bool: Always True on success
+        """
+        ...
+
+    def disable_flag(self, flag_to_disable: int | FilterMode) -> bool:
+        """Disable a filter flag on this instance. Raises ValueError if frozen.
+
+        Args:
+            flag_to_disable: The flag bitmask to disable
+
+        Returns:
+            bool: Always True on success
+        """
+        ...
+
+    def freeze(self) -> None:
+        """Freeze this instance, preventing further mutation."""
+        ...
+
+    def unfreeze(self) -> None:
+        """Unfreeze this instance, allowing mutation (enable/disable/in-place ops)."""
+        ...
+
+    @property
+    def frozen(self) -> bool:
+        """Whether this instance is frozen (immutable).
+
+        Returns:
+            bool: True if frozen, False if mutable
         """
         ...
 

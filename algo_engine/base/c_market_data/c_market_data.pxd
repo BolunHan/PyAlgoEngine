@@ -416,6 +416,10 @@ cdef class FilterMode:
 
     cpdef bint mask_data(self, MarketData market_data)
 
+    cpdef void freeze(self)
+
+    cpdef void unfreeze(self)
+
 
 cdef class ConfigViewer:
     pass
