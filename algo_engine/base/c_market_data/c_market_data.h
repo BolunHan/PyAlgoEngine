@@ -18,6 +18,8 @@
 
 // ========== Constants ==========
 
+// clang-format off
+
 static const int8_t sign_lut[4] = {
     -1,  // 0b00 -> -1
     0,   // 0b01 -> 0
@@ -198,6 +200,8 @@ typedef enum md_filter_flag {
 } md_filter_flag;
 
 #define MD_FILTER_ALL (((1 << MD_FILTER_FLAG_COUNT) - 1) & ~MD_FILTER_AUTO)
+
+// clang-format on
 
 // ========== Structs ==========
 
@@ -557,6 +561,22 @@ static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* 
  * @return true if the market_data passes the filter, false if it should be excluded.
  */
 static inline bool c_md_filter(const md_variant* market_data, md_filter_flag flags);
+
+/**
+ * @brief Enable specific filter flags for market data filtering.
+ * @param flags Pointer to the current filter flags.
+ * @param flag_to_enable The specific md_filter_flag to enable.
+ * @details Cython has difficulty with manipulating enum values with bitwise ops. This simple helper function allows enabling flags without Cython needing to understand the enum definition.
+ */
+static inline void c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag_to_enable);
+
+/**
+ * @brief Disable specific filter flags for market data filtering.
+ * @param flags Pointer to the current filter flags.
+ * @param flag_to_disable The specific md_filter_flag to disable.
+ * @details Cython has difficulty with manipulating enum values with bitwise ops. This simple helper function allows disabling flags without Cython needing to understand the enum definition.
+ */
+static inline void c_md_filter_disable(md_filter_flag* flags, md_filter_flag flag_to_disable);
 
 // ========== Utility Functions ==========
 
@@ -1330,6 +1350,14 @@ static inline bool c_md_filter(const md_variant* market_data, md_filter_flag fla
     }
 
     return true;
+}
+
+static inline void c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag_to_enable) {
+    *flags |= flag_to_enable;
+}
+
+static inline void c_md_filter_disable(md_filter_flag* flags, md_filter_flag flag_to_disable) {
+    *flags &= ~flag_to_disable;
 }
 
 #endif  // C_MARKET_DATA_H
