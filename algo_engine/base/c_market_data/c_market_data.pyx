@@ -464,6 +464,18 @@ cdef class FilterMode:
 
     def __cinit__(self, md_filter_flag value):
         self.value = value
+        self.frozen = True
+
+    @staticmethod
+    cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode):
+        cdef c_bool passed = c_md_filter(market_data, filter_mode)
+        return passed
+
+    cdef inline void c_enable_flag(self, md_filter_flag flag_to_enable):
+        c_md_filter_enable(&self.value, flag_to_enable)
+
+    cdef inline void c_disable_flag(self, md_filter_flag flag_to_disable):
+        c_md_filter_disable(&self.value, flag_to_disable)
 
     cdef list c_get_flags(self):
         cdef flags = []
@@ -486,17 +498,40 @@ cdef class FilterMode:
             flags.append("NO_TICK")
         return flags
 
+    # === Python Interfaces ===
+
     def __int__(self):
         return self.value
 
-    def __eq__(self, FilterMode other):
-        return isinstance(other, self.__class__) and other.value == self.value
+    def __eq__(self, md_filter_flag other):
+        return self.value == other
 
-    def __or__(self, FilterMode other):
-        return FilterMode.__new__(FilterMode, self.value | other.value)
+    def __or__(self, md_filter_flag other):
+        return FilterMode.__new__(FilterMode, self.value | other)
 
-    def __and__(self, FilterMode other):
-        return FilterMode.__new__(FilterMode, self.value & other.value)
+    def __and__(self, md_filter_flag other):
+        return FilterMode.__new__(FilterMode, self.value & other)
+
+    def __xor__(self, md_filter_flag other):
+        return FilterMode.__new__(FilterMode, self.value ^ other)
+
+    def __ior__(self, md_filter_flag other):
+        if self.frozen:
+            raise ValueError('Cannot modify a frozen FilterMode instance. Create a new instance instead.')
+        self.value = <md_filter_flag> (self.value | other)
+        return self
+
+    def __iand__(self, md_filter_flag other):
+        if self.frozen:
+            raise ValueError('Cannot modify a frozen FilterMode instance. Create a new instance instead.')
+        self.value = <md_filter_flag> (self.value & other)
+        return self
+
+    def __ixor__(self, md_filter_flag other):
+        if self.frozen:
+            raise ValueError('Cannot modify a frozen FilterMode instance. Create a new instance instead.')
+        self.value = <md_filter_flag> (self.value ^ other)
+        return self
 
     def __invert__(self):
         # Invert all bits except those beyond our known flags
@@ -512,24 +547,21 @@ cdef class FilterMode:
         )
         return FilterMode.__new__(FilterMode, inverted_value)
 
-    def __contains__(self, FilterMode other):
-        return (self.value & other.value) == other.value
+    def __contains__(self, md_filter_flag other):
+        return (self.value & other) == other
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.value:#0x}>({self.name})"
 
     def __dir__(self):
-        return ['name', 'flags', 'value',
-                '__int__', '__eq__', '__or__', '__and__', '__invert__', '__contains__',
-                'all', 'get_flags', 'mask_data']
+        return [
+            'name', 'flags', 'value',
+            '__int__', '__eq__', '__or__', '__and__', '__xor__', '__ior__', '__iand__', '__ixor__', '__invert__', '__contains__',
+            'all', 'get_flags', 'enable_flags', 'disable_flag', 'mask_data'
+        ]
 
     def __class_getitem__(cls, md_filter_flag value):
         return cls.__new__(cls, value)
-
-    @staticmethod
-    cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode):
-        cdef c_bool passed = c_md_filter(market_data, filter_mode)
-        return passed
 
     @classmethod
     def all(cls):
@@ -537,6 +569,16 @@ cdef class FilterMode:
 
     def get_flags(self):
         return self.c_get_flags()
+
+    cpdef bint enable_flags(self, md_filter_flag flag_to_enable):
+        if self.frozen:
+            raise ValueError('Cannot modify a frozen FilterMode instance. Create a new instance instead.')
+        c_md_filter_enable(&self.value, flag_to_enable)
+
+    cpdef bint disable_flag(self, md_filter_flag flag_to_disable):
+        if self.frozen:
+            raise ValueError('Cannot modify a frozen FilterMode instance. Create a new instance instead.')
+        c_md_filter_disable(&self.value, flag_to_disable)
 
     cpdef bint mask_data(self, MarketData market_data):
         cdef c_bool passed = c_md_filter(market_data.header, self.value)

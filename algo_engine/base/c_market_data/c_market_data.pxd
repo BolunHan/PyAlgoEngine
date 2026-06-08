@@ -336,6 +336,8 @@ cdef extern from "c_market_data.h":
     int c_md_compare_id(const md_id* id1, const md_id* id2) noexcept nogil
     int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2) noexcept nogil
     c_bool c_md_filter(const md_variant* market_data, md_filter_flag flags) noexcept nogil
+    void c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag_to_enable) noexcept nogil
+    void c_md_filter_disable(md_filter_flag* flags, md_filter_flag flag_to_disable) noexcept nogil
 
 
 cdef size_t MD_CFG_BOOK_SIZE
@@ -397,11 +399,20 @@ cdef class MarketData:
 
 cdef class FilterMode:
     cdef readonly md_filter_flag value
-
-    cdef list c_get_flags(self)
+    cdef readonly bint frozen
 
     @staticmethod
     cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode)
+
+    cdef inline void c_enable_flag(self, md_filter_flag flag_to_enable)
+
+    cdef inline void c_disable_flag(self, md_filter_flag flag_to_disable)
+
+    cdef list c_get_flags(self)
+
+    cpdef bint enable_flags(self, md_filter_flag flag_to_enable)
+
+    cpdef bint disable_flag(self, md_filter_flag flag_to_disable)
 
     cpdef bint mask_data(self, MarketData market_data)
 
