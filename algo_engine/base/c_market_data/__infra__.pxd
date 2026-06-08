@@ -101,7 +101,7 @@ from .c_market_data cimport (
     # === Public APIs (c-layer) ===
     c_usleep,
     c_md_new,
-    c_md_free,
+    # c_md_free,  <-- Moved to c_allocator_protocol
     c_md_get_price,
     c_md_side_offset,
     c_md_side_direction,
@@ -128,6 +128,9 @@ from .c_market_data cimport (
     c_md_compare_ask,
     c_md_compare_id,
     c_md_compare_long_id,
+    c_md_filter,
+    c_md_filter_enable,
+    c_md_filter_disable,
 
     # === Public APIs (Cython-layer) ===
     BookConfigContext,
