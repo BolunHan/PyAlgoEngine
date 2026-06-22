@@ -230,12 +230,7 @@ class MarketData(object):
         ...
 
 
-class _FilterModeMeta(type):
-    """Metaclass allowing FilterMode[value] to construct an instance."""
-    def __getitem__(cls, value: int) -> FilterMode: ...
-
-
-class FilterMode(object, metaclass=_FilterModeMeta):
+class FilterMode(object):
     """
     A pseudo-IntEnum bitmask class for filtering different types of market data.
 
@@ -379,6 +374,17 @@ class FilterMode(object, metaclass=_FilterModeMeta):
 
         Returns:
             str: String showing hex value and active flags
+        """
+        ...
+
+    def __class_getitem__(cls, value: int) -> FilterMode:
+        """Allow instantiation using subscript notation, e.g. FilterMode[0x03].
+
+        Args:
+            value: Integer value to create the FilterMode from
+
+        Returns:
+            FilterMode: New instance with the given value
         """
         ...
 
