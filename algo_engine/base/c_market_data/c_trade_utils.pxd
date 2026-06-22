@@ -39,15 +39,15 @@ cdef class TradeInstruction(MarketData):
     cpdef TradeInstruction canceled(self, double timestamp=?)
 
 
-cdef inline object report_from_header(md_variant* market_data, bint owner):
+cdef inline object report_from_header(const md_variant* market_data, bint owner):
     cdef TradeReport instance = TradeReport.__new__(TradeReport)
-    instance.header = market_data
+    instance.header = <md_variant*> market_data
     instance.owner = owner
     return instance
 
 
-cdef inline object instruction_from_header(md_variant* market_data, bint owner):
+cdef inline object instruction_from_header(const md_variant* market_data, bint owner):
     cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
-    instance.header = market_data
+    instance.header = <md_variant*> market_data
     instance.owner = owner
     return instance
