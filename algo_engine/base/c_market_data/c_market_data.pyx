@@ -325,7 +325,7 @@ cdef class MarketData:
         return instance
 
     @staticmethod
-    cdef inline object c_from_header(md_variant* market_data, bint owner=False):
+    cdef inline object c_from_header(const md_variant* market_data, bint owner=False):
         cdef md_data_type dtype = market_data.meta_info.dtype
 
         if dtype == md_data_type.DTYPE_INTERNAL:

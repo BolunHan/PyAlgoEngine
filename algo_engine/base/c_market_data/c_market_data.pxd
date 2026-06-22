@@ -365,7 +365,7 @@ cdef void c_set_long_id(long_md_id* id_ptr, object id_value)
 cdef object c_get_long_id(long_md_id* id_ptr)
 
 
-ctypedef object (*c_from_header_func)(md_variant* market_data, bint owner)
+ctypedef object (*c_from_header_func)(const md_variant* market_data, bint owner)
 
 cdef c_from_header_func internal_from_header
 cdef c_from_header_func transaction_from_header
@@ -385,7 +385,7 @@ cdef class MarketData:
     cdef md_variant* header
 
     @staticmethod
-    cdef inline object c_from_header(md_variant* market_data, bint owner=?)
+    cdef inline object c_from_header(const md_variant* market_data, bint owner=?)
 
     cdef inline size_t c_get_size(self)
 
