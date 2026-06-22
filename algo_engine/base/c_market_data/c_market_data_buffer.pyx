@@ -455,7 +455,7 @@ cdef class MarketDataConcurrentBuffer:
         if not self.header:
             raise RuntimeError(f'{self.__class__.__name__} uninitialized')
         cdef size_t worker_id
-        cdef md_concurrent_buffer_worker_t* worker
+        cdef md_concurrent_buffer_worker_ctx* worker
         for worker_id in range(self.header.n_workers):
             worker = self.header.workers + worker_id
             if worker.enabled and not c_md_concurrent_buffer_is_empty(self.header, worker_id):

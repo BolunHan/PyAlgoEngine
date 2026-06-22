@@ -31,12 +31,12 @@ cdef extern from "c_market_data_buffer.h":
         md_ptr_array ptr_array
         md_data_array data_array
 
-    ctypedef struct md_concurrent_buffer_worker_t:
+    ctypedef struct md_concurrent_buffer_worker_ctx:
         size_t ptr_head
         c_bool enabled
 
     ctypedef struct md_concurrent_buffer:
-        md_concurrent_buffer_worker_t* workers
+        md_concurrent_buffer_worker_ctx* workers
         size_t n_workers
         md_variant** buffer
         size_t capacity
