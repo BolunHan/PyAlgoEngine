@@ -38,18 +38,18 @@ cdef extern from "c_market_data_buffer.h":
     ctypedef struct md_concurrent_buffer:
         md_concurrent_buffer_worker_ctx* workers
         size_t n_workers
-        md_variant** buffer
+        const md_variant** buffer
         size_t capacity
         size_t tail
 
     int c_md_compare_serialized(const void* a, const void* b) noexcept nogil
-    size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md) noexcept nogil
-    md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) noexcept nogil
+    size_t c_md_total_buffer_size(const md_variant** md_array, size_t n_md) noexcept nogil
+    const md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) noexcept nogil
 
     md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) noexcept nogil
     void c_md_block_buffer_free(md_block_buffer* buffer) noexcept nogil
     int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity) noexcept nogil
-    int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data) noexcept nogil
+    int c_md_block_buffer_put(md_block_buffer* buffer, const md_variant* market_data) noexcept nogil
     int c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** out) noexcept nogil
     int c_md_block_buffer_sort(md_block_buffer* buffer) noexcept nogil
     int c_md_block_buffer_clear(md_block_buffer* buffer) noexcept nogil
@@ -59,10 +59,10 @@ cdef extern from "c_market_data_buffer.h":
 
     md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) noexcept nogil
     void c_md_ring_buffer_free(md_ring_buffer* buffer) noexcept nogil
-    int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data) noexcept nogil
+    int c_md_ring_buffer_is_full(md_ring_buffer* buffer, const md_variant* market_data) noexcept nogil
     int c_md_ring_buffer_is_empty(md_ring_buffer* buffer) noexcept nogil
     size_t c_md_ring_buffer_size(md_ring_buffer* buffer) noexcept nogil
-    int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, c_bool block, double timeout) noexcept nogil
+    int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant* market_data, c_bool block, double timeout) noexcept nogil
     int c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index, const char** out) noexcept nogil
     int c_md_ring_buffer_listen(md_ring_buffer* buffer, c_bool block, double timeout, const char** out) noexcept nogil
 
@@ -72,12 +72,12 @@ cdef extern from "c_market_data_buffer.h":
     int c_md_concurrent_buffer_disable_worker(md_concurrent_buffer* buffer, size_t worker_id) noexcept nogil
     int c_md_concurrent_buffer_is_full(md_concurrent_buffer* buffer) noexcept nogil
     int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, size_t worker_id) noexcept nogil
-    int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, c_bool block, double timeout) noexcept nogil
-    int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, c_bool block, double timeout, md_variant** out) noexcept nogil
+    int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, const md_variant* market_data, c_bool block, double timeout) noexcept nogil
+    int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, c_bool block, double timeout, const md_variant** out) noexcept nogil
 
 
 cdef class MarketDataBufferCache:
-    cdef md_variant** c_array
+    cdef const md_variant** c_array
     cdef PyObject** py_array
 
     cdef readonly object parent
@@ -95,9 +95,9 @@ cdef class MarketDataBuffer:
 
     cdef void c_sort(self)
 
-    cdef void c_put(self, md_variant* market_data)
+    cdef void c_put(self, const md_variant* market_data)
 
-    cdef md_variant* c_get(self, ssize_t idx)
+    cdef const md_variant* c_get(self, ssize_t idx)
 
     cdef void c_clear(self)
 
@@ -109,13 +109,13 @@ cdef class MarketDataRingBuffer:
 
     cdef bint c_is_empty(self)
 
-    cdef bint c_is_full(self, md_variant* market_data)
+    cdef bint c_is_full(self, const md_variant* market_data)
 
-    cdef void c_put(self, md_variant* market_data, bint block=?, double timeout=?)
+    cdef void c_put(self, const md_variant* market_data, bint block=?, double timeout=?)
 
-    cdef md_variant* c_get(self, ssize_t idx)
+    cdef const md_variant* c_get(self, ssize_t idx)
 
-    cdef md_variant* c_listen(self, bint block=?, double timeout=?)
+    cdef const md_variant* c_listen(self, bint block=?, double timeout=?)
 
 
 cdef class MarketDataConcurrentBuffer:
@@ -129,9 +129,9 @@ cdef class MarketDataConcurrentBuffer:
 
     cdef bint c_is_full(self)
 
-    cdef void c_put(self, md_variant* market_data, bint block=?, double timeout=?)
+    cdef void c_put(self, const md_variant* market_data, bint block=?, double timeout=?)
 
-    cdef md_variant* c_listen(self, size_t worker_id, bint block=?, double timeout=?)
+    cdef const md_variant* c_listen(self, size_t worker_id, bint block=?, double timeout=?)
 
     cdef void c_disable_worker(self, size_t worker_id)
 
