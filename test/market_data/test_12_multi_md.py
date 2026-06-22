@@ -7,6 +7,29 @@ from algo_engine.base import TickData
 from algo_engine.base.c_market_data.c_market_data_buffer import MarketDataBuffer
 
 
+def _dump_artifacts(artifacts_dir: pathlib.Path):
+    """Regenerate binary artifacts for multi-market-data tests."""
+    artifacts_dir.mkdir(exist_ok=True)
+
+    date_str = '20241111'
+    tickers = ['000001.SZ', '600010.SH', '601888.SH']
+    base_ts = datetime.datetime(2024, 11, 11, 9, 30, 0).timestamp()
+
+    for ticker in tickers:
+        buf = MarketDataBuffer()
+        with buf.cache() as cache:
+            for i in range(100):
+                td = TickData(
+                    ticker=ticker,
+                    timestamp=base_ts + i,
+                    last_price=round(100.0 + i * 0.01, 2),
+                )
+                cache.put(td)
+
+        fname = f'{date_str}_ALL_{ticker}.bin'
+        (artifacts_dir / fname).write_bytes(buf.to_bytes())
+
+
 def reconstruct():
     ts = datetime.datetime(2024, 11, 11, 9, 30, 0).timestamp()
     td_0 = TickData(
@@ -52,10 +75,12 @@ def reconstruct():
 
 def test_02_reconstruct_from_buf():
     cwd = pathlib.Path(__file__).parent
+    artifacts_dir = cwd / 'artifacts'
+    _dump_artifacts(artifacts_dir)
 
-    blob_0 = cwd / 'artifacts' / '20241111_ALL_000001.SZ.bin'
-    blob_1 = cwd / 'artifacts' / '20241111_ALL_600010.SH.bin'
-    blob_2 = cwd / 'artifacts' / '20241111_ALL_601888.SH.bin'
+    blob_0 = artifacts_dir / '20241111_ALL_000001.SZ.bin'
+    blob_1 = artifacts_dir / '20241111_ALL_600010.SH.bin'
+    blob_2 = artifacts_dir / '20241111_ALL_601888.SH.bin'
 
     buf_0 = MarketDataBuffer.from_bytes(blob_0.read_bytes())
     buf_1 = MarketDataBuffer.from_bytes(blob_1.read_bytes())

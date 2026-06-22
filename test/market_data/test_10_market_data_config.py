@@ -1,8 +1,8 @@
 import unittest
 
+from algo_engine.base.c_allocator_protocol import EnvConfigContext
 from algo_engine.base.c_market_data import c_market_data as md
 
-EnvConfigContext = md.EnvConfigContext
 ConfigViewer = md.ConfigViewer
 CONFIG = md.CONFIG
 

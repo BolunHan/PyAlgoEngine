@@ -2,8 +2,8 @@ import random
 import time
 import unittest
 
-from algo_engine.base.c_market_data.c_market_data_buffer import BufferFull, BufferEmpty, PipeTimeoutError, MarketDataRingBuffer
-from md_gen import random_market_data
+from algo_engine.base.c_market_data.c_market_data_buffer import BufferEmpty, BufferFull, MarketDataRingBuffer, PipeTimeoutError
+from .md_gen import random_market_data
 
 
 class MarketDataRingBufferTests(unittest.TestCase):
@@ -50,7 +50,7 @@ class MarketDataRingBufferTests(unittest.TestCase):
         t = threading.Thread(target=worker)
         t.start()
 
-        for i , market_data in enumerate(samples):
+        for i, market_data in enumerate(samples):
             while True:
                 try:
                     print(f'[RingBuffer][put] sending {i} / {size} md...')
