@@ -57,7 +57,7 @@ typedef struct md_concurrent_buffer_worker_ctx {
 typedef struct md_concurrent_buffer {
     md_concurrent_buffer_worker_ctx* workers;
     size_t                           n_workers;
-    md_variant**                     buffer;
+    const md_variant**               buffer;
     size_t                           capacity;
     _Atomic size_t                   tail;
 } md_concurrent_buffer;
@@ -65,13 +65,13 @@ typedef struct md_concurrent_buffer {
 // ========== Forward Declarations (Public API) ==========
 
 static inline int                   c_md_compare_serialized(const void* a, const void* b);
-static inline size_t                c_md_total_buffer_size(md_variant** md_array, size_t n_md);
-static inline md_variant*           c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool);
+static inline size_t                c_md_total_buffer_size(const md_variant** md_array, size_t n_md);
+static inline const md_variant*     c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool);
 
 static inline md_block_buffer*      c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator);
 static inline void                  c_md_block_buffer_free(md_block_buffer* buffer);
 static inline int                   c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity);
-static inline int                   c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data);
+static inline int                   c_md_block_buffer_put(md_block_buffer* buffer, const md_variant* market_data);
 static inline int                   c_md_block_buffer_get(md_block_buffer* buffer, size_t idx, const char** out);
 static inline int                   c_md_block_buffer_sort(md_block_buffer* buffer);
 static inline int                   c_md_block_buffer_clear(md_block_buffer* buffer);
@@ -81,10 +81,10 @@ static inline md_block_buffer*      c_md_block_buffer_deserialize(const char* bl
 
 static inline md_ring_buffer*       c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator);
 static inline void                  c_md_ring_buffer_free(md_ring_buffer* buffer);
-static inline int                   c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data);
+static inline int                   c_md_ring_buffer_is_full(md_ring_buffer* buffer, const md_variant* market_data);
 static inline int                   c_md_ring_buffer_is_empty(md_ring_buffer* buffer);
 static inline size_t                c_md_ring_buffer_size(md_ring_buffer* buffer);
-static inline int                   c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, bool block, double timeout);
+static inline int                   c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant* market_data, bool block, double timeout);
 static inline int                   c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index, const char** out);
 static inline int                   c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, double timeout, const char** out);
 
@@ -94,8 +94,8 @@ static inline int                   c_md_concurrent_buffer_enable_worker(md_conc
 static inline int                   c_md_concurrent_buffer_disable_worker(md_concurrent_buffer* buffer, size_t worker_id);
 static inline int                   c_md_concurrent_buffer_is_full(md_concurrent_buffer* buffer);
 static inline int                   c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, size_t worker_id);
-static inline int                   c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, bool block, double timeout);
-static inline int                   c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bool block, double timeout, md_variant** out);
+static inline int                   c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, const md_variant* market_data, bool block, double timeout);
+static inline int                   c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bool block, double timeout, const md_variant** out);
 
 // ========== Utility Functions ==========
 
@@ -110,9 +110,9 @@ static inline int c_md_compare_serialized(const void* a, const void* b) {
     return 0;
 }
 
-static inline size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md) {
-    md_variant* md;
-    size_t      total_size = 0;
+static inline size_t c_md_total_buffer_size(const md_variant** md_array, size_t n_md) {
+    const md_variant* md;
+    size_t            total_size = 0;
 
     for (size_t i = 0; i < n_md; i++) {
         md = md_array[i];
@@ -121,7 +121,7 @@ static inline size_t c_md_total_buffer_size(md_variant** md_array, size_t n_md) 
     return total_size;
 }
 
-static inline md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) {
+static inline const md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) {
     if (!market_data || !shm_allocator || !shm_pool) return NULL;
 
     // Step 1: Intern ticker string
@@ -263,7 +263,7 @@ static inline int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_p
     return MD_OK;
 }
 
-static inline int c_md_block_buffer_put(md_block_buffer* buffer, md_variant* market_data) {
+static inline int c_md_block_buffer_put(md_block_buffer* buffer, const md_variant* market_data) {
     if (!buffer || !market_data) return MD_ERR_INVALID_INPUT;
 
     size_t idx_tail = buffer->ptr_array.idx_tail;
@@ -329,13 +329,13 @@ static inline int c_md_block_buffer_sort(md_block_buffer* buffer) {
         return MD_OK;
     }
 
-    size_t*      offset_array = buffer->ptr_array.offsets;
-    char*        data_array = buffer->data_array.buf;
-    md_variant** ptr_array = (md_variant**) malloc(ptr_tail * sizeof(md_variant*));
+    size_t*            offset_array = buffer->ptr_array.offsets;
+    char*              data_array = buffer->data_array.buf;
+    const md_variant** ptr_array = (const md_variant**) malloc(ptr_tail * sizeof(md_variant*));
     if (!ptr_array) return MD_ERR_OOM;
 
     for (size_t i = 0; i < ptr_tail; i++) {
-        ptr_array[i] = (md_variant*) (data_array + offset_array[i]);
+        ptr_array[i] = (const md_variant*) (data_array + offset_array[i]);
     }
 
     qsort(ptr_array, ptr_tail, sizeof(md_variant*), c_md_compare_serialized);
@@ -449,7 +449,7 @@ static inline void c_md_ring_buffer_free(md_ring_buffer* buffer) {
     c_md_free(buffer);
 }
 
-static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, md_variant* market_data) {
+static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, const md_variant* market_data) {
     if (!buffer) return MD_ERR_INVALID_INPUT;
 
     size_t ptr_head = buffer->ptr_array.idx_head;
@@ -515,7 +515,7 @@ static inline size_t c_md_ring_buffer_size(md_ring_buffer* buffer) {
     }
 }
 
-static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, md_variant* market_data, bool block, double timeout) {
+static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant* market_data, bool block, double timeout) {
     if (!buffer || !market_data) return MD_ERR_INVALID_INPUT;
 
     const uint32_t spin_per_check = 1000;
@@ -727,7 +727,7 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
         atomic_init(&buffer->workers[i].ptr_head, 0);
     }
 
-    buffer->buffer = (md_variant**) (buffer->workers + n_workers);
+    buffer->buffer = (const md_variant**) (buffer->workers + n_workers);
     buffer->capacity = capacity;
     atomic_init(&buffer->tail, 0);
     return buffer;
@@ -782,7 +782,7 @@ static inline int c_md_concurrent_buffer_is_empty(md_concurrent_buffer* buffer, 
     else return 0;
 }
 
-static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_variant* market_data, bool block, double timeout) {
+static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, const md_variant* market_data, bool block, double timeout) {
     /* Returns: MD_OK, MD_ERR_INVALID_INPUT, MD_ERR_INVALID_ALLOCATOR, MD_ERR_BUF_FULL, MD_ERR_TIMEOUT */
     if (!buffer || !market_data) return MD_ERR_INVALID_INPUT;
 
@@ -865,7 +865,7 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, md_va
     return MD_OK;
 }
 
-static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bool block, double timeout, md_variant** out) {
+static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, size_t worker_id, bool block, double timeout, const md_variant** out) {
     /* Returns: MD_OK, MD_ERR_INVALID_INPUT, -2 (worker OOR), -3 (worker disabled), MD_ERR_BUF_EMPTY, MD_ERR_TIMEOUT */
     if (!buffer || !out) return MD_ERR_INVALID_INPUT;
     if (worker_id >= buffer->n_workers) return MD_ERR_OOR; /* worker out of range */
@@ -892,7 +892,7 @@ static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, si
         size_t current_tail = atomic_load_explicit(&buffer->tail, memory_order_acquire);
         if (idx != current_tail) {
             // acquire on tail guarantees data written before producer's release-store is visible
-            md_variant* md = buffer->buffer[idx];
+            const md_variant* md = buffer->buffer[idx];
             atomic_store_explicit(&worker->ptr_head, (idx + 1) % buffer->capacity, memory_order_release);
             *out = md;
             return MD_OK;
