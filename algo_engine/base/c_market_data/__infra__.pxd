@@ -165,7 +165,7 @@ from .c_trade_utils cimport TradeReport, TradeInstruction, report_from_header, i
 from .c_market_data_buffer cimport (
     md_block_buffer,
     md_ring_buffer,
-    md_concurrent_buffer_worker_t,
+    md_concurrent_buffer_worker_ctx,
     md_concurrent_buffer,
 
     c_md_compare_serialized,
