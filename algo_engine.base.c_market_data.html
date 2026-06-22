@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.base.c_market_data package &mdash; PyAlgoEngine 0.10.6 documentation</title>
+  <title>algo_engine.base.c_market_data package &mdash; PyAlgoEngine 0.10.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ed973197"></script>
+      <script src="_static/documentation_options.js?v=a1f5164c"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -400,9 +400,29 @@
 <span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.all" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.disable_flag">
+<span class="sig-name descname"><span class="pre">disable_flag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_to_disable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.disable_flag" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.enable_flags">
+<span class="sig-name descname"><span class="pre">enable_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_to_enable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.enable_flags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.flags">
 <span class="sig-name descname"><span class="pre">flags</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.flags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.freeze">
+<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.freeze" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.frozen">
+<span class="sig-name descname"><span class="pre">frozen</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.frozen" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -418,6 +438,11 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.c_market_data.FilterMode.unfreeze">
+<span class="sig-name descname"><span class="pre">unfreeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.c_market_data.FilterMode.unfreeze" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2127,9 +2152,29 @@
 <span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.all" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.disable_flag">
+<span class="sig-name descname"><span class="pre">disable_flag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_to_disable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.disable_flag" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.enable_flags">
+<span class="sig-name descname"><span class="pre">enable_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_to_enable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.enable_flags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.flags">
 <span class="sig-name descname"><span class="pre">flags</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.flags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.freeze">
+<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.freeze" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.frozen">
+<span class="sig-name descname"><span class="pre">frozen</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.frozen" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2145,6 +2190,11 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.base.c_market_data.FilterMode.unfreeze">
+<span class="sig-name descname"><span class="pre">unfreeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_market_data.FilterMode.unfreeze" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
