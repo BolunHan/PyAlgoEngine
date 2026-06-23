@@ -22,7 +22,7 @@ cdef class TopicSet:
         self.push_topic_map = {}
 
     cpdef Topic push(self, MarketData market_data):
-        cdef md_variant* market_data_ptr = market_data.header
+        cdef const md_variant* market_data_ptr = market_data.header
         cdef uint8_t dtype = <uint8_t> market_data_ptr.meta_info.dtype
         cdef str ticker = PyUnicode_FromString(market_data_ptr.meta_info.ticker)
         cdef dict topic_map

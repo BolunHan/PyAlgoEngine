@@ -41,7 +41,7 @@ cdef class MonitorManager:
         self.monitor = {}
 
     cdef void c_on_market_data(self, const md_variant* data_ptr):
-        self.__call__(market_data=MarketData.c_from_header(<md_variant*> data_ptr, False))
+        self.__call__(market_data=MarketData.c_from_header(data_ptr, False))
 
     def __call__(self, MarketData market_data):
         for monitor_id in self.monitor:
