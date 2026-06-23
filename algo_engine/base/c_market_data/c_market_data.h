@@ -471,7 +471,7 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out);
  * @param src Source byte buffer.
  * @return Newly allocated `md_variant*`, or NULL on failure.
  */
-static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator);
+static inline const md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator);
 
 /**
  * @brief Create a new order book with specified size and direction.
@@ -1025,7 +1025,7 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     return (size_t) (cursor - out);
 }
 
-static inline md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) {
+static inline const md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) {
     if (!src) return NULL;
 
     const char* cursor = src;
