@@ -177,27 +177,28 @@ cdef class TransactionData(MarketData):
             object sell_id=None,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_TRANSACTION,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
-        self.header.transaction_data.price = price
-        self.header.transaction_data.volume = volume
-        self.header.transaction_data.side = side
-        self.header.transaction_data.multiplier = multiplier
+        header.transaction_data.price = price
+        header.transaction_data.volume = volume
+        header.transaction_data.side = side
+        header.transaction_data.multiplier = multiplier
 
         if isnan(notional):
-            self.header.transaction_data.notional = price * volume * multiplier
+            header.transaction_data.notional = price * volume * multiplier
         else:
-            self.header.transaction_data.notional = notional
+            header.transaction_data.notional = notional
 
-        c_set_id(&self.header.transaction_data.transaction_id, transaction_id)
-        c_set_id(&self.header.transaction_data.buy_id, buy_id)
-        c_set_id(&self.header.transaction_data.sell_id, sell_id)
+        c_set_id(&header.transaction_data.transaction_id, transaction_id)
+        c_set_id(&header.transaction_data.buy_id, buy_id)
+        c_set_id(&header.transaction_data.sell_id, sell_id)
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -332,20 +333,21 @@ cdef class OrderData(MarketData):
             md_order_type order_type=md_order_type.ORDER_GENERIC,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_ORDER,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
-        self.header.order_data.price = price
-        self.header.order_data.volume = volume
-        self.header.order_data.side = side
-        self.header.order_data.order_type = order_type
+        header.order_data.price = price
+        header.order_data.volume = volume
+        header.order_data.side = side
+        header.order_data.order_type = order_type
 
-        c_set_id(id_ptr=&self.header.order_data.order_id, id_value=order_id)
+        c_set_id(id_ptr=&header.order_data.order_id, id_value=order_id)
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -412,27 +414,28 @@ cdef class TradeData(TransactionData):
             object sell_id=None,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_TRANSACTION,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
-        self.header.transaction_data.price = trade_price
-        self.header.transaction_data.volume = trade_volume
-        self.header.transaction_data.side = trade_side
-        self.header.transaction_data.multiplier = multiplier
+        header.transaction_data.price = trade_price
+        header.transaction_data.volume = trade_volume
+        header.transaction_data.side = trade_side
+        header.transaction_data.multiplier = multiplier
 
         if isnan(notional):
-            self.header.transaction_data.notional = trade_price * trade_volume * multiplier
+            header.transaction_data.notional = trade_price * trade_volume * multiplier
         else:
-            self.header.transaction_data.notional = notional
+            header.transaction_data.notional = notional
 
-        c_set_id(&self.header.transaction_data.transaction_id, transaction_id)
-        c_set_id(&self.header.transaction_data.buy_id, buy_id)
-        c_set_id(&self.header.transaction_data.sell_id, sell_id)
+        c_set_id(&header.transaction_data.transaction_id, transaction_id)
+        c_set_id(&header.transaction_data.buy_id, buy_id)
+        c_set_id(&header.transaction_data.sell_id, sell_id)
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:

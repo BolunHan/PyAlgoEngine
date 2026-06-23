@@ -9,6 +9,6 @@ cdef class InternalData(MarketData):
 
 cdef inline object internal_from_header(const md_variant* market_data, bint owner):
     cdef InternalData instance = InternalData.__new__(InternalData)
-    instance.header = <md_variant*> market_data
+    instance.header = market_data
     instance.owner = owner
     return instance

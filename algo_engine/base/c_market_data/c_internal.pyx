@@ -13,15 +13,16 @@ cdef class InternalData(MarketData):
             uint32_t code,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_INTERNAL,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
-        self.header.internal.code = code
+        header.internal.code = code
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:

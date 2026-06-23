@@ -35,14 +35,14 @@ cdef class TickData(MarketData):
 
 cdef inline object tick_lite_from_header(const md_variant* market_data, bint owner):
     cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
-    instance.header = <md_variant*> market_data
+    instance.header = market_data
     instance.owner = owner
     return instance
 
 
 cdef inline object tick_from_header(const md_variant* market_data, bint owner):
     cdef TickData instance = TickData.__new__(TickData)
-    instance.header = <md_variant*> market_data
+    instance.header = market_data
 
     instance.bid = OrderBook.__new__(OrderBook)
     instance.ask = OrderBook.__new__(OrderBook)

@@ -33,25 +33,26 @@ cdef class TickDataLite(MarketData):
             uint64_t total_trade_count=0,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_TICK_LITE,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
         # Set other fields
-        self.header.tick_data_lite.last_price = last_price
-        self.header.tick_data_lite.bid_price = bid_price
-        self.header.tick_data_lite.bid_volume = bid_volume
-        self.header.tick_data_lite.ask_price = ask_price
-        self.header.tick_data_lite.ask_volume = ask_volume
-        self.header.tick_data_lite.open_price = open_price
-        self.header.tick_data_lite.prev_close = prev_close
-        self.header.tick_data_lite.total_traded_volume = total_traded_volume
-        self.header.tick_data_lite.total_traded_notional = total_traded_notional
-        self.header.tick_data_lite.total_trade_count = total_trade_count
+        header.tick_data_lite.last_price = last_price
+        header.tick_data_lite.bid_price = bid_price
+        header.tick_data_lite.bid_volume = bid_volume
+        header.tick_data_lite.ask_price = ask_price
+        header.tick_data_lite.ask_volume = ask_volume
+        header.tick_data_lite.open_price = open_price
+        header.tick_data_lite.prev_close = prev_close
+        header.tick_data_lite.total_traded_volume = total_traded_volume
+        header.tick_data_lite.total_traded_notional = total_traded_notional
+        header.tick_data_lite.total_trade_count = total_trade_count
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -435,34 +436,35 @@ cdef class TickData(MarketData):
             double weighted_ask_price=NAN,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_TICK,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
         # Set TickDataLite fields
-        self.header.tick_data_full.lite.last_price = last_price
-        self.header.tick_data_full.lite.bid_price = kwargs.get('bid_price_1', NAN)
-        self.header.tick_data_full.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
-        self.header.tick_data_full.lite.ask_price = kwargs.get('ask_price_1', NAN)
-        self.header.tick_data_full.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
-        self.header.tick_data_full.lite.open_price = open_price
-        self.header.tick_data_full.lite.prev_close = prev_close
-        self.header.tick_data_full.lite.total_traded_volume = total_traded_volume
-        self.header.tick_data_full.lite.total_traded_notional = total_traded_notional
-        self.header.tick_data_full.lite.total_trade_count = total_trade_count
-        self.header.tick_data_full.total_bid_volume = total_bid_volume
-        self.header.tick_data_full.total_ask_volume = total_ask_volume
-        self.header.tick_data_full.weighted_bid_price = weighted_bid_price
-        self.header.tick_data_full.weighted_ask_price = weighted_ask_price
+        header.tick_data_full.lite.last_price = last_price
+        header.tick_data_full.lite.bid_price = kwargs.get('bid_price_1', NAN)
+        header.tick_data_full.lite.bid_volume = kwargs.get('bid_volume_1', NAN)
+        header.tick_data_full.lite.ask_price = kwargs.get('ask_price_1', NAN)
+        header.tick_data_full.lite.ask_volume = kwargs.get('ask_volume_1', NAN)
+        header.tick_data_full.lite.open_price = open_price
+        header.tick_data_full.lite.prev_close = prev_close
+        header.tick_data_full.lite.total_traded_volume = total_traded_volume
+        header.tick_data_full.lite.total_traded_notional = total_traded_notional
+        header.tick_data_full.lite.total_trade_count = total_trade_count
+        header.tick_data_full.total_bid_volume = total_bid_volume
+        header.tick_data_full.total_ask_volume = total_ask_volume
+        header.tick_data_full.weighted_bid_price = weighted_bid_price
+        header.tick_data_full.weighted_ask_price = weighted_ask_price
 
         self.bid = OrderBook.__new__(OrderBook, direction=md_direction.DIRECTION_LONG, is_sorted=False)
         self.ask = OrderBook.__new__(OrderBook, direction=md_direction.DIRECTION_SHORT, is_sorted=False)
-        self.header.tick_data_full.bid = self.bid.header
-        self.header.tick_data_full.ask = self.ask.header
+        header.tick_data_full.bid = self.bid.header
+        header.tick_data_full.ask = self.ask.header
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -481,8 +483,9 @@ cdef class TickData(MarketData):
         memcpy(<void*> bid_header, <void*> self.header.tick_data_full.bid, sizeof(md_orderbook) + self.header.tick_data_full.bid.capacity * sizeof(md_orderbook_entry))
         memcpy(<void*> ask_header, <void*> self.header.tick_data_full.ask, sizeof(md_orderbook) + self.header.tick_data_full.ask.capacity * sizeof(md_orderbook_entry))
 
-        instance.header.tick_data_full.bid = bid_header
-        instance.header.tick_data_full.ask = ask_header
+        cdef md_variant* header = <md_variant*> instance.header
+        header.tick_data_full.bid = bid_header
+        header.tick_data_full.ask = ask_header
 
         instance.bid.header = bid_header
         instance.ask.header = ask_header
@@ -561,7 +564,7 @@ cdef class TickData(MarketData):
     cpdef TickDataLite lite(self, bint copy=True):
         cdef TickDataLite instance = TickDataLite.__new__(TickDataLite)
         if not copy:
-            instance.header = <md_variant*> &self.header.tick_data_full.lite
+            instance.header = <const md_variant*> &self.header.tick_data_full.lite
             instance.owner = False
             return instance
         cdef md_variant* tk_lite = c_init_buffer(

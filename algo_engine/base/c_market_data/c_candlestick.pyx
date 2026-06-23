@@ -24,7 +24,7 @@ cdef class BarData(MarketData):
             object bar_span=None,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_BAR,
             PyUnicode_AsUTF8(ticker),
             timestamp
@@ -43,16 +43,17 @@ cdef class BarData(MarketData):
                 bar_span_seconds = <double> bar_span
 
         # Initialize bar-specific fields
-        self.header.bar_data.high_price = high_price
-        self.header.bar_data.low_price = low_price
-        self.header.bar_data.open_price = open_price
-        self.header.bar_data.close_price = close_price
-        self.header.bar_data.volume = volume
-        self.header.bar_data.notional = notional
-        self.header.bar_data.trade_count = trade_count
-        self.header.bar_data.bar_span = bar_span_seconds
+        header.bar_data.high_price = high_price
+        header.bar_data.low_price = low_price
+        header.bar_data.open_price = open_price
+        header.bar_data.close_price = close_price
+        header.bar_data.volume = volume
+        header.bar_data.notional = notional
+        header.bar_data.trade_count = trade_count
+        header.bar_data.bar_span = bar_span_seconds
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -64,20 +65,22 @@ cdef class BarData(MarketData):
         return f"<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, open={self.open_price}, high={self.high_price}, low={self.low_price}, close={self.close_price}, volume={self.volume})"
 
     def __setitem__(self, str key, object value):
+        cdef md_variant* header = <md_variant*> self.header
+
         if key == 'high_price':
-            self.header.bar_data.high_price = value
+            header.bar_data.high_price = value
         elif key == 'low_price':
-            self.header.bar_data.low_price = value
+            header.bar_data.low_price = value
         elif key == 'open_price':
-            self.header.bar_data.open_price = value
+            header.bar_data.open_price = value
         elif key == 'close_price':
-            self.header.bar_data.close_price = value
+            header.bar_data.close_price = value
         elif key == 'volume':
-            self.header.bar_data.volume = value
+            header.bar_data.volume = value
         elif key == 'notional':
-            self.header.bar_data.notional = value
+            header.bar_data.notional = value
         elif key == 'trade_count':
-            self.header.bar_data.trade_count = value
+            header.bar_data.trade_count = value
         else:
             raise KeyError(f'Can not set {key} to the value {value}.')
 

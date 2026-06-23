@@ -87,27 +87,28 @@ cdef class TradeReport(MarketData):
         if volume < 0:
             raise ValueError("Volume must be non-negative.")
 
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_REPORT,
             PyUnicode_AsUTF8(ticker),
             timestamp
         )
 
-        self.header.trade_report.price = price
-        self.header.trade_report.volume = volume
-        self.header.trade_report.side = side
-        self.header.trade_report.multiplier = multiplier
-        self.header.trade_report.fee = fee
+        header.trade_report.price = price
+        header.trade_report.volume = volume
+        header.trade_report.side = side
+        header.trade_report.multiplier = multiplier
+        header.trade_report.fee = fee
 
         if isnan(notional):
-            self.header.trade_report.notional = price * volume * multiplier
+            header.trade_report.notional = price * volume * multiplier
         else:
-            self.header.trade_report.notional = notional
+            header.trade_report.notional = notional
 
-        c_set_long_id(&self.header.trade_report.order_id, order_id)
-        c_set_long_id(&self.header.trade_report.trade_id, uuid.uuid4() if trade_id is NO_DEFAULT else trade_id)
+        c_set_long_id(&header.trade_report.order_id, order_id)
+        c_set_long_id(&header.trade_report.trade_id, uuid.uuid4() if trade_id is NO_DEFAULT else trade_id)
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -161,15 +162,17 @@ cdef class TradeReport(MarketData):
         return f"<{self.__class__.__name__} id={self.trade_id}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker} {side_name} {self.volume} at {self.price})"
 
     cpdef TradeReport reset_order_id(self, object order_id=NO_DEFAULT):
+        cdef md_variant* header = <md_variant*> self.header
         if order_id is NO_DEFAULT:
             order_id = uuid.uuid4()
-        c_set_long_id(&self.header.trade_report.order_id, order_id)
+        c_set_long_id(&header.trade_report.order_id, order_id)
         return self
 
     cpdef TradeReport reset_trade_id(self, object trade_id=NO_DEFAULT):
+        cdef md_variant* header = <md_variant*> self.header
         if trade_id is None:
             trade_id = uuid.uuid4()
-        c_set_long_id(&self.header.trade_report.trade_id, trade_id)
+        c_set_long_id(&header.trade_report.trade_id, trade_id)
         return self
 
     def to_json(self, str fmt='str', **kwargs):
@@ -270,7 +273,7 @@ cdef class TradeInstruction(MarketData):
             object order_id=NO_DEFAULT,
             **kwargs
     ):
-        self.header = c_init_buffer(
+        cdef md_variant* header = c_init_buffer(
             md_data_type.DTYPE_INSTRUCTION,
             PyUnicode_AsUTF8(ticker),
             timestamp
@@ -279,24 +282,25 @@ cdef class TradeInstruction(MarketData):
         if volume <= 0:
             raise ValueError("Volume must be positive")
 
-        self.header.trade_instruction.limit_price = limit_price
-        self.header.trade_instruction.volume = volume
-        self.header.trade_instruction.side = side
-        self.header.trade_instruction.order_type = order_type
-        self.header.trade_instruction.multiplier = multiplier
+        header.trade_instruction.limit_price = limit_price
+        header.trade_instruction.volume = volume
+        header.trade_instruction.side = side
+        header.trade_instruction.order_type = order_type
+        header.trade_instruction.multiplier = multiplier
 
-        c_set_long_id(&self.header.trade_instruction.order_id, uuid.uuid4() if order_id is NO_DEFAULT else order_id)
+        c_set_long_id(&header.trade_instruction.order_id, uuid.uuid4() if order_id is NO_DEFAULT else order_id)
 
-        self.header.trade_instruction.order_state = md_order_state.STATE_PENDING
-        self.header.trade_instruction.filled_volume = 0.
-        self.header.trade_instruction.filled_notional = 0.
-        self.header.trade_instruction.fee = 0.
-        self.header.trade_instruction.ts_placed = 0.
-        self.header.trade_instruction.ts_canceled = 0.
-        self.header.trade_instruction.ts_finished = 0.
+        header.trade_instruction.order_state = md_order_state.STATE_PENDING
+        header.trade_instruction.filled_volume = 0.
+        header.trade_instruction.filled_notional = 0.
+        header.trade_instruction.fee = 0.
+        header.trade_instruction.ts_placed = 0.
+        header.trade_instruction.ts_canceled = 0.
+        header.trade_instruction.ts_finished = 0.
         self.trades = {}
 
-        self.data_addr = <uintptr_t> self.header
+        self.header = header
+        self.data_addr = <uintptr_t> header
         self.owner = True
 
         if kwargs:
@@ -361,46 +365,52 @@ cdef class TradeInstruction(MarketData):
         return TradeInstruction.c_from_json(json_dict)
 
     cpdef TradeInstruction reset(self):
+        cdef md_variant* header = <md_variant*> self.header
         self.trades.clear()
 
-        self.header.trade_instruction.order_state = md_order_state.STATE_PENDING
-        self.header.trade_instruction.filled_volume = 0.
-        self.header.trade_instruction.filled_notional = 0.
-        self.header.trade_instruction.fee = 0.
-        self.header.trade_instruction.ts_placed = 0.
-        self.header.trade_instruction.ts_canceled = 0.
-        self.header.trade_instruction.ts_finished = 0.
+        header.trade_instruction.order_state = md_order_state.STATE_PENDING
+        header.trade_instruction.filled_volume = 0.
+        header.trade_instruction.filled_notional = 0.
+        header.trade_instruction.fee = 0.
+        header.trade_instruction.ts_placed = 0.
+        header.trade_instruction.ts_canceled = 0.
+        header.trade_instruction.ts_finished = 0.
 
         return self
 
     cpdef TradeInstruction reset_order_id(self, object order_id=NO_DEFAULT):
+        cdef md_variant* header = <md_variant*> self.header
         if order_id is NO_DEFAULT:
             order_id = uuid.uuid4()
 
         cdef TradeReport trade_report
+        cdef md_variant* report_header
         for trade_report in self.trades.values():
-            c_set_long_id(&trade_report.header.trade_report.order_id, order_id)
-        c_set_long_id(&self.header.trade_instruction.order_id, order_id)
+            report_header = <md_variant*> trade_report.header
+            c_set_long_id(&report_header.trade_report.order_id, order_id)
+        c_set_long_id(&header.trade_instruction.order_id, order_id)
         return self
 
     cpdef TradeInstruction set_order_state(self, md_order_state order_state, double timestamp=NAN):
+        cdef md_variant* header = <md_variant*> self.header
         if isnan(timestamp):
             timestamp = time.time()
 
-        self.header.trade_instruction.order_state = order_state
+        header.trade_instruction.order_state = order_state
 
         if order_state == md_order_state.STATE_PLACED:
-            self.header.trade_instruction.ts_placed = timestamp
+            header.trade_instruction.ts_placed = timestamp
         elif order_state == md_order_state.STATE_FILLED:
-            self.header.trade_instruction.ts_finished = timestamp
+            header.trade_instruction.ts_finished = timestamp
         elif order_state == md_order_state.STATE_CANCELED:
-            self.header.trade_instruction.ts_canceled = timestamp
+            header.trade_instruction.ts_canceled = timestamp
 
         return self
 
     cpdef TradeInstruction fill(self, TradeReport trade_report):
+        cdef md_variant* header = <md_variant*> self.header
         # Check order_id match by comparing Python objects
-        if not c_md_compare_long_id(&self.header.trade_instruction.order_id, &trade_report.header.trade_report.order_id):
+        if not c_md_compare_long_id(&header.trade_instruction.order_id, &trade_report.header.trade_report.order_id):
             LOGGER.warning(f'Order ID mismatch! Instruction: {self.order_id}, Report: {trade_report.order_id}')
             return self
 
@@ -412,9 +422,9 @@ cdef class TradeInstruction(MarketData):
 
         # Check multiplier consistency
         cdef double multiplier = trade_report.header.trade_report.multiplier
-        if isnan(self.header.trade_instruction.multiplier):
-            self.header.trade_instruction.multiplier = multiplier
-        elif self.header.trade_instruction.multiplier != multiplier:
+        if isnan(header.trade_instruction.multiplier):
+            header.trade_instruction.multiplier = multiplier
+        elif header.trade_instruction.multiplier != multiplier:
             raise ValueError(f'Multiplier not match for order {self} and report {trade_report}.')
 
         # Check volume doesn't exceed order volume
@@ -423,21 +433,21 @@ cdef class TradeInstruction(MarketData):
         cdef double trade_fee = trade_report.header.trade_report.fee
         cdef double timestamp = trade_report.header.meta_info.timestamp
 
-        if trade_volume + self.header.trade_instruction.filled_volume > self.header.trade_instruction.volume:
+        if trade_volume + header.trade_instruction.filled_volume > header.trade_instruction.volume:
             trades_str = '\n\t'.join([str(x) for x in self.trades.values()]) + f'\n\t<new> {trade_report}'
             LOGGER.warning('Fatal error!\nTradeInstruction: \n\t{}\nTradeReport:\n\t{}'.format(str(self), trades_str))
             raise ValueError('Fatal error! trade reports filled volume exceed order volume!')
 
         # Only process if there's volume
-        self.header.trade_instruction.filled_volume += trade_volume
-        self.header.trade_instruction.filled_notional += fabs(trade_notional)
-        self.header.trade_instruction.fee += trade_fee
+        header.trade_instruction.filled_volume += trade_volume
+        header.trade_instruction.filled_notional += fabs(trade_notional)
+        header.trade_instruction.fee += trade_fee
 
         # Update order state
-        if self.header.trade_instruction.filled_volume == self.volume:
+        if header.trade_instruction.filled_volume == self.volume:
             self.set_order_state(md_order_state.STATE_FILLED, timestamp)
-            self.header.trade_instruction.ts_finished = timestamp
-        elif self.header.trade_instruction.filled_volume > 0:
+            header.trade_instruction.ts_finished = timestamp
+        elif header.trade_instruction.filled_volume > 0:
             self.set_order_state(md_order_state.STATE_PARTFILLED)
 
         # Add to trades dictionary
@@ -445,15 +455,16 @@ cdef class TradeInstruction(MarketData):
         return self
 
     cpdef TradeInstruction add_trade(self, TradeReport trade_report):
+        cdef md_variant* header = <md_variant*> self.header
         cdef object trade_id = c_get_long_id(&trade_report.header.trade_report.trade_id)
         cdef double trade_volume = trade_report.header.trade_report.volume
         cdef double trade_notional = trade_report.header.trade_report.notional
         cdef double trade_fee = trade_report.header.trade_report.fee
         cdef double timestamp = trade_report.header.meta_info.timestamp
 
-        self.header.trade_instruction.filled_volume += trade_volume
-        self.header.trade_instruction.filled_notional += fabs(trade_notional)
-        self.header.trade_instruction.fee += trade_fee
+        header.trade_instruction.filled_volume += trade_volume
+        header.trade_instruction.filled_notional += fabs(trade_notional)
+        header.trade_instruction.fee += trade_fee
 
         if self.filled_volume == self.volume:
             self.set_order_state(md_order_state.STATE_FILLED, timestamp)
