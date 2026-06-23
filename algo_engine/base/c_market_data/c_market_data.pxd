@@ -323,7 +323,7 @@ cdef extern from "c_market_data.h":
     const char* c_md_state_name(md_order_state side) noexcept nogil
     size_t c_md_serialized_size(const md_variant* market_data)
     size_t c_md_serialize(const md_variant* market_data, char* out)
-    md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) noexcept nogil
+    const md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) noexcept nogil
     md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator) noexcept nogil
     void c_md_orderbook_free(md_orderbook* orderbook) noexcept nogil
     int c_md_orderbook_sort(md_orderbook* orderbook) noexcept nogil
@@ -352,17 +352,17 @@ cdef BookConfigContext MD_BOOK10
 cdef BookConfigContext MD_BOOK20
 
 cdef md_variant* c_init_buffer(md_data_type dtype, const char* ticker, double timestamp)
-cdef md_variant* c_deserialize_buffer(const char* src)
+cdef const md_variant* c_deserialize_buffer(const char* src)
 
 cdef void c_write_uint128(void* data, uint128_t value)
-cdef uint128_t c_read_uint128(void* data)
+cdef uint128_t c_read_uint128(const void* data)
 cdef void c_write_int128(void* data, int128_t value)
-cdef int128_t c_read_int128(void* data)
+cdef int128_t c_read_int128(const void* data)
 
 cdef void c_set_id(md_id* id_ptr, object id_value)
-cdef object c_get_id(md_id* id_ptr)
+cdef object c_get_id(const md_id* id_ptr)
 cdef void c_set_long_id(long_md_id* id_ptr, object id_value)
-cdef object c_get_long_id(long_md_id* id_ptr)
+cdef object c_get_long_id(const long_md_id* id_ptr)
 
 
 ctypedef object (*c_from_header_func)(const md_variant* market_data, bint owner)
@@ -382,7 +382,7 @@ cdef class MarketData:
     cdef readonly uintptr_t data_addr
     cdef readonly bint owner
 
-    cdef md_variant* header
+    cdef const md_variant* header
 
     @staticmethod
     cdef inline object c_from_header(const md_variant* market_data, bint owner=?)
@@ -394,7 +394,7 @@ cdef class MarketData:
     cdef inline void c_to_bytes(self, char* out)
 
     @staticmethod
-    cdef inline md_variant* c_from_bytes(bytes data)
+    cdef inline const md_variant* c_from_bytes(bytes data)
 
 
 cdef class FilterMode:
@@ -402,7 +402,7 @@ cdef class FilterMode:
     cdef readonly bint frozen
 
     @staticmethod
-    cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode)
+    cdef inline bint c_mask_data(const md_variant* market_data, md_filter_flag filter_mode)
 
     cdef inline void c_enable_flag(self, md_filter_flag flag_to_enable)
 

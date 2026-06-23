@@ -78,8 +78,8 @@ cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, do
     return market_data
 
 
-cdef inline md_variant* c_deserialize_buffer(const char* src):
-    market_data = c_md_deserialize(src, MD_DEFAULT_ALLOCATOR)
+cdef inline const md_variant* c_deserialize_buffer(const char* src):
+    cdef md_variant* market_data = <md_variant*> c_md_deserialize(src, MD_DEFAULT_ALLOCATOR)
 
     if not market_data:
         raise MemoryError('Failed to deserialize market data from bytes')
@@ -88,7 +88,7 @@ cdef inline md_variant* c_deserialize_buffer(const char* src):
     cdef const char* ticker = meta_data.ticker
     if not ticker:
         raise ValueError('Deserialized market data has null ticker string')
-
+    # Original deserialized const char* ticker is a borrowed reference, pointed to the const char* src, so no need for freeing
     if MD_DEFAULT_ALLOCATOR.with_shm:
         if MD_DEFAULT_ALLOCATOR.with_lock:
             meta_data.ticker = c_istr_synced(SHM_POOL, ticker, NULL)
@@ -110,7 +110,7 @@ cdef inline void c_write_uint128(void* data, uint128_t value):
     memcpy(data, &value, 16)
 
 
-cdef inline uint128_t c_read_uint128(void* data):
+cdef inline uint128_t c_read_uint128(const void* data):
     cdef uint128_t value
     memcpy(&value, data, 16)
     return value
@@ -120,7 +120,7 @@ cdef inline void c_write_int128(void* data, int128_t value):
     memcpy(data, &value, 16)
 
 
-cdef inline int128_t c_read_int128(void* data):
+cdef inline int128_t c_read_int128(const void* data):
     cdef int128_t value
     memcpy(&value, data, 16)
     return value
@@ -193,7 +193,7 @@ cdef inline void c_set_id(md_id* id_ptr, object id_value):
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
 
 
-cdef inline object c_get_id(md_id* id_ptr):
+cdef inline object c_get_id(const md_id* id_ptr):
     if id_ptr.id_type == md_id_type.MID_UNKNOWN:
         return None
     elif id_ptr.id_type == md_id_type.MID_UINT64:
@@ -280,7 +280,7 @@ cdef inline void c_set_long_id(long_md_id* id_ptr, object id_value):
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
 
 
-cdef inline object c_get_long_id(long_md_id* id_ptr):
+cdef inline object c_get_long_id(const long_md_id* id_ptr):
     if id_ptr.id_type == md_id_type.MID_UNKNOWN:
         return None
     elif id_ptr.id_type == md_id_type.MID_UINT64:
@@ -306,7 +306,7 @@ cdef class MarketData:
             return
 
         if self.header:
-            c_md_free(self.header)
+            c_md_free(<void*> self.header)
 
     def __reduce__(self):
         return MarketData.from_bytes, (self.to_bytes(),), self.__dict__
@@ -365,7 +365,7 @@ cdef class MarketData:
         c_md_serialize(self.header, out)
 
     @staticmethod
-    cdef inline md_variant* c_from_bytes(bytes data):
+    cdef inline const md_variant* c_from_bytes(bytes data):
         return c_deserialize_buffer(<const char*> data)
 
     @staticmethod
@@ -383,13 +383,13 @@ cdef class MarketData:
 
     @classmethod
     def from_bytes(cls, bytes data):
-        cdef md_variant* header = MarketData.c_from_bytes(data)
+        cdef const md_variant* header = MarketData.c_from_bytes(data)
         cdef MarketData instance = MarketData.c_from_header(header, owner=True)
         return instance
 
     @staticmethod
     def from_ptr(uintptr_t addr):
-        cdef md_variant* header = <md_variant*> addr
+        cdef const md_variant* header = <const md_variant*> addr
         cdef MarketData instance = MarketData.c_from_header(header, owner=False)
         return instance
 
@@ -400,12 +400,13 @@ cdef class MarketData:
             return None
 
         def __set__(self, str value):
+            cdef md_variant* header = <md_variant*> self.header
             if value is None:
-                self.header.meta_info.ticker = NULL
+                header.meta_info.ticker = NULL
                 return
             cdef const char* scr = PyUnicode_AsUTF8(value)
             cdef const char* istr = c_istr_synced(SHM_POOL if MD_CFG_SHARED else HEAP_POOL, scr, NULL)
-            self.header.meta_info.ticker = istr
+            header.meta_info.ticker = istr
 
     property timestamp:
         def __get__(self):
@@ -421,7 +422,7 @@ cdef class MarketData:
 
     property session_datetime:
         def __get__(self):
-            return SessionDateTime.c_from_header(&self.header.meta_info.dt, False)
+            return SessionDateTime.c_from_header(<session_datetime_t*> &self.header.meta_info.dt, False)
 
     property dtype:
         def __get__(self):
@@ -433,7 +434,7 @@ cdef class MarketData:
 
     property market_time:
         def __get__(self):
-            cdef session_datetime_t* dt = &self.header.meta_info.dt
+            cdef const session_datetime_t* dt = &self.header.meta_info.dt
             return datetime(dt.date.year, dt.date.month, dt.date.day, dt.time.hour, dt.time.minute, dt.time.second, dt.time.nanosecond // 1000, PROFILE.time_zone)
 
     property market_price:
@@ -467,7 +468,7 @@ cdef class FilterMode:
         self.frozen = True
 
     @staticmethod
-    cdef inline bint c_mask_data(md_variant* market_data, md_filter_flag filter_mode):
+    cdef inline bint c_mask_data(const md_variant* market_data, md_filter_flag filter_mode):
         cdef c_bool passed = c_md_filter(market_data, filter_mode)
         return passed
 
