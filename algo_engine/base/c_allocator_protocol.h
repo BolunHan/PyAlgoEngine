@@ -1,6 +1,7 @@
 #ifndef C_AE_ALLOCATOR_PROTOCOL_H
 #define C_AE_ALLOCATOR_PROTOCOL_H
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,6 +24,10 @@
 #define MD_DEALLOC_MAGIC 0xDEADDEADULL
 #endif
 
+#ifndef MD_DECREF_AUTOFREE
+#define MD_DECREF_AUTOFREE 1
+#endif
+
 // ========== Structs ==========
 
 typedef struct allocator_protocol {
@@ -36,17 +41,22 @@ typedef struct allocator_protocol {
 #if MD_ALLOC_VIGILANT > 0
     uint64_t magic;
 #endif
-    char buf[];
+    _Atomic int64_t ref_count;
+    char            buf[];
 } allocator_protocol;
 
 // ========== Forward Declaration ==========
 
 static inline allocator_protocol* c_md_allocator_protocol_new(size_t size, shm_allocator_ctx* shm_allocator, heap_allocator* heap_allocator, bool with_lock);
 static inline void                c_md_allocator_protocol_free(allocator_protocol* protocol);
+static inline int64_t             c_md_allocator_protocol_acquire_owner(allocator_protocol* protocol);
+static inline int64_t             c_md_allocator_protocol_release_owner(allocator_protocol* protocol);
 
 static inline allocator_protocol* c_md_protocol_from_ptr(const void* ptr);
 static inline void*               c_md_alloc(size_t size, allocator_protocol* schematic);
 static inline void                c_md_free(void* ptr);
+static inline void                c_md_incref(void* ptr);
+static inline void                c_md_decref(void* ptr);
 static inline char*               c_md_strdup(const char* src, allocator_protocol* allocator);
 static inline void*               c_md_realloc(void* src, size_t new_size, allocator_protocol* allocator);
 
@@ -119,6 +129,16 @@ static inline void c_md_allocator_protocol_free(allocator_protocol* protocol) {
     }
 }
 
+static inline int64_t c_md_allocator_protocol_acquire_owner(allocator_protocol* protocol) {
+    if (!protocol) return 0;
+    return atomic_fetch_add_explicit(&protocol->ref_count, 1, memory_order_acq_rel) + 1;
+}
+
+static inline int64_t c_md_allocator_protocol_release_owner(allocator_protocol* protocol) {
+    if (!protocol) return 0;
+    return atomic_fetch_sub_explicit(&protocol->ref_count, 1, memory_order_acq_rel) - 1;
+}
+
 // ========== Public APIs ==========
 
 static inline allocator_protocol* c_md_protocol_from_ptr(const void* ptr) {
@@ -149,6 +169,7 @@ static inline void* c_md_alloc(size_t size, allocator_protocol* schematic) {
         clone = (allocator_protocol*) calloc(1, sizeof(allocator_protocol) + size);
         if (!clone) return NULL;
         clone->size = size;
+        atomic_store_explicit(&clone->ref_count, 1, memory_order_release);
 #if MD_ALLOC_VIGILANT > 0
         clone->magic = MD_ALLOC_MAGIC;
 #endif
@@ -184,6 +205,7 @@ static inline void* c_md_alloc(size_t size, allocator_protocol* schematic) {
 
     clone->with_lock = schematic->with_lock;
     clone->size = size;
+    atomic_store_explicit(&clone->ref_count, 1, memory_order_release);
 #if MD_ALLOC_VIGILANT > 0
     clone->magic = MD_ALLOC_MAGIC;
 #endif
@@ -210,7 +232,42 @@ static inline void c_md_free(void* ptr) {
     }
 #endif
 
+    atomic_store_explicit(&protocol->ref_count, 0, memory_order_release);
     c_md_allocator_protocol_free(protocol);
+}
+
+static inline void c_md_incref(void* ptr) {
+    if (!ptr) return;
+    allocator_protocol* protocol = c_md_protocol_from_ptr(ptr);
+    int64_t             ref_count = c_md_allocator_protocol_acquire_owner(protocol);
+
+#if MD_ALLOC_VIGILANT > 0
+    if (ref_count <= 1) {
+        fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: incref on non-owned allocator protocol (new_ref_count=%lld)!\n", (long long) ref_count);
+        fflush(stderr);
+        abort();
+    }
+#endif
+}
+
+static inline void c_md_decref(void* ptr) {
+    if (!ptr) return;
+    allocator_protocol* protocol = c_md_protocol_from_ptr(ptr);
+    int64_t             ref_count = c_md_allocator_protocol_release_owner(protocol);
+
+#if MD_ALLOC_VIGILANT > 0
+    if (ref_count < 0) {
+        fprintf(stderr, "[MD_ALLOC_VIGILANT] ERROR: decref on unowned allocator protocol (new_ref_count=%lld)!\n", (long long) ref_count);
+        fflush(stderr);
+        abort();
+    }
+#endif
+
+#if MD_DECREF_AUTOFREE > 0
+    if (ref_count == 0) {
+        c_md_allocator_protocol_free(protocol);
+    }
+#endif
 }
 
 static inline char* c_md_strdup(const char* src, allocator_protocol* allocator) {
