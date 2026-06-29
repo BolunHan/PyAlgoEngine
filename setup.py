@@ -9,8 +9,15 @@ from Cython.Build import cythonize
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
+with_annotation = False
+n_threads = max(1, os.cpu_count() - 2)
+
 
 class BuildExtWithConfig(build_ext):
+    def initialize_options(self):
+        super().initialize_options()
+        self.parallel = n_threads
+
     def run(self):
         self.pre_compile()
 
