@@ -1,4 +1,4 @@
-#include "c_ex_profile_cn.h"
+#include "./c_ex_profile_cn.h"
 
 // ========== Pre-defined Calendar Events ==========
 

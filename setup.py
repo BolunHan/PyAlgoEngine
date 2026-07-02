@@ -240,13 +240,11 @@ ext_modules.extend(
 # Define C Extensions
 # =============================
 
-pass
+ext_modules.extend(c_extensions)
 
 # =============================
 # Setup Function
 # =============================
-
-ext_modules.extend(c_extensions)
 
 setup(
     name="algo_engine",
