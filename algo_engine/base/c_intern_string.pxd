@@ -8,7 +8,7 @@ cdef extern from "pthread.h":
         pass
 
 
-cdef extern from "c_intern_string.h":
+cdef extern from "algo_engine/base/c_intern_string.h":
     # === Constants ===
     size_t ISTR_INITIAL_CAPACITY
 

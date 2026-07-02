@@ -4,7 +4,7 @@ from cpython.datetime cimport datetime as py_datetime, date as py_date, time as 
 from libc.stdint cimport uint8_t, uint16_t, uint32_t, int64_t, uintptr_t
 
 
-cdef extern from "c_ex_profile_base.h":
+cdef extern from "algo_engine/exchange_profile/c_ex_profile_base.h":
     const double SECONDS_PER_DAY
     const double SECONDS_PER_HOUR
     const double SECONDS_PER_MINUTE
@@ -182,7 +182,7 @@ cdef extern from "c_ex_profile_base.h":
     int c_ex_profile_session_datetime_update(session_datetime_t* dt, double unix_ts) noexcept nogil
 
 
-cdef extern from "c_ex_profile_cn.h":
+cdef extern from "algo_engine/exchange_profile/c_ex_profile_cn.h":
     extern const exchange_profile EX_PROFILE_CN
 
     c_bool c_ex_profile_cn_date_in_list(const session_date_t* date, const session_date_t* date_list, size_t n) noexcept nogil

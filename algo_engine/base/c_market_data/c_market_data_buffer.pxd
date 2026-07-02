@@ -6,7 +6,7 @@ from ..c_intern_string cimport istr_map
 from .c_market_data cimport md_variant
 
 
-cdef extern from "c_market_data_buffer.h":
+cdef extern from "algo_engine/base/c_market_data/c_market_data_buffer.h":
     size_t MD_BUF_PTR_DEFAULT_CAP
     size_t MD_BUF_DATA_DEFAULT_CAP
 

@@ -10,7 +10,7 @@ from ..c_intern_string cimport C_POOL as SHM_POOL, C_INTRA_POOL as HEAP_POOL, c_
 from ...exchange_profile.c_exchange_profile cimport session_datetime_t, session_type, c_ex_profile_unix_to_datetime
 
 
-cdef extern from "c_market_data_config.h":
+cdef extern from "algo_engine/base/c_market_data/c_market_data_config.h":
     const c_bool DEBUG
     const size_t BOOK_SIZE
     const size_t ID_SIZE
@@ -24,7 +24,7 @@ cdef extern from "c_market_data_config.h":
 
 
 # Declare external constants
-cdef extern from "c_market_data.h":
+cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
     const char* dtype_name_internal
     const char* dtype_name_transaction
     const char* dtype_name_order

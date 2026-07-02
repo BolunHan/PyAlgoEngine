@@ -5,7 +5,7 @@ from .c_heap_allocator cimport heap_allocator, C_ALLOCATOR as HEAP_ALLOCATOR
 from .c_shm_allocator cimport shm_allocator, shm_allocator_ctx, C_ALLOCATOR as SHM_ALLOCATOR
 
 
-cdef extern from "c_allocator_protocol.h":
+cdef extern from "algo_engine/base/c_allocator_protocol.h":
     uint8_t MD_ALLOC_VIGILANT
     uint64_t MD_ALLOC_MAGIC
 
