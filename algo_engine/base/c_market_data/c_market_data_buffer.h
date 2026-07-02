@@ -11,8 +11,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "c_intern_string.h"
-#include "c_market_data.h"
+#include "../c_intern_string.h"
+#include "./c_market_data.h"
 
 #ifndef MD_BUF_PTR_DEFAULT_CAP
 #define MD_BUF_PTR_DEFAULT_CAP 16

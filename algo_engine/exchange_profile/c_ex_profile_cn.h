@@ -1,7 +1,7 @@
 #ifndef C_EX_PROFILE_CN_H
 #define C_EX_PROFILE_CN_H
 
-#include "c_ex_profile_base.h"
+#include "./c_ex_profile_base.h"
 
 #ifndef EX_PROFILE_CN_PROFILE_MIN_YEAR
 #define EX_PROFILE_CN_PROFILE_MIN_YEAR ((uint16_t) 1991)
