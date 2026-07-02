@@ -1,4 +1,5 @@
 import os
+import platform
 import re
 import shutil
 import sys
@@ -10,11 +11,25 @@ from Cython.Build import cythonize
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
+# ==============================
+# Setup Configuration
+# ==============================
+
 WITH_ANNOTATION = False
+COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native', '-ffast-math']
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
 N_THREADS = max(1, N_CORES - 2)
 __VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / "algo_engine" / "__init__.py").read_text(), re.MULTILINE)) else "unknown"
+
+ext_modules = []
+c_extensions = []
+cython_extension = []
+
+
+# ==============================
+# Custom Build Extension Class
+# ==============================
 
 
 class BuildExtWithConfig(build_ext):
@@ -91,128 +106,150 @@ class BuildExtWithConfig(build_ext):
             shutil.copyfile(infra_pxd, init_pxd)
 
 
-# Define the extensions
-extensions = []
+# =============================
+# Define Cython Extensions
+# =============================
 
-if os.name == 'posix':
-    extensions.extend([
-        # === Base Cython Extensions ===
-        Extension(
-            name="algo_engine.base.c_shm_allocator",
-            sources=["algo_engine/base/c_shm_allocator.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_heap_allocator",
-            sources=["algo_engine/base/c_heap_allocator.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_allocator_protocol",
-            sources=["algo_engine/base/c_allocator_protocol.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_intern_string",
-            sources=["algo_engine/base/c_intern_string.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        # === Exchange Profile Cython Extensions ===
-        Extension(
-            name="algo_engine.exchange_profile.c_exchange_profile",
-            sources=["algo_engine/exchange_profile/c_exchange_profile.pyx",
-                     "algo_engine/exchange_profile/c_ex_profile_base.c",
-                     "algo_engine/exchange_profile/c_ex_profile_cn.c"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.exchange_profile.c_profile_dispatcher",
-            sources=["algo_engine/exchange_profile/c_profile_dispatcher.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.exchange_profile.c_profile_default",
-            sources=["algo_engine/exchange_profile/c_profile_default.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.exchange_profile.c_profile_cn",
-            sources=["algo_engine/exchange_profile/c_profile_cn.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        # === Market Data Cython Extensions ===
-        Extension(
-            name="algo_engine.base.c_market_data.c_market_data",
-            sources=["algo_engine/base/c_market_data/c_market_data.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_market_data.c_internal",
-            sources=["algo_engine/base/c_market_data/c_internal.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_market_data.c_transaction",
-            sources=["algo_engine/base/c_market_data/c_transaction.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_market_data.c_tick",
-            sources=["algo_engine/base/c_market_data/c_tick.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_market_data.c_candlestick",
-            sources=["algo_engine/base/c_market_data/c_candlestick.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_market_data.c_trade_utils",
-            sources=["algo_engine/base/c_market_data/c_trade_utils.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        Extension(
-            name="algo_engine.base.c_market_data.c_market_data_buffer",
-            sources=["algo_engine/base/c_market_data/c_market_data_buffer.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        # === MDS Cython Extensions ===
-        Extension(
-            name="algo_engine.engine.c_market_engine",
-            sources=["algo_engine/engine/c_market_engine.pyx"],
-            include_dirs=[REPO_ROOT],
-            extra_compile_args=["-O3"]
-        ),
-        # === EventEngine Integration Cython Extensions ===
-        Extension(
-            name="algo_engine.engine.c_event_engine",
-            sources=["algo_engine/engine/c_event_engine.pyx"],
-            include_dirs=[REPO_ROOT, *event_engine.get_include()],
-            extra_compile_args=["-O3"]
-        )
-    ])
+
+cython_extension.extend([
+    # === Base Cython Extensions ===
+    Extension(
+        name="algo_engine.base.c_shm_allocator",
+        sources=["algo_engine/base/c_shm_allocator.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_heap_allocator",
+        sources=["algo_engine/base/c_heap_allocator.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_allocator_protocol",
+        sources=["algo_engine/base/c_allocator_protocol.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_intern_string",
+        sources=["algo_engine/base/c_intern_string.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === Exchange Profile Cython Extensions ===
+    Extension(
+        name="algo_engine.exchange_profile.c_exchange_profile",
+        sources=["algo_engine/exchange_profile/c_exchange_profile.pyx",
+                 "algo_engine/exchange_profile/c_ex_profile_base.c",
+                 "algo_engine/exchange_profile/c_ex_profile_cn.c"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.exchange_profile.c_profile_dispatcher",
+        sources=["algo_engine/exchange_profile/c_profile_dispatcher.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.exchange_profile.c_profile_default",
+        sources=["algo_engine/exchange_profile/c_profile_default.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.exchange_profile.c_profile_cn",
+        sources=["algo_engine/exchange_profile/c_profile_cn.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === Market Data Cython Extensions ===
+    Extension(
+        name="algo_engine.base.c_market_data.c_market_data",
+        sources=["algo_engine/base/c_market_data/c_market_data.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_market_data.c_internal",
+        sources=["algo_engine/base/c_market_data/c_internal.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_market_data.c_transaction",
+        sources=["algo_engine/base/c_market_data/c_transaction.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_market_data.c_tick",
+        sources=["algo_engine/base/c_market_data/c_tick.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_market_data.c_candlestick",
+        sources=["algo_engine/base/c_market_data/c_candlestick.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_market_data.c_trade_utils",
+        sources=["algo_engine/base/c_market_data/c_trade_utils.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.base.c_market_data.c_market_data_buffer",
+        sources=["algo_engine/base/c_market_data/c_market_data_buffer.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === MDS Cython Extensions ===
+    Extension(
+        name="algo_engine.engine.c_market_engine",
+        sources=["algo_engine/engine/c_market_engine.pyx"],
+        include_dirs=[REPO_ROOT],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === EventEngine Integration Cython Extensions ===
+    Extension(
+        name="algo_engine.engine.c_event_engine",
+        sources=["algo_engine/engine/c_event_engine.pyx"],
+        include_dirs=[REPO_ROOT, *event_engine.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    )
+])
+
+ext_modules.extend(
+    cythonize(
+        cython_extension,
+        annotate=WITH_ANNOTATION,
+        compiler_directives={
+            "language_level": "3",
+            'embedsignature': True
+        },
+        force="--force" in sys.argv,
+        # nthreads=N_THREADS,
+    )
+)
+
+# =============================
+# Define C Extensions
+# =============================
+
+pass
+
+# =============================
+# Setup Function
+# =============================
+
+ext_modules.extend(c_extensions)
 
 setup(
     name="algo_engine",
-    ext_modules=cythonize(
-        extensions,
-        annotate=WITH_ANNOTATION,
-        force="--force" in sys.argv
-    ),
+    ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtWithConfig},
 )
