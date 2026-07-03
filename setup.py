@@ -19,7 +19,7 @@ PACKAGE_NAME = "algo_engine"
 DISPLAY_NAME = "PyAlgoEngine"
 
 WITH_ANNOTATION = False
-COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native', '-ffast-math']
+COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native']
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
 N_THREADS = max(1, N_CORES - 2)
