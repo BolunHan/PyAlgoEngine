@@ -15,12 +15,15 @@ from setuptools.command.build_ext import build_ext
 # Setup Configuration
 # ==============================
 
+PACKAGE_NAME = "algo_engine"
+DISPLAY_NAME = "PyAlgoEngine"
+
 WITH_ANNOTATION = False
 COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native', '-ffast-math']
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
 N_THREADS = max(1, N_CORES - 2)
-__VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / "algo_engine" / "__init__.py").read_text(), re.MULTILINE)) else "unknown"
+__VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / PACKAGE_NAME / '__init__.py').read_text(), re.MULTILINE)) else "unknown"
 
 ext_modules = []
 c_extensions = []
@@ -28,7 +31,7 @@ cython_extension = []
 
 
 # ==============================
-# Custom Build Commands
+# Custom Build Extension Class
 # ==============================
 
 
@@ -39,13 +42,11 @@ class BuildExtWithConfig(build_ext):
 
     def run(self):
         self.pre_compile()
-        self.collect_sources()
 
         super().run()
 
         self.post_compile()
-        # self.cleanup_sources()
-        print(f"[build_py] <PyAlgoEngine> v{__VERSION__} setup complete. Built {len(self.extensions)} Cython extensions.")
+        print(f"[build_py] <{DISPLAY_NAME}> v{__VERSION__} setup complete. Built {len(self.extensions)} Cython extensions.")
 
     def build_extensions(self):
         macros = []
@@ -68,60 +69,7 @@ class BuildExtWithConfig(build_ext):
             ]
         )
 
-    def collect_sources(self) -> None:
-        """Scan ``algo_engine/`` for C source files (``*.h``, ``*.c``, ``*.cpp``)
-        and mirror them under ``algo_engine/include/`` so every Cython/C extension
-        can consume a single, version-controlled include root.
-
-        ``algo_engine/base/c_allocator_protocol.h``
-            -> ``algo_engine/include/algo_engine/base/c_allocator_protocol.h``
-
-        ``algo_engine/base/c_shm_allocator.c``
-            -> ``algo_engine/include/algo_engine/base/c_shm_allocator.c``
-
-        The mirror is rebuilt from scratch on every build so files deleted
-        upstream do not linger as stale copies.
-        """
-        project_root = Path(__file__).resolve().parent
-        source_root = project_root / "algo_engine"
-        include_root = project_root / "algo_engine" / "include"
-        mirror_root = include_root / "algo_engine"
-
-        # Skip the generated include tree itself, bytecode caches, and the
-        # deprecated subtree (kept out of the packaged layout in pyproject.toml).
-        exclude_dirs = {"include", "__pycache__", "c_market_data_deprecated"}
-
-        if mirror_root.exists():
-            shutil.rmtree(mirror_root)
-
-        copied = 0
-        source_patterns = ["*.h", "*.c", "*.cpp"]
-        for pattern in source_patterns:
-            for source_file in sorted(source_root.rglob(pattern)):
-                rel_parts = source_file.relative_to(source_root).parts
-                if any(part in exclude_dirs for part in rel_parts):
-                    continue
-                dest = include_root.joinpath(*source_file.relative_to(project_root).parts)
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_file, dest)
-                copied += 1
-
-        print(f"[build_py] <PyAlgoEngine> mirrored {copied} C source file(s) -> {include_root.relative_to(project_root)}")
-
-    def cleanup_sources(self) -> None:
-        """Remove the generated ``algo_engine/include/`` mirror.
-
-        ``collect_sources`` rebuilds it from scratch on every build, so it is a
-        pure derived artifact and should not linger in the source tree (or be
-        committed). Downstream consumers resolve headers through
-        ``algo_engine.get_include()`` at build time, when the mirror is present.
-        """
-        project_root = Path(__file__).resolve().parent
-        include_root = project_root / "algo_engine" / "include"
-
-        if include_root.exists():
-            shutil.rmtree(include_root)
-            print(f"[build_py] <PyAlgoEngine> cleaned generated include mirror at {include_root.relative_to(project_root)}")
+        self.collect_sources()
 
     def post_compile(self):
         # Monkey hack the "__init__.pxd" issue:
@@ -133,6 +81,47 @@ class BuildExtWithConfig(build_ext):
                 "algo_engine.engine"
             ]
         )
+
+        # Inject the generated include/ mirror into build_lib so it gets packaged
+        self.inject_sources()
+
+    def collect_sources(self) -> None:
+        project_root = Path(__file__).resolve().parent
+        source_root = project_root / PACKAGE_NAME
+        include_root = project_root / PACKAGE_NAME / "include"
+        mirror_root = include_root / PACKAGE_NAME
+
+        if mirror_root.exists():
+            shutil.rmtree(mirror_root)
+
+        copied = 0
+        source_patterns = ["*.h", "*.c", "*.cpp"]
+        for pattern in source_patterns:
+            for source_file in sorted(source_root.rglob(pattern)):
+                # Skip files inside the generated include_root
+                if include_root in source_file.parents:
+                    continue
+                dest = include_root.joinpath(*source_file.relative_to(project_root).parts)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_file, dest)
+                copied += 1
+
+        print(f"[build_py] <{DISPLAY_NAME}> mirrored {copied} C source file(s) -> {include_root.relative_to(project_root)}")
+
+    def inject_sources(self) -> None:
+        project_root = Path(__file__).resolve().parent
+        include_root = project_root / PACKAGE_NAME / "include"
+        mirror_root = include_root / PACKAGE_NAME
+
+        if not mirror_root.exists():
+            return
+
+        dest_root = Path(self.build_lib, PACKAGE_NAME, "include", PACKAGE_NAME)
+        if dest_root.exists():
+            shutil.rmtree(dest_root)
+
+        shutil.copytree(mirror_root, dest_root)
+        print(f"[build_py] <{DISPLAY_NAME}> injected include mirror -> {dest_root.relative_to(Path(self.build_lib))}")
 
     def remove_pxd(self, modules: list[str]) -> None:
         project_root = Path(__file__).resolve().parent
@@ -304,7 +293,7 @@ ext_modules.extend(c_extensions)
 # =============================
 
 setup(
-    name="algo_engine",
+    name=PACKAGE_NAME,
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtWithConfig},
 )
