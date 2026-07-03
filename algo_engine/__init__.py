@@ -1,4 +1,4 @@
-__version__ = "0.11.0"
+__version__ = "0.11.1.post1"
 
 import functools
 import logging
@@ -66,6 +66,13 @@ def get_include() -> list[str]:
         os.path.realpath(res_dir / 'exchange_profile'),
         os.path.realpath(res_dir / 'engine'),
     ]
+
+    # Auto-generated unified include root (mirrors every C header under
+    # algo_engine/include/algo_engine/...). Populated by setup.py's
+    # collect_headers step; expose it to downstream builds when present.
+    include_root = os.path.realpath(res_dir / 'include')
+    if os.path.isdir(include_root):
+        scr_dir.append(include_root)
 
     import event_engine
     dep_dir = event_engine.get_include()
