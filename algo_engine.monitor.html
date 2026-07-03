@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.monitor package &mdash; PyAlgoEngine 0.10.8 documentation</title>
+  <title>algo_engine.monitor package &mdash; PyAlgoEngine 0.11.1.post2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a1f5164c"></script>
+      <script src="_static/documentation_options.js?v=2f4dfa49"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -138,7 +138,7 @@
 <dd><p>Bases: <a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataMonitor" title="algo_engine.engine.c_market_engine.MarketDataMonitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketDataMonitor</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.__init__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">monitor_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.__init__" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -173,12 +173,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.clear">
-<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.clear" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.clear" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.value">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_tick.TickData" title="algo_engine.base.c_market_data.c_tick.TickData"><span class="pre">TickData</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.SyntheticOrderBookMonitor.value" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">SyntheticOrderBookMonitor.value</span> <span class="pre">-&gt;</span> <span class="pre">dict[str,</span> <span class="pre">float]</span> <span class="pre">|</span> <span class="pre">float</span></span></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -189,7 +189,7 @@
 <dd><p>Bases: <a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataMonitor" title="algo_engine.engine.c_market_engine.MarketDataMonitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketDataMonitor</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.__init__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">monitor_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.__init__" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -209,12 +209,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.clear">
-<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.clear" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.clear" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.value">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_candlestick.BarData" title="algo_engine.base.c_market_data.c_candlestick.BarData"><span class="pre">BarData</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#algo_engine.monitor.advanced_data_interface.MinuteBarMonitor.value" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">MinuteBarMonitor.value</span> <span class="pre">-&gt;</span> <span class="pre">dict[str,</span> <span class="pre">float]</span> <span class="pre">|</span> <span class="pre">float</span></span></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -234,7 +234,7 @@
 <dd><p>Bases: <a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataMonitor" title="algo_engine.engine.c_market_engine.MarketDataMonitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketDataMonitor</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.SyntheticOrderBookMonitor.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.SyntheticOrderBookMonitor.__init__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">monitor_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.SyntheticOrderBookMonitor.__init__" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -269,12 +269,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.SyntheticOrderBookMonitor.clear">
-<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.SyntheticOrderBookMonitor.clear" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#SyntheticOrderBookMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.SyntheticOrderBookMonitor.clear" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="algo_engine.monitor.SyntheticOrderBookMonitor.value">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_tick.TickData" title="algo_engine.base.c_market_data.c_tick.TickData"><span class="pre">TickData</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#algo_engine.monitor.SyntheticOrderBookMonitor.value" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">SyntheticOrderBookMonitor.value</span> <span class="pre">-&gt;</span> <span class="pre">dict[str,</span> <span class="pre">float]</span> <span class="pre">|</span> <span class="pre">float</span></span></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -285,7 +285,7 @@
 <dd><p>Bases: <a class="reference internal" href="algo_engine.engine.html#algo_engine.engine.c_market_engine.MarketDataMonitor" title="algo_engine.engine.c_market_engine.MarketDataMonitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketDataMonitor</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.MinuteBarMonitor.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.MinuteBarMonitor.__init__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">monitor_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.MinuteBarMonitor.__init__" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -305,12 +305,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.monitor.MinuteBarMonitor.clear">
-<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.MinuteBarMonitor.clear" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/algo_engine/monitor/advanced_data_interface.html#MinuteBarMonitor.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#algo_engine.monitor.MinuteBarMonitor.clear" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="algo_engine.monitor.MinuteBarMonitor.value">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_candlestick.BarData" title="algo_engine.base.c_market_data.c_candlestick.BarData"><span class="pre">BarData</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#algo_engine.monitor.MinuteBarMonitor.value" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">MinuteBarMonitor.value</span> <span class="pre">-&gt;</span> <span class="pre">dict[str,</span> <span class="pre">float]</span> <span class="pre">|</span> <span class="pre">float</span></span></dt>
 <dd></dd></dl>
 
 </dd></dl>

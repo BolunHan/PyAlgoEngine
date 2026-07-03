@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>algo_engine.base package &mdash; PyAlgoEngine 0.10.8 documentation</title>
+  <title>algo_engine.base package &mdash; PyAlgoEngine 0.11.1.post2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a1f5164c"></script>
+      <script src="_static/documentation_options.js?v=2f4dfa49"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -1002,27 +1002,27 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.allocated">
-<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.allocated" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.allocated" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.calloc">
-<span class="sig-name descname"><span class="pre">calloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.calloc" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_heap_allocator.HeapMemoryBlock" title="algo_engine.base.c_heap_allocator.HeapMemoryBlock"><span class="pre">HeapMemoryBlock</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.calloc" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.extend">
-<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.extend" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage" title="algo_engine.base.c_heap_allocator.HeapMemoryPage"><span class="pre">HeapMemoryPage</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.extend" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.free">
-<span class="sig-name descname"><span class="pre">free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.free" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">HeapMemoryBlock</span> <span class="pre">buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.free" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.free_list">
-<span class="sig-name descname"><span class="pre">free_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.free_list" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">free_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.free_list" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1037,17 +1037,17 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.pages">
-<span class="sig-name descname"><span class="pre">pages</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.pages" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.pages" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.reclaim">
-<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.reclaim" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.reclaim" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapAllocator.request">
-<span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_all_pages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.request" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">scan_all_pages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_heap_allocator.HeapMemoryBlock" title="algo_engine.base.c_heap_allocator.HeapMemoryBlock"><span class="pre">HeapMemoryBlock</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapAllocator.request" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1104,7 +1104,7 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapMemoryPage.allocated">
-<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage.allocated" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage.allocated" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1119,7 +1119,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapMemoryPage.from_buffer">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer_addr</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage" title="algo_engine.base.c_heap_allocator.HeapMemoryPage"><span class="pre">HeapMemoryPage</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage.from_buffer" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uintptr_t</span> <span class="pre">buffer_addr</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage" title="algo_engine.base.c_heap_allocator.HeapMemoryPage"><span class="pre">HeapMemoryPage</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage.from_buffer" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1129,7 +1129,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_heap_allocator.HeapMemoryPage.reclaim">
-<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage.reclaim" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_heap_allocator.HeapMemoryPage.reclaim" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1179,12 +1179,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_intern_string.InternStringPool.internalized">
-<span class="sig-name descname"><span class="pre">internalized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_intern_string.InternStringPool.internalized" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">internalized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_intern_string.InternStringPool.internalized" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_intern_string.InternStringPool.istr">
-<span class="sig-name descname"><span class="pre">istr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_intern_string.InternStringPool.istr" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">istr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">string</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_intern_string.InternString" title="algo_engine.base.c_intern_string.InternString"><span class="pre">InternString</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_intern_string.InternStringPool.istr" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1208,47 +1208,47 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.allocated">
-<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.allocated" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.allocated" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.calloc">
-<span class="sig-name descname"><span class="pre">calloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.calloc" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryBlock" title="algo_engine.base.c_shm_allocator.SharedMemoryBlock"><span class="pre">SharedMemoryBlock</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.calloc" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.cleanup_dangling">
-<span class="sig-name descname"><span class="pre">cleanup_dangling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.cleanup_dangling" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">cleanup_dangling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.cleanup_dangling" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.dangling">
-<span class="sig-name descname"><span class="pre">dangling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.dangling" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">dangling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.dangling" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.dangling_pages">
-<span class="sig-name descname"><span class="pre">dangling_pages</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.dangling_pages" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">dangling_pages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.dangling_pages" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.extend">
-<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.extend" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage" title="algo_engine.base.c_shm_allocator.SharedMemoryPage"><span class="pre">SharedMemoryPage</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.extend" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.free">
-<span class="sig-name descname"><span class="pre">free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.free" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">free</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SharedMemoryBlock</span> <span class="pre">buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.free" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.free_list">
-<span class="sig-name descname"><span class="pre">free_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.free_list" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">free_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.free_list" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.get_pid">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_pid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shm_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.get_pid" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_pid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">shm_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.get_pid" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1264,7 +1264,13 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.name" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>str</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.name" title="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.name">SharedMemoryAllocator.name</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.owner">
@@ -1273,7 +1279,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.pages">
-<span class="sig-name descname"><span class="pre">pages</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.pages" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.pages" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1283,7 +1289,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.reclaim">
-<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.reclaim" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.reclaim" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1303,7 +1309,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryAllocator.request">
-<span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_all_pages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.request" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">scan_all_pages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">with_lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryBlock" title="algo_engine.base.c_shm_allocator.SharedMemoryBlock"><span class="pre">SharedMemoryBlock</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryAllocator.request" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1355,32 +1361,50 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryPage.allocated">
-<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.allocated" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">allocated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.allocated" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryPage.capacity">
 <span class="sig-name descname"><span class="pre">capacity</span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.capacity" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>size_t</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.capacity" title="algo_engine.base.c_shm_allocator.SharedMemoryPage.capacity">SharedMemoryPage.capacity</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryPage.from_buffer">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer_addr</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage" title="algo_engine.base.c_shm_allocator.SharedMemoryPage"><span class="pre">SharedMemoryPage</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.from_buffer" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uintptr_t</span> <span class="pre">buffer_addr</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage" title="algo_engine.base.c_shm_allocator.SharedMemoryPage"><span class="pre">SharedMemoryPage</span></a></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.from_buffer" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryPage.name">
 <span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.name" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>str</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.name" title="algo_engine.base.c_shm_allocator.SharedMemoryPage.name">SharedMemoryPage.name</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryPage.occupied">
 <span class="sig-name descname"><span class="pre">occupied</span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.occupied" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>size_t</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.occupied" title="algo_engine.base.c_shm_allocator.SharedMemoryPage.occupied">SharedMemoryPage.occupied</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.c_shm_allocator.SharedMemoryPage.reclaim">
-<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.reclaim" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reclaim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.c_shm_allocator.SharedMemoryPage.reclaim" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -2128,7 +2152,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketData.buffer_size">
-<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">buffer_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketData.buffer_size" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">buffer_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">md_data_type</span> <span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketData.buffer_size" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2143,12 +2167,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketData.from_bytes">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketData.from_bytes" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bytes</span> <span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketData.from_bytes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketData.from_ptr">
-<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_ptr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">addr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketData.from_ptr" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_ptr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uintptr_t</span> <span class="pre">addr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketData.from_ptr" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2198,7 +2222,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketData.to_bytes">
-<span class="sig-name descname"><span class="pre">to_bytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#algo_engine.base.MarketData.to_bytes" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#algo_engine.base.MarketData.to_bytes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2254,17 +2278,17 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.all">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.all" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.all" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.disable_flag">
-<span class="sig-name descname"><span class="pre">disable_flag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_to_disable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.disable_flag" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">disable_flag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_filter_flag</span> <span class="pre">flag_to_disable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#algo_engine.base.FilterMode.disable_flag" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.enable_flags">
-<span class="sig-name descname"><span class="pre">enable_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_to_enable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.enable_flags" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">enable_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_filter_flag</span> <span class="pre">flag_to_enable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#algo_engine.base.FilterMode.enable_flags" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2274,7 +2298,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.freeze">
-<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.freeze" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.FilterMode.freeze" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2284,12 +2308,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.get_flags">
-<span class="sig-name descname"><span class="pre">get_flags</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.get_flags" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.get_flags" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.mask_data">
-<span class="sig-name descname"><span class="pre">mask_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.mask_data" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">mask_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MarketData</span> <span class="pre">market_data</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#algo_engine.base.FilterMode.mask_data" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2299,7 +2323,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.FilterMode.unfreeze">
-<span class="sig-name descname"><span class="pre">unfreeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.FilterMode.unfreeze" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">unfreeze</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.FilterMode.unfreeze" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2311,7 +2335,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.InternalData">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">InternalData</span></span><a class="headerlink" href="#algo_engine.base.InternalData" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">InternalData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint32_t</span> <span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.InternalData" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.InternalData.__init__">
@@ -2631,7 +2655,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.TransactionData">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TransactionData</span></span><a class="headerlink" href="#algo_engine.base.TransactionData" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TransactionData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_side</span> <span class="pre">side</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transaction_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buy_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sell_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TransactionData" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TransactionData.__init__">
@@ -2645,7 +2669,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TransactionData.merge">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TransactionData.merge" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list</span> <span class="pre">data_list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TransactionData.merge" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2707,7 +2731,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.OrderData">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">OrderData</span></span><a class="headerlink" href="#algo_engine.base.OrderData" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">OrderData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_side</span> <span class="pre">side</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_order_type</span> <span class="pre">order_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">md_order_type.ORDER_GENERIC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderData" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderData.__init__">
@@ -2763,7 +2787,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.TradeData">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TradeData</span></span><a class="headerlink" href="#algo_engine.base.TradeData" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TradeData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">trade_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">trade_volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_side</span> <span class="pre">trade_side</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transaction_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buy_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sell_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeData" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_transaction.TransactionData" title="algo_engine.base.c_market_data.c_transaction.TransactionData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransactionData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeData.__init__">
@@ -2789,7 +2813,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.TickDataLite">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TickDataLite</span></span><a class="headerlink" href="#algo_engine.base.TickDataLite" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TickDataLite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">last_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">bid_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">bid_volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">ask_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">ask_volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">open_price</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">prev_close</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">total_traded_volume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">total_traded_notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint64_t</span> <span class="pre">total_trade_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TickDataLite" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TickDataLite.__init__">
@@ -2864,12 +2888,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.at_level">
-<span class="sig-name descname"><span class="pre">at_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.at_level" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">at_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Py_ssize_t</span> <span class="pre">idx</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#algo_engine.base.OrderBook.at_level" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.at_price">
-<span class="sig-name descname"><span class="pre">at_price</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">price</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.at_price" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">at_price</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">price</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#algo_engine.base.OrderBook.at_price" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2884,17 +2908,17 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.from_buffer">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.from_buffer" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">const</span> <span class="pre">unsigned</span> <span class="pre">char[</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">]</span> <span class="pre">buffer</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.from_buffer" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.from_bytes">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.from_bytes" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bytes</span> <span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.from_bytes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.loc_volume">
-<span class="sig-name descname"><span class="pre">loc_volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.loc_volume" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">loc_volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">p1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.loc_volume" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2919,7 +2943,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.sort">
-<span class="sig-name descname"><span class="pre">sort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.sort" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">sort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.sort" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2929,12 +2953,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.to_bytes">
-<span class="sig-name descname"><span class="pre">to_bytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.to_bytes" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.to_bytes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.OrderBook.to_numpy">
-<span class="sig-name descname"><span class="pre">to_numpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.to_numpy" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_numpy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.OrderBook.to_numpy" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2946,7 +2970,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.TickData">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TickData</span></span><a class="headerlink" href="#algo_engine.base.TickData" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TickData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">last_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">open_price</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">prev_close</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">total_traded_volume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">total_traded_notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint64_t</span> <span class="pre">total_trade_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">total_bid_volume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">total_ask_volume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">weighted_bid_price</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">weighted_ask_price</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TickData" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TickData.__init__">
@@ -3010,7 +3034,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TickData.lite">
-<span class="sig-name descname"><span class="pre">lite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TickData.lite" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TickDataLite" title="algo_engine.base.TickDataLite"><span class="pre">TickDataLite</span></a></span></span><a class="headerlink" href="#algo_engine.base.TickData.lite" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3025,7 +3049,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TickData.parse">
-<span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TickData.parse" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict</span> <span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">void</span></span></span><a class="headerlink" href="#algo_engine.base.TickData.parse" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3077,7 +3101,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.BarData">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">BarData</span></span><a class="headerlink" href="#algo_engine.base.BarData" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">BarData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">high_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">low_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">open_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">close_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">volume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint64_t</span> <span class="pre">trade_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">start_timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bar_span</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.BarData" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.BarData.__init__">
@@ -3158,7 +3182,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.DailyBar">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">DailyBar</span></span><a class="headerlink" href="#algo_engine.base.DailyBar" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">DailyBar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">market_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">high_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">low_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">open_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">close_price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">volume</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint64_t</span> <span class="pre">trade_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">bar_span</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.DailyBar" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_candlestick.BarData" title="algo_engine.base.c_market_data.c_candlestick.BarData"><code class="xref py py-class docutils literal notranslate"><span class="pre">BarData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.DailyBar.__init__">
@@ -3325,7 +3349,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TradeReport</span></span><a class="headerlink" href="#algo_engine.base.TradeReport" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TradeReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">price</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_side</span> <span class="pre">side</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">notional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">fee</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trade_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NO_DEFAULT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport.__init__">
@@ -3339,7 +3363,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport.from_json">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.from_json" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.from_json" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3369,12 +3393,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport.reset_order_id">
-<span class="sig-name descname"><span class="pre">reset_order_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;object</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.reset_order_id" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reset_order_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NO_DEFAULT</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeReport" title="algo_engine.base.TradeReport"><span class="pre">TradeReport</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeReport.reset_order_id" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport.reset_trade_id">
-<span class="sig-name descname"><span class="pre">reset_trade_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trade_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;object</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.reset_trade_id" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reset_trade_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trade_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NO_DEFAULT</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeReport" title="algo_engine.base.TradeReport"><span class="pre">TradeReport</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeReport.reset_trade_id" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3394,12 +3418,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport.to_json">
-<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'str'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.to_json" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'str'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.to_json" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeReport.to_trade">
-<span class="sig-name descname"><span class="pre">to_trade</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeReport.to_trade" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_trade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TransactionData" title="algo_engine.base.TransactionData"><span class="pre">TransactionData</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeReport.to_trade" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3426,7 +3450,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TradeInstruction</span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">TradeInstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_side</span> <span class="pre">side</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_order_type</span> <span class="pre">order_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">md_order_type.ORDER_GENERIC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">limit_price</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NO_DEFAULT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="algo_engine.base.c_market_data.html#algo_engine.base.c_market_data.c_market_data.MarketData" title="algo_engine.base.c_market_data.c_market_data.MarketData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarketData</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.__init__">
@@ -3435,7 +3459,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.add_trade">
-<span class="sig-name descname"><span class="pre">add_trade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trade_report</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.add_trade" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add_trade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">TradeReport</span> <span class="pre">trade_report</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.add_trade" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3445,12 +3469,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.cancel_order">
-<span class="sig-name descname"><span class="pre">cancel_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.cancel_order" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">cancel_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.cancel_order" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.canceled">
-<span class="sig-name descname"><span class="pre">canceled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.canceled" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">canceled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.canceled" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3470,7 +3494,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.fill">
-<span class="sig-name descname"><span class="pre">fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trade_report</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.fill" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">TradeReport</span> <span class="pre">trade_report</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.fill" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3495,7 +3519,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.from_json">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.from_json" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.from_json" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3560,17 +3584,17 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.reset">
-<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.reset" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.reset" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.reset_order_id">
-<span class="sig-name descname"><span class="pre">reset_order_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;object</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.reset_order_id" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">reset_order_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NO_DEFAULT</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.reset_order_id" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.set_order_state">
-<span class="sig-name descname"><span class="pre">set_order_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.set_order_state" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set_order_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">md_order_state</span> <span class="pre">order_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timestamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">NAN</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.base.TradeInstruction" title="algo_engine.base.TradeInstruction"><span class="pre">TradeInstruction</span></a></span></span><a class="headerlink" href="#algo_engine.base.TradeInstruction.set_order_state" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3595,7 +3619,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.TradeInstruction.to_json">
-<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'str'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.to_json" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'str'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.TradeInstruction.to_json" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3662,7 +3686,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBuffer.cache">
-<span class="sig-name descname"><span class="pre">cache</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.cache" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.cache" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3677,12 +3701,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBuffer.from_bytes">
-<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.from_bytes" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bytes</span> <span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.from_bytes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBuffer.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.get" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Py_ssize_t</span> <span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.get" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3702,17 +3726,17 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBuffer.put">
-<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.put" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MarketData</span> <span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.put" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBuffer.sort">
-<span class="sig-name descname"><span class="pre">sort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.sort" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">sort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.sort" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBuffer.to_bytes">
-<span class="sig-name descname"><span class="pre">to_bytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.to_bytes" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">to_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBuffer.to_bytes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -3728,12 +3752,12 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBufferCache.clear">
-<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBufferCache.clear" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBufferCache.clear" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBufferCache.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBufferCache.get" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Py_ssize_t</span> <span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBufferCache.get" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3743,7 +3767,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataBufferCache.put">
-<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBufferCache.put" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MarketData</span> <span class="pre">market_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataBufferCache.put" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3769,7 +3793,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataRingBuffer.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataRingBuffer.get" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataRingBuffer.get" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3779,7 +3803,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataRingBuffer.listen">
-<span class="sig-name descname"><span class="pre">listen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataRingBuffer.listen" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">listen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataRingBuffer.listen" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -3799,7 +3823,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataRingBuffer.put">
-<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataRingBuffer.put" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MarketData</span> <span class="pre">market_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataRingBuffer.put" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -3810,37 +3834,37 @@ OverflowError on infinities and a ValueError on NaNs.</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.disable_worker">
-<span class="sig-name descname"><span class="pre">disable_worker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">worker_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.disable_worker" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">disable_worker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">worker_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.disable_worker" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.enable_worker">
-<span class="sig-name descname"><span class="pre">enable_worker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">worker_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.enable_worker" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">enable_worker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">worker_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.enable_worker" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.is_empty">
-<span class="sig-name descname"><span class="pre">is_empty</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.is_empty" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">is_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.is_empty" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.is_full">
-<span class="sig-name descname"><span class="pre">is_full</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.is_full" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">is_full</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.is_full" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.is_worker_empty">
-<span class="sig-name descname"><span class="pre">is_worker_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">worker_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.is_worker_empty" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">is_worker_empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">worker_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.is_worker_empty" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.listen">
-<span class="sig-name descname"><span class="pre">listen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">worker_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.listen" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">listen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span> <span class="pre">worker_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.listen" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="algo_engine.base.MarketDataConcurrentBuffer.put">
-<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">market_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.put" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MarketData</span> <span class="pre">market_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">block</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.base.MarketDataConcurrentBuffer.put" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
