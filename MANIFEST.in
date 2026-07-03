@@ -3,5 +3,6 @@ include README.md
 include algo_engine/apps/backtest/static/styles/*
 include algo_engine/apps/backtest/templates/*
 exclude algo_engine/base/c_market_data/c_*.c
+include algo_engine/include/*
 exclude algo_engine/exchange_profile/c_*.c
 exclude algo_engine/engine/c_*.c
