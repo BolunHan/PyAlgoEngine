@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "./c_heap_allocator.h"
-#include "./c_shm_allocator.h"
+#include <algo_engine/base/c_heap_allocator.h>
+#include <algo_engine/base/c_shm_allocator.h>
 
 // ========== Constants ==========
 

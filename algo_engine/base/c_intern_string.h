@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "./c_allocator_protocol.h"
+#include <algo_engine/base/c_allocator_protocol.h>
 
 // ========== Constants ==========
 

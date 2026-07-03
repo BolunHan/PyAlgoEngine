@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../../exchange_profile/c_ex_profile_base.h"
-#include "../c_allocator_protocol.h"
-#include "./c_market_data_config.h"
+#include <algo_engine/base/c_allocator_protocol.h>
+#include <algo_engine/base/c_market_data/c_market_data_config.h>
+#include <algo_engine/exchange_profile/c_ex_profile_base.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
