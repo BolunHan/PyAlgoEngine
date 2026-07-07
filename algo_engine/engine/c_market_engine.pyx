@@ -1,22 +1,23 @@
 import abc
 import uuid
+from typing import Any
 
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8
+from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString
 from libc.math cimport NAN, isnan
-from libc.stdint cimport uint64_t
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy, strdup
 
+from algo_engine.base.c_market_data.c_market_data cimport c_md_dtype_name, c_md_get_price, md_data_type
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
+
 from . import LOGGER
-from ..base.c_market_data.c_market_data cimport MarketData, md_data_type, c_md_get_price, c_md_dtype_name
-from ..exchange_profile.c_exchange_profile cimport PROFILE, ExchangeProfile
 
 
 class MarketDataMonitor(object, metaclass=abc.ABCMeta):
-    def __init__(self, name: str, monitor_id: int = 0):
-        self.name: str = name
-        self.monitor_id: int = monitor_id or uuid.uuid4().int
-        self.enabled: bool = True
+    def __init__(self, name: str, monitor_id: Any = None):
+        self.name = name
+        self.monitor_id = monitor_id or uuid.uuid4()
+        self.enabled = True
 
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs):
@@ -40,38 +41,69 @@ cdef class MonitorManager:
     def __cinit__(self):
         self.monitor = {}
 
-    cdef void c_on_market_data(self, const md_variant* data_ptr):
-        self.__call__(market_data=MarketData.c_from_header(data_ptr, False))
+    # === Market Data Feed Skeleton ===
+
+    cpdef void feed_monitor(self, object monitor_id, MarketData market_data):
+        cdef object monitor = self.monitor.get(monitor_id)
+        if monitor is not None and monitor.enabled:
+            monitor.__call__(market_data)
+
+    cdef void c_on_market_data(self, const md_variant* market_data):
+        cdef MarketData py_md = MarketData.c_from_header(market_data, False)
+        cdef object monitor_id
+        for monitor_id in self.monitor:
+            self.feed_monitor(monitor_id, py_md)
+
+    cpdef void on_market_data(self, MarketData market_data):
+        cdef object monitor_id
+        for monitor_id in self.monitor:
+            self.feed_monitor(monitor_id, market_data)
 
     def __call__(self, MarketData market_data):
+        cdef object monitor_id
         for monitor_id in self.monitor:
-            self._work(monitor_id=monitor_id, market_data=market_data)
+            self.feed_monitor(monitor_id, market_data)
 
-    def __contains__(self, uint64_t monitor_id):
-        return monitor_id in self.monitor
+    # === Monitor Management ===
 
     cpdef void add_monitor(self, object monitor):
         self.monitor[monitor.monitor_id] = monitor
 
-    cpdef void pop_monitor(self, str monitor_id):
+    cpdef void pop_monitor(self, object monitor_id):
         self.monitor.pop(monitor_id)
 
     cpdef void clear_monitors(self):
         self.monitor.clear()
 
-    def _work(self, str monitor_id, MarketData market_data):
-        monitor = self.monitor.get(monitor_id)
-        if monitor is not None and monitor.enabled:
-            monitor.__call__(market_data)
+    def __contains__(self, object monitor_id):
+        return monitor_id in self.monitor
 
-    def start(self):
+    # === Lifecycle Management ===
+
+    cpdef void start(self):
         pass
 
-    def stop(self):
+    cpdef void stop(self):
         pass
 
-    def clear(self):
+    cpdef void clear(self):
         self.monitor.clear()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+    # === Monitor Value Protocol Skeleton ===
+
+    cpdef dict get_values(self):
+        cdef dict values = {}
+        cdef object monitor
+        for monitor in self.monitor.values():
+            values.update(monitor.value)
+        return values
 
     property values:
         def __get__(self):
@@ -162,7 +194,7 @@ cdef class MarketDataService:
     def __call__(self, MarketData market_data):
         self.c_on_market_data(market_data.header)
 
-    def __getitem__(self, str monitor_id):
+    def __getitem__(self, object monitor_id):
         return self.monitor[monitor_id]
 
     cpdef void on_internal_data(self, InternalData internal_data):
@@ -182,16 +214,31 @@ cdef class MarketDataService:
             return NAN
         return subscription.last_price
 
-    def add_monitor(self, monitor: MarketDataMonitor, **kwargs):
-        self.monitor[monitor.monitor_id] = monitor
-        self.monitor_manager.add_monitor(monitor, **kwargs)
-        # remove the mds attr from the monitor as it is misleading
-        # when using the multiprocessing the state of mds in child process is not complete.
-        # thus using it will cause problem.
-        # an alternative is to create a shared contexts monitor.
-        # monitor.mds = self
+    cpdef void set_manager(self, MonitorManager manager):
+        cdef dict tmp_monitor = {}
 
-    def pop_monitor(self, monitor: MarketDataMonitor = None, monitor_id: str = None, monitor_name: str = None):
+        for monitor_id, monitor in self.monitor.items():
+            self.pop_monitor(monitor_id)
+            tmp_monitor[monitor_id] = monitor
+
+        self.monitor_manager = manager
+
+        for monitor_id, monitor in tmp_monitor.items():
+            self.add_monitor(monitor)
+
+    cpdef void add_monitor(self, object monitor):
+        cdef object monitor_id = monitor.monitor_id
+        if monitor_id in self.monitor:
+            raise KeyError(f'monitor_id {monitor_id} already exists.')
+        self.monitor[monitor_id] = monitor
+        self.monitor_manager.add_monitor(monitor)
+
+    cpdef void pop_monitor(
+            self,
+            object monitor=None,
+            object monitor_id=None,
+            str monitor_name=None
+    ):
         if monitor_id is not None:
             pass
         elif monitor_name is not None:
@@ -204,12 +251,12 @@ cdef class MarketDataService:
             monitor_id = monitor.monitor_id
         else:
             LOGGER.error('must assign a monitor, or monitor_id, or monitor_name to pop.')
-            return None
+            return
 
         self.monitor.pop(monitor_id)
         self.monitor_manager.pop_monitor(monitor_id)
 
-    def clear(self):
+    cpdef void clear(self):
         cdef size_t i
         cdef mds_subscription* subscription
         for i in range(self.n_subscribed):

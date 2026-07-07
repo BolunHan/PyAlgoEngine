@@ -1,7 +1,8 @@
 import abc
-from datetime import datetime, date
+from datetime import date, datetime
+from typing import Any
 
-from algo_engine.base import MarketData, InternalData
+from algo_engine.base import InternalData, MarketData
 from algo_engine.exchange_profile import ExchangeProfile
 
 MDS: MarketDataService
@@ -24,12 +25,21 @@ class MarketDataMonitor(metaclass=abc.ABCMeta):
 
     Attributes:
         name (str): Unique name of the monitor (not enforced).
-        monitor_id (str): Unique identifier, auto-generated if not provided.
+        monitor_id (Any): Unique identifier, auto-generated if not provided.
         enabled (bool): Whether the monitor is active (default: True).
     """
     name: str
-    monitor_id: str
+    monitor_id: Any
     enabled: bool
+
+    def __init__(self, name: str, monitor_id: Any = None):
+        """
+        Initialize the monitor.
+
+        Args:
+            name (str): Unique name of the monitor.
+            monitor_id (Any): Unique identifier, auto-generated if not provided.
+        """
 
     @abc.abstractmethod
     def __call__(self, market_data: MarketData, **kwargs):
@@ -76,11 +86,28 @@ class MonitorManager(object):
     This is a basic, single-threaded implementation. It is typically used as a component of MDS.
 
     Attributes:
-        monitor (dict[str, MarketDataMonitor]): Registered monitors.
+        monitor (dict[Any, MarketDataMonitor]): Registered monitors.
     """
-    monitor: dict[str, MarketDataMonitor]
+    monitor: dict[Any, MarketDataMonitor]
 
     def __call__(self, market_data: MarketData):
+        """
+        Dispatch market data to all registered monitors.
+
+        Args:
+            market_data (MarketData): Incoming data.
+        """
+
+    def feed_monitor(self, monitor_id: Any, market_data: MarketData) -> None:
+        """
+        Feed market data to a specific monitor.
+
+        Args:
+            monitor_id (Any): The monitor's unique ID.
+            market_data (MarketData): Incoming data.
+        """
+
+    def on_market_data(self, market_data: MarketData) -> None:
         """
         Dispatch market data to all registered monitors.
 
@@ -96,17 +123,38 @@ class MonitorManager(object):
             monitor (MarketDataMonitor): The monitor to add.
         """
 
-    def pop_monitor(self, monitor_id: str) -> None:
+    def pop_monitor(self, monitor_id: Any) -> None:
         """
         Unregister a monitor by ID.
 
         Args:
-            monitor_id (str): ID of the monitor to remove.
+            monitor_id (Any): ID of the monitor to remove.
         """
 
     def clear_monitors(self) -> None:
         """
-        Clear all monitors
+        Clear all monitors.
+        """
+
+    def get_values(self) -> dict:
+        """
+        Collect current monitor values into a single dictionary.
+
+        Iterates over all monitors and merges their ``value`` dicts.
+
+        Returns:
+            A dictionary of aggregated monitor values.
+        """
+
+    def __contains__(self, monitor_id: Any) -> bool:
+        """
+        Check if a monitor is registered.
+
+        Args:
+            monitor_id (Any): The monitor's unique ID.
+
+        Returns:
+            True if the monitor is registered.
         """
 
     def start(self):
@@ -128,6 +176,12 @@ class MonitorManager(object):
         Clear all monitor data for graceful shutdown.
         """
 
+    def __enter__(self):
+        """Start the manager as a context manager."""
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Stop the manager when exiting the context."""
+
     @property
     def values(self) -> dict[str, float]:
         """
@@ -146,11 +200,17 @@ class MarketDataService:
     All market data–related operations should be registered here.
 
     Attributes:
-        profile (Profile): The active market profile.
-        max_subscription (int): Maximum number of subscriptions allowed.
+        profile (ExchangeProfile): The active market profile.
+        n_subscribed (int): Number of tickers currently subscribed.
+        monitor (dict): Direct reference to monitor storage.
+        monitor_manager (MonitorManager): The monitor manager in use.
+        timestamp (float): UNIX timestamp of the latest market data (NaN if uninitialized).
     """
     profile: ExchangeProfile
-    max_subscription: int
+    n_subscribed: int
+    monitor: dict[Any, MarketDataMonitor]
+    monitor_manager: MonitorManager
+    timestamp: float
 
     def __len__(self) -> int:
         """
@@ -170,12 +230,12 @@ class MarketDataService:
         """
         ...
 
-    def __getitem__(self, monitor_id: str) -> MarketDataMonitor:
+    def __getitem__(self, monitor_id: Any) -> MarketDataMonitor:
         """
         Access monitor by ID.
 
         Args:
-            monitor_id (str): Monitor's unique ID.
+            monitor_id (Any): Monitor's unique ID.
 
         Returns:
             MarketDataMonitor: The corresponding monitor.
@@ -200,6 +260,14 @@ class MarketDataService:
         """
         ...
 
+    def set_manager(self, manager: MonitorManager) -> None:
+        """
+        Replace the monitor manager, re-registering all existing monitors.
+
+        Args:
+            manager (MonitorManager): The new manager to assign.
+        """
+
     def get_market_price(self, ticker: str) -> float:
         """
         Retrieve the latest price of a ticker.
@@ -212,24 +280,33 @@ class MarketDataService:
         """
         ...
 
-    def add_monitor(self, monitor: MarketDataMonitor, **kwargs) -> None:
+    def add_monitor(self, monitor: MarketDataMonitor) -> None:
         """
         Register a monitor with the service.
 
         Note:
-            MDS and its `MonitorManager` store monitors independently.
+            MDS and its ``MonitorManager`` store monitors independently.
 
         Args:
             monitor (MarketDataMonitor): The monitor to add.
         """
         ...
 
-    def pop_monitor(self, monitor_id: str, **kwargs) -> None:
+    def pop_monitor(
+            self,
+            monitor: MarketDataMonitor = None,
+            monitor_id: Any = None,
+            monitor_name: str = None,
+    ) -> None:
         """
         Remove a monitor from the service.
 
+        At least one of ``monitor``, ``monitor_id``, or ``monitor_name`` must be provided.
+
         Args:
-            monitor_id (str): The ID of the monitor to remove.
+            monitor (MarketDataMonitor): The monitor instance to remove.
+            monitor_id (Any): The ID of the monitor to remove.
+            monitor_name (str): The name of the monitor to remove.
         """
         ...
 
@@ -270,50 +347,11 @@ class MarketDataService:
         ...
 
     @property
-    def timestamp(self) -> float:
+    def subscriptions(self) -> dict[str, int]:
         """
-        UNIX timestamp of the latest market data.
+        Current subscription mapping.
 
         Returns:
-            A float, can be NAN if not initialized.
+            A dictionary mapping ticker symbols to their subscription indices.
         """
         ...
-
-    @property
-    def monitor(self) -> dict[str, MarketDataMonitor]:
-        """
-        Direct reference to monitor storage.
-
-        Returns:
-            The monitor registry. Caution: not a copy.
-        """
-
-    @property
-    def n_subscribed(self) -> int:
-        """
-        Number of tickers currently subscribed.
-
-        Returns:
-            The count of unique tickers with data.
-        """
-        ...
-
-    @property
-    def monitor_manager(self) -> MonitorManager:
-        """
-        The monitor manager in use.
-
-        Returns:
-            The current `MonitorManager` instance.
-        """
-
-    @monitor_manager.setter
-    def monitor_manager(self, manager: MonitorManager) -> None:
-        """
-        Set a new monitor manager.
-
-        This will re-register all existing monitors with the new manager.
-
-        Args:
-            manager (MonitorManager): The new manager to assign.
-        """
