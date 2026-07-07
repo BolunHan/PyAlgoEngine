@@ -139,6 +139,12 @@ def extract_macros(header_path: Path) -> List[Dict[str, str]]:
 
         value = match.group(2).strip()
 
+        # Skip empty defines (e.g. ``#define _GNU_SOURCE``) and regex
+        # artifacts where a line-continuation or preprocessor directive
+        # leaked into the value.
+        if not value or value.startswith('#'):
+            continue
+
         # Strip trailing comments from value
         if "//" in value:
             value = value.split("//")[0].strip()
