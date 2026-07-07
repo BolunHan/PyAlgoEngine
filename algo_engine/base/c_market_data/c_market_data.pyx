@@ -10,7 +10,7 @@ from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_AsUTF8AndSize, PyUnicod
 
 from cbase.allocator_protocol cimport c_ap_free
 
-from algo_engine.base.c_allocator_protocol cimport MD_CFG_FREELIST, MD_CFG_LOCKED, MD_CFG_SHARED, MD_DEFAULT_ALLOCATOR
+from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from algo_engine.base.c_intern_string cimport C_INTRA_POOL as HEAP_POOL, C_POOL as SHM_POOL, c_istr, c_istr_synced
 from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE, SessionDate, SessionDateTime, SessionTime, c_ex_profile_unix_to_datetime, session_type
 
@@ -410,7 +410,7 @@ cdef class MarketData:
                 header.meta_info.ticker = NULL
                 return
             cdef const char* scr = PyUnicode_AsUTF8(value)
-            cdef const char* istr = c_istr_synced(SHM_POOL if MD_CFG_SHARED else HEAP_POOL, scr, NULL)
+            cdef const char* istr = c_istr_synced(SHM_POOL if MD_DEFAULT_ALLOCATOR.with_shm else HEAP_POOL, scr, NULL)
             header.meta_info.ticker = istr
 
     property timestamp:
@@ -662,15 +662,15 @@ cdef class ConfigViewer:
 
     property MD_CFG_LOCKED:
         def __get__(self):
-            return MD_CFG_LOCKED
+            return MD_DEFAULT_ALLOCATOR.with_lock
 
     property MD_CFG_SHARED:
         def __get__(self):
-            return MD_CFG_SHARED
+            return MD_DEFAULT_ALLOCATOR.with_shm
 
     property MD_CFG_FREELIST:
         def __get__(self):
-            return MD_CFG_FREELIST
+            return MD_DEFAULT_ALLOCATOR.with_freelist
 
     property MD_CFG_BOOK_SIZE:
         def __get__(self):
