@@ -13,6 +13,7 @@
 
 #include <algo_engine/base/c_intern_string.h>
 #include <algo_engine/base/c_market_data/c_market_data.h>
+#include <cbase/allocator_protocol/c_allocator_protocol.h>
 
 #ifndef MD_BUF_PTR_DEFAULT_CAP
 #define MD_BUF_PTR_DEFAULT_CAP 16
@@ -140,7 +141,7 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
     }
 
     // Step 2: Check if already in SHM
-    allocator_protocol* original_allocator = c_md_protocol_from_ptr(market_data);
+    allocator_protocol* original_allocator = c_ap_protocol_from_ptr(market_data);
     if (original_allocator->shm_allocator == shm_allocator->shm_allocator) {
         market_data->meta_info.ticker = interned_ticker;
         return market_data;
@@ -166,7 +167,7 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
             size_t        ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
             md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator);
             if (!ob_shm) {
-                c_md_free(payload);
+                c_ap_free(payload);
                 return NULL;
             }
             memcpy((void*) ob_shm, (void*) src_tick->bid, ob_size);
@@ -183,9 +184,9 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
             md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator);
             if (!ob_shm) {
                 if (dst_tick->bid) {
-                    c_md_free(dst_tick->bid);
+                    c_ap_free(dst_tick->bid);
                 }
-                c_md_free(payload);
+                c_ap_free(payload);
                 return NULL;
             }
             memcpy((void*) ob_shm, (void*) src_tick->ask, ob_size);
@@ -202,18 +203,18 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
 // ========== BlockBuffer API Functions ==========
 
 static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) {
-    md_block_buffer* buffer = (md_block_buffer*) c_md_alloc(sizeof(md_block_buffer), allocator);
+    md_block_buffer* buffer = (md_block_buffer*) c_ap_alloc(sizeof(md_block_buffer), allocator);
     if (!buffer) return NULL;
 
     if (ptr_capacity) {
         buffer->ptr_array.capacity = ptr_capacity;
-        buffer->ptr_array.offsets = (size_t*) c_md_alloc(ptr_capacity * sizeof(size_t), allocator);
+        buffer->ptr_array.offsets = (size_t*) c_ap_alloc(ptr_capacity * sizeof(size_t), allocator);
         if (!buffer->ptr_array.offsets) goto oom;
     }
 
     if (data_capacity) {
         buffer->data_array.capacity = data_capacity;
-        buffer->data_array.buf = (char*) c_md_alloc(data_capacity, allocator);
+        buffer->data_array.buf = (char*) c_ap_alloc(data_capacity, allocator);
         if (!buffer->data_array.buf) goto oom;
     }
 
@@ -228,33 +229,33 @@ oom:
 
 static inline void c_md_block_buffer_free(md_block_buffer* buffer) {
     if (!buffer) return;
-    if (buffer->ptr_array.offsets) c_md_free(buffer->ptr_array.offsets);
-    if (buffer->data_array.buf) c_md_free(buffer->data_array.buf);
-    c_md_free(buffer);
+    if (buffer->ptr_array.offsets) c_ap_free(buffer->ptr_array.offsets);
+    if (buffer->data_array.buf) c_ap_free(buffer->data_array.buf);
+    c_ap_free(buffer);
 }
 
 static inline int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_ptr_capacity, size_t new_data_capacity) {
     if (!buffer) return MD_ERR_INVALID_INPUT;
 
-    allocator_protocol* allocator = c_md_protocol_from_ptr(buffer);
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(buffer);
 
     if (new_ptr_capacity > buffer->ptr_array.capacity) {
-        size_t* new_offsets = (size_t*) c_md_alloc(new_ptr_capacity * sizeof(size_t), allocator);
+        size_t* new_offsets = (size_t*) c_ap_alloc(new_ptr_capacity * sizeof(size_t), allocator);
         if (!new_offsets) return MD_ERR_OOM;
         if (buffer->ptr_array.offsets) {
             memcpy(new_offsets, buffer->ptr_array.offsets, buffer->ptr_array.capacity * sizeof(size_t));
-            c_md_free(buffer->ptr_array.offsets);
+            c_ap_free(buffer->ptr_array.offsets);
         }
         buffer->ptr_array.offsets = new_offsets;
         buffer->ptr_array.capacity = new_ptr_capacity;
     }
 
     if (new_data_capacity > buffer->data_array.capacity) {
-        char* new_data_buf = (char*) c_md_alloc(new_data_capacity, allocator);
+        char* new_data_buf = (char*) c_ap_alloc(new_data_capacity, allocator);
         if (!new_data_buf) return MD_ERR_OOM;
         if (buffer->data_array.buf) {
             memcpy(new_data_buf, buffer->data_array.buf, buffer->data_array.capacity);
-            c_md_free(buffer->data_array.buf);
+            c_ap_free(buffer->data_array.buf);
         }
         buffer->data_array.buf = new_data_buf;
         buffer->data_array.capacity = new_data_capacity;
@@ -420,18 +421,18 @@ static inline md_block_buffer* c_md_block_buffer_deserialize(const char* blob, a
 // ========== RingBuffer API Functions ==========
 
 static inline md_ring_buffer* c_md_ring_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) {
-    md_ring_buffer* buffer = (md_ring_buffer*) c_md_alloc(sizeof(md_ring_buffer), allocator);
+    md_ring_buffer* buffer = (md_ring_buffer*) c_ap_alloc(sizeof(md_ring_buffer), allocator);
     if (!buffer) return NULL;
 
     buffer->ptr_array.capacity = ptr_capacity;
     if (ptr_capacity) {
-        buffer->ptr_array.offsets = (size_t*) c_md_alloc(ptr_capacity * sizeof(size_t), allocator);
+        buffer->ptr_array.offsets = (size_t*) c_ap_alloc(ptr_capacity * sizeof(size_t), allocator);
         if (!buffer->ptr_array.offsets) goto oom;
     }
 
     buffer->data_array.capacity = data_capacity;
     if (data_capacity) {
-        buffer->data_array.buf = (char*) c_md_alloc(data_capacity, allocator);
+        buffer->data_array.buf = (char*) c_ap_alloc(data_capacity, allocator);
         if (!buffer->data_array.buf) goto oom;
     }
 
@@ -444,9 +445,9 @@ oom:
 
 static inline void c_md_ring_buffer_free(md_ring_buffer* buffer) {
     if (!buffer) return;
-    if (buffer->ptr_array.offsets) c_md_free(buffer->ptr_array.offsets);
-    if (buffer->data_array.buf) c_md_free(buffer->data_array.buf);
-    c_md_free(buffer);
+    if (buffer->ptr_array.offsets) c_ap_free(buffer->ptr_array.offsets);
+    if (buffer->data_array.buf) c_ap_free(buffer->data_array.buf);
+    c_ap_free(buffer);
 }
 
 static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, const md_variant* market_data) {
@@ -717,7 +718,7 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
 
     if (!shm_allocator || !shm_allocator->with_shm) return NULL; /* only support shm allocator!*/
 
-    md_concurrent_buffer* buffer = (md_concurrent_buffer*) c_md_alloc(size, shm_allocator);
+    md_concurrent_buffer* buffer = (md_concurrent_buffer*) c_ap_alloc(size, shm_allocator);
     if (!buffer) return NULL;
     buffer->n_workers = n_workers;
     buffer->workers = (md_concurrent_buffer_worker_ctx*) (buffer + 1);
@@ -735,7 +736,7 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
 
 static inline void c_md_concurrent_buffer_free(md_concurrent_buffer* buffer) {
     if (!buffer) return;
-    c_md_free((void*) buffer);
+    c_ap_free((void*) buffer);
 }
 
 static inline int c_md_concurrent_buffer_enable_worker(md_concurrent_buffer* buffer, size_t worker_id) {
@@ -786,7 +787,7 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, const
     /* Returns: MD_OK, MD_ERR_INVALID_INPUT, MD_ERR_INVALID_ALLOCATOR, MD_ERR_BUF_FULL, MD_ERR_TIMEOUT */
     if (!buffer || !market_data) return MD_ERR_INVALID_INPUT;
 
-    allocator_protocol* market_data_allocator = c_md_protocol_from_ptr(market_data);
+    allocator_protocol* market_data_allocator = c_ap_protocol_from_ptr(market_data);
     if (!market_data_allocator->with_shm) return MD_ERR_INVALID_ALLOCATOR;
 
     const uint32_t spin_per_check = 1000;
