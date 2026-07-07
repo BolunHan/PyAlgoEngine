@@ -41,7 +41,7 @@ Issues = "https://github.com/BolunHan/PyAlgoEngine/issues"
 "algo_engine.base.c_market_data" = ["*.pyx", "*.pxd", "*.h", "*.c"]
 "algo_engine.engine" = ["*.pxd"]
 "algo_engine.exchange_profile" = ["*.pyx", "*.pxd", "*.h", "*.c"]
-"algo_engine.include" = ["**/*.h", "**/*.c", "**/*.cpp"]
+"algo_engine.includes" = ["**/*.h", "**/*.c", "**/*.cpp"]
 
 [tool.setuptools.packages.find]
 exclude = [
