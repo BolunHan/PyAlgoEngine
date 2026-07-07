@@ -1,9 +1,20 @@
-from collections.abc import Callable
 from typing import Any
 
+from cbase.allocator_protocol import AllocatorConfigContext
 
-class EnvConfigContext:
-    """Context manager for temporary environment configuration changes."""
+
+class MDConfigContext(AllocatorConfigContext):
+    """Market-data specific configuration context.
+
+    Extends ``AllocatorConfigContext`` to additionally update module-level
+    ``MD_CFG_*`` globals, and binds to ``MD_DEFAULT_ALLOCATOR`` by default.
+
+    Accepted keyword arguments (in addition to those inherited):
+
+    * ``locked: bool`` — also updates ``MD_CFG_LOCKED``
+    * ``shared: bool`` — also updates ``MD_CFG_SHARED``
+    * ``freelist: bool`` — also updates ``MD_CFG_FREELIST``
+    """
 
     def __init__(self, **kwargs: Any) -> None:
         """
@@ -14,117 +25,44 @@ class EnvConfigContext:
         """
         ...
 
-    def __enter__(self) -> EnvConfigContext:
-        """Enter the context, applying configuration changes."""
-        ...
-
-    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: Any) -> None:
-        """Exit the context, reverting configuration changes."""
-        ...
-
-    def __call__(self, func: Callable[[...], Any]) -> Callable[[...], Any]:
-        """Decorator to apply the context to a function."""
-        ...
-
-    def __or__(self, other: EnvConfigContext) -> EnvConfigContext:
+    def __or__(self, other: MDConfigContext) -> MDConfigContext:
         """
-        Combine two EnvConfigContext instances.
+        Combine two MDConfigContext instances.
 
         Args:
-            other: Another EnvConfigContext instance
+            other: Another MDConfigContext instance
 
         Returns:
-            A new EnvConfigContext with combined configurations
+            A new MDConfigContext with combined configurations
         """
         ...
 
-    def __invert__(self) -> EnvConfigContext:
+    def __invert__(self) -> MDConfigContext:
         """
-        Invert the EnvConfigContext.
+        Invert the MDConfigContext.
 
         Returns:
-            A new EnvConfigContext that reverts the configurations set in the original.
+            A new MDConfigContext that reverts the configurations.
         """
         ...
 
 
-MD_SHARED: EnvConfigContext
+MD_SHARED: MDConfigContext
 """
-EnvConfigContext instance to set flag for algo_engine.base allocator helpers to use the SHM allocator.
-"""
-
-MD_LOCKED: EnvConfigContext
-"""
-EnvConfigContext instance to set flag for algo_engine.base allocator helpers to use thread-safe mode.
+MDConfigContext instance to set flag for PyAlgoEngine to use SHM allocator.
 """
 
-MD_FREELIST: EnvConfigContext
+MD_LOCKED: MDConfigContext
 """
-EnvConfigContext instance to set flag for algo_engine.base allocator helpers to use the freelist. Has no effect when in MD_SHARED mode, which enforces its own free list.
+MDConfigContext instance to set flag for PyAlgoEngine to use thread safe mode.
 """
 
+MD_LOCKFREE: MDConfigContext
+"""
+MDConfigContext instance to set flag for PyAlgoEngine to disable thread safe mode.
+"""
 
-class AllocatorProtocol(object):
-    """Protocol for memory allocation with environment-based configuration.
-
-    Manages an underlying `allocator_protocol` C structure, handling memory
-    allocation and deallocation based on global environment settings.
-
-    Attributes:
-        protocol: **cython internal** Pointer to the underlying `allocator_protocol` C structure.
-        owner: **cython internal** Boolean indicating if this instance owns the protocol and is
-            responsible for its deallocation.
-    """
-
-    def __init__(self, size: int) -> None:
-        """Initialize the AllocatorProtocol with a specified buffer size.
-
-        Args:
-            size: The size of the buffer to allocate in bytes.
-        """
-        ...
-
-    @property
-    def buf(self) -> memoryview:
-        """Memory buffer managed by this allocator protocol.
-
-        Returns:
-            A memoryview representing the allocated buffer.
-        """
-        ...
-
-    @property
-    def size(self) -> int:
-        """Size of the allocated buffer.
-
-        Returns:
-            The size of the buffer in bytes.
-        """
-        ...
-
-    @property
-    def with_shm(self) -> bool:
-        """Indicates if the allocator uses shared memory.
-
-        Returns:
-            True if shared memory is used, False otherwise.
-        """
-        ...
-
-    @property
-    def with_lock(self) -> bool:
-        """Indicates if the allocator uses locking for thread safety.
-
-        Returns:
-            True if locking is enabled, False otherwise.
-        """
-        ...
-
-    @property
-    def addr(self) -> int:
-        """Memory address of the underlying allocator protocol structure.
-
-        Returns:
-            The memory address as an integer.
-        """
-        ...
+MD_FREELIST: MDConfigContext
+"""
+MDConfigContext instance to set flag for PyAlgoEngine to use freelist.
+"""
