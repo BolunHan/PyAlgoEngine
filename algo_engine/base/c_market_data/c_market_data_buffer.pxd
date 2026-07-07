@@ -1,8 +1,10 @@
-from libcpp cimport bool as c_bool
 from cpython.object cimport PyObject
+from libcpp cimport bool as c_bool
 
-from ..c_allocator_protocol cimport allocator_protocol
-from ..c_intern_string cimport istr_map
+from cbase.allocator_protocol cimport allocator_protocol
+
+from algo_engine.base.c_intern_string cimport istr_map
+
 from .c_market_data cimport md_variant
 
 
