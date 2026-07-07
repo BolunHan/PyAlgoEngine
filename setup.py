@@ -6,6 +6,7 @@ import sys
 from contextlib import suppress
 from pathlib import Path
 
+import cbase
 import event_engine
 from Cython.Build import cythonize
 from setuptools import Extension, setup
@@ -84,13 +85,13 @@ class BuildExtWithConfig(build_ext):
             ]
         )
 
-        # Inject the generated include/ mirror into build_lib so it gets packaged
+        # Inject the generated includes/ mirror into build_lib so it gets packaged
         self.inject_sources()
 
     def collect_sources(self) -> None:
         project_root = Path(__file__).resolve().parent
         source_root = project_root / PACKAGE_NAME
-        include_root = project_root / PACKAGE_NAME / "include"
+        include_root = project_root / PACKAGE_NAME / "includes"
         mirror_root = include_root / PACKAGE_NAME
 
         if mirror_root.exists():
@@ -112,18 +113,18 @@ class BuildExtWithConfig(build_ext):
 
     def inject_sources(self) -> None:
         project_root = Path(__file__).resolve().parent
-        include_root = project_root / PACKAGE_NAME / "include"
+        include_root = project_root / PACKAGE_NAME / "includes"
         mirror_root = include_root / PACKAGE_NAME
 
         if not mirror_root.exists():
             return
 
-        dest_root = Path(self.build_lib, PACKAGE_NAME, "include", PACKAGE_NAME)
+        dest_root = Path(self.build_lib, PACKAGE_NAME, "includes", PACKAGE_NAME)
         if dest_root.exists():
             shutil.rmtree(dest_root)
 
         shutil.copytree(mirror_root, dest_root)
-        print(f"[build_py] <{DISPLAY_NAME}> injected include mirror -> {dest_root.relative_to(Path(self.build_lib))}")
+        print(f"[build_py] <{DISPLAY_NAME}> injected includes mirror -> {dest_root.relative_to(Path(self.build_lib))}")
 
     def remove_pxd(self, modules: list[str]) -> None:
         project_root = Path(__file__).resolve().parent
@@ -147,11 +148,17 @@ class BuildExtWithConfig(build_ext):
             if not infra_pxd.exists():
                 continue
 
+            # Inject into build_lib (for wheel / deploy)
             pkg_dir.mkdir(parents=True, exist_ok=True)
             init_pxd = pkg_dir / "__init__.pxd"
-
             print(f"[build_py] Injecting {infra_pxd} -> {init_pxd}")
             shutil.copyfile(infra_pxd, init_pxd)
+
+            # Also restore into src_dir (so source tree keeps __init__.pxd)
+            src_init_pxd = src_dir / "__init__.pxd"
+            if not src_init_pxd.exists():
+                print(f"[build_py] Restoring {infra_pxd} -> {src_init_pxd}")
+                shutil.copyfile(infra_pxd, src_init_pxd)
 
 
 # =============================
@@ -162,27 +169,15 @@ class BuildExtWithConfig(build_ext):
 cython_extension.extend([
     # === Base Cython Extensions ===
     Extension(
-        name="algo_engine.base.c_shm_allocator",
-        sources=["algo_engine/base/c_shm_allocator.pyx"],
-        include_dirs=[REPO_ROOT],
-        extra_compile_args=[*COMPILE_FLAGS]
-    ),
-    Extension(
-        name="algo_engine.base.c_heap_allocator",
-        sources=["algo_engine/base/c_heap_allocator.pyx"],
-        include_dirs=[REPO_ROOT],
-        extra_compile_args=[*COMPILE_FLAGS]
-    ),
-    Extension(
         name="algo_engine.base.c_allocator_protocol",
         sources=["algo_engine/base/c_allocator_protocol.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_intern_string",
         sources=["algo_engine/base/c_intern_string.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     # === Exchange Profile Cython Extensions ===
@@ -191,82 +186,82 @@ cython_extension.extend([
         sources=["algo_engine/exchange_profile/c_exchange_profile.pyx",
                  "algo_engine/exchange_profile/c_ex_profile_base.c",
                  "algo_engine/exchange_profile/c_ex_profile_cn.c"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.exchange_profile.c_profile_dispatcher",
         sources=["algo_engine/exchange_profile/c_profile_dispatcher.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.exchange_profile.c_profile_default",
         sources=["algo_engine/exchange_profile/c_profile_default.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.exchange_profile.c_profile_cn",
         sources=["algo_engine/exchange_profile/c_profile_cn.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     # === Market Data Cython Extensions ===
     Extension(
         name="algo_engine.base.c_market_data.c_market_data",
         sources=["algo_engine/base/c_market_data/c_market_data.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_market_data.c_internal",
         sources=["algo_engine/base/c_market_data/c_internal.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_market_data.c_transaction",
         sources=["algo_engine/base/c_market_data/c_transaction.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_market_data.c_tick",
         sources=["algo_engine/base/c_market_data/c_tick.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_market_data.c_candlestick",
         sources=["algo_engine/base/c_market_data/c_candlestick.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_market_data.c_trade_utils",
         sources=["algo_engine/base/c_market_data/c_trade_utils.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
         name="algo_engine.base.c_market_data.c_market_data_buffer",
         sources=["algo_engine/base/c_market_data/c_market_data_buffer.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     # === MDS Cython Extensions ===
     Extension(
         name="algo_engine.engine.c_market_engine",
         sources=["algo_engine/engine/c_market_engine.pyx"],
-        include_dirs=[REPO_ROOT],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     # === EventEngine Integration Cython Extensions ===
     Extension(
         name="algo_engine.engine.c_event_engine",
         sources=["algo_engine/engine/c_event_engine.pyx"],
-        include_dirs=[REPO_ROOT, *event_engine.get_include()],
+        include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     )
 ])
@@ -280,7 +275,7 @@ ext_modules.extend(
             'embedsignature': True
         },
         force="--force" in sys.argv,
-        # nthreads=N_THREADS,
+        nthreads=N_THREADS,
     )
 )
 

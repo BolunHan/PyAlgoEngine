@@ -70,7 +70,7 @@ def get_include() -> list[str]:
     # Auto-generated unified include root (mirrors every C header under
     # algo_engine/include/algo_engine/...). Populated by setup.py's
     # collect_headers step; expose it to downstream builds when present.
-    include_root = os.path.realpath(res_dir / 'include')
+    include_root = os.path.realpath(res_dir / 'includes')
     if os.path.isdir(include_root):
         scr_dir.append(include_root)
 
