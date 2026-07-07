@@ -4,9 +4,9 @@ from cbase.allocator_protocol.c_heap_allocator cimport HeapAllocator
 from cbase.allocator_protocol.c_shm_allocator cimport SharedMemoryAllocator
 
 
-cdef bint MD_CFG_LOCKED = False
-cdef bint MD_CFG_SHARED = True
-cdef bint MD_CFG_FREELIST = True
+cdef c_bool MD_CFG_LOCKED = False
+cdef c_bool MD_CFG_SHARED = True
+cdef c_bool MD_CFG_FREELIST = True
 
 
 cdef class MDConfigContext(AllocatorConfigContext):
