@@ -101,7 +101,6 @@ from .c_market_data cimport (
     # === Public APIs (c-layer) ===
     c_usleep,
     c_md_new,
-    # c_md_free,  <-- Moved to c_allocator_protocol
     c_md_get_price,
     c_md_side_offset,
     c_md_side_direction,
