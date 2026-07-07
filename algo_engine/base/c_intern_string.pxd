@@ -1,6 +1,6 @@
 from libc.stdint cimport uint64_t
 
-from .c_allocator_protocol cimport allocator_protocol
+from cbase.allocator_protocol cimport allocator_protocol
 
 
 cdef extern from "pthread.h":

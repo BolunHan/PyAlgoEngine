@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <algo_engine/base/c_allocator_protocol.h>
+#include <cbase/allocator_protocol/c_allocator_protocol.h>
 
 // ========== Constants ==========
 
@@ -150,18 +150,18 @@ static inline size_t c_next_pow2(size_t n) {
 static inline istr_map* c_istr_map_new(size_t capacity, allocator_protocol* allocator) {
     capacity = (capacity == 0) ? ISTR_INITIAL_CAPACITY : c_next_pow2(capacity);
 
-    istr_map* map = c_md_alloc(sizeof(istr_map), allocator);
+    istr_map* map = c_ap_alloc(sizeof(istr_map), allocator);
     if (!map) return NULL;
 
-    istr_entry* pool = c_md_alloc(capacity * sizeof(istr_entry), allocator);
+    istr_entry* pool = c_ap_alloc(capacity * sizeof(istr_entry), allocator);
     if (!pool) {
-        c_md_free(map);
+        c_ap_free(map);
         return NULL;
     }
 
     if (pthread_mutex_init(&map->lock, NULL) != 0) {
-        c_md_free(pool);
-        c_md_free(map);
+        c_ap_free(pool);
+        c_ap_free(map);
         return NULL;
     }
 
@@ -178,15 +178,15 @@ static inline void c_istr_map_free(istr_map* map) {
     istr_entry* it = map->first;
     while (it) {
         if (it->internalized) {
-            c_md_free((void*) it->internalized);
+            c_ap_free((void*) it->internalized);
         }
         it = it->next;
     }
 
     pthread_mutex_destroy(&map->lock);
 
-    c_md_free((void*) map->pool);
-    c_md_free((void*) map);
+    c_ap_free((void*) map->pool);
+    c_ap_free((void*) map);
 }
 
 static inline int c_istr_map_extend(istr_map* map, size_t new_capacity) {
@@ -207,11 +207,11 @@ static inline int c_istr_map_extend(istr_map* map, size_t new_capacity) {
         if (new_capacity <= map->capacity) return -1;
     }
 
-    allocator_protocol* allocator = c_md_protocol_from_ptr(map);
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(map);
     istr_entry*         new_pool;
 
     // Step 2: Allocate new pool
-    new_pool = (istr_entry*) c_md_alloc(new_capacity * sizeof(istr_entry), allocator);
+    new_pool = (istr_entry*) c_ap_alloc(new_capacity * sizeof(istr_entry), allocator);
     if (!new_pool) return -1;
 
     // Step 3: Rehash existing entries into new pool
@@ -240,7 +240,7 @@ static inline int c_istr_map_extend(istr_map* map, size_t new_capacity) {
     }
 
     // Step 4: Free old pool and update map
-    c_md_free((void*) map->pool);
+    c_ap_free((void*) map->pool);
 
     map->pool = new_pool;
     map->capacity = new_capacity;
@@ -318,9 +318,9 @@ static inline const char* c_istr(istr_map* map, const char* key, const istr_entr
     // Step 4: Duplicate key
     char*               interned_copy = NULL;
     size_t              total_size = key_length + 1;
-    allocator_protocol* allocator = c_md_protocol_from_ptr(map);
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(map);
 
-    interned_copy = (char*) c_md_alloc(total_size, allocator);
+    interned_copy = (char*) c_ap_alloc(total_size, allocator);
     if (!interned_copy) return NULL;
     memcpy(interned_copy, key, total_size);
 
