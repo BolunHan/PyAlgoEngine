@@ -5,7 +5,8 @@ from libc.stdint cimport uint64_t, uintptr_t
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
 
-from ..c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
+from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
+
 from .c_market_data cimport (
     md_ret_code, md_data_type, md_direction, MD_CFG_BOOK_SIZE,
     md_orderbook_entry, c_md_orderbook_sort,
