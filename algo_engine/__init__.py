@@ -74,8 +74,11 @@ def get_include() -> list[str]:
     if os.path.isdir(include_root):
         scr_dir.append(include_root)
 
+    import cbase
+    dep_dir = cbase.get_include()
+
     import event_engine
-    dep_dir = event_engine.get_include()
+    dep_dir += event_engine.get_include()
 
     return scr_dir + dep_dir
 
