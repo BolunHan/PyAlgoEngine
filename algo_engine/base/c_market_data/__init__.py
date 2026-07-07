@@ -12,8 +12,7 @@ from .c_trade_utils import OrderState, TradeReport, TradeInstruction
 from .c_market_data_buffer import InvalidBufferError, NotInSharedMemoryError, BufferFull, BufferEmpty, PipeTimeoutError, BufferCorruptedError, MarketDataBuffer, MarketDataBufferCache, MarketDataRingBuffer, MarketDataConcurrentBuffer
 
 __all__ = [
-    "EnvConfigContext",
-    "MD_SHARED", "MD_LOCKED", "MD_FREELIST", "MD_BOOK5", "MD_BOOK10", "MD_BOOK20",
+    "MD_BOOK5", "MD_BOOK10", "MD_BOOK20",
     "DataType", "MarketData", "FilterMode",
     "CONFIG",
     "InternalData",
