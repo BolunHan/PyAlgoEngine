@@ -3,7 +3,7 @@ import time
 import unittest
 
 from algo_engine.base.c_market_data.c_market_data_buffer import BufferEmpty, BufferFull, MarketDataRingBuffer, PipeTimeoutError
-from .md_gen import random_market_data
+from md_gen import random_market_data
 
 
 class MarketDataRingBufferTests(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 
-from algo_engine.base.c_allocator_protocol import EnvConfigContext
+from algo_engine.base.c_allocator_protocol import MDConfigContext
 from algo_engine.base.c_market_data import c_market_data as md
 
 ConfigViewer = md.ConfigViewer
@@ -10,7 +10,7 @@ CONFIG = md.CONFIG
 class TestEnvConfigAndViewer(unittest.TestCase):
     def test_env_config_context_context_manager_restores_values(self):
         original_locked = CONFIG.MD_CFG_LOCKED
-        override = EnvConfigContext(locked=not original_locked)
+        override = MDConfigContext(locked=not original_locked)
 
         with override:
             self.assertEqual(CONFIG.MD_CFG_LOCKED, (not original_locked))
@@ -20,8 +20,8 @@ class TestEnvConfigAndViewer(unittest.TestCase):
     def test_env_config_context_or_and_invert(self):
         original_shared = CONFIG.MD_CFG_SHARED
         original_freelist = CONFIG.MD_CFG_FREELIST
-        ctx_a = EnvConfigContext(shared=False)
-        ctx_b = EnvConfigContext(freelist=False)
+        ctx_a = MDConfigContext(shared=False)
+        ctx_b = MDConfigContext(freelist=False)
 
         with ctx_a:
             self.assertFalse(CONFIG.MD_CFG_SHARED)
@@ -42,7 +42,7 @@ class TestEnvConfigAndViewer(unittest.TestCase):
     def test_env_config_context_callable_decorator(self):
         calls = []
         original_shared = CONFIG.MD_CFG_SHARED
-        ctx = EnvConfigContext(shared=not original_shared)
+        ctx = MDConfigContext(shared=not original_shared)
 
         @ctx
         def wrapped():
@@ -54,7 +54,7 @@ class TestEnvConfigAndViewer(unittest.TestCase):
         self.assertEqual(CONFIG.MD_CFG_SHARED, original_shared)
 
     def test_config_viewer_reflects_globals(self):
-        viewer = ConfigViewer.__new__(ConfigViewer)
+        viewer = ConfigViewer()
 
         self.assertEqual(viewer.MD_CFG_LOCKED, CONFIG.MD_CFG_LOCKED)
         self.assertEqual(viewer.MD_CFG_SHARED, CONFIG.MD_CFG_SHARED)
