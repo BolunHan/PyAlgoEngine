@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <algo_engine/base/c_allocator_protocol.h>
 #include <algo_engine/base/c_market_data/c_market_data_config.h>
 #include <algo_engine/exchange_profile/c_ex_profile_base.h>
+#include <cbase/allocator_protocol/c_allocator_protocol.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -591,7 +591,7 @@ static inline void c_usleep(unsigned int usec) {
 static inline md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator) {
     size_t size = c_md_get_size(dtype);
     if (size == 0) return NULL;
-    md_meta* meta = (md_meta*) c_md_alloc(size, allocator);
+    md_meta* meta = (md_meta*) c_ap_alloc(size, allocator);
     if (!meta) return NULL;
     meta->dtype = dtype;
     return (md_variant*) meta;
@@ -1114,7 +1114,7 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
 
                     md_orderbook* ob = c_md_orderbook_new(capacity, allocator);
                     if (!ob) {
-                        c_md_free(market_data);
+                        c_ap_free(market_data);
                         return NULL;
                     }
                     ob->size = size;
@@ -1158,7 +1158,7 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
 
                     md_orderbook* ob = c_md_orderbook_new(capacity, allocator);
                     if (!ob) {
-                        c_md_free(market_data);
+                        c_ap_free(market_data);
                         return NULL;
                     }
                     ob->size = size;
@@ -1207,7 +1207,7 @@ static inline md_orderbook* c_md_orderbook_new(size_t book_size, allocator_proto
     size_t size = sizeof(md_orderbook) + book_size * sizeof(md_orderbook_entry);
     if (size == 0) return NULL;
 
-    md_orderbook* orderbook = (md_orderbook*) c_md_alloc(size, allocator);
+    md_orderbook* orderbook = (md_orderbook*) c_ap_alloc(size, allocator);
     if (!orderbook) return NULL;
     orderbook->capacity = book_size;
     return orderbook;
@@ -1215,7 +1215,7 @@ static inline md_orderbook* c_md_orderbook_new(size_t book_size, allocator_proto
 
 static inline void c_md_orderbook_free(md_orderbook* orderbook) {
     if (!orderbook) return;
-    c_md_free(orderbook);
+    c_ap_free(orderbook);
 }
 
 static inline int c_md_orderbook_sort(md_orderbook* orderbook) {
