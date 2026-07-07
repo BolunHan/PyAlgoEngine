@@ -1,13 +1,18 @@
 import enum
 import uuid
 
+from libc.stdint cimport INT64_MIN, UINT64_MAX, int64_t
+from libc.string cimport memcpy, memset
+
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
-from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_AsUTF8
-from libc.stdint cimport UINT64_MAX, INT64_MIN, int64_t
-from libc.string cimport memset, memcpy
+from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_AsUTF8AndSize, PyUnicode_FromString
 
-from ...exchange_profile.c_exchange_profile cimport PROFILE, SessionTime, SessionDate, SessionDateTime
+from cbase.allocator_protocol cimport c_ap_free
+
+from algo_engine.base.c_allocator_protocol cimport MD_CFG_FREELIST, MD_CFG_LOCKED, MD_CFG_SHARED, MD_DEFAULT_ALLOCATOR
+from algo_engine.base.c_intern_string cimport C_INTRA_POOL as HEAP_POOL, C_POOL as SHM_POOL, c_istr, c_istr_synced
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE, SessionDate, SessionDateTime, SessionTime, c_ex_profile_unix_to_datetime, session_type
 
 
 class DataType(enum.IntEnum):
@@ -306,7 +311,7 @@ cdef class MarketData:
             return
 
         if self.header:
-            c_md_free(<void*> self.header)
+            c_ap_free(<void*> self.header)
 
     def __reduce__(self):
         return MarketData.from_bytes, (self.to_bytes(),), self.__dict__
