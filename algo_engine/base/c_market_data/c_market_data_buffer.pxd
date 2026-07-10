@@ -125,6 +125,9 @@ cdef class MarketDataConcurrentBuffer:
     cdef bint owner
     cdef size_t iter_idx
 
+    @staticmethod
+    cdef inline MarketDataConcurrentBuffer c_from_header(md_concurrent_buffer* header, bint owner=?)
+
     cdef bint c_is_worker_empty(self, size_t worker_id)
 
     cdef bint c_is_empty(self)

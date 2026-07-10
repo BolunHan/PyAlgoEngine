@@ -426,12 +426,22 @@ cdef class MarketDataRingBuffer:
 
 cdef class MarketDataConcurrentBuffer:
     def __cinit__(self, size_t n_workers, size_t capacity):
+        if n_workers == capacity == 0:
+            return
+
         self.header = c_md_concurrent_buffer_new(n_workers, capacity, MD_SHM_ALLOCATOR)
         if not self.header:
             raise MemoryError("Failed to allocate MarketDataBuffer")
 
         self.owner = True
         self.iter_idx = 0
+
+    @staticmethod
+    cdef inline MarketDataConcurrentBuffer c_from_header(md_concurrent_buffer* header, bint owner=False):
+        cdef MarketDataConcurrentBuffer instance = MarketDataConcurrentBuffer.__new__(MarketDataConcurrentBuffer, 0, 0)
+        instance.header = header
+        instance.owner = owner
+        return instance
 
     def __dealloc__(self):
         if not self.owner:
