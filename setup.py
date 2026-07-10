@@ -130,6 +130,31 @@ class BuildExtWithConfig(build_ext):
                 with suppress(FileNotFoundError):
                     init_pxd.unlink()
 
+        # Temporarily move the algo_engine symlink/dir from Cython/Includes
+        # to prevent cythonize from picking up stale pxd files from an
+        # installed version of algo_engine.
+        cls._pxd_backup = []
+        try:
+            import Cython.Includes as _cy_includes
+            includes_dir = Path(next(iter(_cy_includes.__path__)))
+            algo_link = includes_dir / "algo_engine"
+            if algo_link.exists():
+                backup = algo_link.with_name("algo_engine.cy_bak")
+                print(f"[build_py] [pre_compile] Moving Cython/Includes symlink {algo_link.name} -> {backup.name}")
+                algo_link.rename(backup)
+                cls._pxd_backup.append((backup, algo_link))
+        except Exception as e:
+            print(f"[build_py] [pre_compile] Warning: Could not handle Cython/Includes symlink: {e}")
+
+    @classmethod
+    def restore_pxd(cls) -> None:
+        """Restore algo_engine symlink in Cython/Includes after cythonize."""
+        for backup, original in getattr(cls, '_pxd_backup', []):
+            if backup.exists():
+                print(f"[build_py] [pre_compile] Restoring Cython/Includes symlink {backup.name} -> {original.name}")
+                backup.rename(original)
+        cls._pxd_backup = []
+
     def inject_pxd(self) -> None:
         project_root = Path(__file__).resolve().parent
 
@@ -261,18 +286,21 @@ cython_extension.extend([
 
 BuildExtWithConfig.remove_pxd()
 
-ext_modules.extend(
-    cythonize(
-        cython_extension,
-        annotate=WITH_ANNOTATION,
-        compiler_directives={
-            "language_level": "3",
-            'embedsignature': True
-        },
-        force="--force" in sys.argv,
-        nthreads=N_THREADS,
+try:
+    ext_modules.extend(
+        cythonize(
+            cython_extension,
+            annotate=WITH_ANNOTATION,
+            compiler_directives={
+                "language_level": "3",
+                'embedsignature': True
+            },
+            force="--force" in sys.argv,
+            nthreads=N_THREADS,
+        )
     )
-)
+finally:
+    BuildExtWithConfig.restore_pxd()
 
 # =============================
 # Define C Extensions
