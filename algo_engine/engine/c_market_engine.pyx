@@ -227,11 +227,15 @@ cdef class MarketDataService:
             self.add_monitor(monitor)
 
     cpdef void add_monitor(self, object monitor):
+        # Step 1: Add monitor to the monitor manager, in this step the monitor_id can be altered.
+        self.monitor_manager.add_monitor(monitor)
+
+        # Step 2: Retrieve new monitor_id and add to the monitor dictionary
         cdef object monitor_id = monitor.monitor_id
         if monitor_id in self.monitor:
+            self.monitor_manager.pop_monitor(monitor_id)
             raise KeyError(f'monitor_id {monitor_id} already exists.')
         self.monitor[monitor_id] = monitor
-        self.monitor_manager.add_monitor(monitor)
 
     cpdef void pop_monitor(
             self,
