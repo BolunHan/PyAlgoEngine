@@ -8,7 +8,6 @@ Subpackages
    :maxdepth: 4
 
    algo_engine.base.c_market_data
-   algo_engine.base.c_market_data_deprecated
 
 Submodules
 ----------
@@ -21,26 +20,10 @@ algo\_engine.base.c\_allocator\_protocol module
    :show-inheritance:
    :undoc-members:
 
-algo\_engine.base.c\_heap\_allocator module
--------------------------------------------
-
-.. automodule:: algo_engine.base.c_heap_allocator
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 algo\_engine.base.c\_intern\_string module
 ------------------------------------------
 
 .. automodule:: algo_engine.base.c_intern_string
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-algo\_engine.base.c\_shm\_allocator module
-------------------------------------------
-
-.. automodule:: algo_engine.base.c_shm_allocator
    :members:
    :show-inheritance:
    :undoc-members:
