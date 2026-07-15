@@ -127,6 +127,8 @@ from .c_market_data cimport (
     c_md_compare_ask,
     c_md_compare_id,
     c_md_compare_long_id,
+    c_md_id_equal,
+    c_md_long_id_equal,
     c_md_filter,
     c_md_filter_enable,
     c_md_filter_disable,

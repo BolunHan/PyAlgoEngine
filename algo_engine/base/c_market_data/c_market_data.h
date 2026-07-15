@@ -538,21 +538,47 @@ static inline int c_md_compare_bid(const void* a, const void* b);
  */
 static inline int c_md_compare_ask(const void* a, const void* b);
 
-/*
- * @brief Compare two md_id identifiers for equality.
+/**
+ * @brief Compare two md_id identifiers (qsort-compatible).
  * @param id1 Pointer to first md_id.
  * @param id2 Pointer to second md_id.
- * @return 1 if equal, 0 otherwise.
+ * @return -1 if id1 < id2, 0 if equal, 1 if id1 > id2.
+ * @note Both ids must have the same id_type. For numeric types (UINT64,
+ *       INT64, UINT128, INT128), values are compared numerically via memcpy
+ *       (safe regardless of platform endianness). For STRING, BYTE, and UUID,
+ *       lexicographic byte comparison is used.
  */
 static inline int c_md_compare_id(const md_id* id1, const md_id* id2);
 
-/*
- * @brief Compare two long_md_id identifiers for equality.
+/**
+ * @brief Compare two long_md_id identifiers (qsort-compatible).
  * @param id1 Pointer to first long_md_id.
  * @param id2 Pointer to second long_md_id.
- * @return 1 if equal, 0 otherwise.
+ * @return -1 if id1 < id2, 0 if equal, 1 if id1 > id2.
+ * @note Both ids must have the same id_type. For numeric types (UINT64,
+ *       INT64, UINT128, INT128), values are compared numerically via memcpy
+ *       (safe regardless of platform endianness). For STRING, BYTE, and UUID,
+ *       lexicographic byte comparison is used.
  */
 static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2);
+
+/**
+ * @brief Equality check for two md_id identifiers.
+ * @param id1 Pointer to first md_id.
+ * @param id2 Pointer to second md_id.
+ * @return true if equal, false otherwise.
+ * @note Both ids must have the same id_type.
+ */
+static inline bool c_md_id_equal(const md_id* id1, const md_id* id2);
+
+/**
+ * @brief Equality check for two long_md_id identifiers.
+ * @param id1 Pointer to first long_md_id.
+ * @param id2 Pointer to second long_md_id.
+ * @return true if equal, false otherwise.
+ * @note Both ids must have the same id_type.
+ */
+static inline bool c_md_long_id_equal(const long_md_id* id1, const long_md_id* id2);
 
 /**
  * @brief Filter market_data based on specified flags.
@@ -1307,11 +1333,99 @@ static inline int c_md_compare_ask(const void* a, const void* b) {
 }
 
 static inline int c_md_compare_id(const md_id* id1, const md_id* id2) {
-    return memcmp(id1, id2, ID_SIZE) == 0;
+    switch (id1->id_type) {
+        case MID_STRING:
+            return strcmp(id1->data, id2->data);
+        case MID_BYTE:
+        case MID_UUID:
+            return memcmp(id1->data, id2->data, ID_SIZE);
+        case MID_UINT64: {
+            uint64_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(uint64_t));
+            memcpy(&v2, id2->data, sizeof(uint64_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        case MID_INT64: {
+            int64_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(int64_t));
+            memcpy(&v2, id2->data, sizeof(int64_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        case MID_UINT128: {
+            uint128_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(uint128_t));
+            memcpy(&v2, id2->data, sizeof(uint128_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        case MID_INT128: {
+            int128_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(int128_t));
+            memcpy(&v2, id2->data, sizeof(int128_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        default:
+            return memcmp(id1->data, id2->data, ID_SIZE);
+    }
+}
+
+static inline bool c_md_id_equal(const md_id* id1, const md_id* id2) {
+    return c_md_compare_id(id1, id2) == 0;
 }
 
 static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2) {
-    return memcmp(id1, id2, LONG_ID_SIZE) == 0;
+    switch (id1->id_type) {
+        case MID_STRING:
+            return strcmp(id1->data, id2->data);
+        case MID_BYTE:
+        case MID_UUID:
+            return memcmp(id1->data, id2->data, LONG_ID_SIZE);
+        case MID_UINT64: {
+            uint64_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(uint64_t));
+            memcpy(&v2, id2->data, sizeof(uint64_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        case MID_INT64: {
+            int64_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(int64_t));
+            memcpy(&v2, id2->data, sizeof(int64_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        case MID_UINT128: {
+            uint128_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(uint128_t));
+            memcpy(&v2, id2->data, sizeof(uint128_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        case MID_INT128: {
+            int128_t v1, v2;
+            memcpy(&v1, id1->data, sizeof(int128_t));
+            memcpy(&v2, id2->data, sizeof(int128_t));
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
+            return 0;
+        }
+        default:
+            return memcmp(id1->data, id2->data, LONG_ID_SIZE);
+    }
+}
+
+static inline bool c_md_long_id_equal(const long_md_id* id1, const long_md_id* id2) {
+    return c_md_compare_long_id(id1, id2) == 0;
 }
 
 static inline bool c_md_filter(const md_variant* market_data, md_filter_flag flags) {

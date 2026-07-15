@@ -13,7 +13,7 @@ from .c_market_data cimport (
     md_data_type, md_order_type, md_side,
     c_md_side_sign, c_md_state_name, c_md_side_name, c_md_order_type_name,
     c_md_state_working, c_md_state_placed, c_md_state_done,
-    c_init_buffer, c_set_long_id, c_get_long_id, c_md_compare_long_id
+    c_init_buffer, c_set_long_id, c_get_long_id, c_md_long_id_equal
 )
 from .c_transaction cimport TransactionData
 from .c_transaction import TransactionSide, OrderType
@@ -410,7 +410,7 @@ cdef class TradeInstruction(MarketData):
     cpdef TradeInstruction fill(self, TradeReport trade_report):
         cdef md_variant* header = <md_variant*> self.header
         # Check order_id match by comparing Python objects
-        if not c_md_compare_long_id(&header.trade_instruction.order_id, &trade_report.header.trade_report.order_id):
+        if not c_md_long_id_equal(&header.trade_instruction.order_id, &trade_report.header.trade_report.order_id):
             LOGGER.warning(f'Order ID mismatch! Instruction: {self.order_id}, Report: {trade_report.order_id}')
             return self
 

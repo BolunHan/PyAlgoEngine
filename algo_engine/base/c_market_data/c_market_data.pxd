@@ -332,6 +332,8 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil
     int c_md_compare_id(const md_id* id1, const md_id* id2) noexcept nogil
     int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2) noexcept nogil
+    c_bool c_md_id_equal(const md_id* id1, const md_id* id2) noexcept nogil
+    c_bool c_md_long_id_equal(const long_md_id* id1, const long_md_id* id2) noexcept nogil
     c_bool c_md_filter(const md_variant* market_data, md_filter_flag flags) noexcept nogil
     void c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag_to_enable) noexcept nogil
     void c_md_filter_disable(md_filter_flag* flags, md_filter_flag flag_to_disable) noexcept nogil
