@@ -20,10 +20,11 @@ PACKAGE_NAME = "algo_engine"
 DISPLAY_NAME = "PyAlgoEngine"
 
 WITH_ANNOTATION = False
-COMPILE_FLAGS = ["/Ox"] if platform.system() == "Windows" else ['-O3', '-march=native']
+COMPILE_FLAGS = ["/Ox", "/std:c17", "/experimental:c11atomics"] if platform.system() == "Windows" else ['-O3', '-march=native']
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
-N_THREADS = max(1, N_CORES - 2)
+# MSVC + cythonize process pool conflict on Windows (spawn re-imports setup.py) — build sequentially there.
+N_THREADS = 0 if platform.system() == "Windows" else max(1, N_CORES - 2)
 __VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / PACKAGE_NAME / '__init__.py').read_text(), re.MULTILINE)) else "unknown"
 
 ext_modules = []
