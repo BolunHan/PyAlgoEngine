@@ -6,13 +6,18 @@ from libc.string cimport memcpy, memset
 
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.datetime cimport datetime
-from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_AsUTF8AndSize, PyUnicode_FromString
+from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_FromString
 
 from cbase.allocator_protocol cimport c_ap_free
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from algo_engine.base.c_intern_string cimport C_INTRA_POOL as HEAP_POOL, C_POOL as SHM_POOL, c_istr, c_istr_synced
 from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE, SessionDate, SessionDateTime, SessionTime, c_ex_profile_unix_to_datetime, session_type
+
+# Full 128-bit ID range as Python ints — the C UINT128_MAX/INT128_MIN cannot
+# cross the Cython boundary on compilers without a native 128-bit integer (MSVC).
+_UINT128_MAX = (1 << 128) - 1
+_INT128_MIN = -(1 << 127)
 
 
 class DataType(enum.IntEnum):
@@ -111,26 +116,6 @@ cdef inline const md_variant* c_deserialize_buffer(const char* src):
     return market_data
 
 
-cdef inline void c_write_uint128(void* data, uint128_t value):
-    memcpy(data, &value, 16)
-
-
-cdef inline uint128_t c_read_uint128(const void* data):
-    cdef uint128_t value
-    memcpy(&value, data, 16)
-    return value
-
-
-cdef inline void c_write_int128(void* data, int128_t value):
-    memcpy(data, &value, 16)
-
-
-cdef inline int128_t c_read_int128(const void* data):
-    cdef int128_t value
-    memcpy(&value, data, 16)
-    return value
-
-
 cdef inline void c_set_id(md_id* id_ptr, object id_value):
     cdef bytes id_bytes
     cdef const char* id_chars
@@ -148,11 +133,10 @@ cdef inline void c_set_id(md_id* id_ptr, object id_value):
                 id_ptr.id_type = md_id_type.MID_UINT64
                 (<uint64_t*> id_ptr.data)[0] = <uint64_t> id_value
                 return
-            elif id_value < UINT128_MAX and MID_ALLOW_INT128:
-                # uint128_t type
+            elif id_value < _UINT128_MAX and MID_ALLOW_INT128:
+                # uint128_t type — write directly into buffer (no intermediate bytes)
                 id_ptr.id_type = md_id_type.MID_UINT128
-                # (<uint128_t*> id_ptr.data)[0] = <uint128_t> id_value
-                c_write_uint128(<void*> id_ptr.data, <uint128_t> id_value)
+                PyLong_AsNativeBytes(<PyObject*> id_value, <void*> id_ptr.data, 16, Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_UNSIGNED_BUFFER)
                 return
             else:
                 raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
@@ -161,10 +145,9 @@ cdef inline void c_set_id(md_id* id_ptr, object id_value):
                 id_ptr.id_type = md_id_type.MID_INT64
                 (<int64_t*> id_ptr.data)[0] = <int64_t> id_value
                 return
-            elif id_value > INT128_MIN and MID_ALLOW_INT128:
+            elif id_value > _INT128_MIN and MID_ALLOW_INT128:
                 id_ptr.id_type = md_id_type.MID_INT128
-                # (<int128_t*> id_ptr.data)[0] = <int128_t> id_value
-                c_write_int128(<void*> id_ptr.data, <int128_t> id_value)
+                PyLong_AsNativeBytes(<PyObject*> id_value, <void*> id_ptr.data, 16, Py_ASNATIVEBYTES_LITTLE_ENDIAN)
                 return
             else:
                 raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
@@ -206,9 +189,9 @@ cdef inline object c_get_id(const md_id* id_ptr):
     elif id_ptr.id_type == md_id_type.MID_INT64:
         return (<int64_t*> id_ptr.data)[0]
     elif id_ptr.id_type == md_id_type.MID_UINT128:
-        return c_read_uint128(<void*> id_ptr.data)
+        return <object> PyLong_FromNativeBytes(<const void*> id_ptr.data, 16, Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_UNSIGNED_BUFFER)
     elif id_ptr.id_type == md_id_type.MID_INT128:
-        return c_read_int128(<void*> id_ptr.data)
+        return <object> PyLong_FromNativeBytes(<const void*> id_ptr.data, 16, Py_ASNATIVEBYTES_LITTLE_ENDIAN)
     elif id_ptr.id_type == md_id_type.MID_STRING:
         return PyUnicode_FromString(&id_ptr.data[0])
     elif id_ptr.id_type == md_id_type.MID_BYTE:
@@ -235,11 +218,10 @@ cdef inline void c_set_long_id(long_md_id* id_ptr, object id_value):
                 id_ptr.id_type = md_id_type.MID_UINT64
                 (<uint64_t*> id_ptr.data)[0] = <uint64_t> id_value
                 return
-            elif id_value < UINT128_MAX and MID_ALLOW_INT128:
-                # uint128_t type
+            elif id_value < _UINT128_MAX and MID_ALLOW_INT128:
+                # uint128_t type — write directly into buffer (no intermediate bytes)
                 id_ptr.id_type = md_id_type.MID_UINT128
-                # (<uint128_t*> id_ptr.data)[0] = <uint128_t> id_value
-                c_write_uint128(<void*> id_ptr.data, <uint128_t> id_value)
+                PyLong_AsNativeBytes(<PyObject*> id_value, <void*> id_ptr.data, 16,Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_UNSIGNED_BUFFER)
                 return
             else:
                 raise ValueError(f'Integer ID {id_value} is too large to fit in the ID buffer.')
@@ -248,10 +230,9 @@ cdef inline void c_set_long_id(long_md_id* id_ptr, object id_value):
                 id_ptr.id_type = md_id_type.MID_INT64
                 (<int64_t*> id_ptr.data)[0] = <int64_t> id_value
                 return
-            elif id_value > INT128_MIN and MID_ALLOW_INT128:
+            elif id_value > _INT128_MIN and MID_ALLOW_INT128:
                 id_ptr.id_type = md_id_type.MID_INT128
-                # (<int128_t*> id_ptr.data)[0] = <int128_t> id_value
-                c_write_int128(<void*> id_ptr.data, <int128_t> id_value)
+                PyLong_AsNativeBytes(<PyObject*> id_value, <void*> id_ptr.data, 16,Py_ASNATIVEBYTES_LITTLE_ENDIAN)
                 return
             else:
                 raise ValueError(f'Integer ID {id_value} is too small to fit in the ID buffer.')
@@ -293,9 +274,9 @@ cdef inline object c_get_long_id(const long_md_id* id_ptr):
     elif id_ptr.id_type == md_id_type.MID_INT64:
         return (<int64_t*> id_ptr.data)[0]
     elif id_ptr.id_type == md_id_type.MID_UINT128:
-        return c_read_uint128(<void*> id_ptr.data)
+        return <object> PyLong_FromNativeBytes(<const void*> id_ptr.data, 16, Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_UNSIGNED_BUFFER)
     elif id_ptr.id_type == md_id_type.MID_INT128:
-        return c_read_int128(<void*> id_ptr.data)
+        return <object> PyLong_FromNativeBytes(<const void*> id_ptr.data, 16,Py_ASNATIVEBYTES_LITTLE_ENDIAN)
     elif id_ptr.id_type == md_id_type.MID_STRING:
         return PyUnicode_FromString(&id_ptr.data[0])
     elif id_ptr.id_type == md_id_type.MID_BYTE:

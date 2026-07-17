@@ -1,3 +1,4 @@
+from cpython.object cimport PyObject
 from libcpp cimport bool as c_bool
 from libc.stdint cimport int8_t, uint32_t, uint64_t, uintptr_t
 
@@ -5,6 +6,13 @@ from cbase.env cimport EnvConfigContext
 from cbase.allocator_protocol cimport allocator_protocol
 
 from algo_engine.exchange_profile.c_exchange_profile cimport session_datetime_t
+
+
+cdef extern from "Python.h":
+    int Py_ASNATIVEBYTES_LITTLE_ENDIAN
+    int Py_ASNATIVEBYTES_UNSIGNED_BUFFER
+    Py_ssize_t PyLong_AsNativeBytes(PyObject* pylong, void* buffer, Py_ssize_t n_bytes, int flags)
+    PyObject* PyLong_FromNativeBytes(const void* buffer, size_t n_bytes, int flags)
 
 
 cdef extern from "algo_engine/base/c_market_data/c_market_data_config.h":
