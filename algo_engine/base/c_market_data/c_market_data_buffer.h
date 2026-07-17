@@ -11,9 +11,9 @@
 #include <string.h>
 #include <time.h>
 
-#include <algo_engine/base/c_intern_string.h>
 #include <algo_engine/base/c_market_data/c_market_data.h>
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
+#include <cbase/intern_string/c_intern_string.h>
 
 #ifndef MD_BUF_PTR_DEFAULT_CAP
 #define MD_BUF_PTR_DEFAULT_CAP 16
@@ -129,10 +129,10 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
     const char* interned_ticker;
     if (market_data->meta_info.ticker) {
         if (shm_allocator->with_lock) {
-            interned_ticker = c_istr_synced(shm_pool, market_data->meta_info.ticker, NULL);
+            interned_ticker = c_istr_synced(shm_pool, market_data->meta_info.ticker, 0, NULL);
         }
         else {
-            interned_ticker = c_istr(shm_pool, market_data->meta_info.ticker, NULL);
+            interned_ticker = c_istr(shm_pool, market_data->meta_info.ticker, 0, NULL);
         }
         if (!interned_ticker) return NULL;
     }
