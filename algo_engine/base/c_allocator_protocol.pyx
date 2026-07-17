@@ -1,7 +1,7 @@
 from libc.stdlib cimport calloc
 
-from cbase.allocator_protocol.c_heap_allocator cimport HeapAllocator
-from cbase.allocator_protocol.c_shm_allocator cimport SharedMemoryAllocator
+from cbase.allocator_protocol.c_heap_allocator cimport c_heap_allocator_new
+from cbase.allocator_protocol.c_shm_comp cimport c_shm_allocator_new, AP_SHM_ALLOCATOR_DEFAULT_REGION_SIZE
 
 
 cdef c_bool MD_CFG_LOCKED = False
@@ -44,13 +44,13 @@ cdef class MDConfigContext(AllocatorConfigContext):
         AllocatorConfigContext.c_deactivate(self)
 
 
-cdef HeapAllocator _py_heap_allocator = HeapAllocator()
-_py_heap_allocator.owner = False
-cdef heap_allocator* HEAP_ALLOCATOR = _py_heap_allocator.allocator
+cdef heap_allocator* HEAP_ALLOCATOR = c_heap_allocator_new()
+if not HEAP_ALLOCATOR:
+    raise OSError("Initialize MD heap allocator failed")
 
-cdef SharedMemoryAllocator _py_shm_allocator = SharedMemoryAllocator(shm_prefix='c_md_shm')
-_py_shm_allocator.owner = False
-cdef shm_allocator_ctx* SHM_ALLOCATOR = _py_shm_allocator.ctx
+cdef shm_allocator_ctx* SHM_ALLOCATOR = c_shm_allocator_new(AP_SHM_ALLOCATOR_DEFAULT_REGION_SIZE, <char*> b"c_md_shm")
+if not SHM_ALLOCATOR:
+    raise OSError("Initialize MD SHM allocator failed (prefix='c_md_shm')")
 
 cdef allocator_protocol* MD_DEFAULT_ALLOCATOR   = <allocator_protocol*> calloc(1, sizeof(allocator_protocol))
 cdef allocator_protocol* MD_SHM_ALLOCATOR       = <allocator_protocol*> calloc(1, sizeof(allocator_protocol))
