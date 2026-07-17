@@ -5,7 +5,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+typedef SSIZE_T ssize_t;
+#else
 #include <sys/types.h>
+#endif
 #include <time.h>
 
 // ========== Constants ==========
