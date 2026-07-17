@@ -85,6 +85,11 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
     const int128_t INT128_MIN
     const uint128_t UINT128_MAX
 
+    void c_write_uint128(void* data, uint128_t value) noexcept nogil
+    uint128_t c_read_uint128(const void* data) noexcept nogil
+    void c_write_int128(void* data, int128_t value) noexcept nogil
+    int128_t c_read_int128(const void* data) noexcept nogil
+
     ctypedef enum md_direction:
         DIRECTION_UNKNOWN
         DIRECTION_SHORT
@@ -352,11 +357,6 @@ cdef BookConfigContext MD_BOOK20
 
 cdef md_variant* c_init_buffer(md_data_type dtype, const char* ticker, double timestamp)
 cdef const md_variant* c_deserialize_buffer(const char* src)
-
-cdef void c_write_uint128(void* data, uint128_t value)
-cdef uint128_t c_read_uint128(const void* data)
-cdef void c_write_int128(void* data, int128_t value)
-cdef int128_t c_read_int128(const void* data)
 
 cdef void c_set_id(md_id* id_ptr, object id_value)
 cdef object c_get_id(const md_id* id_ptr)
