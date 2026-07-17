@@ -712,15 +712,17 @@ const size_t EX_PROFILE_CN_HOLIDAYS_ESTIMATED_COUNT = sizeof(EX_PROFILE_CN_HOLID
 const size_t EX_PROFILE_CN_CIRCUIT_BREAK_DATES_COUNT = sizeof(EX_PROFILE_CN_CIRCUIT_BREAK_DATES) / sizeof(session_date_t);
 
 // ========== Timestamp Constants ==========
+// NOTE: #define (not static const double) — const variables are not constant
+// expressions in ISO C, so MSVC rejects them in static initializers (C2099).
 
-static const double        EX_PROFILE_CN_TS_OPENCALL_START = HMS_TO_TS(9u, 15u, 0u);      // 09:15:00
-static const double        EX_PROFILE_CN_TS_OPENCALL_NO_CANCEL = HMS_TO_TS(9u, 20u, 0u);  // 09:20:00
-static const double        EX_PROFILE_CN_TS_OPENCALL_UNCROSS = HMS_TO_TS(9u, 25u, 0u);    // 09:25:00 (uncross)
-static const double        EX_PROFILE_CN_TS_SESSION_START = HMS_TO_TS(9u, 30u, 0u);       // 09:30:00
-static const double        EX_PROFILE_CN_TS_BREAK_START = HMS_TO_TS(11u, 30u, 0u);        // 11:30:00
-static const double        EX_PROFILE_CN_TS_BREAK_END = HMS_TO_TS(13u, 0u, 0u);           // 13:00:00
-static const double        EX_PROFILE_CN_TS_CLOSECALL_START = HMS_TO_TS(14u, 57u, 0u);    // 14:57:00
-static const double        EX_PROFILE_CN_TS_SESSION_END = HMS_TO_TS(15u, 0u, 0u);         // 15:00:00
+#define EX_PROFILE_CN_TS_OPENCALL_START     HMS_TO_TS(9u, 15u, 0u)   // 09:15:00
+#define EX_PROFILE_CN_TS_OPENCALL_NO_CANCEL HMS_TO_TS(9u, 20u, 0u)   // 09:20:00
+#define EX_PROFILE_CN_TS_OPENCALL_UNCROSS   HMS_TO_TS(9u, 25u, 0u)   // 09:25:00 (uncross)
+#define EX_PROFILE_CN_TS_SESSION_START      HMS_TO_TS(9u, 30u, 0u)   // 09:30:00
+#define EX_PROFILE_CN_TS_BREAK_START        HMS_TO_TS(11u, 30u, 0u)  // 11:30:00
+#define EX_PROFILE_CN_TS_BREAK_END          HMS_TO_TS(13u, 0u, 0u)   // 13:00:00
+#define EX_PROFILE_CN_TS_CLOSECALL_START    HMS_TO_TS(14u, 57u, 0u)  // 14:57:00
+#define EX_PROFILE_CN_TS_SESSION_END        HMS_TO_TS(15u, 0u, 0u)   // 15:00:00
 
 const session_time_range_t EX_PROFILE_CN_OPENCALL_ACTIVE = {
     .start = {.elapsed_seconds = -15.0 * SECONDS_PER_MINUTE, .hour = 9u, .minute = 15u, .second = 0u, .nanosecond = 0u, .phase = SESSION_PHASE_OPEN_AUCTION},

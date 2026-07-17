@@ -13,6 +13,20 @@ typedef SSIZE_T ssize_t;
 #endif
 #include <time.h>
 
+#if defined(_WIN32) || defined(_WIN64)
+/**
+ * @brief POSIX-compatible localtime_r/gmtime_r wrappers over the MSVC *_s variants.
+ * @return Pointer to result on success, NULL on failure (POSIX semantics).
+ */
+static inline struct tm* localtime_r(const time_t* timer, struct tm* result) {
+    return localtime_s(result, timer) == 0 ? result : NULL;
+}
+
+static inline struct tm* gmtime_r(const time_t* timer, struct tm* result) {
+    return gmtime_s(result, timer) == 0 ? result : NULL;
+}
+#endif
+
 // ========== Constants ==========
 
 #ifndef SECONDS_PER_DAY
