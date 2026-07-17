@@ -1,9 +1,6 @@
 #ifndef C_MARKET_DATA_BUFFER_H
 #define C_MARKET_DATA_BUFFER_H
 
-#include <math.h>
-#include <pthread.h>
-#include <sched.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -14,6 +11,13 @@
 #include <algo_engine/base/c_market_data/c_market_data.h>
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <cbase/intern_string/c_intern_string.h>
+
+#include <math.h>
+#ifdef _WIN32
+#include <cbase/nt/time_sched_nt_compat.h>
+#else
+#include <sched.h>
+#endif
 
 #ifndef MD_BUF_PTR_DEFAULT_CAP
 #define MD_BUF_PTR_DEFAULT_CAP 16
