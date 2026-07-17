@@ -64,14 +64,14 @@ cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, do
 
     if MD_DEFAULT_ALLOCATOR.with_shm:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker, NULL)
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker, 0, NULL)
         else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker, NULL)
+            meta_data.ticker = c_istr(SHM_POOL, ticker, 0, NULL)
     else:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker, NULL)
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker, 0, NULL)
         else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker, NULL)
+            meta_data.ticker = c_istr(HEAP_POOL, ticker, 0, NULL)
 
     if not meta_data.ticker:
         raise MemoryError('Failed to intern ticker string')
@@ -96,14 +96,14 @@ cdef inline const md_variant* c_deserialize_buffer(const char* src):
     # Original deserialized const char* ticker is a borrowed reference, pointed to the const char* src, so no need for freeing
     if MD_DEFAULT_ALLOCATOR.with_shm:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(SHM_POOL, ticker, NULL)
+            meta_data.ticker = c_istr_synced(SHM_POOL, ticker, 0, NULL)
         else:
-            meta_data.ticker = c_istr(SHM_POOL, ticker, NULL)
+            meta_data.ticker = c_istr(SHM_POOL, ticker, 0, NULL)
     else:
         if MD_DEFAULT_ALLOCATOR.with_lock:
-            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker, NULL)
+            meta_data.ticker = c_istr_synced(HEAP_POOL, ticker, 0, NULL)
         else:
-            meta_data.ticker = c_istr(HEAP_POOL, ticker, NULL)
+            meta_data.ticker = c_istr(HEAP_POOL, ticker, 0, NULL)
 
     if not meta_data.ticker:
         raise MemoryError('Failed to intern ticker string')
@@ -409,8 +409,9 @@ cdef class MarketData:
             if value is None:
                 header.meta_info.ticker = NULL
                 return
-            cdef const char* scr = PyUnicode_AsUTF8(value)
-            cdef const char* istr = c_istr_synced(SHM_POOL if MD_DEFAULT_ALLOCATOR.with_shm else HEAP_POOL, scr, NULL)
+            cdef Py_ssize_t length
+            cdef const char* scr = PyUnicode_AsUTF8AndSize(value, &length)
+            cdef const char* istr = c_istr_synced(SHM_POOL if MD_DEFAULT_ALLOCATOR.with_shm else HEAP_POOL, scr, length, NULL)
             header.meta_info.ticker = istr
 
     property timestamp:
