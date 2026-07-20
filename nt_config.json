@@ -1,0 +1,32 @@
+{
+    "connection": {
+        "host": "<remote-host>",
+        "port": 22,
+        "user": "<domain\\user>",
+        "identity_file": "~/.ssh/<identity-file>.pem"
+    },
+    "windows": {
+        "python_path": "C:\\Program Files\\Python<version>\\python.exe",
+        "venv_path": "C:\\Users\\<user>\\Projects\\venv_<version>",
+        "proxy": "127.0.0.1:<port>"
+    },
+    "project": {
+        "remote_root": "C:\\Users\\<user>\\Projects\\PyAlgoEngine",
+        "local_root": "/home/<user>/Projects/PyAlgoEngine"
+    },
+    "sync": {
+        "exclude_patterns": [
+            ".git",
+            "__pycache__",
+            "*.pyc",
+            ".pytest_cache",
+            "*.egg-info",
+            "build",
+            "algo_engine/includes",
+            ".idea",
+            ".vscode",
+            "*.so",
+            "*.cpython-*.so"
+        ]
+    }
+}
