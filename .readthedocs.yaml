@@ -9,9 +9,7 @@ build:
       # Build-system dependencies required to compile Cython extensions
       - pip install -U pip setuptools numpy cython PyCyBase PyEventEngine
     pre_build:
-      # --no-build-isolation: reuse pre_install packages instead of creating
-      # a fresh venv that can't find them (avoids exit-code -4 crash)
-      - pip install --no-build-isolation .
+      - pip install -U .
 
 sphinx:
   configuration: docs/source/conf.py
