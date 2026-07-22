@@ -42,22 +42,13 @@ napoleon_include_init_with_doc = True
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 html_theme_options = {
-    'navigation_depth': 4,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
-    'includehidden': True,
-    'titles_only': False,
+    'source_repository': 'https://github.com/BolunHan/PyAlgoEngine/',
+    'source_branch': 'main',
+    'source_directory': 'docs/source/',
 }
 html_static_path = ['_static']
-html_context = {
-    'display_github': True,
-    'github_user': 'BolunHan',
-    'github_repo': 'PyAlgoEngine',
-    'github_version': 'main',
-    'conf_py_path': '/docs/source/',
-}
 
 suppress_warnings = ['import']
 
