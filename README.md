@@ -2,8 +2,8 @@
 
 **High-Performance Algorithmic Trading Engine in Python, Cython, and C**
 
-PyAlgoEngine is a low-latency trading engine designed for HFT (High-Frequency Trading)
-systems. It provides C-level market data structures, shared memory buffers,
+PyAlgoEngine is a low-latency trading engine for HFT (High-Frequency Trading)
+systems. It provides C-level market data structures, shared-memory buffers,
 an event-driven engine architecture, backtesting with simulated order matching,
 exchange calendar profiles, and web-based visualization — all with Cython
 acceleration for latency-critical paths.
@@ -12,26 +12,24 @@ acceleration for latency-critical paths.
 
 | Category | Capabilities |
 |----------|-------------|
-| **Market Data** | Tick, Bar, OrderBook, Transaction, Order, Trade — all C-backed via Cython |
-| **Buffers** | Shared-memory `MarketDataBuffer`, lock-free `ConcurrentBuffer`, ring buffer |
-| **Engines** | Event engine (pub/sub), Market Data Service (MDS), Algo engine, Trade engine |
-| **Exchange Profiles** | CN (A-share) and default global calendars, session phases, holidays |
-| **Backtesting** | Data replay (simple/progress), simulated order matching, trade metrics |
-| **Strategy Framework** | `StrategyEngineTemplate`, `AlgoTemplate`, global singletons |
+| **Market Data** | `TickData`, `TickDataLite`, `BarData`, `DailyBar`, `OrderBook`, `TransactionData`, `OrderData`, `TradeData` — all C-backed via Cython |
+| **Buffers** | `MarketDataBuffer`, `MarketDataRingBuffer`, `MarketDataConcurrentBuffer`, `MarketDataBufferCache` |
+| **Engines** | `EVENT_ENGINE` (pub/sub), `MDS` (Market Data Service), `ALGO_ENGINE` (algo lifecycle), trade engine (DMA, positions, risk) |
+| **Exchange Profiles** | CN (A-share) and default global calendars, session phases, holidays via `PROFILE`, `PROFILE_CN`, `PROFILE_DEFAULT` |
+| **Backtesting** | `SimpleReplay`, `ProgressReplay`, `SimMatch` (simulated matching), `TradeMetrics` |
+| **Strategy Framework** | `StrategyEngine`, `AlgoTemplate`, global singletons (`BALANCE`, `DMA`, `STRATEGY_ENGINE`) |
 | **Web Apps** | Flask + Bokeh dashboards, candlestick charts, strategy tester UI |
-| **Compile-Time Config** | `TICKER_SIZE`, `BOOK_SIZE`, `ID_SIZE`, `MAX_WORKERS` via env vars |
+| **Compile-Time Config** | `BOOK_SIZE`, `ID_SIZE`, `LONG_ID_SIZE`, `MD_BUF_PTR_DEFAULT_CAP`, `MD_BUF_DATA_DEFAULT_CAP` via env vars |
 
 ## Quick Install
 
 ```bash
-# Clone and build
 git clone https://github.com/BolunHan/PyAlgoEngine.git
 cd PyAlgoEngine
 ./build.sh -i
 ```
 
 Requires **Python 3.12+** and a C compiler (GCC, Clang, or MSVC).
-
 See the [Setup Guide](https://pyalgoengine.readthedocs.io/en/latest/setup.html) for
 detailed instructions, compile-time configuration, and optional dependencies.
 
@@ -39,10 +37,10 @@ detailed instructions, compile-time configuration, and optional dependencies.
 
 ```python
 import algo_engine
-print(algo_engine.__version__)  # e.g. "0.12.0"
+print(algo_engine.__version__)
 
-from algo_engine.base import C_CONFIG
-print(C_CONFIG)  # compile-time constants
+from algo_engine.base import CONFIG
+print(CONFIG)  # compile-time and runtime configuration
 ```
 
 ## Documentation
@@ -61,13 +59,13 @@ cd docs && ./update_docs.sh
 ┌──────────────────────────────────────────────────────┐
 │  apps/          Web visualization (Flask, Bokeh)     │
 ├──────────────────────────────────────────────────────┤
-│  strategy/      Strategy framework                   │
+│  strategy/      Strategy framework, global singletons│
 ├──────────────────────────────────────────────────────┤
 │  engine/        Event, Market, Algo, Trade engines   │
 ├──────────────────────────────────────────────────────┤
 │  backtest/      Replay, SimMatch, Metrics            │
 ├──────────────────────────────────────────────────────┤
-│  base/          Market data types, buffers, allocators│
+│  base/          Market data types, buffers (Cython/C)│
 ├──────────────────────────────────────────────────────┤
 │  exchange_profile/  Calendars, sessions (CN + global)│
 ├──────────────────────────────────────────────────────┤
@@ -84,12 +82,12 @@ cd docs && ./update_docs.sh
 | `./build.sh -i` | Clean, build Cython extensions in-place, install |
 | `make build` | Clean and build extensions in-place |
 | `make install` | Build + pip install |
-| `make list-args` | List compile-time macros |
-| `./build.sh -l` | List compile-time macros |
+| `./build.sh -l` | List all compile-time macros and defaults |
+| `make list-args` | Same as above |
 
 Override compile-time constants:
 ```bash
-BOOK_SIZE=20 MAX_WORKERS=256 ./build.sh -i
+BOOK_SIZE=20 ./build.sh -i
 ```
 
 ## Dependencies

@@ -1,93 +1,82 @@
 Web Applications
 ================
 
-PyAlgoEngine includes web-based visualization tools built on Flask and
-Bokeh for real-time monitoring and backtest analysis.
-
 Flask Web App
 -------------
-
-The ``WebApp`` provides a web interface for backtesting:
 
 .. code-block:: python
 
    from algo_engine.apps.backtest import WebApp, start_app
+   from datetime import date
 
-   # Create and configure
-   app = WebApp()
+   app = WebApp(
+       start_date=date(2024, 1, 2),
+       end_date=date(2024, 6, 30),
+       name="My Backtest",
+       address="0.0.0.0",
+       port=8080,
+   )
+   app.register("000001.SH")   # creates CandleStick dashboard
+   app.serve(blocking=True)
 
-   # Start the server
-   start_app(app, host="127.0.0.1", port=5000)
+   # Or use the convenience function
+   start_app(start_date=date(2024, 1, 2), end_date=date(2024, 6, 30))
+
+``WebApp`` runs a Flask server with embedded Bokeh candlestick charts.
+Each registered ticker gets its own dashboard page at ``/<ticker>``.
 
 Bokeh Dashboards
 ----------------
 
-Interactive Bokeh charts for market data visualization:
-
 .. code-block:: python
 
    from algo_engine.apps import DocServer, DocTheme
-
-   server = DocServer()
-
-Candlestick Charts
-~~~~~~~~~~~~~~~~~~
-
-Real-time candlestick charts:
-
-.. code-block:: python
-
    from algo_engine.apps.backtest import CandleStick, StickTheme
+   from datetime import date
 
-   chart = CandleStick(
-       ticker="AAPL",
-       theme=StickTheme.DARK,
+   stick = CandleStick(
+       ticker="000001.SH",
+       start_date=date(2024, 1, 2),
+       end_date=date(2024, 6, 30),
+       interval=60.0,                    # bar interval in seconds
+       theme=StickTheme(style="cn_style"),   # red-up/green-down
    )
-   chart.update_bar(bar_data)  # push new bar, chart updates
+   # Push market data to update the chart
+   stick.update(tick)
 
-Strategy Tester UI
-------------------
+   # Export to CSV
+   stick.to_csv("000001.SH_bars.csv")
 
-The ``Tester`` and ``StrategyTester`` classes provide a programmatic
-interface for running and visualizing backtests:
+``StickTheme`` supports:
+  * ``ws_style`` — green up, red down (Western)
+  * ``cn_style`` — red up, green down (China)
+
+Strategy Tester
+---------------
 
 .. code-block:: python
 
    from algo_engine.apps import Tester, StrategyTester
+   from datetime import date
 
-   # Basic tester
-   tester = Tester()
-
-   # Full strategy tester with UI
    tester = StrategyTester(
-       strategy_class=MyAlgo,
-       strategy_kwargs={"ticker": "AAPL"},
-       data_source=data_iterator,
-       start_date="2024-01-02",
-       end_date="2024-06-30",
+       start_date=date(2024, 1, 2),
+       end_date=date(2024, 6, 30),
+       data_loader=my_loader,
+       strategy=my_strategy,
    )
+   tester.register_ticker("000001.SH")
+   # Automatically creates SimMatch, TradeMetrics, and optional WebApp
    tester.run()
+
+``Tester`` is the abstract base; ``StrategyTester`` adds event-engine
+integration, strategy dispatch, and position management.
 
 Optional Dependencies
 ---------------------
-
-Web features require additional packages:
 
 .. code-block:: bash
 
    pip install PyAlgoEngine[WebApps]
 
-This installs: ``flask``, ``waitress`` (production WSGI server), and
-``bokeh``.
-
-Simulated Input
----------------
-
-For automated testing and demo scenarios, the ``sim_input`` subpackage
-provides programmatic control of mouse and keyboard:
-
-.. code-block:: python
-
-   from algo_engine.apps.sim_input import SimKeyboard, SimMouse
-
-   # Note: these are primarily for demo/testing automation
+Installs: ``flask``, ``waitress`` (production WSGI), ``bokeh``.

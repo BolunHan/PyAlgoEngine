@@ -1,119 +1,120 @@
 Strategy Development
 ====================
 
-This guide walks through building trading strategies with PyAlgoEngine's
-strategy framework.
+This guide walks through building trading strategies with PyAlgoEngine.
 
 Strategy Engine
 ---------------
 
-The ``StrategyEngine`` is the base class for strategy engines. It
-processes market data, generates signals, and manages order flow:
+``StrategyEngine`` extends ``StrategyEngineTemplate`` with event-engine
+integration, handler management, and position operations.
 
 .. code-block:: python
 
    from algo_engine.strategy import StrategyEngine
+   # StrategyEngine is the concrete class; StrategyEngineTemplate is the ABC
 
-   class MyStrategyEngine(StrategyEngine):
-       def on_market_data(self, md_data):
-           """Process incoming market data."""
-           # md_data could be TickData, BarData, etc.
-           pass
+   # In live trading, use the pre-built singleton:
+   from algo_engine.strategy import STRATEGY_ENGINE
 
-       def on_report(self, report):
-           """Process trade execution reports."""
-           pass
+   # In backtesting, backtest/__main__.py creates isolated instances
 
-       def on_order(self, order):
-           """Process order state changes."""
-           pass
+Key methods on ``StrategyEngine``:
+  * ``subscribe(ticker)`` — add ticker to subscription set
+  * ``open_pos(ticker, volume, side=None, limit_price=None, algo=None)``
+    — open a position via ``position_tracker.open()``
+  * ``unwind_pos(ticker, volume, side=None, limit_price=None, algo=None)``
+    — close position by opening an offsetting one
+  * ``cancel(ticker, side=None, algo_id=None, order_id=None)``
+    — cancel working algos by ticker/side or specific algo/order
+  * ``stop()`` — cancel all algos and clear subscriptions
+  * ``add_handler(on_market_data=..., on_report=..., on_order=...)``
+    — register event handlers
+  * ``back_test_lite(start_date, end_date, data_loader)``
+    — run a lightweight backtest
 
 Global Singletons
 -----------------
 
-The strategy layer provides pre-instantiated singletons for common
-services:
-
 .. code-block:: python
 
    from algo_engine.strategy import (
-       STRATEGY_ENGINE,   # Strategy engine instance
-       BALANCE,           # Account balance / equity tracker
-       DMA,               # Direct Market Access (EventDMA)
-       POSITION_TRACKER,  # Position tracking service
-       INVENTORY,         # Inventory management
-       RISK_PROFILE,      # Risk limits and monitoring
+       STRATEGY_ENGINE,   # StrategyEngine instance
+       BALANCE,           # Balance (capital, positions, PnL tracking)
+       DMA,               # EventDMA (order launch/cancel via event engine)
+       POSITION_TRACKER,  # PositionManagementService
+       INVENTORY,         # Inventory (security holdings)
+       RISK_PROFILE,      # RiskProfile (position/notional limits)
    )
 
-These are shared across all strategies in the same process. In
-backtesting, separate instances are created automatically.
+These are created at import time with interlinked dependencies:
+``BALANCE`` holds ``INVENTORY``; ``RISK_PROFILE`` references ``MDS`` and
+``BALANCE``; ``DMA`` references ``MDS`` and ``RISK_PROFILE``;
+``POSITION_TRACKER`` references ``DMA``; ``STRATEGY_ENGINE`` references
+``EVENT_ENGINE`` and ``POSITION_TRACKER``.
 
-Building a Strategy
--------------------
+Writing a Strategy
+------------------
 
-Here's a complete example of a moving-average crossover strategy:
+Here's a strategy that subscribes to a ticker and opens a position
+on first data:
 
 .. code-block:: python
 
-   from algo_engine.engine import AlgoTemplate
-   from algo_engine.base import TransactionSide
-   from collections import deque
+   from algo_engine.strategy import STRATEGY_ENGINE
+   from algo_engine.base import TransactionDirection, TransactionOffset
 
-   class MACrossover(AlgoTemplate):
-       """Moving average crossover strategy."""
-
-       def __init__(self, ticker, fast_period=5, slow_period=20):
-           super().__init__()
+   class FirstTickStrategy:
+       """Opens a long position on the first tick received."""
+       def __init__(self, ticker, volume):
            self.ticker = ticker
-           self.fast_period = fast_period
-           self.slow_period = slow_period
-           self.prices = deque(maxlen=slow_period)
-           self.position = 0
+           self.volume = volume
+           self.started = False
 
-       def on_start(self):
-           self.subscribe(self.ticker)
-
-       def on_tick(self, tick):
-           if tick.ticker != self.ticker:
+       def on_market_data(self, market_data, **kwargs):
+           if market_data.ticker != self.ticker or self.started:
                return
+           self.started = True
+           STRATEGY_ENGINE.open_pos(
+               ticker=self.ticker,
+               volume=self.volume,
+               side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN,
+           )
 
-           self.prices.append(tick.last)
-           if len(self.prices) < self.slow_period:
-               return
+       def on_report(self, report, **kwargs):
+           print(f"Filled: {report.filled_volume} @ {report.avg_price:.2f}")
 
-           fast_ma = sum(list(self.prices)[-self.fast_period:]) / self.fast_period
-           slow_ma = sum(self.prices) / self.slow_period
+       def on_order(self, order, **kwargs):
+           print(f"Order state: {order.order_state}")
 
-           if fast_ma > slow_ma and self.position <= 0:
-               self.buy(self.ticker, price=tick.last, volume=100)
-               self.position = 1
-           elif fast_ma < slow_ma and self.position >= 0:
-               self.sell(self.ticker, price=tick.last, volume=100)
-               self.position = -1
-
-       def on_report(self, report):
-           print(f"Filled {report.filled_volume} @ {report.avg_price:.2f}")
-
-       def on_stop(self):
-           print(f"MA Crossover stopped")
+   # Attach to the strategy engine
+   strat = FirstTickStrategy("000001.SH", volume=10000.0)
+   STRATEGY_ENGINE.attach_strategy(strat)
+   STRATEGY_ENGINE.subscribe("000001.SH")
 
 Integration with Algo Engine
 ----------------------------
 
-Strategies are run via the algo engine:
+For algo-based execution, use ``STRATEGY_ENGINE.open_pos()`` which
+internally calls ``POSITION_TRACKER.open()``, creating an ``AlgoTemplate``
+subclass instance (by default ``ALGO_REGISTRY.cast("aggressive_timeout")``).
 
 .. code-block:: python
 
-   from algo_engine.engine import ALGO_ENGINE, ALGO_REGISTRY
+   # Open a long position of 10,000 shares with a limit 1% below market
+   filled, working = STRATEGY_ENGINE.open_pos(
+       ticker="000001.SH",
+       volume=10000.0,
+       side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN,
+       limit_price=MDS.get_market_price("000001.SH") * 0.99,
+   )
+   print(f"Filled: {filled}, Working: {working}")
 
-   ALGO_REGISTRY.register("ma_cross", MACrossover)
-   algo = ALGO_ENGINE.start_algo("ma_cross", ticker="AAPL",
-                                  fast_period=5, slow_period=20)
-   ALGO_ENGINE.stop_algo(algo.id)
+   # Cancel all working orders for a ticker
+   STRATEGY_ENGINE.cancel("000001.SH")
 
 Next Steps
 ----------
 
 - :doc:`backtest` — backtest your strategy on historical data
 - :doc:`engines` — understand the underlying engine architecture
-- :doc:`api/strategy` — full strategy API reference

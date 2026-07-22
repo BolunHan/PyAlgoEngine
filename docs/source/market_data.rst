@@ -1,161 +1,269 @@
 Market Data
 ===========
 
-This section covers the market data types and buffer systems that form the
-foundation of PyAlgoEngine. All types are C-level structures exposed to
-Python via Cython — they provide Python-friendly APIs with near-C
-performance.
+All market data types are C-level structures exposed to Python via Cython.
+They provide Python-friendly accessors with near-C performance. Every type
+inherits from :class:`~algo_engine.base.MarketData`.
+
+Common ``MarketData`` properties: ``ticker``, ``timestamp`` (float, Unix
+seconds), ``market_price``, ``market_time``, ``dtype``, ``topic``,
+``session_date``, ``session_time``.
 
 Data Types
 ----------
 
+TickDataLite
+~~~~~~~~~~~~
+
+Level-1 snapshot without order book depth.
+
+.. code-block:: python
+
+   from algo_engine.base import TickDataLite
+
+   tick = TickDataLite(
+       ticker="000001.SH",
+       timestamp=1718400000.0,
+       last_price=15.28,
+       bid_price=15.27,
+       bid_volume=5000.0,
+       ask_price=15.29,
+       ask_volume=3200.0,
+       open_price=15.20,
+       prev_close=15.35,
+       total_traded_volume=15000000.0,
+       total_traded_notional=228000000.0,
+       total_trade_count=3421,
+   )
+
+Properties: ``last_price``, ``bid_price``, ``bid_volume``, ``ask_price``,
+``ask_volume``, ``open_price``, ``prev_close``, ``total_traded_volume``,
+``total_traded_notional``, ``total_trade_count``.
+Computed: ``mid_price`` ((bid+ask)/2), ``spread`` (ask-bid), ``market_price``.
+
 TickData
 ~~~~~~~~
 
-Represents a single tick (trade/quote) with full order book snapshot.
+Level-2 snapshot with full order book. The order book depth is fixed at
+compile time (``BOOK_SIZE``, default 10).
 
 .. code-block:: python
 
    from algo_engine.base import TickData
 
    tick = TickData(
-       ticker="AAPL",
-       last=150.25,           # last traded price
-       bid=150.20,            # best bid
-       ask=150.30,            # best ask
-       bid_volume=1000,       # volume at best bid
-       ask_volume=500,        # volume at best ask
-       volume=50000,          # cumulative volume
-       timestamp=1711000000000000000,  # nanoseconds since epoch
+       ticker="000001.SH",
+       timestamp=1718400000.0,
+       last_price=15.28,
+       total_traded_volume=15000000.0,
+       total_bid_volume=120000.0,
+       total_ask_volume=80000.0,
+       weighted_bid_price=15.271,
+       weighted_ask_price=15.292,
+       # Order book via kwargs:
+       bid_price_1=15.27, bid_volume_1=5000.0, bid_n_orders_1=12,
+       ask_price_1=15.29, ask_volume_1=3200.0, ask_n_orders_1=8,
+       bid_price_2=15.26, bid_volume_2=8000.0,
+       ask_price_2=15.30, ask_volume_2=6000.0,
    )
 
-   # Access order book levels
-   tick.order_book.bid_price[0]   # best bid price
-   tick.order_book.bid_volume[0]  # best bid volume
-   tick.order_book.ask_price[0]   # best ask price
-   tick.order_book.ask_volume[0]  # best ask volume
+   # Best prices
+   tick.best_bid_price   # 15.27
+   tick.best_ask_price   # 15.29
 
-Key attributes:
-  * ``ticker`` — instrument symbol
-  * ``last`` — last traded price
-  * ``bid`` / ``ask`` — best bid/ask
-  * ``bid_volume`` / ``ask_volume`` — volume at best levels
-  * ``volume`` — cumulative trading volume
-  * ``amount`` — cumulative trading amount (price × volume)
-  * ``order_book`` — full ``OrderBook`` with price/volume arrays
-  * ``timestamp`` — nanosecond Unix timestamp
+   # Order book access
+   tick.bid.at_level(0)            # (15.27, 5000.0, 12)
+   tick.bid.at_price(15.27)        # same, by price lookup
+   tick.bid.loc_volume(15.25, 15.28)  # total vol in price range
+   tick.bid.price                   # numpy array of prices
+   tick.bid.volume                  # numpy array of volumes
+
+   # Extract lite (zero-copy view or owned copy)
+   lite = tick.lite(copy=False)    # non-owning view
+   lite_copy = tick.lite(copy=True) # independent copy
+
+Additional properties: ``total_bid_volume``, ``total_ask_volume``,
+``weighted_bid_price``, ``weighted_ask_price``.
+
+Parse order book data from a dict:
+``tick.parse({"bid_price_1": 15.27, "bid_volume_1": 5000.0, ...})``
 
 OrderBook
 ~~~~~~~~~
 
-A snapshot of the limit order book at a given depth (compile-time
-``BOOK_SIZE``, default 10).
+Represents one side (bid or ask). Construct standalone or access via
+``tick.bid`` / ``tick.ask``.
 
 .. code-block:: python
 
-   from algo_engine.base import OrderBook
+   from algo_engine.base import OrderBook, TransactionDirection
 
-   ob = tick.order_book
-   for i in range(ob.book_size):
-       if ob.bid_volume[i] > 0:
-           print(f"Bid L{i}: {ob.bid_price[i]} x {ob.bid_volume[i]}")
-       if ob.ask_volume[i] > 0:
-           print(f"Ask L{i}: {ob.ask_price[i]} x {ob.ask_volume[i]}")
+   ob = OrderBook(
+       direction=TransactionDirection.DIRECTION_LONG,  # bid side
+       price=[15.27, 15.26, 15.25],
+       volume=[5000.0, 8000.0, 3000.0],
+       n_orders=[12, 20, 5],
+       is_sorted=True,
+   )
+   ob.sort()           # sort by price (ascending for bids, descending for asks)
+   ob.to_numpy()       # 2D numpy array
+   raw = ob.to_bytes()  # serialize
 
-BarData / DailyBar
-~~~~~~~~~~~~~~~~~~
+Properties: ``price`` (float64 array), ``volume`` (float64 array),
+``n_orders`` (uint64 array), ``side`` (TransactionSide), ``direction``,
+``size``, ``capacity``, ``sorted``.
 
-Candlestick (OHLCV) bars at any resolution.
+BarData
+~~~~~~~
+
+OHLCV candlestick. **Timestamp is the END of the bar** to prevent
+look-ahead bias.
 
 .. code-block:: python
 
-   from algo_engine.base import BarData, DailyBar
+   from algo_engine.base import BarData
 
    bar = BarData(
-       ticker="AAPL",
-       open=150.00, high=151.00, low=149.50, close=150.75,
-       volume=100000, amount=15100000.0,
-       timestamp=1711000000000000000,
+       ticker="000001.SH",
+       timestamp=1718400300.0,      # bar end
+       high_price=15.50,
+       low_price=15.10,
+       open_price=15.20,
+       close_price=15.28,
+       volume=1500000.0,
+       notional=22800000.0,
+       trade_count=3421,
+       start_timestamp=1718400000.0, # bar start
+       bar_span=300.0,               # 5 min in seconds
    )
+
+   bar.vwap              # volume-weighted average price
+   bar.bar_type          # 'Minute', 'Hourly', 'Sub-Minute', etc.
+   bar.bar_span          # timedelta
+   bar.bar_start_time    # datetime
+   bar.bar_end_time      # datetime
+
+   # Dict-style access and mutation
+   bar["close_price"]    # 15.28
+   bar["close_price"] = 15.30
+
+DailyBar
+~~~~~~~~
+
+Full-day candlestick. Uses ``market_date`` (``datetime.date``) instead of
+``timestamp``.
+
+.. code-block:: python
+
+   from algo_engine.base import DailyBar
+   from datetime import date
 
    daily = DailyBar(
-       ticker="AAPL",
-       open=149.00, high=152.00, low=148.50, close=151.25,
-       volume=5000000, amount=750000000.0,
-       timestamp=1711000000000000000,
+       ticker="000001.SH",
+       market_date=date(2024, 6, 15),
+       high_price=15.80,
+       low_price=15.00,
+       open_price=15.20,
+       close_price=15.45,
+       volume=50000000.0,
+       notional=760000000.0,
+       trade_count=50000,
+       bar_span=1,    # number of days
    )
+   daily.market_date      # date(2024, 6, 15)
+   daily.bar_type         # 'Daily' or 'Daily-Plus'
 
-Transaction Data
-~~~~~~~~~~~~~~~~
-
-Orders, trades, and transaction records.
+Transaction / Order / Trade
+---------------------------
 
 .. code-block:: python
 
    from algo_engine.base import (
-       OrderData, TradeData, TransactionData,
-       TransactionSide, TransactionDirection, TransactionOffset
+       TransactionData, OrderData, TradeData,
+       TransactionDirection, TransactionOffset, TransactionSide,
+       OrderType,
    )
 
-   # An order sent to the market
+   # side = direction | offset  (int enum via | operator)
+   side = TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN
+
+   txn = TransactionData(
+       ticker="000001.SH",
+       timestamp=1718400000.0,
+       price=15.28,
+       volume=1000.0,
+       side=side,
+       multiplier=1.0,
+       transaction_id="trd_001",
+       buy_id="bid_001",
+       sell_id="ask_001",
+   )
+   txn.side               # TransactionSide.SIDE_LONG_OPEN
+   txn.side_sign          # 1 (long), -1 (short), 0 (cancel/unknown)
+   txn.volume_flow        # signed volume (volume * side_sign)
+   txn.notional_flow      # signed notional
+
+   # Merge multiple transactions
+   merged = TransactionData.merge([txn1, txn2, txn3])
+
+   # Order — placed into the order book
    order = OrderData(
-       ticker="AAPL",
-       price=150.50,
-       volume=100,
-       side=TransactionSide.BUY,
-       direction=TransactionDirection.LONG,
-       offset=TransactionOffset.OPEN,
+       ticker="000001.SH",
+       timestamp=1718400000.0,
+       price=15.25,
+       volume=500.0,
+       side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_ORDER,
        order_id="ord_001",
+       order_type=OrderType.ORDER_LIMIT,
    )
 
-   # A trade (fill) confirmation
+   # TradeData — alias with trade_* parameter names
    trade = TradeData(
-       ticker="AAPL",
-       price=150.48,
-       volume=100,
-       side=TransactionSide.BUY,
-       trade_id="trd_001",
-       order_id="ord_001",
+       ticker="000001.SH",
+       timestamp=1718400000.0,
+       trade_price=15.28,
+       trade_volume=1000.0,
+       trade_side=side,
    )
 
 Enums:
-  * ``TransactionSide`` — ``BUY``, ``SELL``
-  * ``TransactionDirection`` — ``LONG``, ``SHORT``
-  * ``TransactionOffset`` — ``OPEN``, ``CLOSE``, ``CLOSE_TODAY``, ``CLOSE_YESTERDAY``
-  * ``OrderType`` — ``LIMIT``, ``MARKET``, ``FAK``, ``FOK``, ``GFD``
+
+* ``TransactionDirection``: ``DIRECTION_UNKNOWN``, ``DIRECTION_SHORT``,
+  ``DIRECTION_LONG``, ``DIRECTION_NEUTRAL``
+* ``TransactionOffset``: ``OFFSET_CANCEL``, ``OFFSET_ORDER``,
+  ``OFFSET_OPEN``, ``OFFSET_CLOSE``
+* ``OrderType``: ``ORDER_UNKNOWN``, ``ORDER_CANCEL``, ``ORDER_GENERIC``,
+  ``ORDER_LIMIT``, ``ORDER_LIMIT_MAKER``, ``ORDER_MARKET``, ``ORDER_FOK``,
+  ``ORDER_FAK``, ``ORDER_IOC``
 
 Trade Utilities
 ~~~~~~~~~~~~~~~
-
-Track order state and generate trade reports:
 
 .. code-block:: python
 
    from algo_engine.base import OrderState, TradeReport, TradeInstruction
 
-   # Track an order through its lifecycle
-   state = OrderState(order)
-   state.filled_volume = 50
-   print(state.is_filled)  # False
-
-   # Trade report summarizes execution
-   report = TradeReport(order, trade)
-
-   # Instruction for the next action
-   instruction = TradeInstruction(
-       ticker="AAPL", price=151.00, volume=50,
-       side=TransactionSide.SELL, offset=TransactionOffset.CLOSE,
+   # TradeReport — execution confirmation
+   report = TradeReport(
+       ticker="000001.SH", timestamp=1718400000.0,
+       price=15.28, volume=500.0,
+       side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN,
+       fee=2.5, order_id="ord_001", trade_id="trd_001",
    )
 
-MarketData Base Class
-~~~~~~~~~~~~~~~~~~~~~
-
-All market data types inherit from ``MarketData``, which provides:
-  * ``md_id`` — 128-bit unique identifier
-  * ``ticker`` — instrument symbol (interned string)
-  * ``timestamp`` — nanosecond Unix timestamp
-  * ``data_type`` — ``DataType`` enum (TICK, BAR, ORDER, TRADE, etc.)
-  * ``exchange`` — exchange identifier string
+   # TradeInstruction — order lifecycle tracking
+   instr = TradeInstruction(
+       ticker="000001.SH", timestamp=1718400000.0,
+       side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN,
+       volume=1000.0, limit_price=15.25,
+       order_type=OrderType.ORDER_LIMIT,
+       order_id="ord_001",
+   )
+   instr.set_order_state(OrderState.STATE_PLACED)
+   instr.fill(report)
+   instr.cancel_order()
+   print(instr.filled_volume, instr.average_price)
+   print(instr.is_working, instr.is_done)
 
 Data Buffers
 ------------
@@ -163,73 +271,88 @@ Data Buffers
 MarketDataBuffer
 ~~~~~~~~~~~~~~~~
 
-The primary buffer for storing and accessing market data. Supports shared
-memory for inter-process communication.
+Resizable block buffer for collecting and sorting market data.
 
 .. code-block:: python
 
    from algo_engine.base import MarketDataBuffer
 
-   buffer = MarketDataBuffer()
+   buf = MarketDataBuffer(ptr_cap=128, data_cap=16384)
 
-   # Push data
-   buffer.push_tick(tick)
-   buffer.push_bar(bar)
-   buffer.push_order(order)
+   # Single puts
+   buf.put(tick)
+   buf.put(bar)
 
-   # Query
-   latest_tick = buffer.get_tick("AAPL")
-   latest_bar = buffer.get_bar("AAPL")
-   all_ticks = buffer.get_all_ticks()
+   # Batch writes via cache (reduces reallocations)
+   with buf.cache() as cache:
+       for md in many_data:
+           cache.put(md)
 
-   # Thread-safe snapshot
-   snapshot = buffer.snapshot()
+   buf.sort()             # sort by timestamp
+   for md in buf:         # iterate chronologically
+       print(md.ticker)
 
-MarketDataConcurrentBuffer
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+   first = buf[0]         # indexed access
+   raw = buf.to_bytes()   # serialize
+   buf2 = MarketDataBuffer.from_bytes(raw)
 
-Lock-free concurrent buffer for multi-worker scenarios. Uses per-worker
-shards to avoid contention.
-
-.. code-block:: python
-
-   from algo_engine.base import MarketDataConcurrentBuffer
-
-   cbuffer = MarketDataConcurrentBuffer(num_workers=4)
-   cbuffer.push_tick(tick, worker_id=0)
+Properties: ``ptr_capacity``, ``ptr_tail`` (= len), ``data_capacity``, ``data_tail``.
 
 MarketDataRingBuffer
 ~~~~~~~~~~~~~~~~~~~~
 
-Fixed-size ring (circular) buffer for streaming data.
+Fixed-capacity ring buffer with blocking read/write.
 
 .. code-block:: python
 
    from algo_engine.base import MarketDataRingBuffer
 
-   ring = MarketDataRingBuffer(capacity=10000)
-   ring.push_tick(tick)
+   ring = MarketDataRingBuffer(ptr_cap=256, data_cap=32768)
+   ring.put(tick, block=True, timeout=1.0)    # may raise BufferFull, PipeTimeoutError
+   next_md = ring.listen(block=True, timeout=1.0)  # may raise BufferEmpty
+   print(ring.is_empty)
 
-MarketDataBufferCache
-~~~~~~~~~~~~~~~~~~~~~
+MarketDataConcurrentBuffer
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LRU-style cache wrapper around a buffer for faster repeated access.
+Multi-consumer buffer backed by shared memory.
 
 .. code-block:: python
 
-   from algo_engine.base import MarketDataBufferCache
+   from algo_engine.base import MarketDataConcurrentBuffer
 
-   cache = MarketDataBufferCache(buffer)
-   cache.get_tick("AAPL")  # cached access
+   cbuf = MarketDataConcurrentBuffer(n_workers=4, capacity=1024)
+   cbuf.put(tick, block=True, timeout=1.0)
+   md = cbuf.listen(worker_id=0, block=True, timeout=1.0)
+   cbuf.disable_worker(2)
+   cbuf.enable_worker(2)       # resets read pointer to current write position
+   print(cbuf.is_full, cbuf.is_empty)
 
 Allocator Protocols
 -------------------
 
-Memory allocation is controlled by configurable protocols:
-  * ``MD_SHARED`` — shared memory allocation (inter-process)
-  * ``MD_LOCKED`` — mutex-protected allocation
-  * ``MD_LOCKFREE`` — lock-free allocation (atomic operations)
-  * ``MD_FREELIST`` — free-list based allocation (object pooling)
+Context managers control how ``MarketData`` allocates its backing buffer:
 
-The active protocol is set via ``MarketDataBuffer`` configuration.
-For API details, see :doc:`api/base`.
+.. code-block:: python
+
+   from algo_engine.base import MD_SHARED, MD_LOCKED, MD_LOCKFREE, MD_FREELIST
+
+   with MD_SHARED | MD_LOCKED:
+       data = TickDataLite(ticker="TEST", timestamp=ts,
+                           last_price=100.0, bid_price=99.0,
+                           bid_volume=10.0, ask_price=101.0, ask_volume=10.0)
+
+* ``MD_SHARED`` — allocate in shared memory (default: True)
+* ``MD_LOCKED`` — thread-safe allocation (default: False)
+* ``MD_FREELIST`` — use freelist on deallocation (default: True)
+* ``MD_LOCKFREE`` — lock-free allocation
+
+``FilterMode`` provides bitmask-based filtering for market data streams:
+
+.. code-block:: python
+
+   from algo_engine.base import FilterMode
+
+   f = FilterMode.NO_TICK | FilterMode.NO_CANCEL
+   f.mask_data(tick)        # True if data passes filter
+   f.freeze()               # prevent further mutation

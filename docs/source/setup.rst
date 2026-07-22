@@ -35,8 +35,11 @@ Method 1: build.sh (recommended)
 
    ./build.sh -i
 
-This cleans previous artifacts, compiles Cython extensions in-place, and
-installs the package. Use ``-v <path>`` to specify a virtual environment.
+This cleans previous artifacts, compiles 15 Cython extensions in-place
+(parallel build using ``os.cpu_count() - 2`` threads on Linux), and
+installs the package.
+
+Use ``-v <path>`` to activate a virtual environment before building.
 
 Method 2: Make
 ~~~~~~~~~~~~~~~
@@ -46,7 +49,7 @@ Method 2: Make
    make build && pip install -U . --no-build-isolation
 
 ``make build`` runs ``python setup.py build_ext --inplace --verbose --force``
-after cleaning.
+after cleaning stale artifacts.
 
 Method 3: Step-by-step
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,56 +63,69 @@ Compile-Time Configuration
 ---------------------------
 
 You can override memory layout constants at compile time via environment
-variables. This is useful for tuning the engine to specific market data
-requirements without modifying source code.
+variables. Probe available macros with:
 
-.. list-table:: Compile-Time Macros
+.. code-block:: bash
+
+   ./build.sh -l        # or: make list-args
+
+This reads all ``#define`` directives from C headers and prints a table
+of macro names, default values, and source locations.
+
+Key user-configurable macros:
+
+.. list-table::
    :header-rows: 1
 
    * - Variable
      - Default
      - Description
-   * - ``TICKER_SIZE``
-     - 32
-     - Max length of a ticker symbol (bytes)
    * - ``BOOK_SIZE``
      - 10
-     - Max depth of the order book (levels)
+     - Max order book depth (price levels)
    * - ``ID_SIZE``
      - 16
-     - Max length of ID fields (bytes)
+     - Max size of ``md_id`` fields (order/transaction IDs)
+   * - ``LONG_ID_SIZE``
+     - 128
+     - Max size of ``long_md_id`` fields (report/instruction IDs)
    * - ``MAX_WORKERS``
      - 128
-     - Max number of concurrent buffer workers
+     - *(deprecated, no longer has any effect)*
+   * - ``MD_BUF_PTR_DEFAULT_CAP``
+     - 16
+     - Default pointer capacity for ``MarketDataBuffer``
+   * - ``MD_BUF_DATA_DEFAULT_CAP``
+     - 1024
+     - Default data byte capacity for ``MarketDataBuffer``
    * - ``DEBUG``
      - 0
      - Enable debug assertions (set to 1)
 
-Override any of these before building:
+Override before building:
 
 .. code-block:: bash
 
-   BOOK_SIZE=20 MAX_WORKERS=256 ./build.sh -i
+   BOOK_SIZE=20 ./build.sh -i
 
-Verify the compiled values:
+Verify the compiled and runtime values:
 
 .. code-block:: python
 
    from algo_engine.base import CONFIG
    print(CONFIG)
+   # DEBUG=False; BOOK_SIZE=10; ID_SIZE=16; LONG_ID_SIZE=128; ...
+
+Runtime configuration (``MD_CFG_*``) can be inspected on ``CONFIG`` as well
+but is set programmatically, not at compile time.
 
 Optional Dependencies
 ---------------------
 
-Install extras for additional features:
-
 .. code-block:: bash
 
-   # Web dashboard support
-   pip install PyAlgoEngine[WebApps]
-
-   # Documentation build tools
-   pip install PyAlgoEngine[Docs]
+   pip install PyAlgoEngine[WebApps]   # Flask, waitress, bokeh
+   pip install PyAlgoEngine[Docs]      # sphinx, sphinx-rtd-theme
 
 Platform Notes
 --------------
@@ -119,6 +135,6 @@ Platform Notes
     ``os.cpu_count() - 2`` threads.
 
 **Windows**:
-    MSVC with ``/Ox /std:c17``. Parallel builds are disabled by default
-    (set to 1 thread); override with the ``N_THREADS`` environment variable
-    if needed.
+    MSVC with ``/Ox /std:c17 /experimental:c11atomics``. Parallel builds
+    are disabled by default (set to 1 thread).
+    A ``build.ps1`` PowerShell script is provided for Windows.
