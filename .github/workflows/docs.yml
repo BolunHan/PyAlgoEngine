@@ -1,46 +1,46 @@
 name: Deploy Documentation
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
+    push:
+        tags:
+            - 'v*.*.*'
+    workflow_dispatch:
 
 jobs:
-  deploy-docs:
-    runs-on: ubuntu-latest
+    deploy-docs:
+        runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
 
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.13"
+            -   name: Set up Python 3.13
+                uses: actions/setup-python@v5
+                with:
+                    python-version: "3.13"
 
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip setuptools
-        pip install numpy cython PyCyBase "PyEventEngine>=0.5.1"
+            -   name: Install build dependencies
+                run: |
+                    python -m pip install --upgrade pip setuptools
+                    pip install setuptools numpy cython PyCyBase PyEventEngine
 
-    - name: Install package
-      run: |
-        pip install --no-build-isolation .
+            -   name: Install package
+                run: |
+                    pip install --no-build-isolation .
 
-    - name: Install doc dependencies
-      run: |
-        pip install furo
+            -   name: Install doc dependencies
+                run: |
+                    pip install furo
 
-    - name: Build documentation
-      working-directory: docs
-      run: |
-        make html
-        touch build/html/.nojekyll
+            -   name: Build documentation
+                working-directory: docs
+                run: |
+                    make html
+                    touch build/html/.nojekyll
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/build/html
-        keep_files: false
+            -   name: Deploy to GitHub Pages
+                uses: peaceiris/actions-gh-pages@v3
+                with:
+                    github_token: ${{ secrets.GITHUB_TOKEN }}
+                    publish_dir: ./docs/build/html
+                    keep_files: false
