@@ -8,13 +8,6 @@ from cbase.allocator_protocol cimport allocator_protocol
 from algo_engine.exchange_profile.c_exchange_profile cimport session_datetime_t
 
 
-cdef extern from "Python.h":
-    int Py_ASNATIVEBYTES_LITTLE_ENDIAN
-    int Py_ASNATIVEBYTES_UNSIGNED_BUFFER
-    Py_ssize_t PyLong_AsNativeBytes(PyObject* pylong, void* buffer, Py_ssize_t n_bytes, int flags)
-    PyObject* PyLong_FromNativeBytes(const void* buffer, size_t n_bytes, int flags)
-
-
 cdef extern from "algo_engine/base/c_market_data/c_market_data_config.h":
     const c_bool DEBUG
     const size_t BOOK_SIZE
@@ -87,16 +80,6 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
 
     const size_t DTYPE_MIN_SIZE
     const size_t DTYPE_MAX_SIZE
-
-    ctypedef unsigned long long uint128_t
-    ctypedef long long int128_t
-    const int128_t INT128_MIN
-    const uint128_t UINT128_MAX
-
-    void c_write_uint128(void* data, uint128_t value) noexcept nogil
-    uint128_t c_read_uint128(const void* data) noexcept nogil
-    void c_write_int128(void* data, int128_t value) noexcept nogil
-    int128_t c_read_int128(const void* data) noexcept nogil
 
     ctypedef enum md_direction:
         DIRECTION_UNKNOWN

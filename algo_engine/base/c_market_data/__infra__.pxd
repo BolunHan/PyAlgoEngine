@@ -70,8 +70,6 @@ from .c_market_data cimport (
     # === Constants ===
     DTYPE_MIN_SIZE,
     DTYPE_MAX_SIZE,
-    INT128_MIN,
-    UINT128_MAX,
 
     # === Structs ===
     md_ret_code,
@@ -139,10 +137,6 @@ from .c_market_data cimport (
 
     c_init_buffer,
     c_deserialize_buffer,
-    c_write_uint128,
-    c_read_uint128,
-    c_write_int128,
-    c_read_int128,
     c_set_id,
     c_get_id,
     c_set_long_id,
