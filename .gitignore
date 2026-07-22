@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+*.egg
+
+# Cython __init__.pxd
+**/__init__.pxd
+
+# Cython-generated C files
+algo_engine/**/c_*.c
+!algo_engine/exchange_profile/c_ex_profile_base.c
+!algo_engine/exchange_profile/c_ex_profile_cn.c
+
+# Build
+build/
+
+# Includes
+algo_engine/includes/
+
+# IDE
+.idea/
+.vscode/
+
+# Test Artifacts
+test/*/artifacts/
+
+# Macro Probing Cache
+macros.json
+
+# Backup files
+*.bkp
