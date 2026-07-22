@@ -41,7 +41,7 @@ cdef class TopicSet:
 
     cpdef dict parse(self, Topic topic):
         cdef evt_topic* topic_ptr = topic.header
-        cdef evt_topic_match* match_res = c_topic_match(self.realtime.header, topic_ptr, NULL, 1)
+        cdef evt_topic_match* match_res = c_topic_match(self.realtime.header, topic_ptr, NULL)
 
         if not topic.is_exact:
             raise ValueError(f'Topic {topic} is not an exact topic.')
