@@ -7,7 +7,7 @@ build:
   jobs:
     pre_install:
       # Build-system dependencies required to compile Cython extensions
-      - pip install numpy cython PyCyBase "PyEventEngine>=0.5.1"
+      - pip install numpy cython PyCyBase PyEventEngine
     pre_build:
       # --no-build-isolation: reuse pre_install packages instead of creating
       # a fresh venv that can't find them (avoids exit-code -4 crash)
