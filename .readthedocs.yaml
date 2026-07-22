@@ -8,6 +8,10 @@ build:
     pre_install:
       # Build-system dependencies required to compile Cython extensions
       - pip install numpy cython PyCyBase "PyEventEngine>=0.5.1"
+    pre_build:
+      # --no-build-isolation: reuse pre_install packages instead of creating
+      # a fresh venv that can't find them (avoids exit-code -4 crash)
+      - pip install --no-build-isolation .
 
 sphinx:
   configuration: docs/source/conf.py
@@ -15,9 +19,4 @@ sphinx:
 
 python:
   install:
-    # Install the package itself — triggers build_ext for Cython extensions,
-    # which autodoc needs at import time
-    - method: pip
-      path: .
-    # Doc-specific dependencies (theme, extensions)
     - requirements: docs/requirements.txt
