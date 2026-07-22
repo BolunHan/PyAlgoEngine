@@ -30,7 +30,7 @@ cd PyAlgoEngine
 ```
 
 Requires **Python 3.12+** and a C compiler (GCC, Clang, or MSVC).
-See the [Setup Guide](https://pyalgoengine.readthedocs.io/en/latest/setup.html) for
+See the [Setup Guide](docs/source/setup.rst) for
 detailed instructions, compile-time configuration, and optional dependencies.
 
 ## Quick Verify
@@ -45,13 +45,19 @@ print(CONFIG)  # compile-time and runtime configuration
 
 ## Documentation
 
-Full documentation at **[pyalgoengine.readthedocs.io](https://pyalgoengine.readthedocs.io/)**.
-
 Build locally:
 ```bash
 cd docs && ./update_docs.sh
 # open build/html/index.html
 ```
+
+### Deploy to Read the Docs
+
+1. Sign up at [readthedocs.org](https://readthedocs.org) and import this repo
+2. The included [`.readthedocs.yaml`](.readthedocs.yaml) handles the build —
+   it compiles Cython extensions, installs the package, and builds with Sphinx + Furo
+3. RTD auto-builds on every push to `main`; enable the GitHub webhook in
+   **Admin → Integrations** on your RTD project dashboard
 
 ## Architecture
 
