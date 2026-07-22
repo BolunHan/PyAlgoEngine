@@ -1,249 +1,299 @@
-Usage
-=====
+Quick Start
+===========
 
-Here is a quick demo on how to use `PyAlgoEngine` for building a decision tree based on various conditions:
+This guide walks through basic usage with verified API calls.
+
+Creating Market Data
+--------------------
+
+All market data types take ``ticker: str`` and ``timestamp: float``
+(Unix timestamp, seconds since epoch) as their first keyword arguments.
+Additional fields are type-specific and keyword-only.
 
 .. code-block:: python
-    import random
-    import random
-    import time
-    from typing import Literal
 
-    from algo_engine.base.candlestick import BarData
-    from algo_engine.base.market_data_buffer import MarketDataBuffer
-    from algo_engine.base.tick import TickData
-    from algo_engine.base.transaction import TransactionData, OrderData, TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset
+   import time
+   from algo_engine.base import (
+       TickData, TickDataLite, BarData, DailyBar,
+       TransactionData, OrderData, TradeData,
+       TransactionDirection, TransactionOffset, TransactionSide,
+       OrderType, InternalData, MarketDataBuffer,
+   )
 
+   ts = time.time()
 
-    class MockData(object):
-        ticker = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "PYPL", "ADBE", "NFLX"]
+   # Level-1 tick (no order book)
+   tick_lite = TickDataLite(
+       ticker="000001.SH",
+       timestamp=ts,
+       last_price=15.28,
+       bid_price=15.27,
+       bid_volume=5000.0,
+       ask_price=15.29,
+       ask_volume=3200.0,
+   )
+   print(tick_lite.mid_price, tick_lite.spread)
 
-        @classmethod
-        def generate_tick_data(cls, size: int, order_book_size: int = 5, buffer: MarketDataBuffer = None):
+   # Level-2 tick (with order book via kwargs)
+   tick = TickData(
+       ticker="000001.SH",
+       timestamp=ts,
+       last_price=15.28,
+       # Order book levels passed as keyword arguments:
+       bid_price_1=15.27, bid_volume_1=5000.0, bid_n_orders_1=12,
+       ask_price_1=15.29, ask_volume_1=3200.0, ask_n_orders_1=8,
+       bid_price_2=15.26, bid_volume_2=8000.0,
+       ask_price_2=15.30, ask_volume_2=6000.0,
+   )
+   # Access best prices
+   print(tick.best_bid_price, tick.best_ask_price)
+   # Access order book sides
+   print(tick.bid.at_level(0))   # (15.27, 5000.0, 12)
+   print(tick.ask.at_price(15.29))  # lookup by price
+   # Extract lite view (zero-copy or copy)
+   lite_view = tick.lite(copy=False)
 
-            ts = time.time()
-            data_list = []
+   # Bar (candlestick) — timestamp is bar END time
+   bar = BarData(
+       ticker="000001.SH",
+       timestamp=ts,
+       high_price=15.50,
+       low_price=15.10,
+       open_price=15.20,
+       close_price=15.28,
+       volume=1500000.0,
+       notional=22800000.0,
+       trade_count=3421,
+       start_timestamp=ts - 300,      # bar start
+       bar_span=300,                   # 5 minutes in seconds
+   )
+   print(bar.vwap, bar.bar_type)
 
-            for i in range(size):
-                # Random ticker
-                _ticker = random.choice(cls.ticker)
+   # Daily bar — uses market_date instead of timestamp
+   from datetime import date
+   daily = DailyBar(
+       ticker="000001.SH",
+       market_date=date(2024, 6, 15),
+       high_price=15.80,
+       low_price=15.00,
+       open_price=15.20,
+       close_price=15.45,
+       volume=50000000.0,
+   )
+   print(daily.market_date)
 
-                # Random price between 1 and 1000 with 2 decimal places
-                price = round(random.uniform(100, 1000), 2)
-                bid_price = price - round(random.uniform(0, 1), 2)
-                ask_price = price + round(random.uniform(0, 1), 2)
-                bid_volume = random.randint(1, 100)
-                ask_volume = random.randint(1, 100)
+   # Transaction — side is built via | operator
+   txn = TransactionData(
+       ticker="000001.SH",
+       timestamp=ts,
+       price=15.28,
+       volume=1000.0,
+       side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN,
+       transaction_id="trd_001",
+   )
+   print(txn.side, txn.side_sign, txn.notional_flow)
 
-                if order_book_size > 0:
-                    order_book = {'bid_price_1': bid_price, 'ask_price_1': ask_price, 'bid_volume_1': bid_volume, 'ask_volume_1': ask_volume}
-                    for lv in range(2, order_book_size):
-                        order_book[f'bid_price_{lv}'] = order_book[f'bid_price_{lv - 1}'] - round(random.uniform(0, 1), 2)
-                        order_book[f'ask_price_{lv}'] = order_book[f'ask_price_{lv - 1}'] + round(random.uniform(0, 1), 2)
-                        order_book[f'bid_volume_{lv}'] = random.uniform(1, 100)
-                        order_book[f'ask_volume_{lv}'] = random.uniform(1, 100)
-                        order_book[f'bid_orders_{lv}'] = random.randint(1, 100)
-                        order_book[f'ask_orders_{lv}'] = random.randint(1, 100)
-                else:
-                    order_book = {}
+   # Order — placed into the order book
+   order = OrderData(
+       ticker="000001.SH",
+       timestamp=ts,
+       price=15.25,
+       volume=500.0,
+       side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_ORDER,
+       order_id="ord_001",
+       order_type=OrderType.ORDER_LIMIT,
+   )
+   print(order.side, order.order_type)
 
-                # Random volume between 1 and 10000
-                ttl_volume = random.randint(1, 10000)
-                ttl_notional = ttl_volume * (price + round(random.uniform(-5, 5), 2))
-                ttl_trade = int(random.uniform(0, ttl_volume))
+   # TradeData alias — uses trade_* parameter names
+   trade = TradeData(
+       ticker="000001.SH",
+       timestamp=ts,
+       trade_price=15.28,
+       trade_volume=1000.0,
+       trade_side=TransactionDirection.DIRECTION_LONG | TransactionOffset.OFFSET_OPEN,
+   )
 
-                # Random timestamp within the last 24 hours
-                timestamp = ts - random.uniform(0, 86400)
+   # InternalData — for heartbeats / control messages
+   internal = InternalData(
+       ticker="__CTRL__",
+       timestamp=ts,
+       code=0x01,
+   )
 
-                if buffer is not None:
-                    buffer.update(
-                        dtype=32,
-                        ticker=_ticker,
-                        timestamp=timestamp,
-                        last_price=price,
-                        bid_price=bid_price,
-                        ask_price=ask_price,
-                        bid_volume=bid_volume,
-                        ask_volume=ask_volume,
-                        total_traded_volume=ttl_volume,
-                        total_trade_notional=ttl_notional,
-                        total_trade_count=ttl_trade,
-                        **order_book
-                    )
+Allocation Context
+------------------
 
-                data = TickData(
-                    ticker=_ticker,
-                    timestamp=timestamp,
-                    last_price=price,
-                    bid_price=bid_price,
-                    ask_price=ask_price,
-                    bid_volume=bid_volume,
-                    ask_volume=ask_volume,
-                    total_traded_volume=ttl_volume,
-                    total_trade_notional=ttl_notional,
-                    total_trade_count=ttl_trade,
-                    **order_book
-                )
-                data_list.append(data)
+By default, ``MarketData`` allocates from shared memory (``MD_CFG_SHARED=True``)
+and uses a freelist (``MD_CFG_FREELIST=True``). You can control this per
+block of code with context managers:
 
-            return data_list
+.. code-block:: python
 
-        @classmethod
-        def generate_trade_data(cls, size: int, buffer: MarketDataBuffer = None):
+   from algo_engine.base import MD_SHARED, MD_LOCKED
 
-            ts = time.time()
-            data_list = []
+   # Thread-safe, shared-memory allocation
+   with MD_SHARED | MD_LOCKED:
+       data = TickDataLite(ticker="TEST", timestamp=ts,
+                           last_price=100.0, bid_price=99.0,
+                           bid_volume=10.0, ask_price=101.0, ask_volume=10.0)
 
-            for i in range(size):
-                # Random ticker
-                _ticker = random.choice(cls.ticker)
+   # Book size context — override default book depth
+   from algo_engine.base import MD_BOOK5, MD_BOOK20
+   with MD_BOOK20:
+       tick = TickData(ticker="TEST", timestamp=ts, last_price=100.0,
+                       bid_price_1=99.0, bid_volume_1=10.0,
+                       ask_price_1=101.0, ask_volume_1=10.0)
 
-                # Random price between 1 and 1000 with 2 decimal places
-                price = round(random.uniform(1, 1000), 2)
+Using Market Data Buffers
+--------------------------
 
-                # Random volume between 1 and 10000
-                volume = random.randint(1, 10000)
+Buffers store and sort serialized ``MarketData``. The generic ``put()``
+accepts any ``MarketData`` subclass.
 
-                # Random timestamp within the last 24 hours
-                timestamp = ts - random.uniform(0, 86400)
+.. code-block:: python
 
-                # Random direction and offset using bitwise OR
-                # direction = random.choice(list(Direction))
-                # offset = random.choice(list(Offset))
-                side = random.choice(list(TransactionSide))
+   from algo_engine.base import (
+       MarketDataBuffer, MarketDataBufferCache,
+       MarketDataRingBuffer, MarketDataConcurrentBuffer,
+   )
 
-                if buffer is not None:
-                    buffer.update(
-                        dtype=20,
-                        ticker=_ticker,
-                        timestamp=timestamp,
-                        price=price,
-                        volume=volume,
-                        side=side
-                    )
+   # Create a buffer (default capacities from compile-time constants)
+   buf = MarketDataBuffer(ptr_cap=128, data_cap=16384)
 
-                data = TransactionData(
-                    ticker=_ticker,
-                    timestamp=timestamp,
-                    price=price,
-                    volume=volume,
-                    side=side
-                )
-                data_list.append(data)
+   # Put individual entries
+   buf.put(tick)
+   buf.put(bar)
+   buf.put(order)
 
-            return data_list
+   # Batch writes via cache (more efficient)
+   with buf.cache() as cache:
+       cache.put(tick)
+       cache.put(bar)
+   # cache auto-flushes to buf on __exit__
 
-        @classmethod
-        def generate_order_data(cls, size: int, buffer: MarketDataBuffer = None):
-            ts = time.time()
-            data_list = []
+   # Sort by timestamp, then iterate
+   buf.sort()
+   for md in buf:
+       print(md.ticker, md.timestamp)
 
-            for i in range(size):
-                # Random ticker
-                _ticker = random.choice(cls.ticker)
+   # Indexed access
+   first = buf[0]
+   print(len(buf))          # number of entries
+   print(buf.ptr_tail)      # same as len
 
-                # Random price between 1 and 1000 with 2 decimal places
-                price = round(random.uniform(1, 1000), 2)
+   # Serialization
+   raw = buf.to_bytes()
+   buf2 = MarketDataBuffer.from_bytes(raw)
 
-                # Random volume between 1 and 10000
-                volume = random.randint(1, 10000)
+   # Ring buffer — fixed capacity, blocking reads/writes
+   ring = MarketDataRingBuffer(ptr_cap=256, data_cap=32768)
+   ring.put(tick, block=True, timeout=1.0)
+   next_md = ring.listen(block=True, timeout=1.0)
 
-                # Random timestamp within the last 24 hours
-                timestamp = ts - random.uniform(0, 86400)
+   # Concurrent buffer — multi-consumer via shared memory
+   cbuf = MarketDataConcurrentBuffer(n_workers=4, capacity=1024)
+   cbuf.put(tick, block=True, timeout=1.0)
+   md_for_worker = cbuf.listen(worker_id=0, block=True, timeout=1.0)
+   print(cbuf.is_worker_empty(0))
 
-                # Random direction and offset using bitwise OR
-                direction = random.choice([Direction.DIRECTION_LONG, Direction.DIRECTION_SHORT])
-                offset = random.choice([Offset.OFFSET_ORDER, Offset.OFFSET_CANCEL])
+Market Data Service (MDS)
+-------------------------
 
-                if buffer is not None:
-                    buffer.update(
-                        dtype=30,
-                        ticker=_ticker,
-                        timestamp=timestamp,
-                        price=price,
-                        volume=volume,
-                        side=direction | offset
-                    )
+``MDS`` is a singleton that receives market data, manages subscriptions,
+and dispatches to monitors:
 
-                data = OrderData(
-                    ticker=_ticker,
-                    timestamp=timestamp,
-                    price=price,
-                    volume=volume,
-                    side=direction | offset
-                )
-                data_list.append(data)
+.. code-block:: python
 
-            return data_list
+   from algo_engine.engine import MDS, MarketDataMonitor
 
-        @classmethod
-        def generate_bar_data(cls, size: int, buffer: MarketDataBuffer = None):
-            ts = time.time()
-            data_list = []
+   # Feed data into MDS
+   MDS.on_market_data(tick)
 
-            for i in range(size):
-                # Random ticker
-                _ticker = random.choice(cls.ticker)
+   # Get latest price for a ticker
+   price = MDS.get_market_price("000001.SH")
 
-                # Random price between 1 and 1000 with 2 decimal places
-                close_price = round(random.uniform(1, 1000), 2)
-                open_price = close_price * random.uniform(0.9, 1.1)
-                high_price = max(open_price, close_price) * random.uniform(1, 1.05)
-                low_price = min(open_price, close_price) * random.uniform(0.95, 1.)
+   # All known prices
+   print(MDS.market_price)       # dict[ticker, float]
+   print(MDS.subscriptions)      # dict[ticker, int]
 
-                # Random volume between 1 and 10000
-                volume = random.uniform(100, 10000)
-                notional = volume * random.uniform(low_price, high_price)
-                n_trades = random.randint(1, int(volume / 10))
+   # Create a custom monitor
+   class MyMonitor(MarketDataMonitor):
+       def __call__(self, market_data, **kwargs):
+           print(f"{market_data.ticker}: {market_data.market_price}")
 
-                # Random timestamp within the last 24 hours
-                timestamp = ts - random.uniform(0, 86400)
+       def clear(self):
+           pass
 
-                if buffer is not None:
-                    buffer.update(
-                        dtype=40,
-                        ticker=_ticker,
-                        timestamp=timestamp,
-                        open_price=open_price,
-                        close_price=close_price,
-                        high_price=high_price,
-                        low_price=low_price,
-                        volume=volume,
-                        notional=notional,
-                        trades=n_trades,
-                        bar_span=5 * 60
-                    )
+       @property
+       def value(self):
+           return 0.0
 
-                data = BarData(
-                    ticker=_ticker,
-                    timestamp=timestamp,
-                    open_price=open_price,
-                    close_price=close_price,
-                    high_price=high_price,
-                    low_price=low_price,
-                    volume=volume,
-                    notional=notional,
-                    trades=n_trades,
-                    bar_span=5 * 60
-                )
-                data_list.append(data)
+   monitor = MyMonitor(name="my_monitor")
+   MDS.add_monitor(monitor)
+   MDS.pop_monitor(monitor_name="my_monitor")
 
-            return data_list
+Using Exchange Profiles
+-----------------------
 
-        @classmethod
-        def gen_data(cls, dtype: Literal['TickData', 'OrderData', 'TransactionData', 'BarData', 'Random'] = 'Random', buffer: MarketDataBuffer = None):
-            match dtype:
-                case 'TickData':
-                    generator = cls.generate_tick_data
-                case 'OrderData':
-                    generator = cls.generate_order_data
-                case 'TransactionData':
-                    generator = cls.generate_trade_data
-                case 'BarData':
-                    generator = cls.generate_bar_data
-                case 'Random':
-                    generator = random.choice([cls.generate_tick_data, cls.generate_order_data, cls.generate_trade_data, cls.generate_bar_data])
-                case _:
-                    raise TypeError(f'Invalid data type {dtype}.')
+Three module-level singletons provide exchange calendars:
 
-            return generator(size=1, buffer=buffer)[0]
+.. code-block:: python
+
+   from algo_engine.exchange_profile import PROFILE, PROFILE_DEFAULT, PROFILE_CN
+
+   # PROFILE is a dispatcher that auto-detects the market
+   # PROFILE_DEFAULT — global/24h markets (crypto)
+   # PROFILE_CN — China A-share market
+
+   # Check trading status
+   PROFILE_CN.is_trading_day(date(2024, 6, 15))
+   PROFILE_CN.is_market_session(time.time())
+
+   # Get trading calendar
+   cal = PROFILE_CN.trade_calendar(date(2024, 6, 1), date(2024, 6, 30))
+   for d in cal:
+       print(d, d.session_type)
+
+   # Trading day arithmetic
+   prev = PROFILE_CN.trading_days_before(date(2024, 6, 15), days=5)
+   n_days = PROFILE_CN.trading_days_between(date(2024, 6, 1), date(2024, 6, 15))
+
+   # Session phase at a given time
+   from algo_engine.exchange_profile import SessionTime
+   st = SessionTime(10, 30, 0)
+   print(PROFILE_CN.resolve_session_phase(st))
+
+Generating Test Data
+--------------------
+
+.. code-block:: python
+
+   from algo_engine.utils import fake_data, fake_daily_data, ts_indices
+
+   # Generate fake daily OHLC data
+   daily_df = fake_daily_data(
+       start_date="2024-01-02", end_date="2024-03-29",
+       p0=100.0, volatility=0.20,
+   )
+
+   # Generate fake intraday data for one day
+   intraday_df = fake_data(
+       market_date=date(2024, 6, 15),
+       p0=15.0, volatility=0.15, interval=60.0,
+   )
+
+   # Generate timestamp indices aligned to trading sessions
+   indices = ts_indices(
+       market_date=date(2024, 6, 15),
+       interval=60.0,
+       ts_format="timestamp",
+   )
+
+Next Steps
+----------
+
+- :doc:`architecture` — understand the system design
+- :doc:`market_data` — deep dive into all data types and buffers
+- :doc:`strategy` — build your first trading strategy
+- :doc:`backtest` — run backtests on historical data

@@ -1,34 +1,58 @@
-.. PyAlgoEngine documentation master file
+PyAlgoEngine — Algorithmic Trading Engine
+==========================================
 
-Welcome to PyAlgoEngine's Documentation!
-===========================================
+**PyAlgoEngine** is a high-performance algorithmic trading engine written in
+Python, Cython, and C, designed for HFT (High-Frequency Trading) systems.
 
-**PyAlgoEngine** is an easy-to-use library designed for creating custom decision trees, primarily tailored for trading and financial decision-making. This package enables users to build rule-based decision processes and visualize them effectively.
+It provides C-level market data structures with shared-memory buffers, an
+event-driven engine architecture, backtesting with simulated order matching,
+exchange calendar profiles, and web-based visualization dashboards — all
+with Cython acceleration for latency-critical paths.
 
-- **Homepage**: https://github.com/BolunHan/PyAlgoEngine
-- **Documentation**: For detailed documentation, visit https://pyalgoengine.readthedocs.io/.
-- **License**: This project is licensed under the MIT.
+:Homepage: https://github.com/BolunHan/PyAlgoEngine
+:License: MIT
+:Version: |release|
 
 Features
 --------
 
-- Python wrapper of MarketData object.
-- Cython accelerated for low latency trading.
-- Market profile support to easily migrate your strategy to other market. e.g. from CN market to Crypto world.
-- WebApp support for visualization.
-- Backtest and sim-match support.
-- Smart algo support with compactibility for addons.
-- all the utilities you need to develop a quantitative trading strategy and so on...
+- **C-Level Market Data** — Tick, Bar, OrderBook, Transaction, Order, Trade
+  types implemented in Cython/C with nanosecond timestamps and 128-bit IDs.
+- **High-Performance Buffers** — Shared-memory ``MarketDataBuffer``,
+  lock-free ``ConcurrentBuffer``, ring buffer, and buffer cache.
+- **Event-Driven Engine** — Pub/sub event engine, market data service (MDS),
+  algorithm engine, and trade engine with position/risk management.
+- **Exchange Profiles** — CN (A-share) and global exchange calendars with
+  session phases, holiday schedules, and timezone handling.
+- **Backtesting** — Historical data replay, simulated order matching with
+  configurable fees/latency, and trade performance metrics.
+- **Strategy Framework** — ``StrategyEngine`` and ``AlgoTemplate``
+  base classes with global singletons for rapid strategy development.
+- **Web Visualization** — Flask + Bokeh dashboards with candlestick charts
+  and interactive strategy tester.
+- **Compile-Time Tuning** — Configure ``BOOK_SIZE``, ``TICKER_SIZE``,
+  ``ID_SIZE``, ``MAX_WORKERS`` at build time via environment variables.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide
 
    setup
    usage
-   apis
+   architecture
+   market_data
+   engines
+   strategy
+   backtest
+   web_apps
 
-Indices and tables
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   api/index
+
+Indices and Tables
 ==================
 
 * :ref:`genindex`

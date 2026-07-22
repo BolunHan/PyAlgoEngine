@@ -1,0 +1,882 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="algo_engine.strategy" href="strategy.html"><link rel="prev" title="algo_engine.engine" href="engine.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>algo_engine.exchange_profile - PyAlgoEngine 0.12.0.post2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">PyAlgoEngine 0.12.0.post2 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.0.post2 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup &amp; Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../market_data.html">Market Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../engines.html">Engines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../strategy.html">Strategy Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../backtest.html">Backtesting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../web_apps.html">Web Applications</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="base.html">algo_engine.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="engine.html">algo_engine.engine</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">algo_engine.exchange_profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="strategy.html">algo_engine.strategy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backtest.html">algo_engine.backtest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="monitor.html">algo_engine.monitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apps.html">algo_engine.apps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">algo_engine.utils</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/BolunHan/PyAlgoEngine/blob/main/docs/source/api/exchange_profile.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/BolunHan/PyAlgoEngine/edit/main/docs/source/api/exchange_profile.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="algo-engine-exchange-profile">
+<h1>algo_engine.exchange_profile<a class="headerlink" href="#algo-engine-exchange-profile" title="Link to this heading">¶</a></h1>
+<p>Exchange profiles provide trading calendars, session times, and holiday
+schedules. Both CN (A-share) and global exchange profiles are supported.</p>
+<section id="exchange-profile">
+<h2>Exchange Profile<a class="headerlink" href="#exchange-profile" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">ExchangeProfile</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.activate">
+<span class="sig-name descname"><span class="pre">activate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.activate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.bound_instance">
+<span class="sig-name descname"><span class="pre">bound_instance</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.bound_instance" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.break_adjusted">
+<span class="sig-name descname"><span class="pre">break_adjusted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">elapsed_seconds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.break_adjusted" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.close_call_auction">
+<span class="sig-name descname"><span class="pre">close_call_auction</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.close_call_auction" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.deactivate">
+<span class="sig-name descname"><span class="pre">deactivate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.deactivate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.is_auction_session">
+<span class="sig-name descname"><span class="pre">is_auction_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.is_auction_session" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.is_market_session">
+<span class="sig-name descname"><span class="pre">is_market_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.is_market_session" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.is_trading_day">
+<span class="sig-name descname"><span class="pre">is_trading_day</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">market_date</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.is_trading_day" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.nearest_trading_date">
+<span class="sig-name descname"><span class="pre">nearest_trading_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">market_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'previous'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.nearest_trading_date" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.open_call_auction">
+<span class="sig-name descname"><span class="pre">open_call_auction</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.open_call_auction" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.profile_id">
+<span class="sig-name descname"><span class="pre">profile_id</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.profile_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.range_break">
+<span class="sig-name descname"><span class="pre">range_break</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.range_break" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.resolve_auction_phase">
+<span class="sig-name descname"><span class="pre">resolve_auction_phase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.resolve_auction_phase" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.resolve_session_phase">
+<span class="sig-name descname"><span class="pre">resolve_session_phase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.resolve_session_phase" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.resolve_session_type">
+<span class="sig-name descname"><span class="pre">resolve_session_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_date</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.resolve_session_type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.session_breaks">
+<span class="sig-name descname"><span class="pre">session_breaks</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.session_breaks" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.session_end">
+<span class="sig-name descname"><span class="pre">session_end</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.session_end" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.session_end_ts">
+<span class="sig-name descname"><span class="pre">session_end_ts</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.session_end_ts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.session_length_seconds">
+<span class="sig-name descname"><span class="pre">session_length_seconds</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.session_length_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.session_start">
+<span class="sig-name descname"><span class="pre">session_start</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.session_start" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.session_start_ts">
+<span class="sig-name descname"><span class="pre">session_start_ts</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.session_start_ts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.time_to_seconds">
+<span class="sig-name descname"><span class="pre">time_to_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span> <span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">break_adjusted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.time_to_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.time_zone">
+<span class="sig-name descname"><span class="pre">time_zone</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.time_zone" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.timestamp_to_datetime">
+<span class="sig-name descname"><span class="pre">timestamp_to_datetime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">unix_ts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.timestamp_to_datetime" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.timestamp_to_seconds">
+<span class="sig-name descname"><span class="pre">timestamp_to_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool</span> <span class="pre">break_adjusted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.timestamp_to_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.trade_calendar">
+<span class="sig-name descname"><span class="pre">trade_calendar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.trade_calendar" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.trade_calendar_cache">
+<span class="sig-name descname"><span class="pre">trade_calendar_cache</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.trade_calendar_cache" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.trading_days_after">
+<span class="sig-name descname"><span class="pre">trading_days_after</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">market_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Py_ssize_t</span> <span class="pre">days</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.trading_days_after" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.trading_days_before">
+<span class="sig-name descname"><span class="pre">trading_days_before</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">market_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Py_ssize_t</span> <span class="pre">days</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.trading_days_before" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.trading_days_between">
+<span class="sig-name descname"><span class="pre">trading_days_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">end_date</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.trading_days_between" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.trading_time_between">
+<span class="sig-name descname"><span class="pre">trading_time_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.trading_time_between" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.ExchangeProfile.tz_offset_seconds">
+<span class="sig-name descname"><span class="pre">tz_offset_seconds</span></span><a class="headerlink" href="#algo_engine.exchange_profile.ExchangeProfile.tz_offset_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="global-dispatcher">
+<h2>Global Dispatcher<a class="headerlink" href="#global-dispatcher" title="Link to this heading">¶</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.PROFILE">
+<span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">PROFILE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;ExchangeProfile&gt;(UTC_NONSTOP_DEFAULT)</span></span><a class="headerlink" href="#algo_engine.exchange_profile.PROFILE" title="Link to this definition">¶</a></dt>
+<dd><p>ExchangeProfile()</p>
+</dd></dl>
+
+</section>
+<section id="default-profile-global">
+<h2>Default Profile (Global)<a class="headerlink" href="#default-profile-global" title="Link to this heading">¶</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.PROFILE_DEFAULT">
+<span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">PROFILE_DEFAULT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;ExchangeProfile&gt;(UTC_NONSTOP_DEFAULT)</span></span><a class="headerlink" href="#algo_engine.exchange_profile.PROFILE_DEFAULT" title="Link to this definition">¶</a></dt>
+<dd><p>ExchangeProfile()</p>
+</dd></dl>
+
+</section>
+<section id="cn-profile-a-share">
+<h2>CN Profile (A-Share)<a class="headerlink" href="#cn-profile-a-share" title="Link to this heading">¶</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.PROFILE_CN">
+<span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">PROFILE_CN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;ExchangeProfile&gt;(CN_STOCK)</span></span><a class="headerlink" href="#algo_engine.exchange_profile.PROFILE_CN" title="Link to this definition">¶</a></dt>
+<dd><p>ExchangeProfile()</p>
+</dd></dl>
+
+</section>
+<section id="session-types">
+<h2>Session Types<a class="headerlink" href="#session-types" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">SessionDate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uint16_t</span> <span class="pre">year</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint8_t</span> <span class="pre">month</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint8_t</span> <span class="pre">day</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.add_days">
+<span class="sig-name descname"><span class="pre">add_days</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Py_ssize_t</span> <span class="pre">days</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.add_days" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.addr">
+<span class="sig-name descname"><span class="pre">addr</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.addr" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.day">
+<span class="sig-name descname"><span class="pre">day</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.day" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.days_in_month">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">days_in_month</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uint16_t</span> <span class="pre">year</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint8_t</span> <span class="pre">month</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.days_in_month" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.fork">
+<span class="sig-name descname"><span class="pre">fork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate" title="algo_engine.exchange_profile.SessionDate"><span class="pre">SessionDate</span></a></span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.fork" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.from_ordinal">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_ordinal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uint32_t</span> <span class="pre">ordinal</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.from_ordinal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.from_pydate">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_pydate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span> <span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.from_pydate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.from_unix">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_unix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">unix_ts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.from_unix" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.fromisocalendar">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fromisocalendar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">year</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">week</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int</span> <span class="pre">weekday</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.fromisocalendar" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.fromisoformat">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fromisoformat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">date_str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.fromisoformat" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.is_leap_year">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_leap_year</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uint16_t</span> <span class="pre">year</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.is_leap_year" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.is_valid">
+<span class="sig-name descname"><span class="pre">is_valid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.is_valid" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.is_weekend">
+<span class="sig-name descname"><span class="pre">is_weekend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.is_weekend" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.month">
+<span class="sig-name descname"><span class="pre">month</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.month" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.session_type">
+<span class="sig-name descname"><span class="pre">session_type</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.session_type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.timestamp">
+<span class="sig-name descname"><span class="pre">timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.timestamp" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.to_ordinal">
+<span class="sig-name descname"><span class="pre">to_ordinal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.to_ordinal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.to_pydate">
+<span class="sig-name descname"><span class="pre">to_pydate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.to_pydate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.today">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">today</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.today" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.unix_to_ordinal">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">unix_to_ordinal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">unix_ts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.unix_to_ordinal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionDate.year">
+<span class="sig-name descname"><span class="pre">year</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionDate.year" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">SessionTime</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.elapsed_seconds">
+<span class="sig-name descname"><span class="pre">elapsed_seconds</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.elapsed_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.from_pytime">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_pytime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span> <span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.from_pytime" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.from_timestamp">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">unix_ts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.from_timestamp" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.from_ts">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_ts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">double</span> <span class="pre">ts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.from_ts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.fromisoformat">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fromisoformat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str</span> <span class="pre">time_str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.fromisoformat" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.hour">
+<span class="sig-name descname"><span class="pre">hour</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.hour" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.isoformat">
+<span class="sig-name descname"><span class="pre">isoformat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.isoformat" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.microsecond">
+<span class="sig-name descname"><span class="pre">microsecond</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.microsecond" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.minute">
+<span class="sig-name descname"><span class="pre">minute</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.minute" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.nanosecond">
+<span class="sig-name descname"><span class="pre">nanosecond</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.nanosecond" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.second">
+<span class="sig-name descname"><span class="pre">second</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.second" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.session_phase">
+<span class="sig-name descname"><span class="pre">session_phase</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.session_phase" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.to_pytime">
+<span class="sig-name descname"><span class="pre">to_pytime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.to_pytime" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionTime.ts">
+<span class="sig-name descname"><span class="pre">ts</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionTime.ts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">algo_engine.exchange_profile.</span></span><span class="sig-name descname"><span class="pre">SessionPhase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.UNKNOWN">
+<span class="sig-name descname"><span class="pre">UNKNOWN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.UNKNOWN" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.PREOPEN">
+<span class="sig-name descname"><span class="pre">PREOPEN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">64</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.PREOPEN" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.OPEN_AUCTION">
+<span class="sig-name descname"><span class="pre">OPEN_AUCTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">128</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.OPEN_AUCTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.CONTINUOUS">
+<span class="sig-name descname"><span class="pre">CONTINUOUS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">208</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.CONTINUOUS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.BREAK">
+<span class="sig-name descname"><span class="pre">BREAK</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.BREAK" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.SUSPENDED">
+<span class="sig-name descname"><span class="pre">SUSPENDED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.SUSPENDED" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.CLOSE_AUCTION">
+<span class="sig-name descname"><span class="pre">CLOSE_AUCTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">192</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.CLOSE_AUCTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="algo_engine.exchange_profile.SessionPhase.CLOSED">
+<span class="sig-name descname"><span class="pre">CLOSED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">48</span></span><a class="headerlink" href="#algo_engine.exchange_profile.SessionPhase.CLOSED" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="strategy.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">algo_engine.strategy</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="engine.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">algo_engine.engine</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">algo_engine.exchange_profile</a><ul>
+<li><a class="reference internal" href="#exchange-profile">Exchange Profile</a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile</span></code></a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.__init__"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.activate"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.activate()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.bound_instance"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.bound_instance</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.break_adjusted"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.break_adjusted()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.close_call_auction"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.close_call_auction</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.deactivate"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.deactivate()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.is_auction_session"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.is_auction_session()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.is_market_session"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.is_market_session()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.is_trading_day"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.is_trading_day()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.nearest_trading_date"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.nearest_trading_date()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.open_call_auction"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.open_call_auction</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.profile_id"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.profile_id</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.range_break"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.range_break</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.resolve_auction_phase"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.resolve_auction_phase()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.resolve_session_phase"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.resolve_session_phase()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.resolve_session_type"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.resolve_session_type()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.session_breaks"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.session_breaks</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.session_end"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.session_end</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.session_end_ts"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.session_end_ts</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.session_length_seconds"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.session_length_seconds</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.session_start"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.session_start</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.session_start_ts"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.session_start_ts</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.time_to_seconds"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.time_to_seconds()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.time_zone"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.time_zone</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.timestamp_to_datetime"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.timestamp_to_datetime()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.timestamp_to_seconds"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.timestamp_to_seconds()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.trade_calendar"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.trade_calendar()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.trade_calendar_cache"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.trade_calendar_cache</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.trading_days_after"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.trading_days_after()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.trading_days_before"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.trading_days_before()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.trading_days_between"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.trading_days_between()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.trading_time_between"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.trading_time_between()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.ExchangeProfile.tz_offset_seconds"><code class="docutils literal notranslate"><span class="pre">ExchangeProfile.tz_offset_seconds</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#global-dispatcher">Global Dispatcher</a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.PROFILE"><code class="docutils literal notranslate"><span class="pre">PROFILE</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#default-profile-global">Default Profile (Global)</a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.PROFILE_DEFAULT"><code class="docutils literal notranslate"><span class="pre">PROFILE_DEFAULT</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cn-profile-a-share">CN Profile (A-Share)</a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.PROFILE_CN"><code class="docutils literal notranslate"><span class="pre">PROFILE_CN</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#session-types">Session Types</a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate"><code class="docutils literal notranslate"><span class="pre">SessionDate</span></code></a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.__init__"><code class="docutils literal notranslate"><span class="pre">SessionDate.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.add_days"><code class="docutils literal notranslate"><span class="pre">SessionDate.add_days()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.addr"><code class="docutils literal notranslate"><span class="pre">SessionDate.addr</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.day"><code class="docutils literal notranslate"><span class="pre">SessionDate.day</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.days_in_month"><code class="docutils literal notranslate"><span class="pre">SessionDate.days_in_month()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.fork"><code class="docutils literal notranslate"><span class="pre">SessionDate.fork()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.from_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_ordinal()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.from_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_pydate()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.from_unix"><code class="docutils literal notranslate"><span class="pre">SessionDate.from_unix()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.fromisocalendar"><code class="docutils literal notranslate"><span class="pre">SessionDate.fromisocalendar()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.fromisoformat"><code class="docutils literal notranslate"><span class="pre">SessionDate.fromisoformat()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.is_leap_year"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_leap_year()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.is_valid"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_valid()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.is_weekend"><code class="docutils literal notranslate"><span class="pre">SessionDate.is_weekend()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.month"><code class="docutils literal notranslate"><span class="pre">SessionDate.month</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.session_type"><code class="docutils literal notranslate"><span class="pre">SessionDate.session_type</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.timestamp"><code class="docutils literal notranslate"><span class="pre">SessionDate.timestamp()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.to_ordinal()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.to_pydate"><code class="docutils literal notranslate"><span class="pre">SessionDate.to_pydate()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.today"><code class="docutils literal notranslate"><span class="pre">SessionDate.today()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.unix_to_ordinal"><code class="docutils literal notranslate"><span class="pre">SessionDate.unix_to_ordinal()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionDate.year"><code class="docutils literal notranslate"><span class="pre">SessionDate.year</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime"><code class="docutils literal notranslate"><span class="pre">SessionTime</span></code></a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.elapsed_seconds"><code class="docutils literal notranslate"><span class="pre">SessionTime.elapsed_seconds</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.from_pytime"><code class="docutils literal notranslate"><span class="pre">SessionTime.from_pytime()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.from_timestamp"><code class="docutils literal notranslate"><span class="pre">SessionTime.from_timestamp()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.from_ts"><code class="docutils literal notranslate"><span class="pre">SessionTime.from_ts()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.fromisoformat"><code class="docutils literal notranslate"><span class="pre">SessionTime.fromisoformat()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.hour"><code class="docutils literal notranslate"><span class="pre">SessionTime.hour</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.isoformat"><code class="docutils literal notranslate"><span class="pre">SessionTime.isoformat()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.microsecond"><code class="docutils literal notranslate"><span class="pre">SessionTime.microsecond</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.minute"><code class="docutils literal notranslate"><span class="pre">SessionTime.minute</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.nanosecond"><code class="docutils literal notranslate"><span class="pre">SessionTime.nanosecond</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.second"><code class="docutils literal notranslate"><span class="pre">SessionTime.second</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.session_phase"><code class="docutils literal notranslate"><span class="pre">SessionTime.session_phase</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.to_pytime"><code class="docutils literal notranslate"><span class="pre">SessionTime.to_pytime()</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionTime.ts"><code class="docutils literal notranslate"><span class="pre">SessionTime.ts</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase"><code class="docutils literal notranslate"><span class="pre">SessionPhase</span></code></a><ul>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.UNKNOWN"><code class="docutils literal notranslate"><span class="pre">SessionPhase.UNKNOWN</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.PREOPEN"><code class="docutils literal notranslate"><span class="pre">SessionPhase.PREOPEN</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.OPEN_AUCTION"><code class="docutils literal notranslate"><span class="pre">SessionPhase.OPEN_AUCTION</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.CONTINUOUS"><code class="docutils literal notranslate"><span class="pre">SessionPhase.CONTINUOUS</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.BREAK"><code class="docutils literal notranslate"><span class="pre">SessionPhase.BREAK</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.SUSPENDED"><code class="docutils literal notranslate"><span class="pre">SessionPhase.SUSPENDED</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.CLOSE_AUCTION"><code class="docutils literal notranslate"><span class="pre">SessionPhase.CLOSE_AUCTION</span></code></a></li>
+<li><a class="reference internal" href="#algo_engine.exchange_profile.SessionPhase.CLOSED"><code class="docutils literal notranslate"><span class="pre">SessionPhase.CLOSED</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b88534aa"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
