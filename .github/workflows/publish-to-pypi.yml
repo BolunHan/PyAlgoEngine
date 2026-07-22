@@ -35,6 +35,7 @@ jobs:
                 env:
                     CIBW_SKIP: "pp*"  # Skip PyPy if not needed
                     CIBW_BUILD: "cp3*-manylinux*"  # optional, for only CPython manylinux
+                    CIBW_BEFORE_BUILD: "rm -rf /project/build && find /project -name '*.so' -delete"
                     GITHUB_ACTIONS: "true"
 
             -   name: Publish to PyPI
