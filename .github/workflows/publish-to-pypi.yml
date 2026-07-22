@@ -35,7 +35,7 @@ jobs:
                     CIBW_SKIP: "pp*"
                     CIBW_BUILD: "cp3*-manylinux*"
                     CIBW_BEFORE_BUILD: "rm -rf /project/build && find /project -name '*.so' -delete"
-                    GITHUB_ACTIONS: "true"
+                    CIBW_ENVIRONMENT: "GITHUB_ACTIONS=true"
 
             -   name: Publish to PyPI
                 env:
