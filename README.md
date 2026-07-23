@@ -1,5 +1,9 @@
 # PyAlgoEngine
 
+[![docs](https://github.com/BolunHan/PyAlgoEngine/actions/workflows/build-page-docs.yml/badge.svg)](https://github.com/BolunHan/PyAlgoEngine/actions/workflows/build-page-docs.yml)
+[![pypi-linux](https://github.com/BolunHan/PyAlgoEngine/actions/workflows/publish-posix-to-pypi.yml/badge.svg)](https://github.com/BolunHan/PyAlgoEngine/actions/workflows/publish-posix-to-pypi.yml)
+[![pypi-windows](https://github.com/BolunHan/PyAlgoEngine/actions/workflows/publish-nt-to-pypi.yml/badge.svg)](https://github.com/BolunHan/PyAlgoEngine/actions/workflows/publish-nt-to-pypi.yml)
+
 **High-Performance Algorithmic Trading Engine in Python, Cython, and C**
 
 PyAlgoEngine is a low-latency trading engine for HFT (High-Frequency Trading)

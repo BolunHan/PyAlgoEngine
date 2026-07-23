@@ -1,23 +1,23 @@
-name: Publish Python Package to PyPI
+name: PyPI (Windows)
 
 on:
     push:
         tags:
-            - 'v*.*.*'
-    workflow_dispatch:  # Allow manual run on latest commit
+            - "v*.*.*"
+    workflow_dispatch: # Allow manual run on latest commit
 
 jobs:
     build:
-        runs-on: ubuntu-latest
+        runs-on: windows-latest
 
         steps:
             -   name: Checkout repository
-                uses: actions/checkout@v3
+                uses: actions/checkout@v4
 
             -   name: Set up Python
-                uses: actions/setup-python@v4
+                uses: actions/setup-python@v5
                 with:
-                    python-version: '3.x'
+                    python-version: "3.x"
 
             -   name: Install cibuildwheel
                 run: python -m pip install --upgrade cibuildwheel
@@ -32,9 +32,9 @@ jobs:
                 run: |
                     python -m cibuildwheel --output-dir wheelhouse
                 env:
-                    CIBW_SKIP: "pp*"
-                    CIBW_BUILD: "cp3*-manylinux*"
-                    CIBW_BEFORE_BUILD: "rm -rf /project/build && find /project -name '*.so' -delete"
+                    CIBW_SKIP: "pp*" # Skip PyPy
+                    CIBW_BUILD: "cp3*-win_amd64"
+                    CIBW_BEFORE_BUILD: "if exist build rmdir /s /q build"
                     CIBW_ENVIRONMENT: "GITHUB_ACTIONS=true"
 
             -   name: Publish to PyPI
