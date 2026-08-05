@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="algo_engine.engine" href="engine.html"><link rel="prev" title="API Reference" href="index.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>algo_engine.base - PyAlgoEngine 0.12.0.post3 documentation</title>
+        <title>algo_engine.base - PyAlgoEngine 0.12.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../index.html"><div class="brand">PyAlgoEngine 0.12.0.post3 documentation</div></a>
+      <a href="../index.html"><div class="brand">PyAlgoEngine 0.12.1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.0.post3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -1768,8 +1768,9 @@ extensions.</p>
 <h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <dl class="py data">
 <dt class="sig sig-object py" id="algo_engine.base.CONFIG">
-<span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">CONFIG</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;ConfigViewer&gt;(DEBUG=False;</span> <span class="pre">BOOK_SIZE=10;</span> <span class="pre">ID_SIZE=16;</span> <span class="pre">LONG_ID_SIZE=128;</span> <span class="pre">MAX_WORKERS=128;</span> <span class="pre">MD_CFG_LOCKED=False;</span> <span class="pre">MD_CFG_SHARED=True;</span> <span class="pre">MD_CFG_FREELIST=True;</span> <span class="pre">MD_CFG_BOOK_SIZE=10)</span></span><a class="headerlink" href="#algo_engine.base.CONFIG" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">algo_engine.base.</span></span><span class="sig-name descname"><span class="pre">CONFIG</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">mappingproxy({'market_data':</span> <span class="pre">mappingproxy({'DEBUG':</span> <span class="pre">False,</span> <span class="pre">'BOOK_SIZE':</span> <span class="pre">10,</span> <span class="pre">'ID_SIZE':</span> <span class="pre">16,</span> <span class="pre">'LONG_ID_SIZE':</span> <span class="pre">128,</span> <span class="pre">'MAX_WORKERS':</span> <span class="pre">128,</span> <span class="pre">'MID_ALLOW_INT64':</span> <span class="pre">1,</span> <span class="pre">'MID_ALLOW_INT128':</span> <span class="pre">1,</span> <span class="pre">'LONG_MID_ALLOW_INT64':</span> <span class="pre">1,</span> <span class="pre">'LONG_MID_ALLOW_INT128':</span> <span class="pre">1,</span> <span class="pre">'DTYPE_MIN_SIZE':</span> <span class="pre">80,</span> <span class="pre">'DTYPE_MAX_SIZE':</span> <span class="pre">392,</span> <span class="pre">'MD_FILTER_ALL':</span> <span class="pre">254}),</span> <span class="pre">'market_data_buffer':</span> <span class="pre">mappingproxy({'MD_BUF_PTR_DEFAULT_CAP':</span> <span class="pre">16,</span> <span class="pre">'MD_BUF_DATA_DEFAULT_CAP':</span> <span class="pre">1024}),</span> <span class="pre">'exchange_profile':</span> <span class="pre">mappingproxy({'SECONDS_PER_DAY':</span> <span class="pre">86400.0,</span> <span class="pre">'SECONDS_PER_HOUR':</span> <span class="pre">3600.0,</span> <span class="pre">'SECONDS_PER_MINUTE':</span> <span class="pre">60.0,</span> <span class="pre">'NANOS_PER_SECOND':</span> <span class="pre">1000000000.0,</span> <span class="pre">'MICROS_PER_SECOND':</span> <span class="pre">1000000.0,</span> <span class="pre">'UNIX_EPOCH_ORDINAL':</span> <span class="pre">719163,</span> <span class="pre">'EX_PROFILE_ID_SIZE':</span> <span class="pre">64,</span> <span class="pre">'EX_PROFILE_MIN_YEAR':</span> <span class="pre">1,</span> <span class="pre">'EX_PROFILE_MAX_YEAR':</span> <span class="pre">9999,</span> <span class="pre">'EX_PROFILE_MAX_ORDINAL':</span> <span class="pre">3652059})})</span></span><a class="headerlink" href="#algo_engine.base.CONFIG" title="Link to this definition">¶</a></dt>
+<dd><p>Read-only proxy of a mapping.</p>
+</dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="algo_engine.base.USE_CYTHON">
@@ -2262,7 +2263,7 @@ OverflowError on infinities and a ValueError on NaNs.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=1cfdb0b3"></script>
+</div><script src="../_static/documentation_options.js?v=c5b435e8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
