@@ -86,3 +86,26 @@ globals()['MD_SHARED'] = MD_SHARED
 globals()['MD_LOCKED'] = MD_LOCKED
 globals()['MD_LOCKFREE'] = MD_LOCKFREE
 globals()['MD_FREELIST'] = MD_FREELIST
+
+
+# -- Runtime config accessor (reads live cdef globals) --------------------
+class _RuntimeAllocatorConfig:
+    """Property-based accessor for live MD_CFG_* globals.
+
+    Unlike the compile-time CONFIG mappingproxy, these properties read the
+    CURRENT value, which may change when an MDConfigContext is active.
+    """
+    @property
+    def MD_CFG_LOCKED(self):
+        return MD_CFG_LOCKED
+
+    @property
+    def MD_CFG_SHARED(self):
+        return MD_CFG_SHARED
+
+    @property
+    def MD_CFG_FREELIST(self):
+        return MD_CFG_FREELIST
+
+
+RUNTIME_ALLOCATOR_CONFIG = _RuntimeAllocatorConfig()

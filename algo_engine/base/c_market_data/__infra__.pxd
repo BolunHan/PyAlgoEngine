@@ -148,7 +148,7 @@ from .c_market_data cimport (
     MD_BOOK5,
     MD_BOOK10,
     MD_BOOK20,
-    MarketData, FilterMode, ConfigViewer
+    MarketData, FilterMode
 )
 
 from .c_internal cimport InternalData, internal_from_header

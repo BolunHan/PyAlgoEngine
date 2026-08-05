@@ -14,7 +14,15 @@ from cbase.int128 cimport c_read_int128, c_read_uint128, c_write_int128, c_write
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from algo_engine.base.c_intern_string cimport C_INTRA_POOL as HEAP_POOL, C_POOL as SHM_POOL, c_istr, c_istr_synced
-from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE, SessionDate, SessionDateTime, SessionTime, c_ex_profile_unix_to_datetime, session_type
+from algo_engine.exchange_profile.c_exchange_profile cimport (
+    PROFILE, SessionDate, SessionDateTime, SessionTime, c_ex_profile_unix_to_datetime, session_type,
+    SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
+    NANOS_PER_SECOND, MICROS_PER_SECOND, UNIX_EPOCH_ORDINAL,
+    EX_PROFILE_ID_SIZE, EX_PROFILE_MIN_YEAR, EX_PROFILE_MAX_YEAR, EX_PROFILE_MAX_ORDINAL,
+)
+from algo_engine.base.c_market_data.c_market_data_buffer cimport (
+    MD_BUF_PTR_DEFAULT_CAP, MD_BUF_DATA_DEFAULT_CAP,
+)
 
 
 class DataType(enum.IntEnum):
@@ -631,58 +639,63 @@ cdef class FilterMode:
             return flags
 
 
-cdef class ConfigViewer:
-    def __repr__(self):
-        return (
-            f"<ConfigViewer>("
-            f"DEBUG={self.DEBUG}; "
-            f"BOOK_SIZE={self.BOOK_SIZE}; "
-            f"ID_SIZE={self.ID_SIZE}; "
-            f"LONG_ID_SIZE={self.LONG_ID_SIZE}; "
-            f"MAX_WORKERS={self.MAX_WORKERS}; "
-            f"MD_CFG_LOCKED={self.MD_CFG_LOCKED}; "
-            f"MD_CFG_SHARED={self.MD_CFG_SHARED}; "
-            f"MD_CFG_FREELIST={self.MD_CFG_FREELIST}; "
-            f"MD_CFG_BOOK_SIZE={self.MD_CFG_BOOK_SIZE}"
-            f")"
-        )
+# -- Config View -----------------------------------------------------------
+# Compile-time macro registry — nested, read-only mapping proxy (v0.12.1).
+# Runtime allocator state (MD_CFG_LOCKED / MD_CFG_SHARED / MD_CFG_FREELIST /
+# MD_CFG_BOOK_SIZE) is available directly from MD_DEFAULT_ALLOCATOR and the
+# module-level cdef globals; they are NOT frozen here.
 
-    property DEBUG:
-        def __get__(self):
-            return DEBUG
+cdef dict _config_view = {
+    # === market data config ===
+    'market_data': {
+        'DEBUG':                       DEBUG,
+        'BOOK_SIZE':                   BOOK_SIZE,
+        'ID_SIZE':                     ID_SIZE,
+        'LONG_ID_SIZE':                LONG_ID_SIZE,
+        'MAX_WORKERS':                 MAX_WORKERS,
+        'MID_ALLOW_INT64':             MID_ALLOW_INT64,
+        'MID_ALLOW_INT128':            MID_ALLOW_INT128,
+        'LONG_MID_ALLOW_INT64':        LONG_MID_ALLOW_INT64,
+        'LONG_MID_ALLOW_INT128':       LONG_MID_ALLOW_INT128,
+        'DTYPE_MIN_SIZE':              DTYPE_MIN_SIZE,
+        'DTYPE_MAX_SIZE':              DTYPE_MAX_SIZE,
+        'MD_FILTER_ALL':               <int> MD_FILTER_ALL,
+    },
 
-    property BOOK_SIZE:
-        def __get__(self):
-            return BOOK_SIZE
+    # === market data buffer ===
+    'market_data_buffer': {
+        'MD_BUF_PTR_DEFAULT_CAP':      MD_BUF_PTR_DEFAULT_CAP,
+        'MD_BUF_DATA_DEFAULT_CAP':     MD_BUF_DATA_DEFAULT_CAP,
+    },
 
-    property ID_SIZE:
-        def __get__(self):
-            return ID_SIZE
+    # === exchange profile ===
+    'exchange_profile': {
+        'SECONDS_PER_DAY':             SECONDS_PER_DAY,
+        'SECONDS_PER_HOUR':            SECONDS_PER_HOUR,
+        'SECONDS_PER_MINUTE':          SECONDS_PER_MINUTE,
+        'NANOS_PER_SECOND':            NANOS_PER_SECOND,
+        'MICROS_PER_SECOND':           MICROS_PER_SECOND,
+        'UNIX_EPOCH_ORDINAL':          UNIX_EPOCH_ORDINAL,
+        'EX_PROFILE_ID_SIZE':          EX_PROFILE_ID_SIZE,
+        'EX_PROFILE_MIN_YEAR':         EX_PROFILE_MIN_YEAR,
+        'EX_PROFILE_MAX_YEAR':         EX_PROFILE_MAX_YEAR,
+        'EX_PROFILE_MAX_ORDINAL':      EX_PROFILE_MAX_ORDINAL,
+    },
+}
 
-    property LONG_ID_SIZE:
-        def __get__(self):
-            return LONG_ID_SIZE
-
-    property MAX_WORKERS:
-        def __get__(self):
-            return MAX_WORKERS
-
-    property MD_CFG_LOCKED:
-        def __get__(self):
-            return MD_DEFAULT_ALLOCATOR.with_lock
-
-    property MD_CFG_SHARED:
-        def __get__(self):
-            return MD_DEFAULT_ALLOCATOR.with_shm
-
-    property MD_CFG_FREELIST:
-        def __get__(self):
-            return MD_DEFAULT_ALLOCATOR.with_freelist
-
-    property MD_CFG_BOOK_SIZE:
-        def __get__(self):
-            return MD_CFG_BOOK_SIZE
-
-
-cdef ConfigViewer CONFIG = ConfigViewer.__new__(ConfigViewer)
+from types import MappingProxyType
+CONFIG = MappingProxyType({
+    name: MappingProxyType(section) for name, section in _config_view.items()
+})
 globals()['CONFIG'] = CONFIG
+
+
+# -- Runtime config accessor (reads live cdef globals) --------------------
+class _RuntimeMarketDataConfig:
+    """Property-based accessor for MD_CFG_BOOK_SIZE (may change at runtime)."""
+    @property
+    def MD_CFG_BOOK_SIZE(self):
+        return MD_CFG_BOOK_SIZE
+
+
+RUNTIME_MD_CONFIG = _RuntimeMarketDataConfig()

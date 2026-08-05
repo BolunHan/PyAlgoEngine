@@ -411,8 +411,4 @@ cdef class FilterMode:
     cpdef void unfreeze(self)
 
 
-cdef class ConfigViewer:
-    pass
 
-
-cdef ConfigViewer CONFIG
