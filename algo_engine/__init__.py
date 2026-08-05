@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 import traceback
+from collections.abc import Mapping
 
 from .base.telemetrics import LOGGER
 
@@ -51,13 +52,28 @@ except ImportError:
     LOGGER.debug(f'Install PyAlgoEngineAddons to use additional trading algos module\n{traceback.format_exc()}')
 
 
+def _format_config_view(config: Mapping, indent: int = 0) -> str:
+    """Render a (possibly nested) config view as indented bullet lines."""
+    lines = []
+    for key, value in config.items():
+        if isinstance(value, Mapping):
+            lines.append(f"{'  ' * indent}- {key}:")
+            lines.append(_format_config_view(value, indent + 1))
+        else:
+            lines.append(f"{'  ' * indent}- {key}: {value}")
+    return "\n".join(lines)
+
+
 @functools.cache
 def get_include() -> list[str]:
     import os
     from .base import CONFIG
 
     res_dir = pathlib.Path(__file__).parent
-    LOGGER.info(f'Building with <PyAlgoEngine> version: "{__version__}", resource directory: "{res_dir}", config: "{CONFIG}".')
+    LOGGER.info(
+        f'Building with <PyAlgoEngine> version: "{__version__}", resource directory: "{res_dir}", '
+        f"config:\n{_format_config_view(CONFIG)}"
+    )
 
     scr_dir = [
         os.path.realpath(res_dir),
