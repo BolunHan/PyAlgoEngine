@@ -187,7 +187,7 @@ cdef inline void c_set_id(md_id* id_ptr, object id_value):
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
 
 
-cdef inline object c_get_id(const md_id* id_ptr):
+cdef object c_get_id(const md_id* id_ptr):
     cdef uint128_t _uv
     cdef int128_t _iv
 
