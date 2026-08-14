@@ -246,6 +246,62 @@ class TestSessionDatePythonInterfaces(unittest.TestCase):
         self.assertEqual(SessionDate.max, date.max)
         self.assertEqual(SessionDate.resolution, date.resolution)
 
+    def test_04_override_updates_bound_session_date(self):
+        """override() copies year/month/day from dt into the existing C header."""
+        sd, _ = self._mk(2024, 3, 1)
+        target = date(2025, 12, 31)
+
+        result = sd.override(target)
+
+        self.assertIs(result, sd)
+        self.assertEqual((sd.year, sd.month, sd.day), (2025, 12, 31))
+        self.assertEqual(sd.to_pydate(), target)
+        self.assertIsInstance(sd.session_type, SessionType)
+
+    def test_05_override_reuses_existing_buffer(self):
+        """override() mutates the header in place and does not allocate a new buffer."""
+        sd, _ = self._mk(2024, 3, 1)
+        addr_before = sd.addr
+
+        sd.override(date(2025, 6, 15))
+
+        self.assertEqual(sd.addr, addr_before)
+        self.assertEqual(sd.to_pydate(), date(2025, 6, 15))
+
+    def test_06_override_binds_unbound_instance(self):
+        """override() on an unbound instance initializes the header lazily, then overwrites it."""
+        partial = SessionDate.__new__(SessionDate, 2024, 11, 11)
+        self.assertIn("Unbound", repr(partial))
+
+        target = date(2025, 6, 15)
+        partial.override(target)
+
+        self.assertNotIn("Unbound", repr(partial))
+        self.assertEqual((partial.year, partial.month, partial.day), (2025, 6, 15))
+        self.assertEqual(partial.to_pydate(), target)
+
+    def test_07_override_reflects_in_c_level_operations(self):
+        """C-level operations (comparison, hash, ordinal, arithmetic) use the overridden date."""
+        sd, _ = self._mk(2024, 3, 1)
+        target = date(2025, 6, 15)
+
+        sd.override(target)
+
+        self.assertEqual(sd, target)
+        self.assertEqual(hash(sd), target.toordinal())
+        self.assertEqual(sd.to_ordinal(), target.toordinal())
+        self.assertEqual(sd.add_days(1).to_pydate(), date(2025, 6, 16))
+        self.assertEqual(sd.timestamp(), SessionDate.from_pydate(target).timestamp())
+
+    def test_08_override_extreme_dates(self):
+        """override() handles the full uint16 year range boundaries."""
+        sd, _ = self._mk(2024, 3, 1)
+        for target in (date.min, date.max, date(2024, 2, 29)):
+            with self.subTest(target=target):
+                sd.override(target)
+                self.assertEqual(sd.to_pydate(), target)
+                self.assertTrue(sd.is_valid())
+
 
 class TestSessionDateEx(unittest.TestCase):
     """Contract tests for SessionDateEx — the standalone (non-datetime.date) session date type."""
