@@ -1,5 +1,6 @@
 import random
 import unittest
+from collections import Counter
 
 from algo_engine.base.c_market_data.c_market_data_buffer import MarketDataBuffer
 from md_gen import random_market_data
@@ -89,11 +90,18 @@ class MarketDataBufferCacheTests(unittest.TestCase):
             for md in samples:
                 cache.put(md)
 
-        expected = sorted(samples, key=lambda md: md.timestamp)
         got = list(buffer)
 
-        for md_0, md_1 in zip(expected, got):
-            self.assertEqual(self._signature(md_0), self._signature(md_1))
+        # The C buffer sorts with qsort, which is unstable on MSVC: entries
+        # sharing a timestamp may come out in any order. Verify the contract
+        # without assuming stability — order must be sorted, content must be
+        # the same multiset.
+        expected_ts = sorted(md.timestamp for md in samples)
+        self.assertEqual([md.timestamp for md in got], expected_ts)
+        self.assertEqual(
+            Counter(self._signature(md) for md in got),
+            Counter(self._signature(md) for md in samples),
+        )
 
     def test_serialize_and_deserialize_roundtrip(self):
         buffer = MarketDataBuffer(8, 1024)

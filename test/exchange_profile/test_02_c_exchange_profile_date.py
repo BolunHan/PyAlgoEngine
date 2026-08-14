@@ -1,3 +1,4 @@
+import os
 import pathlib
 import sys
 import unittest
@@ -47,6 +48,11 @@ class TestSessionDate(unittest.TestCase):
             2145916800.0,  # 2038-01-01 UTC
             4102444800.0,  # 2100-01-01 UTC
         ]
+
+        if os.name == "nt":
+            # The Windows CRT (and CPython's datetime.fromtimestamp on it)
+            # cannot represent pre-1970 timestamps — drop those samples.
+            samples = [ts for ts in samples if ts >= 0.0]
 
         for ts in samples:
             with self.subTest(ts=ts):
