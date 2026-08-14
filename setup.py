@@ -19,6 +19,12 @@ from setuptools.command.build_ext import build_ext
 PACKAGE_NAME = "algo_engine"
 DISPLAY_NAME = "PyAlgoEngine"
 
+# Optional flag: include the C-linkage test extensions in the build.
+# Usage: python setup.py build_ext --inplace --with-tests
+WITH_TESTS = "--with-tests" in sys.argv
+if WITH_TESTS:
+    sys.argv.remove("--with-tests")
+
 WITH_ANNOTATION = False
 COMPILE_FLAGS = ["/Ox", "/std:c17", "/experimental:c11atomics"] if platform.system() == "Windows" else ['-O3'] + ([] if os.environ.get('GITHUB_ACTIONS') == 'true' else ['-march=native'])
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -206,7 +212,10 @@ cython_extension.extend([
                  "algo_engine/exchange_profile/c_ex_profile_base.c",
                  "algo_engine/exchange_profile/c_ex_profile_cn.c"],
         include_dirs=[REPO_ROOT, *cbase.get_include()],
-        extra_compile_args=[*COMPILE_FLAGS]
+        # /GL (whole-program optimization) makes MSVC mis-export data symbols
+        # (EX_PROFILE must be resolvable via GetProcAddress by extensions);
+        # /GL- is appended after setuptools' default /GL and disables LTCG.
+        extra_compile_args=[*COMPILE_FLAGS] + (["/GL-"] if platform.system() == "Windows" else []),
     ),
     Extension(
         name="algo_engine.exchange_profile.c_profile_dispatcher",
@@ -284,6 +293,21 @@ cython_extension.extend([
         extra_compile_args=[*COMPILE_FLAGS]
     )
 ])
+
+if WITH_TESTS:
+    cython_extension.extend([
+        # === Test Extensions (built only with --with-tests) ===
+        # Linkage probe: an external consumer of the exchange_profile C
+        # interface. Exercises cross-module symbol resolution and the shared
+        # EX_PROFILE global (see test/exchange_profile/test_07_exchange_profile_linkage.py).
+        Extension(
+            name="test.exchange_profile.c_exchange_profile_linkage",
+            sources=['test/exchange_profile/c_exchange_profile_linkage.pyx'],
+            include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
+            extra_compile_args=[*COMPILE_FLAGS],
+            depends=['test/exchange_profile/c_exchange_profile_linkage_shim.h'],
+        )
+    ])
 
 BuildExtWithConfig.remove_pxd()
 
