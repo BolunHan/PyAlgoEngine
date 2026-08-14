@@ -1,7 +1,7 @@
-import ctypes as _ctypes
+import ctypes
 import logging
-import pathlib as _pathlib
-import sysconfig as _sysconfig
+import pathlib
+import sysconfig
 
 from ..base.telemetrics import LOGGER
 
@@ -9,16 +9,16 @@ LOGGER = LOGGER.getChild('ExchangeProfile')
 
 # Promote the C extension's symbols (e.g. EX_PROFILE) to the dynamic linker's global scope before it is imported.
 # CPython loads extensions with RTLD_LOCAL, which hides their symbols from other extensions that cimport this module's C interface and reference them at load time.
-# Pre-loading the .so with RTLD_GLOBAL makes them resolvable by any extension imported after this package.
+# Preloading the .so with RTLD_GLOBAL makes them resolvable by any extension imported after this package.
 # No-op on Windows: PE DLLs have no global symbol scope — undefined symbols must be resolved at link time via import libraries.
-_RTLD_GLOBAL = getattr(_ctypes, 'RTLD_GLOBAL', 0)
+_RTLD_GLOBAL = getattr(ctypes, 'RTLD_GLOBAL', 0)
 if _RTLD_GLOBAL:
     try:
-        _ctypes.CDLL(
-            str(_pathlib.Path(__file__).parent / f"c_exchange_profile{_sysconfig.get_config_var('EXT_SUFFIX')}"),
+        ctypes.CDLL(
+            str(pathlib.Path(__file__).parent / f"c_exchange_profile{sysconfig.get_config_var('EXT_SUFFIX')}"),
             mode=_RTLD_GLOBAL,
         )
-    except Exception:
+    except Exception as _:
         pass  # graceful fallback: Python-level API remains fully functional
 
 
