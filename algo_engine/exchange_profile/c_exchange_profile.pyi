@@ -332,6 +332,22 @@ class SessionDate(datetime.date):
     @classmethod
     def from_pydate(cls, dt: datetime.date) -> SessionDate: ...
 
+    def override(self, dt: datetime.date) -> Self:
+        """Overwrite the C-backed session date payload with ``dt`` in place.
+
+        Reuses the existing internal ``session_date_t`` buffer — no new allocation is
+        made. The inherited ``datetime.date`` payload is immutable and stays unchanged;
+        properties and C-level operations (``to_pydate``, comparisons, arithmetic,
+        ``session_type``) reflect the overridden date.
+
+        Args:
+            dt: The date to copy year/month/day from.
+
+        Returns:
+            This instance, for chaining.
+        """
+        ...
+
     def to_pydate(self) -> datetime.date: ...
 
     def to_ordinal(self) -> int: ...

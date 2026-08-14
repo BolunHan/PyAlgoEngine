@@ -416,6 +416,19 @@ cdef class SessionDate(py_date):
             raise MemoryError(f'Failed to allocate memory for {cls.__name__}')
         return SessionDate.c_from_header(header, True)
 
+    def override(self, py_date dt):
+        if not self.header:
+            self.c_sync()
+        cdef int ret_code = c_ex_profile_session_date_init(
+            <session_date_t*> self.header,
+            PyDateTime_GET_YEAR(dt),
+            PyDateTime_GET_MONTH(dt),
+            PyDateTime_GET_DAY(dt)
+        )
+        if ret_code != 0:
+            raise RuntimeError(f'c_ex_profile_session_date_init failed with err code: {ret_code}')
+        return self
+
     def to_pydate(self):
         if not self.header:
             self.c_sync()

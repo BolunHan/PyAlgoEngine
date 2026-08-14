@@ -67,6 +67,7 @@ from .c_exchange_profile cimport (
     c_ex_profile_session_trange_between_time,
     c_ex_profile_session_trange_between_unix,
     c_ex_profile_session_date_new,
+    c_ex_profile_session_date_init,
     c_ex_profile_session_date_from_unix,
     c_ex_profile_session_date_to_unix,
     c_ex_profile_session_date_index,

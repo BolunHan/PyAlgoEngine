@@ -167,6 +167,7 @@ cdef extern from "algo_engine/exchange_profile/c_ex_profile_base.h":
     session_time_range_t* c_ex_profile_session_trange_between_unix(double start_unix_ts, double end_unix_ts) noexcept nogil
 
     session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day) noexcept nogil
+    int c_ex_profile_session_date_init(session_date_t* date, uint16_t year, uint8_t month, uint8_t day) noexcept nogil
     int c_ex_profile_session_date_from_unix(double unix_ts, session_date_t* out) noexcept nogil
     double c_ex_profile_session_date_to_unix(const session_date_t* date) noexcept nogil
     size_t c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange) noexcept nogil

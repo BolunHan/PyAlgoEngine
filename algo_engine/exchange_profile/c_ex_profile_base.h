@@ -262,6 +262,7 @@ static inline session_time_range_t*    c_ex_profile_session_trange_between_time(
 static inline session_time_range_t*    c_ex_profile_session_trange_between_unix(double start_unix_ts, double end_unix_ts);
 
 static inline session_date_t*          c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day);
+static inline int                      c_ex_profile_session_date_init(session_date_t* date, uint16_t year, uint8_t month, uint8_t day);
 static inline int                      c_ex_profile_session_date_from_unix(double unix_ts, session_date_t* out);
 static inline double                   c_ex_profile_session_date_to_unix(const session_date_t* date);
 static inline size_t                   c_ex_profile_session_date_index(const session_date_t* date, const session_date_range_t* drange);
@@ -845,13 +846,31 @@ static inline session_time_range_t* c_ex_profile_session_trange_between_unix(dou
 
 // ========== Public APIs (session_date_t) ==========
 
+/**
+ * @brief Populate an existing session_date_t buffer with the given year/month/day.
+ *
+ * Mimics c_ex_profile_session_date_new() field-setting behavior, including session type
+ * resolution, without allocating a new buffer. The caller owns the memory (stack or embedded).
+ *
+ * @param date  Existing buffer to populate.
+ * @param year  Calendar year (0-9999).
+ * @param month Calendar month (1-12).
+ * @param day   Calendar day (1-31).
+ * @return 0 on success, -1 if date is NULL.
+ */
+static inline int c_ex_profile_session_date_init(session_date_t* date, uint16_t year, uint8_t month, uint8_t day) {
+    if (!date) return -1;
+    date->year = year;
+    date->month = month;
+    date->day = day;
+    date->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(year, month, day) : SESSION_TYPE_NORMINAL;
+    return 0;
+}
+
 static inline session_date_t* c_ex_profile_session_date_new(uint16_t year, uint8_t month, uint8_t day) {
     session_date_t* d = (session_date_t*) calloc(1, sizeof(session_date_t));
     if (!d) return NULL;
-    d->year = year;
-    d->month = month;
-    d->day = day;
-    d->stype = EX_PROFILE ? EX_PROFILE->resolve_session_type(year, month, day) : SESSION_TYPE_NORMINAL;
+    c_ex_profile_session_date_init(d, year, month, day);
     return d;
 }
 
