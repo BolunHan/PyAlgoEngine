@@ -192,7 +192,6 @@ cdef extern from "algo_engine/exchange_profile/c_ex_profile_cn.h":
     void c_ex_profile_cn_get_calendar() noexcept nogil
 
 
-
 cpdef double local_utc_offset_seconds()
 cdef int c_ex_profile_unix_to_datetime(double unix_ts, session_datetime_t* out)
 cpdef py_datetime unix_to_datetime(double unix_ts)

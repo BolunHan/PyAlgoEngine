@@ -1,8 +1,8 @@
 import enum
 from datetime import timezone
 
-from cpython.datetime cimport timedelta, PyDateTime_GET_YEAR, PyDateTime_GET_MONTH, PyDateTime_GET_DAY, PyDateTime_DELTA_GET_DAYS
-from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_NE, Py_GT, Py_GE, PyObject
+from cpython.datetime cimport PyDateTime_DELTA_GET_DAYS, PyDateTime_GET_DAY, PyDateTime_GET_MONTH, PyDateTime_GET_YEAR, timedelta
+from cpython.object cimport PyObject, Py_EQ, Py_GE, Py_GT, Py_LE, Py_LT, Py_NE
 from cpython.unicode cimport PyUnicode_FromString
 from libc.stdlib cimport calloc, free
 from libc.string cimport memcpy
