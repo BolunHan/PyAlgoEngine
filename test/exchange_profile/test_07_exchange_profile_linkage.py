@@ -1,6 +1,7 @@
 import datetime
 import importlib.util
 import pathlib
+import struct
 import sys
 import sysconfig
 import unittest
@@ -57,6 +58,44 @@ class TestExchangeProfileLinkage(unittest.TestCase):
     def test_session_type_default_profile(self):
         # Without a CN profile active the same date resolves as a normal day.
         self.assertEqual(self.linkage.session_type_of(datetime.date(2024, 2, 12)), int(SessionType.NORMINAL))
+
+
+@unittest.skipUnless(
+    SO_PATH.exists(),
+    "linkage extension not built — rebuild with: setup.py build_ext --inplace --with-tests",
+)
+class TestSessionDateLayoutContract(unittest.TestCase):
+    """session_date_t tight-layout contract (EX_PROFILE_SESSION_DATE_NO_PADDING == 1).
+
+    Expected behavior:
+        - C-side sizeof(session_date_t) == 6.
+        - Initializing a 0xAA-poisoned stack buffer writes every byte of the
+          struct — no suffix padding survives.
+        - The raw image is fully determined: it equals struct.pack('<HBBH', ...).
+
+    Oracle: struct.pack little-endian. All supported targets (x86-64 Linux,
+    x86-64/ARM64 Windows) are little-endian; on a known big-endian host
+    c_ex_profile_base.h emits an informational [COMPILE] [DBG] diagnostic
+    (no assert), so the little-endian image oracle only holds on little-endian
+    builds. 2024-02-08 resolves to NORMINAL under both the default and the CN
+    profile, so the expected image is profile-independent.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.linkage = _load_linkage_module()
+
+    def test_00_c_sizeof_is_six(self):
+        self.assertEqual(self.linkage.session_date_sizeof(), 6)
+
+    def test_01_no_padding_survives_poisoned_init(self):
+        raw = self.linkage.session_date_raw_bytes(datetime.date(2024, 2, 8))
+        self.assertEqual(len(raw), 6)
+        self.assertNotIn(0xAA, raw)
+
+    def test_02_raw_image_is_fully_determined(self):
+        expected = struct.pack("<HBBH", 2024, 2, 8, int(SessionType.NORMINAL))
+        self.assertEqual(self.linkage.session_date_raw_bytes(datetime.date(2024, 2, 8)), expected)
 
 
 if __name__ == "__main__":

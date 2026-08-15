@@ -1,6 +1,7 @@
 from cpython.datetime cimport PyDateTime_GET_DAY, PyDateTime_GET_MONTH, PyDateTime_GET_YEAR, date as pydate
 from libc.stdint cimport uintptr_t
 from libc.stdlib cimport calloc
+from libc.string cimport memset
 
 # Windows: redirect EX_PROFILE to a pointer resolved at runtime via
 # GetProcAddress (PE has no RTLD_GLOBAL-equivalent global symbol scope).
@@ -38,3 +39,21 @@ cpdef int session_type_of(pydate date):
     cdef session_date_t out
     c_ex_profile_session_date_init(&out, PyDateTime_GET_YEAR(date), PyDateTime_GET_MONTH(date), PyDateTime_GET_DAY(date))
     return <int> out.stype
+
+
+cpdef int session_date_sizeof():
+    """C-side size of session_date_t, for the layout contract assertions."""
+    return sizeof(session_date_t)
+
+
+cpdef bytes session_date_raw_bytes(pydate date):
+    """Raw memory image of a session_date_t initialized onto a 0xAA-poisoned stack buffer.
+
+    With EX_PROFILE_SESSION_DATE_NO_PADDING every byte of the struct is a real
+    field (no suffix padding), so no poison byte may survive and the image is
+    fully determined by (year, month, day, stype).
+    """
+    cdef session_date_t out
+    memset(<void*> &out, 0xAA, sizeof(out))
+    c_ex_profile_session_date_init(&out, PyDateTime_GET_YEAR(date), PyDateTime_GET_MONTH(date), PyDateTime_GET_DAY(date))
+    return bytes((<char*> &out)[:sizeof(out)])
