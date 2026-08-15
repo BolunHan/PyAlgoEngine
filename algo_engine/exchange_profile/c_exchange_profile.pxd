@@ -57,7 +57,7 @@ cdef extern from "algo_engine/exchange_profile/c_ex_profile_base.h":
         uint16_t year
         uint8_t month
         uint8_t day
-        uint8_t stype
+        session_type stype
 
     ctypedef struct session_datetime_t:
         session_time_t time

@@ -79,6 +79,12 @@ static const uint16_t DAYS_BEFORE_MONTH_TABLE[12] = {
 
 #define HMS_TO_TS(H, M, S) ((double) (H) * SECONDS_PER_HOUR + (double) (M) * SECONDS_PER_MINUTE + (double) (S))
 
+// ========== Layout Control ==========
+
+#ifndef EX_PROFILE_SESSION_DATE_NO_PADDING
+#define EX_PROFILE_SESSION_DATE_NO_PADDING 1
+#endif
+
 // ========== Structs ==========
 
 typedef enum session_type {
@@ -140,8 +146,31 @@ typedef struct session_date_t {
     uint16_t year;   // 0-9999
     uint8_t  month;  // 1-12
     uint8_t  day;    // 1-31
-    uint8_t  stype;  // session_type, stored as uint8_t for cache line friendliness.
+#if EX_PROFILE_SESSION_DATE_NO_PADDING
+    uint16_t stype;  // session_type, widened to uint16_t so the struct has no suffix padding byte.
+#else
+    uint8_t stype;  // session_type, stored as uint8_t for cache line friendliness.
+#endif
 } session_date_t;
+
+#if EX_PROFILE_SESSION_DATE_NO_PADDING
+/* The struct is memcpy'd raw into serialized buffers (e.g. c_md_serialize), so
+ * the in-memory image must be fully determined by the fields — no padding — and
+ * the widened uint16_t stype pins the byte order. All supported targets
+ * (x86-64 Linux, x86-64/ARM64 Windows) are little-endian; a big-endian host
+ * only affects loading pre-existing little-endian blobs, so this is an
+ * informational diagnostic rather than a hard assertion. */
+#if defined(_WIN32) || defined(_WIN64)
+/* Windows (x86/x64/ARM64) is always little-endian — no diagnostic. */
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#pragma message("[COMPILE] [DBG] Known big-endian platform: session_date_t raw blobs are byte-order specific; pre-existing little-endian blobs may fail to load. Set EX_PROFILE_SESSION_DATE_NO_PADDING=0 to opt out.")
+#endif
+
+_Static_assert(
+    sizeof(session_date_t) == 6,
+    "session_date_t must be exactly 6 bytes with EX_PROFILE_SESSION_DATE_NO_PADDING"
+);
+#endif
 
 typedef struct session_datetime_t {
     session_time_t time;
