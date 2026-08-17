@@ -12,10 +12,10 @@ jobs:
 
         steps:
             -   name: Checkout code
-                uses: actions/checkout@v4
+                uses: actions/checkout@main
 
             -   name: Set up Python 3.13
-                uses: actions/setup-python@v5
+                uses: actions/setup-python@main
                 with:
                     python-version: "3.13"
 
@@ -39,7 +39,7 @@ jobs:
                     touch build/html/.nojekyll
 
             -   name: Deploy to GitHub Pages
-                uses: peaceiris/actions-gh-pages@v3
+                uses: peaceiris/actions-gh-pages@v4
                 with:
                     github_token: ${{ secrets.GITHUB_TOKEN }}
                     publish_dir: ./docs/build/html
