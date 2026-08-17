@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>algo_engine.apps.backtest.doc_server - PyAlgoEngine 0.12.3 documentation</title>
+        <title>algo_engine.apps.backtest.doc_server - PyAlgoEngine 0.12.3.post1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../../../index.html"><div class="brand">PyAlgoEngine 0.12.3 documentation</div></a>
+      <a href="../../../../index.html"><div class="brand">PyAlgoEngine 0.12.3.post1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3.post1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -265,15 +265,15 @@
     <span class="n">stick_padding</span> <span class="o">=</span> <span class="mf">0.1</span>
     <span class="n">range_padding</span> <span class="o">=</span> <span class="mf">0.01</span>
 
-    <span class="n">ColorStyle</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span><span class="s1">&#39;ColorStyle&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;up&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">})</span>
-    <span class="n">ws_style</span> <span class="o">=</span> <span class="n">ColorStyle</span><span class="p">(</span><span class="n">up</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">down</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
-    <span class="n">cn_style</span> <span class="o">=</span> <span class="n">ColorStyle</span><span class="p">(</span><span class="n">up</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">down</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">)</span>
+    <span class="n">ColorStyle</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span><span class="s1">'ColorStyle'</span><span class="p">,</span> <span class="p">{</span><span class="s1">'up'</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">'down'</span><span class="p">:</span> <span class="nb">str</span><span class="p">})</span>
+    <span class="n">ws_style</span> <span class="o">=</span> <span class="n">ColorStyle</span><span class="p">(</span><span class="n">up</span><span class="o">=</span><span class="s2">"green"</span><span class="p">,</span> <span class="n">down</span><span class="o">=</span><span class="s2">"red"</span><span class="p">)</span>
+    <span class="n">cn_style</span> <span class="o">=</span> <span class="n">ColorStyle</span><span class="p">(</span><span class="n">up</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span> <span class="n">down</span><span class="o">=</span><span class="s2">"green"</span><span class="p">)</span>
 
 <div class="viewcode-block" id="StickTheme.__init__">
 <a class="viewcode-back" href="../../../../api/apps.html#algo_engine.apps.backtest.StickTheme.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">style</span><span class="p">:</span> <span class="n">ColorStyle</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">profile_id</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;CN_STOCK&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">profile_id</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'CN_STOCK'</span><span class="p">]:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cn_style</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws_style</span>
@@ -287,9 +287,9 @@
         <span class="n">style_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">pct_change</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">style_dict</span><span class="p">[</span><span class="s1">&#39;stick_color&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">style</span><span class="p">[</span><span class="s1">&#39;up&#39;</span><span class="p">]</span>
+            <span class="n">style_dict</span><span class="p">[</span><span class="s1">'stick_color'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">style</span><span class="p">[</span><span class="s1">'up'</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">style_dict</span><span class="p">[</span><span class="s1">&#39;stick_color&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">style</span><span class="p">[</span><span class="s1">&#39;down&#39;</span><span class="p">]</span>
+            <span class="n">style_dict</span><span class="p">[</span><span class="s1">'stick_color'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">style</span><span class="p">[</span><span class="s1">'down'</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">style_dict</span></div>
 </div>
@@ -321,37 +321,37 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_indices</span><span class="p">()</span> <span class="k">if</span> <span class="n">x_axis</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x_axis</span>
 
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">,</span> <span class="s1">&#39;Must assign x_axis to render candlesticks!&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">,</span> <span class="s1">'Must assign x_axis to render candlesticks!'</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">,</span>
-            <span class="n">max_size</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;max_size&#39;</span><span class="p">),</span>
-            <span class="n">update_interval</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;update_interval&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">max_size</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'max_size'</span><span class="p">),</span>
+            <span class="n">update_interval</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'update_interval'</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">StickTheme</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">:</span> <span class="n">CandleStick</span><span class="o">.</span><span class="n">ActiveBarData</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;market_time&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;cs.high_price&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;cs.low_price&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;close_price&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;volume&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;_max_price&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;_min_price&#39;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s1">&#39;stick_color&#39;</span><span class="p">:</span> <span class="p">[]</span>
+            <span class="s1">'index'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'market_time'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'open_price'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'cs.high_price'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'cs.low_price'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'close_price'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'volume'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'_max_price'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'_min_price'</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">'stick_color'</span><span class="p">:</span> <span class="p">[]</span>
         <span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="CandleStick.ts_indices">
 <a class="viewcode-back" href="../../../../api/apps.html#algo_engine.apps.backtest.CandleStick.ts_indices">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;generate integer indices</span>
+<span class="w">        </span><span class="sd">"""generate integer indices</span>
 <span class="sd">        from start date to end date, with given interval, in seconds</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">calendar</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_date</span><span class="p">)</span>
         <span class="n">timestamps</span> <span class="o">=</span> <span class="p">[]</span>
@@ -363,7 +363,7 @@
                 <span class="n">session_end</span><span class="o">=</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">session_end</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">(),</span>
                 <span class="n">session_break</span><span class="o">=</span><span class="p">[(</span><span class="n">session_break</span><span class="o">.</span><span class="n">break_start</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">(),</span> <span class="n">session_break</span><span class="o">.</span><span class="n">break_end</span><span class="o">.</span><span class="n">to_pytime</span><span class="p">())</span> <span class="k">for</span> <span class="n">session_break</span> <span class="ow">in</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_breaks</span><span class="p">],</span>
                 <span class="n">time_zone</span><span class="o">=</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">time_zone</span><span class="p">,</span>
-                <span class="n">ts_mode</span><span class="o">=</span><span class="s1">&#39;both&#39;</span>
+                <span class="n">ts_mode</span><span class="o">=</span><span class="s1">'both'</span>
             <span class="p">)</span>
 
             <span class="n">timestamps</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_ts_indices</span><span class="p">)</span>
@@ -393,8 +393,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="s1">&#39;market_data&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;market_data&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">'market_data'</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">'market_data'</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="p">:</span>
                 <span class="k">return</span>
@@ -406,13 +406,13 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
-            <span class="n">ticker</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;ticker&#39;</span><span class="p">)</span>
-            <span class="n">price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;market_price&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;close_price&#39;</span><span class="p">))</span>
-            <span class="n">volume</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;volume&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'timestamp'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+            <span class="n">ticker</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'ticker'</span><span class="p">)</span>
+            <span class="n">price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'market_price'</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'close_price'</span><span class="p">))</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'volume'</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
-            <span class="k">assert</span> <span class="n">ticker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;Must assign a ticker for update function!&#39;</span>
-            <span class="k">assert</span> <span class="n">price</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Must assign a market_price or close_price for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s1"> update function!&#39;</span>
+            <span class="k">assert</span> <span class="n">ticker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">'Must assign a ticker for update function!'</span>
+            <span class="k">assert</span> <span class="n">price</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s1">'Must assign a market_price or close_price for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s1"> update function!'</span>
 
             <span class="k">if</span> <span class="n">ticker</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="p">:</span>
                 <span class="k">return</span>
@@ -424,9 +424,9 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_on_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">open_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;open_price&#39;</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
-        <span class="n">high_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;high_price&#39;</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
-        <span class="n">low_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;low_price&#39;</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
+        <span class="n">open_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'open_price'</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
+        <span class="n">high_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'high_price'</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
+        <span class="n">low_price</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'low_price'</span><span class="p">,</span> <span class="n">price</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">int_idx</span><span class="p">,</span> <span class="n">ts_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc_indices</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -443,17 +443,17 @@
                 <span class="n">close_price</span><span class="o">=</span><span class="n">price</span><span class="p">,</span>
                 <span class="n">volume</span><span class="o">=</span><span class="n">volume</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">timestamp</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_end&#39;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="s1">&#39;open_price&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">open_price</span>
+        <span class="k">elif</span> <span class="n">timestamp</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'ts_end'</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s1">'open_price'</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">open_price</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">high_price</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;low_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">low_price</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;low_price&#39;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'high_price'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">high_price</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'high_price'</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'low_price'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">low_price</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'low_price'</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">volume</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">+=</span> <span class="n">volume</span>
 
-        <span class="k">if</span> <span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_end&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'ts_end'</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bokeh_documents</span><span class="p">):</span>
@@ -465,29 +465,29 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_interval</span><span class="p">:</span>
                     <span class="n">doc</span><span class="o">.</span><span class="n">add_next_tick_callback</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span> <span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">))</span>
 
-            <span class="n">int_idx</span><span class="p">,</span> <span class="n">ts_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc_indices</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;idx&#39;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;idx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">int_idx</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ts_idx</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ts_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;low_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">volume</span>
+            <span class="n">int_idx</span><span class="p">,</span> <span class="n">ts_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc_indices</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'idx'</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'idx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">int_idx</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'ts_start'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ts_idx</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'ts_end'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ts_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'high_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'low_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">price</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">=</span> <span class="n">volume</span>
 
 <div class="viewcode-block" id="CandleStick.pipe">
 <a class="viewcode-back" href="../../../../api/apps.html#algo_engine.apps.backtest.CandleStick.pipe">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]):</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;idx&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># to ensure bar rendered in the center of the interval</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;market_time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;ts_start&#39;</span><span class="p">]))</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">])</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">])</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;cs.high_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;high_price&#39;</span><span class="p">])</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;cs.low_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;low_price&#39;</span><span class="p">])</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">])</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;_max_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]))</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;_min_price&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]))</span>
-        <span class="n">sequence</span><span class="p">[</span><span class="s1">&#39;stick_color&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theme</span><span class="o">.</span><span class="n">stick_style</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;close_price&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">&#39;open_price&#39;</span><span class="p">])[</span><span class="s1">&#39;stick_color&#39;</span><span class="p">])</span></div>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'index'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'idx'</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># to ensure bar rendered in the center of the interval</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'market_time'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'ts_start'</span><span class="p">]))</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">])</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">])</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'cs.high_price'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'high_price'</span><span class="p">])</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'cs.low_price'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'low_price'</span><span class="p">])</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">])</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'_max_price'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">]))</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'_min_price'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">]))</span>
+        <span class="n">sequence</span><span class="p">[</span><span class="s1">'stick_color'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theme</span><span class="o">.</span><span class="n">stick_style</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'close_price'</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_bar_data</span><span class="p">[</span><span class="s1">'open_price'</span><span class="p">])[</span><span class="s1">'stick_color'</span><span class="p">])</span></div>
 
 
 <div class="viewcode-block" id="CandleStick.layout">
@@ -504,60 +504,60 @@
         <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bokeh_data_source</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span>
 
         <span class="n">tools</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">PanTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">WheelPanTool</span><span class="p">(</span><span class="n">dimension</span><span class="o">=</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">BoxZoomTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">WheelZoomTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">&quot;width&quot;</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">CrosshairTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">HoverTool</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;vline&#39;</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">formatters</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;@market_time&#39;</span><span class="p">:</span> <span class="s1">&#39;datetime&#39;</span><span class="p">}),</span>
+            <span class="n">PanTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">"width"</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">WheelPanTool</span><span class="p">(</span><span class="n">dimension</span><span class="o">=</span><span class="s2">"width"</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">BoxZoomTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">WheelZoomTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">"width"</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">CrosshairTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">"both"</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">HoverTool</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">'vline'</span><span class="p">,</span> <span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">formatters</span><span class="o">=</span><span class="p">{</span><span class="s1">'@market_time'</span><span class="p">:</span> <span class="s1">'datetime'</span><span class="p">}),</span>
             <span class="n">ExamineTool</span><span class="p">(</span><span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
             <span class="n">ResetTool</span><span class="p">(</span><span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
             <span class="n">SaveTool</span><span class="p">(</span><span class="n">syncable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="p">]</span>
 
         <span class="n">tooltips</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">(</span><span class="s2">&quot;market_time&quot;</span><span class="p">,</span> <span class="s2">&quot;@market_time{%H:%M:%S}&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;close_price&quot;</span><span class="p">,</span> <span class="s2">&quot;@close_price&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;open_price&quot;</span><span class="p">,</span> <span class="s2">&quot;@open_price&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;high_price&quot;</span><span class="p">,</span> <span class="s2">&quot;@</span><span class="si">{cs.high_price}</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;low_price&quot;</span><span class="p">,</span> <span class="s2">&quot;@</span><span class="si">{cs.low_price}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"market_time"</span><span class="p">,</span> <span class="s2">"@market_time{%H:%M:%S}"</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"close_price"</span><span class="p">,</span> <span class="s2">"@close_price"</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"open_price"</span><span class="p">,</span> <span class="s2">"@open_price"</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"high_price"</span><span class="p">,</span> <span class="s2">"@</span><span class="si">{cs.high_price}</span><span class="s2">"</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"low_price"</span><span class="p">,</span> <span class="s2">"@</span><span class="si">{cs.low_price}</span><span class="s2">"</span><span class="p">),</span>
         <span class="p">]</span>
 
         <span class="n">plot</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span>
-            <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> Candlestick&quot;</span><span class="p">,</span>
-            <span class="n">x_range</span><span class="o">=</span><span class="n">Range1d</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">),</span> <span class="n">bounds</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">),</span>
-            <span class="n">x_axis_type</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
-            <span class="c1"># sizing_mode=&quot;stretch_both&quot;,</span>
+            <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> Candlestick"</span><span class="p">,</span>
+            <span class="n">x_range</span><span class="o">=</span><span class="n">Range1d</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">),</span> <span class="n">bounds</span><span class="o">=</span><span class="s1">'auto'</span><span class="p">),</span>
+            <span class="n">x_axis_type</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span>
+            <span class="c1"># sizing_mode="stretch_both",</span>
             <span class="n">min_height</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
             <span class="n">tools</span><span class="o">=</span><span class="n">tools</span><span class="p">,</span>
             <span class="n">tooltips</span><span class="o">=</span><span class="n">tooltips</span><span class="p">,</span>
-            <span class="n">y_axis_location</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
+            <span class="n">y_axis_location</span><span class="o">=</span><span class="s2">"right"</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">_shadows</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">segment</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;candlestick.shade&#39;</span><span class="p">,</span>
-            <span class="n">x0</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span>
-            <span class="n">x1</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span>
-            <span class="n">y0</span><span class="o">=</span><span class="s1">&#39;cs.low_price&#39;</span><span class="p">,</span>
-            <span class="n">y1</span><span class="o">=</span><span class="s1">&#39;cs.high_price&#39;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'candlestick.shade'</span><span class="p">,</span>
+            <span class="n">x0</span><span class="o">=</span><span class="s1">'index'</span><span class="p">,</span>
+            <span class="n">x1</span><span class="o">=</span><span class="s1">'index'</span><span class="p">,</span>
+            <span class="n">y0</span><span class="o">=</span><span class="s1">'cs.low_price'</span><span class="p">,</span>
+            <span class="n">y1</span><span class="o">=</span><span class="s1">'cs.high_price'</span><span class="p">,</span>
             <span class="n">line_width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
             <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
             <span class="n">source</span><span class="o">=</span><span class="n">source</span>
         <span class="p">)</span>
 
         <span class="n">_candlestick</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">vbar</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;candlestick&#39;</span><span class="p">,</span>
-            <span class="n">x</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span>
-            <span class="n">top</span><span class="o">=</span><span class="s1">&#39;_max_price&#39;</span><span class="p">,</span>
-            <span class="n">bottom</span><span class="o">=</span><span class="s1">&#39;_min_price&#39;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'candlestick'</span><span class="p">,</span>
+            <span class="n">x</span><span class="o">=</span><span class="s1">'index'</span><span class="p">,</span>
+            <span class="n">top</span><span class="o">=</span><span class="s1">'_max_price'</span><span class="p">,</span>
+            <span class="n">bottom</span><span class="o">=</span><span class="s1">'_min_price'</span><span class="p">,</span>
             <span class="n">width</span><span class="o">=</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span><span class="o">.</span><span class="n">stick_padding</span><span class="p">,</span>
-            <span class="n">color</span><span class="o">=</span><span class="s1">&#39;stick_color&#39;</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="s1">'stick_color'</span><span class="p">,</span>
             <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
             <span class="n">source</span><span class="o">=</span><span class="n">source</span>
         <span class="p">)</span>
 
-        <span class="n">plot</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">major_label_overrides</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)}</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">major_label_overrides</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">'%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S'</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)}</span>
         <span class="n">plot</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">min_interval</span> <span class="o">=</span> <span class="mf">1.</span>
         <span class="n">tools</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">renderers</span> <span class="o">=</span> <span class="p">[</span><span class="n">_candlestick</span><span class="p">]</span>
 
@@ -566,13 +566,13 @@
             <span class="n">min_height</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
             <span class="n">tools</span><span class="o">=</span><span class="p">[],</span>
             <span class="n">toolbar_location</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="c1"># sizing_mode=&quot;stretch_both&quot;</span>
+            <span class="c1"># sizing_mode="stretch_both"</span>
         <span class="p">)</span>
 
         <span class="n">range_tool</span> <span class="o">=</span> <span class="n">RangeTool</span><span class="p">(</span><span class="n">x_range</span><span class="o">=</span><span class="n">plot</span><span class="o">.</span><span class="n">x_range</span><span class="p">)</span>
         <span class="n">range_tool</span><span class="o">.</span><span class="n">overlay</span><span class="o">.</span><span class="n">fill_alpha</span> <span class="o">=</span> <span class="mf">0.5</span>
 
-        <span class="n">range_selector</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;close_price&#39;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">)</span>
+        <span class="n">range_selector</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="s1">'index'</span><span class="p">,</span> <span class="s1">'close_price'</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">)</span>
         <span class="n">range_selector</span><span class="o">.</span><span class="n">add_tools</span><span class="p">(</span><span class="n">range_tool</span><span class="p">)</span>
         <span class="n">range_selector</span><span class="o">.</span><span class="n">x_range</span><span class="o">.</span><span class="n">range_padding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theme</span><span class="o">.</span><span class="n">range_padding</span>
         <span class="n">range_selector</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">False</span>
@@ -584,25 +584,25 @@
                 <span class="p">[</span><span class="n">plot</span><span class="p">],</span>
                 <span class="p">[</span><span class="n">range_selector</span><span class="p">]</span>
             <span class="p">],</span>
-            <span class="n">sizing_mode</span><span class="o">=</span><span class="s2">&quot;stretch_both&quot;</span><span class="p">,</span>
+            <span class="n">sizing_mode</span><span class="o">=</span><span class="s2">"stretch_both"</span><span class="p">,</span>
             <span class="n">merge_tools</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">toolbar_options</span><span class="o">=</span><span class="p">{</span>
-                <span class="s1">&#39;autohide&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s1">&#39;active_drag&#39;</span><span class="p">:</span> <span class="n">tools</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                <span class="s1">&#39;active_scroll&#39;</span><span class="p">:</span> <span class="n">tools</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                <span class="s1">'autohide'</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">'active_drag'</span><span class="p">:</span> <span class="n">tools</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">'active_scroll'</span><span class="p">:</span> <span class="n">tools</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
             <span class="p">},</span>
         <span class="p">)</span>
-        <span class="n">root</span><span class="o">.</span><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;80%&#39;</span><span class="p">,</span> <span class="s1">&#39;20%&#39;</span><span class="p">]</span>
-        <span class="n">root</span><span class="o">.</span><span class="n">width_policy</span> <span class="o">=</span> <span class="s1">&#39;max&#39;</span>
-        <span class="n">root</span><span class="o">.</span><span class="n">height_policy</span> <span class="o">=</span> <span class="s1">&#39;max&#39;</span>
+        <span class="n">root</span><span class="o">.</span><span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'80%'</span><span class="p">,</span> <span class="s1">'20%'</span><span class="p">]</span>
+        <span class="n">root</span><span class="o">.</span><span class="n">width_policy</span> <span class="o">=</span> <span class="s1">'max'</span>
+        <span class="n">root</span><span class="o">.</span><span class="n">height_policy</span> <span class="o">=</span> <span class="s1">'max'</span>
 
         <span class="n">doc</span><span class="o">.</span><span class="n">add_root</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 
 <div class="viewcode-block" id="CandleStick.to_csv">
 <a class="viewcode-back" href="../../../../api/apps.html#algo_engine.apps.backtest.CandleStick.to_csv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">):</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">&#39;market_time&#39;</span><span class="p">)</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s1">&#39;open_price&#39;</span><span class="p">,</span> <span class="s1">&#39;high_price&#39;</span><span class="p">,</span> <span class="s1">&#39;low_price&#39;</span><span class="p">,</span> <span class="s1">&#39;close_price&#39;</span><span class="p">,</span> <span class="s1">&#39;volume&#39;</span><span class="p">]]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">'market_time'</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s1">'open_price'</span><span class="p">,</span> <span class="s1">'high_price'</span><span class="p">,</span> <span class="s1">'low_price'</span><span class="p">,</span> <span class="s1">'close_price'</span><span class="p">,</span> <span class="s1">'volume'</span><span class="p">]]</span>
         <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
 
 
@@ -642,7 +642,7 @@
       
     </aside>
   </div>
-</div><script src="../../../../_static/documentation_options.js?v=56343b9b"></script>
+</div><script src="../../../../_static/documentation_options.js?v=bfb2f792"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Backtesting" href="backtest.html"><link rel="prev" title="Engines" href="engines.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Strategy Development - PyAlgoEngine 0.12.3 documentation</title>
+        <title>Strategy Development - PyAlgoEngine 0.12.3.post1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyAlgoEngine 0.12.3 documentation</div></a>
+      <a href="index.html"><div class="brand">PyAlgoEngine 0.12.3.post1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3.post1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -316,7 +316,7 @@ on first data:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransactionDirection</span><span class="p">,</span> <span class="n">TransactionOffset</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FirstTickStrategy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Opens a long position on the first tick received.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Opens a long position on the first tick received."""</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticker</span><span class="p">,</span> <span class="n">volume</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="n">ticker</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span>
@@ -333,15 +333,15 @@ on first data:</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">on_report</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Filled: </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">filled_volume</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">avg_price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Filled: </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">filled_volume</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">avg_price</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">on_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Order state: </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">order_state</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Order state: </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">order_state</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># Attach to the strategy engine</span>
-<span class="n">strat</span> <span class="o">=</span> <span class="n">FirstTickStrategy</span><span class="p">(</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">)</span>
+<span class="n">strat</span> <span class="o">=</span> <span class="n">FirstTickStrategy</span><span class="p">(</span><span class="s2">"000001.SH"</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">)</span>
 <span class="n">STRATEGY_ENGINE</span><span class="o">.</span><span class="n">attach_strategy</span><span class="p">(</span><span class="n">strat</span><span class="p">)</span>
-<span class="n">STRATEGY_ENGINE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">)</span>
+<span class="n">STRATEGY_ENGINE</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="s2">"000001.SH"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -352,15 +352,15 @@ internally calls <code class="docutils literal notranslate"><span class="pre">PO
 subclass instance (by default <code class="docutils literal notranslate"><span class="pre">ALGO_REGISTRY.cast(&quot;aggressive_timeout&quot;)</span></code>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Open a long position of 10,000 shares with a limit 1% below market</span>
 <span class="n">filled</span><span class="p">,</span> <span class="n">working</span> <span class="o">=</span> <span class="n">STRATEGY_ENGINE</span><span class="o">.</span><span class="n">open_pos</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">volume</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_OPEN</span><span class="p">,</span>
-    <span class="n">limit_price</span><span class="o">=</span><span class="n">MDS</span><span class="o">.</span><span class="n">get_market_price</span><span class="p">(</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.99</span><span class="p">,</span>
+    <span class="n">limit_price</span><span class="o">=</span><span class="n">MDS</span><span class="o">.</span><span class="n">get_market_price</span><span class="p">(</span><span class="s2">"000001.SH"</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.99</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Filled: </span><span class="si">{</span><span class="n">filled</span><span class="si">}</span><span class="s2">, Working: </span><span class="si">{</span><span class="n">working</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Filled: </span><span class="si">{</span><span class="n">filled</span><span class="si">}</span><span class="s2">, Working: </span><span class="si">{</span><span class="n">working</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># Cancel all working orders for a ticker</span>
-<span class="n">STRATEGY_ENGINE</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">)</span>
+<span class="n">STRATEGY_ENGINE</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="s2">"000001.SH"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -445,7 +445,7 @@ subclass instance (by default <code class="docutils literal notranslate"><span c
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=56343b9b"></script>
+</div><script src="_static/documentation_options.js?v=bfb2f792"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

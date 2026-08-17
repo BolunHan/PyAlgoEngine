@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Engines" href="engines.html"><link rel="prev" title="Architecture" href="architecture.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Market Data - PyAlgoEngine 0.12.3 documentation</title>
+        <title>Market Data - PyAlgoEngine 0.12.3.post1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyAlgoEngine 0.12.3 documentation</div></a>
+      <a href="index.html"><div class="brand">PyAlgoEngine 0.12.3.post1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3.post1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -272,7 +272,7 @@ seconds), <code class="docutils literal notranslate"><span class="pre">market_pr
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TickDataLite</span>
 
 <span class="n">tick</span> <span class="o">=</span> <span class="n">TickDataLite</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">last_price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">bid_price</span><span class="o">=</span><span class="mf">15.27</span><span class="p">,</span>
@@ -299,7 +299,7 @@ compile time (<code class="docutils literal notranslate"><span class="pre">BOOK_
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TickData</span>
 
 <span class="n">tick</span> <span class="o">=</span> <span class="n">TickData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">last_price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">total_traded_volume</span><span class="o">=</span><span class="mf">15000000.0</span><span class="p">,</span>
@@ -364,7 +364,7 @@ look-ahead bias.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BarData</span>
 
 <span class="n">bar</span> <span class="o">=</span> <span class="n">BarData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400300.0</span><span class="p">,</span>      <span class="c1"># bar end</span>
     <span class="n">high_price</span><span class="o">=</span><span class="mf">15.50</span><span class="p">,</span>
     <span class="n">low_price</span><span class="o">=</span><span class="mf">15.10</span><span class="p">,</span>
@@ -378,14 +378,14 @@ look-ahead bias.</p>
 <span class="p">)</span>
 
 <span class="n">bar</span><span class="o">.</span><span class="n">vwap</span>              <span class="c1"># volume-weighted average price</span>
-<span class="n">bar</span><span class="o">.</span><span class="n">bar_type</span>          <span class="c1"># &#39;Minute&#39;, &#39;Hourly&#39;, &#39;Sub-Minute&#39;, etc.</span>
+<span class="n">bar</span><span class="o">.</span><span class="n">bar_type</span>          <span class="c1"># 'Minute', 'Hourly', 'Sub-Minute', etc.</span>
 <span class="n">bar</span><span class="o">.</span><span class="n">bar_span</span>          <span class="c1"># timedelta</span>
 <span class="n">bar</span><span class="o">.</span><span class="n">bar_start_time</span>    <span class="c1"># datetime</span>
 <span class="n">bar</span><span class="o">.</span><span class="n">bar_end_time</span>      <span class="c1"># datetime</span>
 
 <span class="c1"># Dict-style access and mutation</span>
-<span class="n">bar</span><span class="p">[</span><span class="s2">&quot;close_price&quot;</span><span class="p">]</span>    <span class="c1"># 15.28</span>
-<span class="n">bar</span><span class="p">[</span><span class="s2">&quot;close_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">15.30</span>
+<span class="n">bar</span><span class="p">[</span><span class="s2">"close_price"</span><span class="p">]</span>    <span class="c1"># 15.28</span>
+<span class="n">bar</span><span class="p">[</span><span class="s2">"close_price"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">15.30</span>
 </pre></div>
 </div>
 </section>
@@ -397,7 +397,7 @@ look-ahead bias.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
 
 <span class="n">daily</span> <span class="o">=</span> <span class="n">DailyBar</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">market_date</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
     <span class="n">high_price</span><span class="o">=</span><span class="mf">15.80</span><span class="p">,</span>
     <span class="n">low_price</span><span class="o">=</span><span class="mf">15.00</span><span class="p">,</span>
@@ -409,7 +409,7 @@ look-ahead bias.</p>
     <span class="n">bar_span</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>    <span class="c1"># number of days</span>
 <span class="p">)</span>
 <span class="n">daily</span><span class="o">.</span><span class="n">market_date</span>      <span class="c1"># date(2024, 6, 15)</span>
-<span class="n">daily</span><span class="o">.</span><span class="n">bar_type</span>         <span class="c1"># &#39;Daily&#39; or &#39;Daily-Plus&#39;</span>
+<span class="n">daily</span><span class="o">.</span><span class="n">bar_type</span>         <span class="c1"># 'Daily' or 'Daily-Plus'</span>
 </pre></div>
 </div>
 </section>
@@ -426,15 +426,15 @@ look-ahead bias.</p>
 <span class="n">side</span> <span class="o">=</span> <span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_OPEN</span>
 
 <span class="n">txn</span> <span class="o">=</span> <span class="n">TransactionData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">volume</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">side</span><span class="p">,</span>
     <span class="n">multiplier</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-    <span class="n">transaction_id</span><span class="o">=</span><span class="s2">&quot;trd_001&quot;</span><span class="p">,</span>
-    <span class="n">buy_id</span><span class="o">=</span><span class="s2">&quot;bid_001&quot;</span><span class="p">,</span>
-    <span class="n">sell_id</span><span class="o">=</span><span class="s2">&quot;ask_001&quot;</span><span class="p">,</span>
+    <span class="n">transaction_id</span><span class="o">=</span><span class="s2">"trd_001"</span><span class="p">,</span>
+    <span class="n">buy_id</span><span class="o">=</span><span class="s2">"bid_001"</span><span class="p">,</span>
+    <span class="n">sell_id</span><span class="o">=</span><span class="s2">"ask_001"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">txn</span><span class="o">.</span><span class="n">side</span>               <span class="c1"># TransactionSide.SIDE_LONG_OPEN</span>
 <span class="n">txn</span><span class="o">.</span><span class="n">side_sign</span>          <span class="c1"># 1 (long), -1 (short), 0 (cancel/unknown)</span>
@@ -446,18 +446,18 @@ look-ahead bias.</p>
 
 <span class="c1"># Order — placed into the order book</span>
 <span class="n">order</span> <span class="o">=</span> <span class="n">OrderData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">price</span><span class="o">=</span><span class="mf">15.25</span><span class="p">,</span>
     <span class="n">volume</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_ORDER</span><span class="p">,</span>
-    <span class="n">order_id</span><span class="o">=</span><span class="s2">&quot;ord_001&quot;</span><span class="p">,</span>
+    <span class="n">order_id</span><span class="o">=</span><span class="s2">"ord_001"</span><span class="p">,</span>
     <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_LIMIT</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1"># TradeData — alias with trade_* parameter names</span>
 <span class="n">trade</span> <span class="o">=</span> <span class="n">TradeData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">trade_price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">trade_volume</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
@@ -481,19 +481,19 @@ look-ahead bias.</p>
 
 <span class="c1"># TradeReport — execution confirmation</span>
 <span class="n">report</span> <span class="o">=</span> <span class="n">TradeReport</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span> <span class="n">volume</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_OPEN</span><span class="p">,</span>
-    <span class="n">fee</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="s2">&quot;ord_001&quot;</span><span class="p">,</span> <span class="n">trade_id</span><span class="o">=</span><span class="s2">&quot;trd_001&quot;</span><span class="p">,</span>
+    <span class="n">fee</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="s2">"ord_001"</span><span class="p">,</span> <span class="n">trade_id</span><span class="o">=</span><span class="s2">"trd_001"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1"># TradeInstruction — order lifecycle tracking</span>
 <span class="n">instr</span> <span class="o">=</span> <span class="n">TradeInstruction</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mf">1718400000.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_OPEN</span><span class="p">,</span>
     <span class="n">volume</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">limit_price</span><span class="o">=</span><span class="mf">15.25</span><span class="p">,</span>
     <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_LIMIT</span><span class="p">,</span>
-    <span class="n">order_id</span><span class="o">=</span><span class="s2">&quot;ord_001&quot;</span><span class="p">,</span>
+    <span class="n">order_id</span><span class="o">=</span><span class="s2">"ord_001"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">instr</span><span class="o">.</span><span class="n">set_order_state</span><span class="p">(</span><span class="n">OrderState</span><span class="o">.</span><span class="n">STATE_PLACED</span><span class="p">)</span>
 <span class="n">instr</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>
@@ -566,7 +566,7 @@ look-ahead bias.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MD_SHARED</span><span class="p">,</span> <span class="n">MD_LOCKED</span><span class="p">,</span> <span class="n">MD_LOCKFREE</span><span class="p">,</span> <span class="n">MD_FREELIST</span>
 
 <span class="k">with</span> <span class="n">MD_SHARED</span> <span class="o">|</span> <span class="n">MD_LOCKED</span><span class="p">:</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">TickDataLite</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;TEST&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">TickDataLite</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="s2">"TEST"</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
                         <span class="n">last_price</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">bid_price</span><span class="o">=</span><span class="mf">99.0</span><span class="p">,</span>
                         <span class="n">bid_volume</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">ask_price</span><span class="o">=</span><span class="mf">101.0</span><span class="p">,</span> <span class="n">ask_volume</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>
 </pre></div>
@@ -674,7 +674,7 @@ look-ahead bias.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=56343b9b"></script>
+</div><script src="_static/documentation_options.js?v=bfb2f792"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

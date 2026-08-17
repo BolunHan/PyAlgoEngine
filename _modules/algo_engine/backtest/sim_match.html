@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>algo_engine.backtest.sim_match - PyAlgoEngine 0.12.3 documentation</title>
+        <title>algo_engine.backtest.sim_match - PyAlgoEngine 0.12.3.post1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../../index.html"><div class="brand">PyAlgoEngine 0.12.3 documentation</div></a>
+      <a href="../../../index.html"><div class="brand">PyAlgoEngine 0.12.3.post1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3.post1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -257,7 +257,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">EVENT_ENGINE</span><span class="p">,</span> <span class="n">TOPIC</span><span class="p">,</span> <span class="n">TopicSet</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exchange_profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">PROFILE</span>
 
-<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">&#39;SimMatch&#39;</span><span class="p">)</span>
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">getChild</span><span class="p">(</span><span class="s1">'SimMatch'</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SimMatch">
@@ -280,22 +280,22 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">random</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;fee_rate&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fee_rate&#39;</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
-            <span class="s1">&#39;instant_fill&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;instant_fill&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
-            <span class="s1">&#39;lag&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;ts&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lag_ts&#39;</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>  <span class="c1"># time lag in seconds</span>
-                <span class="s1">&#39;n_transaction&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lag_n_transaction&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># number of transactions lag</span>
+            <span class="s1">'fee_rate'</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'fee_rate'</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+            <span class="s1">'instant_fill'</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'instant_fill'</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="s1">'lag'</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">'ts'</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'lag_ts'</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>  <span class="c1"># time lag in seconds</span>
+                <span class="s1">'n_transaction'</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'lag_n_transaction'</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># number of transactions lag</span>
             <span class="p">},</span>
-            <span class="s1">&#39;hit&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;prob&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hit_prob&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">),</span>  <span class="c1"># probability of order being filled</span>
-                <span class="s1">&#39;slippery&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;slippery_rate&#39;</span><span class="p">,</span> <span class="mf">0.0001</span><span class="p">)</span>  <span class="c1"># slippage rate</span>
+            <span class="s1">'hit'</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">'prob'</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'hit_prob'</span><span class="p">,</span> <span class="mf">1.</span><span class="p">),</span>  <span class="c1"># probability of order being filled</span>
+                <span class="s1">'slippery'</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'slippery_rate'</span><span class="p">,</span> <span class="mf">0.0001</span><span class="p">)</span>  <span class="c1"># slippage rate</span>
             <span class="p">}</span>
         <span class="p">}</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;market_data&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'order'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">market_data</span><span class="p">:</span> <span class="n">MarketData</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'market_data'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_type</span> <span class="o">==</span> <span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_LIMIT</span><span class="p">:</span>
@@ -303,7 +303,7 @@
             <span class="k">elif</span> <span class="n">order</span><span class="o">.</span><span class="n">order_type</span> <span class="o">==</span> <span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_CANCEL</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cancel_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">market_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">market_data</span><span class="o">.</span><span class="n">timestamp</span>
@@ -328,45 +328,45 @@
 <a class="viewcode-back" href="../../../api/backtest.html#algo_engine.backtest.SimMatch.best_price">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">best_price</span><span class="p">(</span><span class="o">*</span><span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span> <span class="o">|</span> <span class="n">TransactionDirection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get best price for the given side.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get best price for the given side."""</span>
         <span class="n">valid_prices</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">price</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span>
         <span class="n">sign</span> <span class="o">=</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">valid_prices</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid prices provided&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No valid prices provided"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">valid_prices</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">valid_prices</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SimMatch.worst_price">
 <a class="viewcode-back" href="../../../api/backtest.html#algo_engine.backtest.SimMatch.worst_price">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">worst_price</span><span class="p">(</span><span class="o">*</span><span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span> <span class="o">|</span> <span class="n">TransactionDirection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get worst price for the given side.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get worst price for the given side."""</span>
         <span class="n">valid_prices</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">price</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span>
         <span class="n">sign</span> <span class="o">=</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">valid_prices</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid prices provided&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No valid prices provided"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">valid_prices</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">valid_prices</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid side </span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_apply_lag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if order should be processed considering lag settings.&quot;&quot;&quot;</span>
-        <span class="n">lag_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">&#39;lag&#39;</span><span class="p">]</span>
-        <span class="n">lag_ts</span> <span class="o">=</span> <span class="n">lag_config</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">]</span>
-        <span class="n">lag_n_transaction</span> <span class="o">=</span> <span class="n">lag_config</span><span class="p">[</span><span class="s1">&#39;n_transaction&#39;</span><span class="p">]</span>
+<span class="w">        </span><span class="sd">"""Check if order should be processed considering lag settings."""</span>
+        <span class="n">lag_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">'lag'</span><span class="p">]</span>
+        <span class="n">lag_ts</span> <span class="o">=</span> <span class="n">lag_config</span><span class="p">[</span><span class="s1">'ts'</span><span class="p">]</span>
+        <span class="n">lag_n_transaction</span> <span class="o">=</span> <span class="n">lag_config</span><span class="p">[</span><span class="s1">'n_transaction'</span><span class="p">]</span>
 
         <span class="c1"># No lag configured</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">lag_ts</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lag_n_transaction</span><span class="p">:</span>
@@ -378,16 +378,16 @@
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="c1"># Check transaction lag</span>
-        <span class="n">transactions_since_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_transaction_count</span> <span class="o">-</span> <span class="n">order</span><span class="o">.</span><span class="n">_additional</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;transaction_count_at_placement&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">transactions_since_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_transaction_count</span> <span class="o">-</span> <span class="n">order</span><span class="o">.</span><span class="n">_additional</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'transaction_count_at_placement'</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">lag_n_transaction</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">transactions_since_order</span> <span class="o">&lt;</span> <span class="n">lag_n_transaction</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_apply_hit_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if order should be filled based on hit probability.&quot;&quot;&quot;</span>
-        <span class="n">hit_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">&#39;hit&#39;</span><span class="p">]</span>
-        <span class="n">hit_prob</span> <span class="o">=</span> <span class="n">hit_config</span><span class="p">[</span><span class="s1">&#39;prob&#39;</span><span class="p">]</span>
+<span class="w">        </span><span class="sd">"""Determine if order should be filled based on hit probability."""</span>
+        <span class="n">hit_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">'hit'</span><span class="p">]</span>
+        <span class="n">hit_prob</span> <span class="o">=</span> <span class="n">hit_config</span><span class="p">[</span><span class="s1">'prob'</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">hit_prob</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
@@ -395,9 +395,9 @@
         <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">hit_prob</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_apply_slippage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="n">TransactionSide</span> <span class="o">|</span> <span class="n">TransactionDirection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply slippage to the execution price.&quot;&quot;&quot;</span>
-        <span class="n">hit_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">&#39;hit&#39;</span><span class="p">]</span>
-        <span class="n">slippery_rate</span> <span class="o">=</span> <span class="n">hit_config</span><span class="p">[</span><span class="s1">&#39;slippery&#39;</span><span class="p">]</span>
+<span class="w">        </span><span class="sd">"""Apply slippage to the execution price."""</span>
+        <span class="n">hit_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">'hit'</span><span class="p">]</span>
+        <span class="n">slippery_rate</span> <span class="o">=</span> <span class="n">hit_config</span><span class="p">[</span><span class="s1">'slippery'</span><span class="p">]</span>
 
         <span class="n">slippage</span> <span class="o">=</span> <span class="n">price</span> <span class="o">*</span> <span class="n">slippery_rate</span>
         <span class="n">sign</span> <span class="o">=</span> <span class="n">side</span><span class="o">.</span><span class="n">sign</span>
@@ -412,12 +412,12 @@
             <span class="k">return</span> <span class="n">price</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_short_circuit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if order should be filled immediately.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if order should be filled immediately."""</span>
         <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_price</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="c1"># Check if instant fill is enabled and no lag is configured</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">&#39;instant_fill&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="ow">not</span> <span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">&#39;lag&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">'instant_fill'</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="ow">not</span> <span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">'lag'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
             <span class="k">return</span> <span class="kc">True</span>
 
         <span class="k">return</span> <span class="kc">False</span>
@@ -448,10 +448,10 @@
 <a class="viewcode-back" href="../../../api/backtest.html#algo_engine.backtest.SimMatch.launch_order">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">launch_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">working</span> <span class="ow">or</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid instruction </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">, OrderId already in working or history&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid instruction </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">, OrderId already in working or history'</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">order</span><span class="o">.</span><span class="n">order_type</span> <span class="o">==</span> <span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_LIMIT</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1"> does not have a valid limit price!&#39;</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">'order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1"> does not have a valid limit price!'</span><span class="p">)</span>
 
         <span class="n">order</span><span class="o">.</span><span class="n">set_order_state</span><span class="p">(</span><span class="n">order_state</span><span class="o">=</span><span class="n">OrderState</span><span class="o">.</span><span class="n">STATE_PLACED</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
         <span class="n">order</span><span class="o">.</span><span class="n">transaction_count_at_placement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_transaction_count</span>
@@ -474,23 +474,23 @@
 <a class="viewcode-back" href="../../../api/backtest.html#algo_engine.backtest.SimMatch.cancel_order">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">cancel_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">order_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must assign a order or order_id to cancel order&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Must assign a order or order_id to cancel order'</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">order_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">order_id</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">order_id</span>
 
         <span class="c1"># if order_id not in self.working:</span>
-        <span class="c1">#     raise ValueError(f&#39;Invalid cancel order {order}, OrderId not found&#39;)</span>
+        <span class="c1">#     raise ValueError(f'Invalid cancel order {order}, OrderId not found')</span>
 
         <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">working</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">order_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] failed to cancel </span><span class="si">{</span><span class="n">order_id</span><span class="si">}</span><span class="s1"> order!&#39;</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] failed to cancel </span><span class="si">{</span><span class="n">order_id</span><span class="si">}</span><span class="s1"> order!'</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_state</span> <span class="o">==</span> <span class="n">OrderState</span><span class="o">.</span><span class="n">STATE_FILLED</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">order</span><span class="o">.</span><span class="n">set_order_state</span><span class="p">(</span><span class="n">order_state</span><span class="o">=</span><span class="n">OrderState</span><span class="o">.</span><span class="n">STATE_CANCELED</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] Sim-canceled </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> order!&#39;</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] Sim-canceled </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> order!'</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="n">order_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">order</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">on_order</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
@@ -620,11 +620,11 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_match</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">match_volume</span><span class="o">=</span><span class="n">match_volume</span><span class="p">,</span> <span class="n">match_price</span><span class="o">=</span><span class="n">match_notional</span> <span class="o">/</span> <span class="n">match_volume</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_order_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">OrderData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process order data from the market.</span>
+<span class="w">        </span><span class="sd">"""Process order data from the market.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            market_data: The incoming order data from the market.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">order_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">working</span><span class="p">):</span>
             <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">working</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -658,11 +658,11 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_match</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">match_volume</span><span class="o">=</span><span class="n">match_volume</span><span class="p">,</span> <span class="n">match_price</span><span class="o">=</span><span class="n">match_notional</span> <span class="o">/</span> <span class="n">match_volume</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_tick_data_lite</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">:</span> <span class="n">TickDataLite</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process simplified tick data from the market.</span>
+<span class="w">        </span><span class="sd">"""Process simplified tick data from the market.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            market_data: The incoming tick data (lite version) from the market.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">order_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">working</span><span class="p">):</span>
             <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">working</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
 
@@ -697,7 +697,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_match</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">match_volume</span><span class="o">=</span><span class="n">match_volume</span><span class="p">,</span> <span class="n">match_price</span><span class="o">=</span><span class="n">match_notional</span> <span class="o">/</span> <span class="n">match_volume</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">TradeInstruction</span><span class="p">,</span> <span class="n">match_volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">match_price</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TradeReport</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attempt to match an order with the given volume and price.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Attempt to match an order with the given volume and price."""</span>
         <span class="c1"># Apply lag check</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_lag</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">None</span>
@@ -721,10 +721,10 @@
         <span class="c1"># Validate price against limit</span>
         <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">match_price</span> <span class="o">&gt;</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;match price greater than limit price for bid order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">'match price greater than limit price for bid order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
                 <span class="n">match_price</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span>
             <span class="k">elif</span> <span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">sign</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">match_price</span> <span class="o">&lt;</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;match price less than limit price for ask order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">'match price less than limit price for ask order </span><span class="si">{</span><span class="n">order</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
                 <span class="n">match_price</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">limit_price</span>
 
         <span class="k">if</span> <span class="n">match_volume</span><span class="p">:</span>
@@ -737,10 +737,10 @@
                 <span class="n">order_id</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span>
                 <span class="n">price</span><span class="o">=</span><span class="n">match_price</span><span class="p">,</span>
                 <span class="n">multiplier</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">multiplier</span><span class="p">,</span>
-                <span class="n">fee</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">&#39;fee_rate&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">match_volume</span> <span class="o">*</span> <span class="n">match_price</span> <span class="o">*</span> <span class="n">order</span><span class="o">.</span><span class="n">multiplier</span>
+                <span class="n">fee</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">matching_config</span><span class="p">[</span><span class="s1">'fee_rate'</span><span class="p">]</span> <span class="o">*</span> <span class="n">match_volume</span> <span class="o">*</span> <span class="n">match_price</span> <span class="o">*</span> <span class="n">order</span><span class="o">.</span><span class="n">multiplier</span>
             <span class="p">)</span>
 
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] Sim-filled </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">side_name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">volume</span><span class="si">:</span><span class="s1">,.2f</span><span class="si">}</span><span class="s1"> @ </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">price</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">market_time</span><span class="si">:</span><span class="s1">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s1">] Sim-filled </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="o">.</span><span class="n">side_name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">volume</span><span class="si">:</span><span class="s1">,.2f</span><span class="si">}</span><span class="s1"> @ </span><span class="si">{</span><span class="n">report</span><span class="o">.</span><span class="n">price</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
             <span class="n">order</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">trade_report</span><span class="o">=</span><span class="n">report</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">order_state</span> <span class="o">==</span> <span class="n">OrderState</span><span class="o">.</span><span class="n">STATE_FILLED</span><span class="p">:</span>
@@ -820,7 +820,7 @@
       
     </aside>
   </div>
-</div><script src="../../../_static/documentation_options.js?v=56343b9b"></script>
+</div><script src="../../../_static/documentation_options.js?v=bfb2f792"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>

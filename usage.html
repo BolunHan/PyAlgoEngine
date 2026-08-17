@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Architecture" href="architecture.html"><link rel="prev" title="Setup &amp; Installation" href="setup.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Quick Start - PyAlgoEngine 0.12.3 documentation</title>
+        <title>Quick Start - PyAlgoEngine 0.12.3.post1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">PyAlgoEngine 0.12.3 documentation</div></a>
+      <a href="index.html"><div class="brand">PyAlgoEngine 0.12.3.post1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3.post1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -276,7 +276,7 @@ Additional fields are type-specific and keyword-only.</p>
 
 <span class="c1"># Level-1 tick (no order book)</span>
 <span class="n">tick_lite</span> <span class="o">=</span> <span class="n">TickDataLite</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">last_price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">bid_price</span><span class="o">=</span><span class="mf">15.27</span><span class="p">,</span>
@@ -288,7 +288,7 @@ Additional fields are type-specific and keyword-only.</p>
 
 <span class="c1"># Level-2 tick (with order book via kwargs)</span>
 <span class="n">tick</span> <span class="o">=</span> <span class="n">TickData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">last_price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="c1"># Order book levels passed as keyword arguments:</span>
@@ -307,7 +307,7 @@ Additional fields are type-specific and keyword-only.</p>
 
 <span class="c1"># Bar (candlestick) — timestamp is bar END time</span>
 <span class="n">bar</span> <span class="o">=</span> <span class="n">BarData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">high_price</span><span class="o">=</span><span class="mf">15.50</span><span class="p">,</span>
     <span class="n">low_price</span><span class="o">=</span><span class="mf">15.10</span><span class="p">,</span>
@@ -324,7 +324,7 @@ Additional fields are type-specific and keyword-only.</p>
 <span class="c1"># Daily bar — uses market_date instead of timestamp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
 <span class="n">daily</span> <span class="o">=</span> <span class="n">DailyBar</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">market_date</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
     <span class="n">high_price</span><span class="o">=</span><span class="mf">15.80</span><span class="p">,</span>
     <span class="n">low_price</span><span class="o">=</span><span class="mf">15.00</span><span class="p">,</span>
@@ -336,30 +336,30 @@ Additional fields are type-specific and keyword-only.</p>
 
 <span class="c1"># Transaction — side is built via | operator</span>
 <span class="n">txn</span> <span class="o">=</span> <span class="n">TransactionData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">volume</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_OPEN</span><span class="p">,</span>
-    <span class="n">transaction_id</span><span class="o">=</span><span class="s2">&quot;trd_001&quot;</span><span class="p">,</span>
+    <span class="n">transaction_id</span><span class="o">=</span><span class="s2">"trd_001"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">txn</span><span class="o">.</span><span class="n">side</span><span class="p">,</span> <span class="n">txn</span><span class="o">.</span><span class="n">side_sign</span><span class="p">,</span> <span class="n">txn</span><span class="o">.</span><span class="n">notional_flow</span><span class="p">)</span>
 
 <span class="c1"># Order — placed into the order book</span>
 <span class="n">order</span> <span class="o">=</span> <span class="n">OrderData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">price</span><span class="o">=</span><span class="mf">15.25</span><span class="p">,</span>
     <span class="n">volume</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span>
     <span class="n">side</span><span class="o">=</span><span class="n">TransactionDirection</span><span class="o">.</span><span class="n">DIRECTION_LONG</span> <span class="o">|</span> <span class="n">TransactionOffset</span><span class="o">.</span><span class="n">OFFSET_ORDER</span><span class="p">,</span>
-    <span class="n">order_id</span><span class="o">=</span><span class="s2">&quot;ord_001&quot;</span><span class="p">,</span>
+    <span class="n">order_id</span><span class="o">=</span><span class="s2">"ord_001"</span><span class="p">,</span>
     <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">ORDER_LIMIT</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">side</span><span class="p">,</span> <span class="n">order</span><span class="o">.</span><span class="n">order_type</span><span class="p">)</span>
 
 <span class="c1"># TradeData alias — uses trade_* parameter names</span>
 <span class="n">trade</span> <span class="o">=</span> <span class="n">TradeData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"000001.SH"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">trade_price</span><span class="o">=</span><span class="mf">15.28</span><span class="p">,</span>
     <span class="n">trade_volume</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
@@ -368,7 +368,7 @@ Additional fields are type-specific and keyword-only.</p>
 
 <span class="c1"># InternalData — for heartbeats / control messages</span>
 <span class="n">internal</span> <span class="o">=</span> <span class="n">InternalData</span><span class="p">(</span>
-    <span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;__CTRL__&quot;</span><span class="p">,</span>
+    <span class="n">ticker</span><span class="o">=</span><span class="s2">"__CTRL__"</span><span class="p">,</span>
     <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
     <span class="n">code</span><span class="o">=</span><span class="mh">0x01</span><span class="p">,</span>
 <span class="p">)</span>
@@ -384,14 +384,14 @@ block of code with context managers:</p>
 
 <span class="c1"># Thread-safe, shared-memory allocation</span>
 <span class="k">with</span> <span class="n">MD_SHARED</span> <span class="o">|</span> <span class="n">MD_LOCKED</span><span class="p">:</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">TickDataLite</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;TEST&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">TickDataLite</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="s2">"TEST"</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
                         <span class="n">last_price</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">bid_price</span><span class="o">=</span><span class="mf">99.0</span><span class="p">,</span>
                         <span class="n">bid_volume</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">ask_price</span><span class="o">=</span><span class="mf">101.0</span><span class="p">,</span> <span class="n">ask_volume</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>
 
 <span class="c1"># Book size context — override default book depth</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">algo_engine.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MD_BOOK5</span><span class="p">,</span> <span class="n">MD_BOOK20</span>
 <span class="k">with</span> <span class="n">MD_BOOK20</span><span class="p">:</span>
-    <span class="n">tick</span> <span class="o">=</span> <span class="n">TickData</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="s2">&quot;TEST&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span> <span class="n">last_price</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+    <span class="n">tick</span> <span class="o">=</span> <span class="n">TickData</span><span class="p">(</span><span class="n">ticker</span><span class="o">=</span><span class="s2">"TEST"</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span> <span class="n">last_price</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
                     <span class="n">bid_price_1</span><span class="o">=</span><span class="mf">99.0</span><span class="p">,</span> <span class="n">bid_volume_1</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
                     <span class="n">ask_price_1</span><span class="o">=</span><span class="mf">101.0</span><span class="p">,</span> <span class="n">ask_volume_1</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span>
 </pre></div>
@@ -457,7 +457,7 @@ and dispatches to monitors:</p>
 <span class="n">MDS</span><span class="o">.</span><span class="n">on_market_data</span><span class="p">(</span><span class="n">tick</span><span class="p">)</span>
 
 <span class="c1"># Get latest price for a ticker</span>
-<span class="n">price</span> <span class="o">=</span> <span class="n">MDS</span><span class="o">.</span><span class="n">get_market_price</span><span class="p">(</span><span class="s2">&quot;000001.SH&quot;</span><span class="p">)</span>
+<span class="n">price</span> <span class="o">=</span> <span class="n">MDS</span><span class="o">.</span><span class="n">get_market_price</span><span class="p">(</span><span class="s2">"000001.SH"</span><span class="p">)</span>
 
 <span class="c1"># All known prices</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">MDS</span><span class="o">.</span><span class="n">market_price</span><span class="p">)</span>       <span class="c1"># dict[ticker, float]</span>
@@ -466,7 +466,7 @@ and dispatches to monitors:</p>
 <span class="c1"># Create a custom monitor</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyMonitor</span><span class="p">(</span><span class="n">MarketDataMonitor</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">market_data</span><span class="o">.</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">market_data</span><span class="o">.</span><span class="n">market_price</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
@@ -475,9 +475,9 @@ and dispatches to monitors:</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="mf">0.0</span>
 
-<span class="n">monitor</span> <span class="o">=</span> <span class="n">MyMonitor</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_monitor&quot;</span><span class="p">)</span>
+<span class="n">monitor</span> <span class="o">=</span> <span class="n">MyMonitor</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my_monitor"</span><span class="p">)</span>
 <span class="n">MDS</span><span class="o">.</span><span class="n">add_monitor</span><span class="p">(</span><span class="n">monitor</span><span class="p">)</span>
-<span class="n">MDS</span><span class="o">.</span><span class="n">pop_monitor</span><span class="p">(</span><span class="n">monitor_name</span><span class="o">=</span><span class="s2">&quot;my_monitor&quot;</span><span class="p">)</span>
+<span class="n">MDS</span><span class="o">.</span><span class="n">pop_monitor</span><span class="p">(</span><span class="n">monitor_name</span><span class="o">=</span><span class="s2">"my_monitor"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -516,7 +516,7 @@ and dispatches to monitors:</p>
 
 <span class="c1"># Generate fake daily OHLC data</span>
 <span class="n">daily_df</span> <span class="o">=</span> <span class="n">fake_daily_data</span><span class="p">(</span>
-    <span class="n">start_date</span><span class="o">=</span><span class="s2">&quot;2024-01-02&quot;</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="s2">&quot;2024-03-29&quot;</span><span class="p">,</span>
+    <span class="n">start_date</span><span class="o">=</span><span class="s2">"2024-01-02"</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="s2">"2024-03-29"</span><span class="p">,</span>
     <span class="n">p0</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">volatility</span><span class="o">=</span><span class="mf">0.20</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -530,7 +530,7 @@ and dispatches to monitors:</p>
 <span class="n">indices</span> <span class="o">=</span> <span class="n">ts_indices</span><span class="p">(</span>
     <span class="n">market_date</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
     <span class="n">interval</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
-    <span class="n">ts_format</span><span class="o">=</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span>
+    <span class="n">ts_format</span><span class="o">=</span><span class="s2">"timestamp"</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -620,7 +620,7 @@ and dispatches to monitors:</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=56343b9b"></script>
+</div><script src="_static/documentation_options.js?v=bfb2f792"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>algo_engine.utils.data_utils - PyAlgoEngine 0.12.3 documentation</title>
+        <title>algo_engine.utils.data_utils - PyAlgoEngine 0.12.3.post1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -160,7 +160,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="../../../index.html"><div class="brand">PyAlgoEngine 0.12.3 documentation</div></a>
+      <a href="../../../index.html"><div class="brand">PyAlgoEngine 0.12.3.post1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -181,7 +181,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
   
-  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3 documentation</span>
+  <span class="sidebar-brand-text">PyAlgoEngine 0.12.3.post1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -246,7 +246,7 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for algo_engine.utils.data_utils</h1><div class="highlight"><pre>
-<span></span><span class="n">__package__</span> <span class="o">=</span> <span class="s1">&#39;algo_engine.utils&#39;</span>
+<span></span><span class="n">__package__</span> <span class="o">=</span> <span class="s1">'algo_engine.utils'</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
@@ -265,8 +265,8 @@
         <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
-        <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'start'</span><span class="p">,</span> <span class="s1">'end'</span><span class="p">,</span> <span class="s1">'both'</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'end'</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="o">=</span><span class="s1">'timestamp'</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
     <span class="o">...</span>
 
@@ -278,8 +278,8 @@
         <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
-        <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;datetime&#39;</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'start'</span><span class="p">,</span> <span class="s1">'end'</span><span class="p">,</span> <span class="s1">'both'</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'end'</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="o">=</span><span class="s1">'datetime'</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
     <span class="o">...</span>
 
@@ -291,8 +291,8 @@
         <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
-        <span class="n">ts_format</span><span class="o">=</span><span class="s1">&#39;session_time&#39;</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'start'</span><span class="p">,</span> <span class="s1">'end'</span><span class="p">,</span> <span class="s1">'both'</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'end'</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="o">=</span><span class="s1">'session_time'</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SessionTime</span><span class="p">]:</span>
     <span class="o">...</span>
 
@@ -305,8 +305,8 @@
         <span class="n">session_start</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_end</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span> <span class="o">|</span> <span class="n">SessionTime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_breaks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">]]</span> <span class="o">|</span> <span class="n">SessionBreak</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span>
-        <span class="n">ts_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;datetime&#39;</span><span class="p">,</span> <span class="s1">&#39;session_time&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">,</span>
+        <span class="n">ts_mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'start'</span><span class="p">,</span> <span class="s1">'end'</span><span class="p">,</span> <span class="s1">'both'</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'end'</span><span class="p">,</span>
+        <span class="n">ts_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">'timestamp'</span><span class="p">,</span> <span class="s1">'datetime'</span><span class="p">,</span> <span class="s1">'session_time'</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'timestamp'</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
     <span class="c1"># Regularize input parameters</span>
@@ -319,7 +319,7 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">market_date</span><span class="p">,</span> <span class="n">SessionDate</span><span class="p">):</span>
         <span class="k">pass</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid market_date </span><span class="si">{</span><span class="n">market_date</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid market_date </span><span class="si">{</span><span class="n">market_date</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">session_start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">start_ts</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_start_ts</span>
@@ -328,7 +328,7 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_start</span><span class="p">,</span> <span class="n">SessionTime</span><span class="p">):</span>
         <span class="n">start_ts</span> <span class="o">=</span> <span class="n">session_start</span><span class="o">.</span><span class="n">ts</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid session_start </span><span class="si">{</span><span class="n">session_start</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid session_start </span><span class="si">{</span><span class="n">session_start</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">session_end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">end_ts</span> <span class="o">=</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_end_ts</span>
@@ -337,7 +337,7 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_end</span><span class="p">,</span> <span class="n">SessionTime</span><span class="p">):</span>
         <span class="n">end_ts</span> <span class="o">=</span> <span class="n">session_end</span><span class="o">.</span><span class="n">ts</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid session_end </span><span class="si">{</span><span class="n">session_end</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid session_end </span><span class="si">{</span><span class="n">session_end</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">):</span>
         <span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
@@ -348,7 +348,7 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">SessionTimeRange</span><span class="p">):</span>
         <span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span><span class="o">.</span><span class="n">elapsed_seconds</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid interval </span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid interval </span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">session_breaks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">breaks_ts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">session_break</span><span class="o">.</span><span class="n">break_start_ts</span><span class="p">,</span> <span class="n">session_break</span><span class="o">.</span><span class="n">break_end_ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">session_break</span> <span class="ow">in</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">session_breaks</span><span class="p">]</span>
@@ -357,7 +357,7 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_breaks</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="n">breaks_ts</span> <span class="o">=</span> <span class="p">[(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_break</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">False</span><span class="p">),</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">time_to_seconds</span><span class="p">(</span><span class="n">session_break</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kc">False</span><span class="p">))</span> <span class="k">for</span> <span class="n">session_break</span> <span class="ow">in</span> <span class="n">session_breaks</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid session_breaks </span><span class="si">{</span><span class="n">session_breaks</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid session_breaks </span><span class="si">{</span><span class="n">session_breaks</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
     <span class="n">market_date</span><span class="p">:</span> <span class="n">SessionDate</span>
     <span class="n">md_ts</span> <span class="o">=</span> <span class="n">market_date</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
@@ -368,7 +368,7 @@
 
     <span class="c1"># this is supposed to be the end_time of the given candle stick</span>
     <span class="n">ts</span> <span class="o">=</span> <span class="n">start_ts</span> <span class="o">+</span> <span class="n">interval</span>
-    <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">'both'</span><span class="p">:</span>
         <span class="n">end_ts</span> <span class="o">+=</span> <span class="n">interval</span>
 
     <span class="n">ts_index</span> <span class="o">=</span> <span class="p">[]</span>
@@ -382,22 +382,22 @@
                     <span class="n">in_session</span> <span class="o">=</span> <span class="kc">False</span>
                     <span class="k">break</span>
 
-        <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;start&#39;</span> <span class="ow">or</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">'start'</span> <span class="ow">or</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">'both'</span><span class="p">:</span>
             <span class="n">_ts</span> <span class="o">=</span> <span class="n">ts</span> <span class="o">-</span> <span class="n">interval</span>
-        <span class="k">elif</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">ts_mode</span> <span class="o">==</span> <span class="s1">'end'</span><span class="p">:</span>
             <span class="n">_ts</span> <span class="o">=</span> <span class="n">ts</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ts_mode </span><span class="si">{</span><span class="n">ts_mode</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid ts_mode </span><span class="si">{</span><span class="n">ts_mode</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">in_session</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">'timestamp'</span><span class="p">:</span>
                 <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_ts</span> <span class="o">+</span> <span class="n">md_ts</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;datetime&#39;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">'datetime'</span><span class="p">:</span>
                 <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PROFILE</span><span class="o">.</span><span class="n">timestamp_to_datetime</span><span class="p">(</span><span class="n">_ts</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">&#39;session_time&#39;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">ts_format</span> <span class="o">==</span> <span class="s1">'session_time'</span><span class="p">:</span>
                 <span class="n">ts_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SessionTime</span><span class="o">.</span><span class="n">from_ts</span><span class="p">(</span><span class="n">_ts</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid ts_format </span><span class="si">{</span><span class="n">ts_format</span><span class="si">}</span><span class="s1">!&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Invalid ts_format </span><span class="si">{</span><span class="n">ts_format</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
 
         <span class="n">ts</span> <span class="o">+=</span> <span class="n">interval</span>
 
@@ -418,8 +418,8 @@
     <span class="k">if</span> <span class="n">calendar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">calendar</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">to_pydate</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">PROFILE</span><span class="o">.</span><span class="n">trade_calendar</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)]</span>
 
-    <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttl_days&#39;</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
-    <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;risk_free_rate&#39;</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
+    <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ttl_days'</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
+    <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'risk_free_rate'</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
 
     <span class="n">num_days</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">calendar</span><span class="p">)</span>
     <span class="n">daily_volatility</span> <span class="o">=</span> <span class="n">volatility</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ttl_days</span><span class="p">)</span>
@@ -440,14 +440,14 @@
     <span class="n">open_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="n">low_price</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">high_price</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-        <span class="s1">&#39;date&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">calendar</span><span class="p">),</span>
-        <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
-        <span class="s1">&#39;high_price&#39;</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
-        <span class="s1">&#39;low_price&#39;</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
-        <span class="s1">&#39;close_price&#39;</span><span class="p">:</span> <span class="n">close_price</span>
+        <span class="s1">'date'</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">calendar</span><span class="p">),</span>
+        <span class="s1">'open_price'</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
+        <span class="s1">'high_price'</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
+        <span class="s1">'low_price'</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
+        <span class="s1">'close_price'</span><span class="p">:</span> <span class="n">close_price</span>
     <span class="p">})</span>
 
-    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">'date'</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">data</span></div>
 
 
@@ -463,8 +463,8 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">indices</span> <span class="o">=</span> <span class="n">ts_indices</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttl_days&#39;</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
-    <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;risk_free_rate&#39;</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
+    <span class="n">ttl_days</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ttl_days'</span><span class="p">,</span> <span class="mi">252</span><span class="p">)</span>
+    <span class="n">risk_free_rate</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'risk_free_rate'</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">)</span>
     <span class="n">num_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
     <span class="n">obs_volatility</span> <span class="o">=</span> <span class="n">volatility</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ttl_days</span> <span class="o">*</span> <span class="n">num_obs</span><span class="p">)</span>
     <span class="n">obs_risk_free_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">risk_free_rate</span><span class="p">)</span> <span class="o">/</span> <span class="n">ttl_days</span> <span class="o">/</span> <span class="n">num_obs</span>
@@ -487,36 +487,36 @@
     <span class="n">low_price</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">low_price</span><span class="p">,</span> <span class="n">open_price</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">indices</span><span class="p">,</span>
-        <span class="s1">&#39;open_price&#39;</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
-        <span class="s1">&#39;high_price&#39;</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
-        <span class="s1">&#39;low_price&#39;</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
-        <span class="s1">&#39;close_price&#39;</span><span class="p">:</span> <span class="n">close_price</span>
+        <span class="s1">'timestamp'</span><span class="p">:</span> <span class="n">indices</span><span class="p">,</span>
+        <span class="s1">'open_price'</span><span class="p">:</span> <span class="n">open_price</span><span class="p">,</span>
+        <span class="s1">'high_price'</span><span class="p">:</span> <span class="n">high_price</span><span class="p">,</span>
+        <span class="s1">'low_price'</span><span class="p">:</span> <span class="n">low_price</span><span class="p">,</span>
+        <span class="s1">'close_price'</span><span class="p">:</span> <span class="n">close_price</span>
     <span class="p">})</span>
 
-    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">'timestamp'</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">data</span></div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Generate fake market data.&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--ticker&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;FAKE&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Ticker symbol for the fake data&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--start_date&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Start date in YYYY-MM-DD format&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--end_date&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;End date in YYYY-MM-DD format&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--volatility&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.20</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Annualized volatility of the fake data&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--risk_free_rate&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Risk-free rate for generating fake data&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--seed&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Random seed for reproducibility&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--minute_data&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Generate minute data instead of daily data&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--market_date&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Market date for minute data in YYYY-MM-DD format&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--p0&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Starting price for minute data&#39;</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">'Generate fake market data.'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--ticker'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">'FAKE'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Ticker symbol for the fake data'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--start_date'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Start date in YYYY-MM-DD format'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--end_date'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'End date in YYYY-MM-DD format'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--volatility'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.20</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Annualized volatility of the fake data'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--risk_free_rate'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Risk-free rate for generating fake data'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--seed'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Random seed for reproducibility'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--minute_data'</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">'store_true'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Generate minute data instead of daily data'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--market_date'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Market date for minute data in YYYY-MM-DD format'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--p0'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Starting price for minute data'</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">minute_data</span><span class="p">:</span>
-        <span class="n">market_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">market_date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">market_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">market_date</span><span class="p">,</span> <span class="s1">'%Y-%m-</span><span class="si">%d</span><span class="s1">'</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
         <span class="n">data_set</span> <span class="o">=</span> <span class="n">fake_data</span><span class="p">(</span>
             <span class="n">market_date</span><span class="o">=</span><span class="n">market_date</span><span class="p">,</span>
             <span class="n">p0</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">p0</span><span class="p">,</span>
@@ -524,8 +524,8 @@
             <span class="n">risk_free_rate</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">risk_free_rate</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
-        <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_date</span><span class="p">,</span> <span class="s1">'%Y-%m-</span><span class="si">%d</span><span class="s1">'</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">end_date</span><span class="p">,</span> <span class="s1">'%Y-%m-</span><span class="si">%d</span><span class="s1">'</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
         <span class="n">data_set</span> <span class="o">=</span> <span class="n">fake_daily_data</span><span class="p">(</span>
             <span class="n">ticker</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">ticker</span><span class="p">,</span>
             <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span>
@@ -543,13 +543,13 @@
     <span class="c1"># Example usage:</span>
     <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">daily_data_set</span> <span class="o">=</span> <span class="n">fake_daily_data</span><span class="p">(</span><span class="s1">&#39;FAKE&#39;</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+    <span class="n">daily_data_set</span> <span class="o">=</span> <span class="n">fake_daily_data</span><span class="p">(</span><span class="s1">'FAKE'</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
     <span class="n">minute_data_set</span> <span class="o">=</span> <span class="n">fake_data</span><span class="p">(</span><span class="n">market_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">daily_data_set</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">minute_data_set</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
     <span class="n">_test</span><span class="p">()</span>
 </pre></div>
         </article>
@@ -583,7 +583,7 @@
       
     </aside>
   </div>
-</div><script src="../../../_static/documentation_options.js?v=56343b9b"></script>
+</div><script src="../../../_static/documentation_options.js?v=bfb2f792"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
