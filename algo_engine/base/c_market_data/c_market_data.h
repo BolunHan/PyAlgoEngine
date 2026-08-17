@@ -1423,9 +1423,21 @@ static inline bool c_md_filter(const md_variant* market_data, md_filter_flag fla
         return false;
     }
 
-    if (flags & MD_FILTER_NO_CANCEL && dtype == DTYPE_TRANSACTION) {
-        md_side side = market_data->transaction_data.side;
-        if (c_md_side_offset(side) == OFFSET_CANCEL) return false;
+    // THE gold rule for ruling out cancel data: cancels arrive in TWO ways
+    // — a canceling order (DTYPE_ORDER with a cancel-offset side) and a
+    // cancelled transaction report (DTYPE_TRANSACTION with a cancel-offset
+    // side) — and the ONLY reliable discriminator is the side-derived
+    // md_offset (c_md_side_offset(side) == OFFSET_CANCEL). NO_CANCEL must
+    // cover BOTH dtypes, else a canceling order slips through the filter.
+    if (flags & MD_FILTER_NO_CANCEL) {
+        if (dtype == DTYPE_TRANSACTION) {
+            md_side side = market_data->transaction_data.side;
+            if (c_md_side_offset(side) == OFFSET_CANCEL) return false;
+        }
+        else if (dtype == DTYPE_ORDER) {
+            md_side side = market_data->order_data.side;
+            if (c_md_side_offset(side) == OFFSET_CANCEL) return false;
+        }
     }
 
     if (flags & MD_FILTER_NO_AUCTION) {
