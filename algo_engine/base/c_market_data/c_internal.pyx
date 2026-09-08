@@ -26,7 +26,7 @@ cdef class InternalData(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     def __repr__(self):
         return f"<{self.__class__.__name__}>([{self.market_time:%Y-%m-%d %H:%M:%S}] {self.ticker}, code={self.code})"

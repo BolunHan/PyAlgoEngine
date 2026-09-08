@@ -202,7 +202,7 @@ cdef class TransactionData(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     def __repr__(self):
         if not self.header:
@@ -351,7 +351,7 @@ cdef class OrderData(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     def __repr__(self):
         if not self.header:
@@ -439,7 +439,7 @@ cdef class TradeData(TransactionData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     property trade_price:
         def __get__(self):

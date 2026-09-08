@@ -57,7 +57,7 @@ cdef class BarData(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     def __repr__(self):
         if not self.header:

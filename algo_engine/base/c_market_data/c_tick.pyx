@@ -57,7 +57,7 @@ cdef class TickDataLite(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     def __repr__(self):
         if not self.header:
@@ -505,7 +505,7 @@ cdef class TickData(MarketData):
         for key, value in kwargs.items():
             parts = key.split('_')
             if len(parts) != 3:
-                self.__dict__[key] = value
+                (<object> self).__dict__[key] = value
                 continue
 
             book_type = parts[0]  # 'bid' or 'ask'
@@ -513,7 +513,7 @@ cdef class TickData(MarketData):
 
             # Check if there's a level number
             if not parts[2].isdigit():
-                self.__dict__[key] = value
+                (<object> self).__dict__[key] = value
                 continue
 
             # Convert to 0-based index
@@ -525,13 +525,13 @@ cdef class TickData(MarketData):
             elif book_type == 'ask':
                 orderbook = self.header.tick_data_full.ask
             else:
-                self.__dict__[key] = value
+                (<object> self).__dict__[key] = value
                 continue
 
             # Skip if level is out of range
             capacity = orderbook.capacity
             if level < 0 or level >= capacity:
-                self.__dict__[key] = value
+                (<object> self).__dict__[key] = value
                 continue
 
             entry = orderbook.entries + level
@@ -542,7 +542,7 @@ cdef class TickData(MarketData):
             elif key_type == 'orders' or key_type == 'n_orders':
                 entry.n_orders = int(value)
             else:
-                self.__dict__[key] = value
+                (<object> self).__dict__[key] = value
                 continue
 
             if level >= orderbook.size:

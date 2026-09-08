@@ -328,11 +328,11 @@ cdef class MarketData:
             c_ap_free(<void*> self.header)
 
     def __reduce__(self):
-        return MarketData.from_bytes, (self.to_bytes(),), self.__dict__
+        return MarketData.from_bytes, (self.to_bytes(),), (<object> self).__dict__
 
     def __setstate__(self, state):
         if state:
-            self.__dict__.update(state)
+            (<object> self).__dict__.update(state)
 
     def __copy__(self):
         cdef md_data_type dtype = self.header.meta_info.dtype
@@ -340,7 +340,7 @@ cdef class MarketData:
         cdef size_t size = c_md_get_size(self.header.meta_info.dtype)
         memcpy(<void*> header, <void*> self.header, size)
         cdef MarketData instance = MarketData.c_from_header(header, True)
-        instance.__dict__.update(self.__dict__)
+        (<object> instance).__dict__.update((<object> self).__dict__)
         return instance
 
     @staticmethod
