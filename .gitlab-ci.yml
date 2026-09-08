@@ -1,0 +1,143 @@
+# GitLab CI/CD pipeline — mirrors the GitHub Actions workflows:
+#   .github/workflows/build-page-docs.yml        -> docs:build / pages
+#   .github/workflows/publish-posix-to-pypi.yml  -> publish:posix
+#   .github/workflows/publish-nt-to-pypi.yml     -> publish:nt
+# (GitHub Actions has no test workflow; test jobs are added here.)
+#
+# Required CI/CD variables (Settings -> CI/CD -> Variables):
+#   PYPI_TOKEN   PyPI API token, masked + protected
+#
+# Publish jobs upload with TWINE_USERNAME=__token__ and
+# TWINE_PASSWORD=$PYPI_TOKEN, mirroring the GitHub Actions setup.
+
+stages:
+  - test
+  - docs
+  - publish
+
+# Only create pipelines for main, MRs, version tags, and manual triggers.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'          # manual pipeline trigger
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# ---------------------------------------------------------------- Tests ----
+# GITLAB_CI=true is predefined, so setup.py drops -march=native here just
+# like GITHUB_ACTIONS=true does on GitHub.
+# requirements.txt installs the package itself (the "." line), which pulls
+# cbase / event_engine / numpy into the environment before the in-place build.
+.test:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - when: on_success
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install cython setuptools wheel
+    - pip install -r requirements.txt
+  script:
+    - python setup.py build_ext --inplace
+    - python -m unittest discover -s test
+
+test:linux:
+  extends: .test
+  image: $PYTHON_IMAGE
+  parallel:
+    matrix:
+      - PYTHON_IMAGE: ["python:3.12", "python:3.13", "python:3.14"]
+
+# GitLab.com's shared Windows runner (beta): preinstalled Python, PowerShell
+# shell. Adjust the tag for self-managed runners.
+test:windows:
+  extends: .test
+  tags: [saas-windows-medium-amd64]
+
+# ----------------------------------------------------------------- Docs ----
+# Mirrors build-page-docs.yml. docs/source/conf.py does a bare
+# `from algo_engine import __version__`, so it resolves against the installed
+# wheel — no in-place build needed (unlike PyEventEngine).
+# GitHub Pages deploy equivalent: a job named "pages" publishing "public/".
+docs:build:
+  stage: docs
+  needs: []
+  image: python:3.13
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - python -m pip install --upgrade pip setuptools
+    - pip install setuptools numpy cython PyCyBase PyEventEngine
+    - pip install -U .
+    - pip install furo
+    - cd docs && make html
+
+pages:
+  stage: docs
+  needs: []
+  image: python:3.13
+  rules:
+    # Deploy docs on every main push and version tag; never from MR pipelines.
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - when: on_success
+  script:
+    - python -m pip install --upgrade pip setuptools
+    - pip install setuptools numpy cython PyCyBase PyEventEngine
+    - pip install -U .
+    - pip install furo
+    - cd docs && make html
+    - cd .. && mv docs/build/html public
+  artifacts:
+    paths: [public]
+
+# -------------------------------------------------------------- Publish ----
+# Mirrors publish-posix-to-pypi.yml / publish-nt-to-pypi.yml: cibuildwheel
+# builds the platform wheels, then twine uploads them to PyPI.
+.publish:
+  stage: publish
+  needs: []
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: manual
+  variables:
+    TWINE_USERNAME: "__token__"
+    TWINE_PASSWORD: "$PYPI_TOKEN"   # masked + protected CI/CD variable
+  before_script:
+    - python -m pip install --upgrade pip setuptools wheel cython cibuildwheel
+  script:
+    - python -m cibuildwheel --output-dir wheelhouse
+    - pip install twine
+    - twine upload wheelhouse/*
+
+publish:posix:
+  extends: .publish
+  image: python:3.13
+  # Make a docker daemon available for cibuildwheel's manylinux builds
+  # (recipe from cibuildwheel's own .gitlab-ci.yml).
+  services:
+    - name: docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
+  variables:
+    DOCKER_HOST: "tcp://docker:2375/"
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+    CIBW_SKIP: "pp*"
+    CIBW_BUILD: "cp3*-manylinux*"
+    CIBW_BEFORE_BUILD: "rm -rf /project/build && find /project -name '*.so' -delete"
+    CIBW_ENVIRONMENT: "GITLAB_CI=true"
+  before_script:
+    - curl -sSL https://get.docker.com/ | sh
+    - python -m pip install --upgrade pip setuptools wheel cython cibuildwheel
+
+publish:nt:
+  extends: .publish
+  tags: [saas-windows-medium-amd64]
+  variables:
+    CIBW_SKIP: "pp*"
+    CIBW_BUILD: "cp3*-win_amd64"
+    CIBW_BEFORE_BUILD: "if exist build rmdir /s /q build"
+    CIBW_ENVIRONMENT: "GITLAB_CI=true"
