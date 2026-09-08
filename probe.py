@@ -34,6 +34,7 @@ CYTHON_DIRS: List[str] = [
     "algo_engine/base/c_market_data",
     "algo_engine/exchange_profile",
     "algo_engine/engine",
+    "algo_engine/backtest",
 ]
 
 # Headers we skip because they are system / third-party headers that we

@@ -49,7 +49,8 @@ class BuildExtWithConfig(build_ext):
         "algo_engine.base",
         "algo_engine.base.c_market_data",
         "algo_engine.exchange_profile",
-        "algo_engine.engine"
+        "algo_engine.engine",
+        "algo_engine.backtest"
     ]
 
     def initialize_options(self):
@@ -291,6 +292,13 @@ cython_extension.extend([
         sources=["algo_engine/engine/c_event_engine.pyx"],
         include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === BackTest Cython Extensions ===
+    Extension(
+        name="algo_engine.backtest.c_simmatch_ex",
+        sources=["algo_engine/backtest/c_simmatch_ex.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
     )
 ])
 
@@ -306,6 +314,15 @@ if WITH_TESTS:
             include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
             extra_compile_args=[*COMPILE_FLAGS],
             depends=['test/exchange_profile/c_exchange_profile_linkage_shim.h'],
+        ),
+        # C-level listener test toolkit for the backtest sim matcher. Binds a
+        # second native listener backed by a Python callable to verify that
+        # any number of wrappers (simulators, viewers) can register.
+        Extension(
+            name="test.backtest.c_simmatch_ex_toolkit",
+            sources=['test/backtest/c_simmatch_ex_toolkit.pyx'],
+            include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
+            extra_compile_args=[*COMPILE_FLAGS],
         )
     ])
 
