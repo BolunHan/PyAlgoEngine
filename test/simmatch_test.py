@@ -8,24 +8,6 @@ from algo_engine.base import TickData, TickDataLite, BarData, TransactionData, T
 
 
 class TestSimMatch(unittest.TestCase):
-    def run_test(self):
-        self.setUp()
-        self.test_tick_no_fill()
-        self.test_tick_full_fill()
-        self.test_tick_partial_fill()
-
-        self.test_transaction_no_fill()
-        self.test_transaction_full_fill()
-        self.test_transaction_partial_fill()
-
-        self.sim.matching_config['instant_fill'] = True
-        self.test_instant_fill_buy_order()
-        self.test_instant_fill_sell_order()
-        self.test_instant_fill_market_order()
-        self.test_instant_fill_without_lag()
-        self.test_instant_fill_with_hit_probability()
-        self.test_no_instant_fill_when_disabled()
-
     def setUp(self):
         self.event_engine = Mock()
         self.topic_set = Mock()
@@ -44,8 +26,11 @@ class TestSimMatch(unittest.TestCase):
             'order_type': OrderType.ORDER_LIMIT
         }
 
-    def create_order(self, side=TransactionSide.SIDE_BID, limit_price=50.0):
-        return TradeInstruction(side=side, limit_price=limit_price, timestamp=time.time(), **self.base_order)
+    def create_order(self, side=TransactionSide.SIDE_BID, limit_price=50.0, order_type=OrderType.ORDER_LIMIT):
+        params = dict(self.base_order, side=side, timestamp=time.time(), order_type=order_type)
+        if limit_price is not None:
+            params['limit_price'] = limit_price
+        return TradeInstruction(**params)
 
     def test_tick_full_fill(self):
         """Test order fully filled by tick data"""
@@ -278,7 +263,8 @@ class TestSimMatch(unittest.TestCase):
 
     def test_instant_fill_buy_order(self):
         """Test buy order is instantly filled when instant_fill=True"""
-        # 1. Create buy order
+        # 1. Enable instant fill and create buy order
+        self.sim.matching_config['instant_fill'] = True
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
 
         # 2. Launch order (should fill immediately)
@@ -292,7 +278,8 @@ class TestSimMatch(unittest.TestCase):
 
     def test_instant_fill_sell_order(self):
         """Test sell order is instantly filled when instant_fill=True"""
-        # 1. Create sell order
+        # 1. Enable instant fill and create sell order
+        self.sim.matching_config['instant_fill'] = True
         order = self.create_order(side=TransactionSide.SIDE_ASK, limit_price=50.0)
 
         # 2. Launch order (should fill immediately)
@@ -301,13 +288,15 @@ class TestSimMatch(unittest.TestCase):
         # 3. Verify instant fill
         self.assertEqual(order.order_state, OrderState.STATE_FILLED)
         self.assertEqual(order.filled_volume, 100)
-        # Should execute at limit price (50.0) - slippage
-        self.assertAlmostEqual(order.average_price, 50.0 * 0.9999)
+        # Slippage below the sell limit (49.995 < 50.0) is clamped back to the
+        # limit price, mirroring the buy-side clamp (50.005 -> 50.0).
+        self.assertAlmostEqual(order.average_price, 50.0)
 
     def test_instant_fill_market_order(self):
         """Test market order is instantly filled when instant_fill=True"""
-        # 1. Create market order (no limit price)
-        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=None)
+        # 1. Enable instant fill and create market order (no limit price)
+        self.sim.matching_config['instant_fill'] = True
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=None, order_type=OrderType.ORDER_MARKET)
 
         # Set last price for market order reference
         self.sim.last_price = 49.5
@@ -323,8 +312,9 @@ class TestSimMatch(unittest.TestCase):
 
     def test_instant_fill_with_hit_probability(self):
         """Test instant fill respects hit probability"""
-        # Configure hit probability
-        self.sim.matching_config['hit_prob'] = 0.5
+        # Enable instant fill and configure hit probability
+        self.sim.matching_config['instant_fill'] = True
+        self.sim.matching_config['hit']['prob'] = 0.5
         self.sim.set_seed(123)  # Fixed seed for deterministic test
 
         # 1. Create order
@@ -339,6 +329,9 @@ class TestSimMatch(unittest.TestCase):
 
     def test_instant_fill_without_lag(self):
         """Test instant fill works when no lag is configured"""
+        # Enable instant fill
+        self.sim.matching_config['instant_fill'] = True
+
         # Verify lag settings
         self.assertEqual(self.sim.matching_config['lag']['ts'], 0)
         self.assertEqual(self.sim.matching_config['lag']['n_transaction'], 0)
@@ -354,5 +347,4 @@ class TestSimMatch(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    t0 = TestSimMatch()
-    t0.run_test()
+    unittest.main()

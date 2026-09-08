@@ -1,0 +1,28 @@
+from .c_simmatch_ex cimport (
+    smm_match_ctx,
+    smm_match_event,
+    smm_ret_code,
+    smm_order_entry,
+    smm_listener,
+    smm_engine_binding,
+    smm_match_callback,
+
+    c_smm_match_new,
+    c_smm_match_free,
+    c_smm_match_init,
+    c_smm_match_dealloc,
+    c_smm_match_set_config,
+    c_smm_match_register_listener,
+    c_smm_match_deregister_listener,
+    c_smm_match_set_seed,
+    c_smm_match_register,
+    c_smm_match_unregister,
+    c_smm_match_launch,
+    c_smm_match_cancel,
+    c_smm_match_eod,
+    c_smm_match_process,
+    c_smm_match_best_price,
+    c_smm_match_worst_price,
+
+    SimMatchEx,
+)
