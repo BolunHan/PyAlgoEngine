@@ -11,7 +11,22 @@ import requests
 import pandas as pd
 
 from typing import NamedTuple
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from algo_engine.base import BarData, TickData
+
+# Retrying session: read/connect timeouts and transient 5xx are retried with backoff
+# (CSIndex's oss-ch CDN is occasionally slow, e.g. ReadTimeout on the weight file).
+_SESSION = requests.Session()
+_SESSION.mount(
+    "https://",
+    HTTPAdapter(max_retries=Retry(
+        total=3, connect=3, read=3,
+        backoff_factor=1.0,
+        status_forcelist=(500, 502, 503, 504),
+        allowed_methods=frozenset(["GET"]),
+    )),
+)
 
 _BAR_URL = "https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData"
 _HQ_URL = "https://hq.sinajs.cn/list="
@@ -98,7 +113,7 @@ def get_minute_bars(
     span_days = (datetime.date.today() - market_date).days
     datalen = min(_MAX_DATALEN, max(48, span_days * 48 * 5 // 7 + 96))
 
-    response = requests.get(
+    response = _SESSION.get(
         _BAR_URL,
         params={"symbol": symbol, "scale": scale, "ma": "no", "datalen": datalen},
         timeout=10,
@@ -158,7 +173,7 @@ def get_realtime_ticks(tickers: str | list[str]) -> list[TickData]:
     ticks: list[TickData] = []
     for i in range(0, len(symbols), _MAX_SYMBOLS_PER_REQUEST):
         batch = symbols[i:i + _MAX_SYMBOLS_PER_REQUEST]
-        response = requests.get(_HQ_URL + ",".join(batch), headers=_HQ_HEADERS, timeout=10)
+        response = _SESSION.get(_HQ_URL + ",".join(batch), headers=_HQ_HEADERS, timeout=10)
         response.raise_for_status()
         for line in response.content.decode('gbk').splitlines():
             if not line.startswith("var hq_str_"):
@@ -243,7 +258,7 @@ def get_index_weights(ticker: str, exchange: str | None = None) -> tuple[datetim
         ValueError: If CSIndex has no close-weight file for the ticker.
     """
     code, _ = _parse_ticker(ticker, exchange)
-    response = requests.get(_CSINDEX_WEIGHT_URL.format(code=code), timeout=20)
+    response = _SESSION.get(_CSINDEX_WEIGHT_URL.format(code=code), timeout=60)
     if response.status_code == 404:
         raise ValueError(f"No close-weight file for {ticker}: CSIndex only publishes CSI/SSE indices (e.g. 000016.SH).")
     response.raise_for_status()
