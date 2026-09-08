@@ -119,7 +119,7 @@ class SimMatch(object):
             return False
 
         # Check transaction lag
-        transactions_since_order = self.last_transaction_count - order._additional.get('transaction_count_at_placement', 0)
+        transactions_since_order = self.last_transaction_count - order.transaction_count_at_placement
         if lag_n_transaction > 0 and transactions_since_order < lag_n_transaction:
             return False
 
@@ -133,7 +133,7 @@ class SimMatch(object):
         if hit_prob >= 1.0:
             return True
 
-        return random.random() < hit_prob
+        return self.random.random() < hit_prob
 
     def _apply_slippage(self, price: float, side: TransactionSide | TransactionDirection) -> float:
         """Apply slippage to the execution price."""
@@ -152,9 +152,18 @@ class SimMatch(object):
         else:
             return price
 
+    @staticmethod
+    def _has_limit_price(order: TradeInstruction) -> bool:
+        """A limit price is effective only for non-market orders carrying a
+        finite limit price. NAN/inf limit prices or ORDER_MARKET orders are
+        market-like and have no price limit."""
+        if order.order_type == OrderType.ORDER_MARKET:
+            return False
+        return np.isfinite(order.limit_price)
+
     def _check_short_circuit(self, order: TradeInstruction) -> bool:
         """Check if order should be filled immediately."""
-        if order.limit_price is None and self.last_price is None:
+        if not self._has_limit_price(order) and self.last_price is None:
             return False
 
         # Check if instant fill is enabled and no lag is configured
@@ -183,7 +192,7 @@ class SimMatch(object):
         if order.order_id in self.working or order.order_id in self.history:
             raise ValueError(f'Invalid instruction {order}, OrderId already in working or history')
 
-        if order.limit_price is None and order.order_type == OrderType.ORDER_LIMIT:
+        if order.order_type == OrderType.ORDER_LIMIT and not self._has_limit_price(order):
             LOGGER.warning(f'order {order} does not have a valid limit price!')
 
         order.set_order_state(order_state=OrderState.STATE_PLACED, timestamp=self.timestamp)
@@ -193,7 +202,7 @@ class SimMatch(object):
         if self._check_short_circuit(order=order):
             self.on_order(order=order, **kwargs)
             worst_price = self.worst_price(
-                order.limit_price if order.limit_price is not None else self.last_price,
+                order.limit_price if self._has_limit_price(order) else self.last_price,
                 self.last_price,
                 side=order.side
             )
@@ -239,7 +248,7 @@ class SimMatch(object):
 
             if order.side.sign > 0:
                 # match order based on worst offer
-                if order.limit_price is None:
+                if not self._has_limit_price(order):
                     self._match(order=order, match_price=market_data.vwap)
                 elif market_data.high_price < order.limit_price:
                     self._match(order=order, match_price=market_data.high_price)
@@ -251,7 +260,7 @@ class SimMatch(object):
                     pass
             elif order.side.sign < 0:
                 # match order based on worst offer
-                if order.limit_price is None:
+                if not self._has_limit_price(order):
                     self._match(order=order, match_price=market_data.vwap)
                 elif market_data.low_price > order.limit_price:
                     self._match(order=order, match_price=market_data.low_price)
@@ -271,10 +280,12 @@ class SimMatch(object):
             if not order.is_working:
                 continue
 
-            if order.start_time > market_data.market_time:
+            # This check is replaced with a more efficient check of unix_ts
+            if order.timestamp > market_data.timestamp:
+                # if order.start_time > market_data.market_time:
                 continue
 
-            if order.limit_price is None:
+            if not self._has_limit_price(order):
                 if order.side.sign * market_data.side.sign > 0:  # copy the next transaction info
                     self._match(order=order, match_volume=market_data.volume, match_price=market_data.price)
             elif order.side.sign > 0 and market_data.market_price < order.limit_price:
@@ -297,7 +308,7 @@ class SimMatch(object):
             match_volume = 0.
             match_notional = 0.
 
-            if order.limit_price is None:
+            if not self._has_limit_price(order):
                 if order.side.sign > 0:
                     for entry in market_data.ask:
                         price, volume, _ = entry
@@ -369,7 +380,7 @@ class SimMatch(object):
             match_volume = 0.
             match_notional = 0.
 
-            if order.limit_price is None:
+            if not self._has_limit_price(order):
                 if order.side.sign > 0 and market_data.side.sign < 0:
                     match_volume = market_data.volume
                     match_notional = market_data.price * market_data.volume
@@ -408,7 +419,7 @@ class SimMatch(object):
             match_volume = 0.
             match_notional = 0.
 
-            if order.limit_price is None:
+            if not self._has_limit_price(order):
                 if order.side.sign > 0:
                     match_volume = market_data.ask_volume
                     match_notional = market_data.ask_price * market_data.ask_volume
@@ -442,13 +453,13 @@ class SimMatch(object):
             match_volume = min(match_volume, order.working_volume)
 
         # Determine match price with slippage
-        if match_price is None and order.limit_price is not None:
+        if match_price is None and self._has_limit_price(order):
             match_price = order.limit_price
         elif match_price is not None:
             match_price = self._apply_slippage(match_price, order.side)
 
         # Validate price against limit
-        if order.limit_price is not None:
+        if self._has_limit_price(order):
             if order.side.sign > 0 and match_price > order.limit_price:
                 LOGGER.warning(f'match price greater than limit price for bid order {order}')
                 match_price = order.limit_price
@@ -491,6 +502,10 @@ class SimMatch(object):
     def eod(self):
         for order_id in list(self.working):
             self.cancel_order(order_id=order_id)
+
+    def set_seed(self, seed: int = None):
+        self.seed = seed
+        self.random = random.Random(self.seed)
 
     def clear(self):
         self.working.clear()
