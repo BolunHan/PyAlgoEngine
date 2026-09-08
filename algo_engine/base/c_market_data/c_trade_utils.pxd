@@ -1,4 +1,4 @@
-from .c_market_data cimport md_variant, md_order_state, MarketData
+from .c_market_data cimport MarketData, md_order_state, md_variant
 from .c_transaction cimport TransactionData
 
 

@@ -2,24 +2,15 @@ import enum
 import json
 import time
 import uuid
-
-from cpython.datetime cimport datetime
-from cpython.unicode cimport PyUnicode_FromString, PyUnicode_AsUTF8
+from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString
 from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport int8_t, uintptr_t
 
-from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
-from .c_market_data cimport (
-    md_data_type, md_order_type, md_side,
-    c_md_side_sign, c_md_state_name, c_md_side_name, c_md_order_type_name,
-    c_md_state_working, c_md_state_placed, c_md_state_done,
-    c_init_buffer, c_set_long_id, c_get_long_id, c_md_long_id_equal
-)
-from .c_transaction cimport TransactionData
-from .c_transaction import TransactionSide, OrderType
-
 from algo_engine.base import LOGGER
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 
+from .c_market_data cimport c_get_long_id, c_init_buffer, c_md_long_id_equal, c_md_order_type_name, c_md_side_name, c_md_side_sign, c_md_state_done, c_md_state_name, c_md_state_placed, c_md_state_working, c_set_long_id, md_data_type, md_order_type, md_side
+from .c_transaction import OrderType, TransactionSide
 
 cdef object NO_DEFAULT = object()
 
@@ -112,7 +103,7 @@ cdef class TradeReport(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     cdef dict c_to_json(self):
         cdef dict json_dict = {
@@ -256,7 +247,7 @@ cdef class TradeReport(MarketData):
 
     property trade_time:
         def __get__(self):
-            return PROFILE.c_timestamp_in_market_session(self.header.meta_info.timestamp)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
 
 
 cdef class TradeInstruction(MarketData):
@@ -304,7 +295,7 @@ cdef class TradeInstruction(MarketData):
         self.owner = True
 
         if kwargs:
-            self.__dict__.update(kwargs)
+            (<object> self).__dict__.update(kwargs)
 
     cdef dict c_to_json(self):
         cdef dict json_dict = {
@@ -558,7 +549,7 @@ cdef class TradeInstruction(MarketData):
 
     property average_price:
         def __get__(self):
-            cdef double filled_volume = self.header.trade_instruction.volume
+            cdef double filled_volume = self.header.trade_instruction.filled_volume
             cdef double filled_notional = self.header.trade_instruction.filled_notional
             cdef double multiplier = self.header.trade_instruction.multiplier
             if filled_volume and multiplier:
@@ -567,7 +558,7 @@ cdef class TradeInstruction(MarketData):
 
     property start_time:
         def __get__(self):
-            return PROFILE.c_timestamp_in_market_session(self.header.meta_info.timestamp)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
 
     property placed_ts:
         def __get__(self):
@@ -585,21 +576,21 @@ cdef class TradeInstruction(MarketData):
         def __get__(self):
             cdef double ts_placed = self.header.trade_instruction.ts_placed
             if ts_placed:
-                return PROFILE.c_timestamp_in_market_session(ts_placed)
+                return PROFILE.c_timestamp_to_datetime(ts_placed)
             return None
 
     property canceled_time:
         def __get__(self):
             cdef double ts_canceled = self.header.trade_instruction.ts_canceled
             if ts_canceled:
-                return PROFILE.c_timestamp_in_market_session(ts_canceled)
+                return PROFILE.c_timestamp_to_datetime(ts_canceled)
             return None
 
     property finished_time:
         def __get__(self):
             cdef double ts_finished = self.header.trade_instruction.ts_finished
             if ts_finished:
-                return PROFILE.c_timestamp_in_market_session(ts_finished)
+                return PROFILE.c_timestamp_to_datetime(ts_finished)
             return None
 
 

@@ -5,7 +5,7 @@ from typing import Any, Literal, Optional, Union
 
 from typing_extensions import deprecated
 
-from .c_transaction import OrderType, TransactionSide, TransactionData
+from .c_transaction import OrderType, TransactionData, TransactionSide
 
 
 class OrderState(enum.IntEnum):
