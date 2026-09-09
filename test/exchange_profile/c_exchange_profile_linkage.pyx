@@ -12,14 +12,19 @@ cdef extern from "test/exchange_profile/c_exchange_profile_linkage_shim.h":
 
 from algo_engine.exchange_profile cimport SessionDate, c_ex_profile_session_date_init, session_date_t
 
-# Resolve EX_PROFILE from the SAME copy of the .pyd that this process's
-# Python imports use: several copies may be loaded (installed + source
-# tree), so pass the exact module handle instead of matching by name.
-# No-op on POSIX (the shim returns success; RTLD_GLOBAL preload resolves).
-import ctypes
-import algo_engine.exchange_profile.c_exchange_profile as _c_ex  # ensure the .pyd is loaded
-if not _pyx_test_resolve_ex_profile(ctypes.CDLL(_c_ex.__file__)._handle):
-    raise ImportError("EX_PROFILE not exported by c_exchange_profile — is the Windows build up to date?")
+# Resolve EX_PROFILE from the c_ex_profile_base DLL next to the imported
+# package: several copies may be loaded (installed + source tree), so
+# derive the DLL path from the exact module file the process imported.
+# No-op on POSIX (the shim returns success; RTLD_GLOBAL resolves).
+import sys
+if sys.platform == "win32":
+    import ctypes
+    import pathlib
+    import sysconfig
+    import algo_engine.exchange_profile.c_exchange_profile as _c_ex  # ensure the package is loaded
+    _ex_profile_dll = pathlib.Path(_c_ex.__file__).parent / f"c_ex_profile_base{sysconfig.get_config_var('EXT_SUFFIX')[:-4]}.dll"
+    if not _pyx_test_resolve_ex_profile(ctypes.CDLL(str(_ex_profile_dll))._handle):
+        raise ImportError("EX_PROFILE not exported by the c_ex_profile_base DLL — is the Windows build up to date?")
 
 
 cpdef SessionDate pydate_to_cdate(pydate date):

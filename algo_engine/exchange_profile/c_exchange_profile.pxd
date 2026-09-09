@@ -134,7 +134,6 @@ cdef extern from "algo_engine/exchange_profile/c_ex_profile_base.h":
 
     extern const exchange_profile EX_PROFILE_DEFAULT;
 
-    int EX_PROFILE_IMPORT() noexcept nogil
     int c_ex_profile_promote_globals() noexcept nogil
     double c_utc_offset_seconds() noexcept nogil
     int c_ex_profile_time_compare(const void* t1, const void* t2) noexcept nogil

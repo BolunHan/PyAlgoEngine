@@ -2,7 +2,9 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
+import sysconfig
 from contextlib import suppress
 from pathlib import Path
 
@@ -66,6 +68,68 @@ class BuildExtWithConfig(build_ext):
         self.post_compile()
         print(f"[build_py] <{DISPLAY_NAME}> v{__VERSION__} setup complete. Built {len(self.extensions)} Cython extensions.")
 
+    def _build_ex_profile_dll(self):
+        """Windows: build the pure-C c_ex_profile_base.<abi>.dll that owns
+        the live profile globals, and wire every extension to import from
+        it (dllimport + import library) instead of binding the symbols
+        directly. Returns the DLL output path."""
+        ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")  # .cp313-win_amd64.pyd
+        dll_base = f"c_ex_profile_base{ext_suffix[:-4]}"     # c_ex_profile_base.cp313-win_amd64
+        dll_dir = os.path.join(self.build_temp, "dll")
+        os.makedirs(dll_dir, exist_ok=True)
+
+        objects = self.compiler.compile(
+            ["algo_engine/exchange_profile/c_ex_profile_base.c",
+             "algo_engine/exchange_profile/c_ex_profile_cn.c"],
+            output_dir=dll_dir,
+            include_dirs=[REPO_ROOT],
+            debug=False,
+            # /GL- keeps the export table bound to the pointer VARIABLES
+            # (not the pointed-to structs) — same workaround the defining
+            # extension used before the globals moved into the DLL.
+            extra_postargs=["/GL-", "/std:c17", "/experimental:c11atomics"],
+        )
+        dll_path = os.path.join(dll_dir, f"{dll_base}.dll")
+        lib_path = os.path.join(dll_dir, f"{dll_base}.lib")
+        # Link directly (distutils' SHARED_LIBRARY path omits /DLL and the
+        # CRT libraries, and forces /LTCG which mis-binds data exports):
+        # plain COFF link, data-only DLL, no entry point. Kit lib dirs are
+        # derived from the include dirs the compile step just used.
+        if not getattr(self.compiler, "initialized", False):
+            self.compiler.initialize()
+        # Kit lib dirs derived from the resolved toolchain paths:
+        # cc -> <MSVC>\14.x\bin\HostX86\x64\cl.exe ; rc -> <Kits>\10\bin\<ver>\x86\rc.exe
+        msvc_root = self.compiler.cc.split("\\bin\\HostX86")[0]
+        kits_root = self.compiler.rc.split("\\bin\\")[0]
+        kit_ver = self.compiler.rc.split("\\bin\\")[1].split("\\")[0]
+        kit_libdirs = [
+            f"{msvc_root}\\lib\\x64",
+            f"{kits_root}\\lib\\{kit_ver}\\ucrt\\x64",
+            f"{kits_root}\\lib\\{kit_ver}\\um\\x64",
+        ]
+        linker = getattr(self.compiler, "linker_so", None) or self.compiler.linker
+        link_cmd = (
+            [linker, "/nologo", "/INCREMENTAL:NO",
+             "/DLL", "/NOENTRY",
+             # Data exports come from the dllexport declarations; the
+             # functions need explicit entries.
+             "/EXPORT:c_ex_profile_promote_globals",
+             "/EXPORT:c_ex_profile_cn_get_calendar",
+             "/EXPORT:c_ex_profile_cn_date_in_list",
+             "/EXPORT:c_ex_profile_cn_is_holiday",
+             "/EXPORT:c_ex_profile_cn_is_circuit_break"]
+            + [f"/LIBPATH:{p}" for p in kit_libdirs]
+            + [f"/OUT:{dll_path}", f"/IMPLIB:{lib_path}"]
+            + objects
+            + ["ucrt.lib", "vcruntime.lib"]
+        )
+        subprocess.check_call(link_cmd, cwd=REPO_ROOT)
+        for ext in self.extensions:
+            ext.define_macros.append(("EX_PROFILE_DLL_IMPORT", "1"))
+            ext.library_dirs.append(dll_dir)
+            ext.libraries.append(dll_base)
+        return dll_path
+
     def build_extensions(self):
         macros = []
         for macro in ["DEBUG", "TICKER_SIZE", "BOOK_SIZE", "ID_SIZE", "MAX_WORKERS"]:
@@ -75,17 +139,26 @@ class BuildExtWithConfig(build_ext):
                 macros.append((macro, val))
         for ext in self.extensions:
             ext.define_macros = list(macros)
-            if ext.name == "algo_engine.exchange_profile.c_exchange_profile":
-                # The defining extension owns the real profile globals;
-                # consumer translation units resolve them through the
-                # runtime capsule (EX_PROFILE_IMPORT) instead.
-                ext.define_macros.append(("EX_PROFILE_STATIC", "1"))
-            else:
-                # Every consumer extension compiles the capsule-import
-                # companion so its EX_PROFILE uses resolve to the shared
-                # live globals at runtime.
-                ext.sources.append("algo_engine/exchange_profile/c_ex_profile_capi.c")
+        if platform.system() == "Windows":
+            # The profile globals live in the dedicated DLL; the defining
+            # extension no longer compiles their sources (they move into
+            # the DLL) and every extension imports from the DLL.
+            for ext in self.extensions:
+                if ext.name == "algo_engine.exchange_profile.c_exchange_profile":
+                    ext.sources = [s for s in ext.sources
+                                   if not s.endswith("c_ex_profile_base.c")
+                                   and not s.endswith("c_ex_profile_cn.c")]
+            self._ex_profile_dll_path = self._build_ex_profile_dll()
         super().build_extensions()
+        if platform.system() == "Windows":
+            # Ship the DLL next to the extension packages: build_lib for
+            # the wheel and the source tree for --inplace builds.
+            for dst_dir in [os.path.join(self.build_lib, "algo_engine", "exchange_profile")]:
+                os.makedirs(dst_dir, exist_ok=True)
+                shutil.copy2(self._ex_profile_dll_path, dst_dir)
+            if self.inplace or "--inplace" in sys.argv:
+                inplace_dir = os.path.join(REPO_ROOT, "algo_engine", "exchange_profile")
+                shutil.copy2(self._ex_profile_dll_path, inplace_dir)
 
     def pre_compile(self):
         self.collect_sources()
@@ -224,10 +297,7 @@ cython_extension.extend([
                  "algo_engine/exchange_profile/c_ex_profile_base.c",
                  "algo_engine/exchange_profile/c_ex_profile_cn.c"],
         include_dirs=[REPO_ROOT, *cbase.get_include()],
-        # /GL (whole-program optimization) makes MSVC mis-export data symbols
-        # (EX_PROFILE must be resolvable via GetProcAddress by extensions);
-        # /GL- is appended after setuptools' default /GL and disables LTCG.
-        extra_compile_args=[*COMPILE_FLAGS] + (["/GL-"] if platform.system() == "Windows" else []),
+        extra_compile_args=[*COMPILE_FLAGS],
     ),
     Extension(
         name="algo_engine.exchange_profile.c_profile_dispatcher",
