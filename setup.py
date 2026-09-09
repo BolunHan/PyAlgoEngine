@@ -74,7 +74,17 @@ class BuildExtWithConfig(build_ext):
                 print(f'[build_py] Compile-time variable {macro} overridden with value {val}')
                 macros.append((macro, val))
         for ext in self.extensions:
-            ext.define_macros = macros
+            ext.define_macros = list(macros)
+            if ext.name == "algo_engine.exchange_profile.c_exchange_profile":
+                # The defining extension owns the real profile globals;
+                # consumer translation units resolve them through the
+                # runtime capsule (EX_PROFILE_IMPORT) instead.
+                ext.define_macros.append(("EX_PROFILE_STATIC", "1"))
+            else:
+                # Every consumer extension compiles the capsule-import
+                # companion so its EX_PROFILE uses resolve to the shared
+                # live globals at runtime.
+                ext.sources.append("algo_engine/exchange_profile/c_ex_profile_capi.c")
         super().build_extensions()
 
     def pre_compile(self):

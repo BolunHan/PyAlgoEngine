@@ -20,9 +20,10 @@
 #ifndef C_EXCHANGE_PROFILE_LINKAGE_SHIM_H
 #define C_EXCHANGE_PROFILE_LINKAGE_SHIM_H
 
+#include <stdint.h>
+
 #ifdef _WIN32
 
-#include <stdint.h>
 #include <string.h>
 #include <windows.h>
 
@@ -70,6 +71,15 @@ static int _pyx_test_resolve_ex_profile(uintptr_t module_handle) {
         break;
     }
     return _pyx_test_ex_profile_slot && *_pyx_test_ex_profile_slot ? 1 : 0;
+}
+
+#else  /* _WIN32 */
+
+/* POSIX no-op: the RTLD_GLOBAL preload in exchange_profile/__init__.py
+ * already exposes EX_PROFILE for load-time resolution. */
+static int _pyx_test_resolve_ex_profile(uintptr_t module_handle) {
+    (void)module_handle;
+    return 1;
 }
 
 #endif /* _WIN32 */

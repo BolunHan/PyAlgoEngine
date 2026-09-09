@@ -1,18 +1,18 @@
 {
     "connection": {
-        "host": "<remote-host>",
+        "host": "192.168.122.100",
         "port": 22,
-        "user": "<domain\\user>",
-        "identity_file": "~/.ssh/<identity-file>.pem"
+        "user": "win11-cn-01\\hanlun fintech",
+        "identity_file": "~/.ssh/Server-Win11-01.pem"
     },
     "windows": {
-        "python_path": "C:\\Program Files\\Python<version>\\python.exe",
-        "venv_path": "C:\\Users\\<user>\\Projects\\venv_<version>",
-        "proxy": "127.0.0.1:<port>"
+        "python_path": "C:\\Program Files\\Python313\\python.exe",
+        "venv_path": "C:\\Users\\Hanlun Fintech\\Projects\\venv_313",
+        "proxy": "127.0.0.1:7780"
     },
     "project": {
-        "remote_root": "C:\\Users\\<user>\\Projects\\PyAlgoEngine",
-        "local_root": "/home/<user>/Projects/PyAlgoEngine"
+        "remote_root": "C:\\Users\\Hanlun Fintech\\Projects\\PyAlgoEngine",
+        "local_root": "/home/bolun/Projects/PyAlgoEngine"
     },
     "sync": {
         "exclude_patterns": [

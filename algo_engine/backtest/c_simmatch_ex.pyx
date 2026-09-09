@@ -56,6 +56,10 @@ from .c_simmatch_ex cimport (
     smm_match_ctx,
     smm_match_event,
 )
+from algo_engine.exchange_profile.c_exchange_profile cimport EX_PROFILE_IMPORT
+
+if EX_PROFILE_IMPORT() != 0:
+    raise ImportError('exchange_profile globals not resolved — is the Windows build up to date?')
 
 
 cdef void c_simmatch_ex_callback(smm_match_ctx* ctx, smm_match_event event,

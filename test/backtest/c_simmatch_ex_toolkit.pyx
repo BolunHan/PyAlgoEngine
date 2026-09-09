@@ -20,6 +20,10 @@ from algo_engine.backtest.c_simmatch_ex cimport (
     smm_match_event,
     smm_order_entry,
 )
+from algo_engine.exchange_profile.c_exchange_profile cimport EX_PROFILE_IMPORT
+
+if EX_PROFILE_IMPORT() != 0:
+    raise ImportError('exchange_profile globals not resolved — is the Windows build up to date?')
 
 
 cdef dict _listeners = {}

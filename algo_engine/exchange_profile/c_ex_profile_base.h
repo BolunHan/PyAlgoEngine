@@ -266,6 +266,53 @@ extern ex_profile_activation_listener* EX_PROFILE_ACTIVATION_LISTENERS;
 extern const exchange_profile          EX_PROFILE_DEFAULT;
 #endif
 
+// ========== Runtime Import ==========
+// The defining translation unit (c_ex_profile_base.c, built with
+// EX_PROFILE_STATIC) owns the real globals and exports them. Consumer
+// access is resolved once per extension at init (EX_PROFILE_IMPORT, the
+// PyDateTime_IMPORT pattern) through pure OS-level symbol resolution:
+// - POSIX: the ELF loader binds the direct extern references at load —
+//   the defining extension promotes its symbols into the global scope via
+//   c_ex_profile_promote_globals() (dlopen RTLD_GLOBAL, called once from
+//   its module init). No indirection, no per-use cost.
+// - Windows: PE has no global symbol scope, so consumers carry
+//   per-extension slots (defined in c_ex_profile_capi.c) filled by
+//   GetProcAddress at init. The macros below deref the slots on every
+//   use — one indirect load — so activation switches propagate to every
+//   extension and the live profile is always observed.
+// Each extension whose code reaches the profile globals must call
+// EX_PROFILE_IMPORT() once at its module init (currently c_simmatch_ex
+// and its test toolkit, via the c_simmatch_ex.h fill path); extensions
+// that never dereference the globals need no call.
+
+/* Defined in c_ex_profile_base.c: POSIX symbol promotion (dlopen
+ * RTLD_GLOBAL); no-op on Windows. Called once from c_exchange_profile's
+ * module init before any consumer extension loads. */
+int c_ex_profile_promote_globals(void);
+
+#if defined(EX_PROFILE_STATIC) || !defined(_WIN32) && !defined(_WIN64)
+// Provider TU, or POSIX consumer: direct access, zero overhead.
+static inline int EX_PROFILE_IMPORT(void) { return 0; }
+#else
+// Windows consumer TU: the slots and the import function are defined in
+// c_ex_profile_capi.c, compiled into every consumer extension.
+extern const exchange_profile**            EX_PROFILE_SLOT;
+extern const session_date_range_t**        EX_TRADE_CALENDAR_CACHE_SLOT;
+extern ex_profile_activation_listener**    EX_PROFILE_ACTIVATION_LISTENERS_SLOT;
+
+int EX_PROFILE_IMPORT(void);
+
+#ifndef EX_PROFILE
+#define EX_PROFILE (*EX_PROFILE_SLOT)
+#endif
+#ifndef EX_TRADE_CALENDAR_CACHE
+#define EX_TRADE_CALENDAR_CACHE (*EX_TRADE_CALENDAR_CACHE_SLOT)
+#endif
+#ifndef EX_PROFILE_ACTIVATION_LISTENERS
+#define EX_PROFILE_ACTIVATION_LISTENERS (*EX_PROFILE_ACTIVATION_LISTENERS_SLOT)
+#endif
+#endif
+
 static inline double                c_utc_offset_seconds(void);
 static inline int                   c_ex_profile_time_compare(const void* t1, const void* t2);
 static inline double                c_ex_profile_time_to_ts(uint8_t hour, uint8_t minute, uint8_t second, uint32_t nanosecond);

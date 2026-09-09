@@ -1,4 +1,12 @@
+#if !defined(_WIN32) && !defined(_WIN64)
+#define _GNU_SOURCE 1  /* dladdr() requires it on glibc */
+#endif
+
 #include <algo_engine/exchange_profile/c_ex_profile_base.h>
+
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <dlfcn.h>
+#endif
 
 static void default_on_activate(const exchange_profile* profile) {
     if (!profile) return;
@@ -85,3 +93,20 @@ const exchange_profile EX_PROFILE_DEFAULT = {
 const exchange_profile*         EX_PROFILE = &EX_PROFILE_DEFAULT;
 ex_profile_activation_listener* EX_PROFILE_ACTIVATION_LISTENERS = NULL;
 const session_date_range_t*     EX_TRADE_CALENDAR_CACHE = NULL;
+
+/* Promote this extension's symbols into the dynamic linker's global scope
+ * so consumer extensions (which reference EX_PROFILE etc. directly) can
+ * resolve them at load time. CPython loads extensions RTLD_LOCAL; the
+ * re-dlopen with RTLD_GLOBAL upgrades the already-loaded object — the
+ * same mechanism the previous ctypes preload used, but in pure C.
+ * Called once from c_exchange_profile's module init (after dlopen
+ * completes, so the loader lock is free). No-op on Windows: PE exports
+ * are resolved via GetProcAddress instead. */
+int c_ex_profile_promote_globals(void) {
+#if !defined(_WIN32) && !defined(_WIN64)
+    Dl_info info;
+    if (!dladdr((const void*) &EX_PROFILE, &info) || !info.dli_fname) return -1;
+    if (!dlopen(info.dli_fname, RTLD_NOW | RTLD_GLOBAL)) return -1;
+#endif
+    return 0;
+}

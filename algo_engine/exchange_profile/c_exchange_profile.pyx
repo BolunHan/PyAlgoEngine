@@ -10,6 +10,10 @@ from libc.string cimport memcpy
 from . import LOGGER
 
 
+if c_ex_profile_promote_globals() != 0:
+    raise ImportError('exchange_profile globals not promoted — build issue')
+
+
 class SessionType(enum.IntEnum):
     NON_TRADING = session_type.SESSION_TYPE_NON_TRADING
     NORMINAL = session_type.SESSION_TYPE_NORMINAL
