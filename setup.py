@@ -33,7 +33,7 @@ COMPILE_FLAGS = ["/Ox", "/std:c17", "/experimental:c11atomics"] if platform.syst
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
 # MSVC + cythonize process pool conflict on Windows (spawn re-imports setup.py) — build sequentially there.
-N_THREADS = 0 if platform.system() == "Windows" else max(1, N_CORES - 2)
+N_THREADS = 0 if (platform.system() == "Windows" or NO_MARCH_NATIVE) else max(1, N_CORES - 2)
 __VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / PACKAGE_NAME / '__init__.py').read_text(), re.MULTILINE)) else "unknown"
 
 ext_modules = []
@@ -74,7 +74,7 @@ class BuildExtWithConfig(build_ext):
         it (dllimport + import library) instead of binding the symbols
         directly. Returns the DLL output path."""
         ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")  # .cp313-win_amd64.pyd
-        dll_base = f"c_ex_profile_base{ext_suffix[:-4]}"     # c_ex_profile_base.cp313-win_amd64
+        dll_base = f"c_ex_profile_base{ext_suffix[:-4]}"  # c_ex_profile_base.cp313-win_amd64
         dll_dir = os.path.join(self.build_temp, "dll")
         os.makedirs(dll_dir, exist_ok=True)
 
@@ -109,19 +109,19 @@ class BuildExtWithConfig(build_ext):
         ]
         linker = getattr(self.compiler, "linker_so", None) or self.compiler.linker
         link_cmd = (
-            [linker, "/nologo", "/INCREMENTAL:NO",
-             "/DLL", "/NOENTRY",
-             # Data exports come from the dllexport declarations; the
-             # functions need explicit entries.
-             "/EXPORT:c_ex_profile_promote_globals",
-             "/EXPORT:c_ex_profile_cn_get_calendar",
-             "/EXPORT:c_ex_profile_cn_date_in_list",
-             "/EXPORT:c_ex_profile_cn_is_holiday",
-             "/EXPORT:c_ex_profile_cn_is_circuit_break"]
-            + [f"/LIBPATH:{p}" for p in kit_libdirs]
-            + [f"/OUT:{dll_path}", f"/IMPLIB:{lib_path}"]
-            + objects
-            + ["ucrt.lib", "vcruntime.lib"]
+                [linker, "/nologo", "/INCREMENTAL:NO",
+                 "/DLL", "/NOENTRY",
+                 # Data exports come from the dllexport declarations; the
+                 # functions need explicit entries.
+                 "/EXPORT:c_ex_profile_promote_globals",
+                 "/EXPORT:c_ex_profile_cn_get_calendar",
+                 "/EXPORT:c_ex_profile_cn_date_in_list",
+                 "/EXPORT:c_ex_profile_cn_is_holiday",
+                 "/EXPORT:c_ex_profile_cn_is_circuit_break"]
+                + [f"/LIBPATH:{p}" for p in kit_libdirs]
+                + [f"/OUT:{dll_path}", f"/IMPLIB:{lib_path}"]
+                + objects
+                + ["ucrt.lib", "vcruntime.lib"]
         )
         subprocess.check_call(link_cmd, cwd=REPO_ROOT)
         for ext in self.extensions:

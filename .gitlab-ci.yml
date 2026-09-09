@@ -141,3 +141,11 @@ publish:nt:
     CIBW_BUILD: "cp3*-win_amd64"
     CIBW_BEFORE_BUILD: "if exist build rmdir /s /q build"
     CIBW_ENVIRONMENT: "GITLAB_CI=true"
+    # The shared EX_PROFILE runtime lives in c_ex_profile_base.<abi>.dll
+    # (exchange_profile package) and is imported by extensions in sibling
+    # packages. Delvewheel's default repair resolves DLL dependencies only
+    # via PATH — not elsewhere inside the wheel — and aborts with
+    # "Unable to find library: c_ex_profile_base.<abi>.dll".
+    # --ignore-in-wheel makes it search the wheel first and skip vendoring
+    # what is already there (the single shared DLL copy stays in place).
+    CIBW_REPAIR_WHEEL_COMMAND: "delvewheel repair --ignore-in-wheel -w {dest_dir} -v {wheel}"
