@@ -215,11 +215,10 @@ cdef class MarketDataService:
         return subscription.last_price
 
     cpdef void set_manager(self, MonitorManager manager):
-        cdef dict tmp_monitor = {}
+        cdef dict tmp_monitor = dict(self.monitor)
 
-        for monitor_id, monitor in self.monitor.items():
-            self.pop_monitor(monitor_id)
-            tmp_monitor[monitor_id] = monitor
+        for monitor_id in list(tmp_monitor):
+            self.pop_monitor(monitor_id=monitor_id)
 
         self.monitor_manager = manager
 
