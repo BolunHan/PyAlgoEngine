@@ -10,6 +10,7 @@ from pathlib import Path
 
 import cbase
 import event_engine
+from cbase.cython_injection import inject_cython_includes as _inject_cython_includes
 from Cython.Build import cythonize
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -169,6 +170,17 @@ class BuildExtWithConfig(build_ext):
 
         # Inject the generated includes/ mirror into build_lib so it gets packaged
         self.inject_sources()
+
+        # Expose the package to Cython's include path in this environment
+        self.inject_cython_includes()
+
+    def inject_cython_includes(self) -> None:
+        status = _inject_cython_includes(
+            PACKAGE_NAME,
+            source=Path(REPO_ROOT) / PACKAGE_NAME,
+            editable=bool(getattr(self, "inplace", False)),
+        )
+        print(f"[build_py] <{DISPLAY_NAME}> Cython include injection: {status}")
 
     @classmethod
     def collect_sources(cls) -> None:
