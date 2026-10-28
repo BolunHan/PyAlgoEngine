@@ -76,6 +76,7 @@ cdef class TopicSetEx:
 
     cdef evt_topic_set* header
     cdef readonly bint owner
+    cdef dict push_topic_cache
 
     cdef readonly Topic on_order
     cdef readonly Topic on_report

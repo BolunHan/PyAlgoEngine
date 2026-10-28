@@ -76,6 +76,9 @@ cdef class TopicSet:
 
 
 cdef class TopicSetEx:
+    def __cinit__(self):
+        self.push_topic_cache = {}
+
     def __init__(self):
         self.header = c_topic_set_new(EE_DEFAULT_ALLOCATOR)
         if not self.header:
@@ -133,7 +136,15 @@ cdef class TopicSetEx:
         return Topic.c_from_header(topic, False)
 
     cpdef Topic push(self, MarketData market_data):
-        return self.c_push(market_data)
+        cdef evt_topic* topic = c_md_topic_push(self.header, market_data.header)
+        if not topic:
+            raise ValueError('Failed to resolve the market data topic.')
+
+        cdef Topic view = self.push_topic_cache.get(<uintptr_t> topic)
+        if view is None:
+            view = Topic.c_from_header(topic, False)
+            self.push_topic_cache[<uintptr_t> topic] = view
+        return view
 
     cdef tuple c_parse(self, Topic topic):
         cdef const char* out_ticker = NULL

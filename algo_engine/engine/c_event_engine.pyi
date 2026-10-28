@@ -121,11 +121,15 @@ class TopicSetEx:
         data use a dedicated ticker cache; other dtypes resolve through the
         registry. The topic is registered on first use.
 
+        Each set-owned topic has one cached ``Topic`` view, so pushing the same
+        ticker and dtype again returns the identical object; the C-level
+        ``c_push`` is the path that builds a fresh view per call.
+
         Args:
             market_data: Market data buffer whose ``meta_info`` is read.
 
         Returns:
-            A non-owning ``Topic`` view over a set-owned topic.
+            The cached, non-owning ``Topic`` view over a set-owned topic.
 
         Raises:
             ValueError: If the ticker is missing or the dtype is unknown.
