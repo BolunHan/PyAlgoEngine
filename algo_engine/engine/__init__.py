@@ -26,14 +26,14 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-from .c_event_engine import EVENT_ENGINE, TOPIC, TopicSet
+from .c_event_engine import EVENT_ENGINE, TOPIC_SET, TopicSet, TopicSetEx
 from .c_market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
 from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
 from .trade_engine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile
 
 __all__ = [
     'LOGGER',
-    'EVENT_ENGINE', 'TOPIC', 'TopicSet',
+    'EVENT_ENGINE', 'TOPIC_SET', 'TopicSet', 'TopicSetEx',
     'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
     'MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton',
     'DirectMarketAccess', 'Balance', 'PositionManagementService', 'Inventory', 'RiskProfile'

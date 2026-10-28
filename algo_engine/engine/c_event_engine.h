@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <algo_engine/base/c_market_data/c_market_data.h>
@@ -12,11 +13,6 @@
 #include <event_engine/capi/c_topic.h>
 
 // ========== Constants ==========
-
-/* Stack buffer for composed keys; longer keys go through the allocator. */
-#ifndef TOPIC_SET_KEY_MAX
-#define TOPIC_SET_KEY_MAX 256U
-#endif
 
 /* 0: character switch over the names this set generates (O(1)).
    1: full comparison against every known dtype name. */
@@ -100,10 +96,10 @@ typedef enum topic_set_ret_code {
  * @struct evt_topic_set
  * @brief The nine legacy-composed built-ins plus the dynamic registries.
  *
- * Keys carry no dispatch suffix. Every topic is allocator-backed and owned by
- * the set: the full-key registry holds one entry per topic and dealloc frees
- * them; the named fields alias the registry pointers. Every pointer is valid
- * until c_topic_set_free.
+ * Keys carry no dispatch suffix. Every topic is allocator-backed; when
+ * owns_topics is true the set owns them and dealloc frees them, and the named
+ * fields alias the registry pointers. A merged set (owns_topics = false) shares the
+ * topics of its sources, never frees them, and its sources must outlive it.
  *
  * rt_tick, rt_trade (DTYPE_TRANSACTION) and rt_order map a bare ticker to a
  * topic for the three hot dtypes; other dtypes resolve through the registry.
@@ -125,7 +121,8 @@ typedef struct evt_topic_set {
     bytemap*   rt_trade;  // OWNED - DTYPE_TRANSACTION: ticker -> topic.
     bytemap*   rt_order;  // OWNED - DTYPE_ORDER: ticker -> topic.
 
-    bytemap*   registry;  // OWNED - full topic key -> evt_topic*.
+    bytemap*   registry;     // OWNED - full topic key -> evt_topic*.
+    bool       owns_topics;  // true: dealloc frees the registered topics.
 } evt_topic_set;
 
 // ========== Forward Declarations ==========
@@ -137,6 +134,7 @@ static inline int            c_topic_set_init(evt_topic_set* topic_set, allocato
 static inline void           c_topic_set_dealloc(evt_topic_set* topic_set);
 static inline evt_topic_set* c_topic_set_new(allocator_protocol* allocator);
 static inline void           c_topic_set_free(evt_topic_set* topic_set);
+static inline evt_topic_set* c_topic_set_union(const evt_topic_set* left, const evt_topic_set* right, allocator_protocol* allocator);
 
 static inline bool           c_topic_set_contains(const evt_topic_set* topic_set, const char* topic_literal, size_t topic_len);
 static inline bool           c_topic_set_contains_topic(const evt_topic_set* topic_set, const evt_topic* topic);
@@ -243,6 +241,7 @@ static inline int c_topic_set_init(evt_topic_set* topic_set, allocator_protocol*
 
     memset(topic_set, 0, sizeof(evt_topic_set));
 
+    topic_set->owns_topics = true;
     topic_set->registry = c_bytemap_new(0, allocator);
     if (!topic_set->registry) return TOPIC_SET_ERR_OOM;
 
@@ -298,11 +297,13 @@ static inline void c_topic_set_dealloc(evt_topic_set* topic_set) {
     if (!topic_set) return;
 
     if (topic_set->registry) {
-        bytemap_entry* entry = c_bytemap_first(topic_set->registry);
-        while (entry) {
-            evt_topic* topic = (evt_topic*) c_bytemap_entry_value(entry);
-            if (topic) c_topic_free(topic);
-            entry = c_bytemap_next(entry);
+        if (topic_set->owns_topics) {
+            bytemap_entry* entry = c_bytemap_first(topic_set->registry);
+            while (entry) {
+                evt_topic* topic = (evt_topic*) c_bytemap_entry_value(entry);
+                if (topic) c_topic_free(topic);
+                entry = c_bytemap_next(entry);
+            }
         }
 
         c_bytemap_free(topic_set->registry);
@@ -331,12 +332,54 @@ static inline evt_topic_set* c_topic_set_new(allocator_protocol* allocator) {
 }
 
 /**
- * @brief Destroy a set created by c_topic_set_new.
+ * @brief Destroy a set created by c_topic_set_new or c_topic_set_union.
  */
 static inline void c_topic_set_free(evt_topic_set* topic_set) {
     if (!topic_set) return;
     c_topic_set_dealloc(topic_set);
     c_ap_free(topic_set);
+}
+
+/**
+ * @brief Merge two sets into a new set that owns none of the topics.
+ *
+ * The result holds the topics of both inputs; its dealloc frees only its own
+ * maps, so the inputs must outlive it. Duplicate literals resolve to the left
+ * set's topic. This is the '|' operator's C side.
+ */
+static inline evt_topic_set* c_topic_set_union(const evt_topic_set* left, const evt_topic_set* right, allocator_protocol* allocator) {
+    if (!left || !right) return NULL;
+
+    evt_topic_set* merged = (evt_topic_set*) c_ap_alloc(sizeof(evt_topic_set), allocator);
+    if (!merged) return NULL;
+
+    memset(merged, 0, sizeof(evt_topic_set));
+
+    merged->registry = c_bytemap_new(0, allocator);
+    merged->rt_tick = c_bytemap_new(0, allocator);
+    merged->rt_trade = c_bytemap_new(0, allocator);
+    merged->rt_order = c_bytemap_new(0, allocator);
+
+    if (!merged->registry || !merged->rt_tick || !merged->rt_trade || !merged->rt_order) {
+        c_topic_set_free(merged);
+        return NULL;
+    }
+
+    const evt_topic_set* sources[] = {left, right};
+    for (size_t i = 0; i < sizeof(sources) / sizeof(sources[0]); i++) {
+        if (!sources[i]->registry) continue;
+
+        bytemap_entry* entry = c_bytemap_first(sources[i]->registry);
+        while (entry) {
+            evt_topic* topic = (evt_topic*) c_bytemap_entry_value(entry);
+            if (topic && !c_topic_set_register(merged, topic)) {
+                c_topic_set_free(merged);
+                return NULL;
+            }
+            entry = c_bytemap_next(entry);
+        }
+    }
+    return merged;
 }
 
 // ========== Public APIs ==========
@@ -363,16 +406,23 @@ static inline bool c_topic_set_contains_topic(const evt_topic_set* topic_set, co
  * @brief Get the topic registered under this literal, creating and registering
  *        it on first use (get-or-set).
  *
- * The literal is parsed by c_topic_new, so a dotted ticker is split into
- * several parts; c_md_topic_push builds such topics from parts instead.
+ * In the registry: return it. Not in the registry: create the topic from the
+ * literal, register it, return it. A set that owns no topics never creates: it returns
+ * NULL for a missing literal. The literal is parsed by c_topic_new, so a dotted
+ * ticker is split into several parts; c_md_topic_push builds such topics from
+ * parts instead.
  */
 static inline evt_topic* c_topic_set_get(evt_topic_set* topic_set, const char* topic_literal, size_t topic_len) {
     if (!topic_set || !topic_set->registry || !topic_literal) return NULL;
     if (topic_len == 0) topic_len = strlen(topic_literal);
     if (topic_len == 0) return NULL;
 
-    allocator_protocol* allocator = c_ap_protocol_from_ptr(topic_set->registry);
-    evt_topic*          topic = c_topic_new(topic_literal, topic_len, allocator);
+    evt_topic* topic = NULL;
+    if (c_bytemap_get(topic_set->registry, topic_literal, topic_len, (void**) &topic) == BYTEMAP_OK) return topic;
+
+    if (!topic_set->owns_topics) return NULL;
+
+    topic = c_topic_new(topic_literal, topic_len, c_ap_protocol_from_ptr(topic_set->registry));
     if (!topic) return NULL;
 
     return c_topic_set_register(topic_set, topic);
@@ -442,9 +492,10 @@ static inline evt_topic* c_topic_set_register(evt_topic_set* topic_set, evt_topi
  *
  * Tick, transaction and order resolve through their dedicated ticker cache
  * (one lookup); other dtypes have no cache and are looked up in the registry
- * by the composed literal (stack buffer, oversized tickers are rejected). A
- * miss builds realtime.<ticker>.<dtype> from parts and registers it, which
- * also fills the ticker cache.
+ * by the composed literal. The literal is composed on a stack buffer; a key
+ * that does not fit gets a malloc'd buffer instead. A miss builds
+ * realtime.<ticker>.<dtype> from parts and registers it, which also fills the
+ * ticker cache.
  */
 static inline evt_topic* c_md_topic_push(evt_topic_set* topic_set, const md_variant* market_data) {
     if (!topic_set || !topic_set->registry || !market_data) return NULL;
@@ -491,9 +542,15 @@ static inline evt_topic* c_md_topic_push(evt_topic_set* topic_set, const md_vari
         size_t       dtype_len = strlen(dtype_name);
         size_t       key_len = prefix_len + ticker_len + 1 + dtype_len;
 
-        if (key_len + 1 > TOPIC_SET_KEY_MAX) return NULL;
+        char         stack_key[256];  // key scratch: stack up to 256 bytes, malloc beyond.
+        char*        key = stack_key;
+        char*        heap_key = NULL;
 
-        char   key[TOPIC_SET_KEY_MAX];
+        if (key_len + 1 > sizeof(stack_key)) {
+            heap_key = (char*) malloc(key_len + 1);
+            if (!heap_key) return NULL;
+            key = heap_key;
+        }
 
         size_t pos = 0;
         memcpy(key + pos, TOPIC_SET_REALTIME_PREFIX, prefix_len);
@@ -506,7 +563,10 @@ static inline evt_topic* c_md_topic_push(evt_topic_set* topic_set, const md_vari
         key[pos] = '\0';
 
         evt_topic* cached = NULL;
-        if (c_bytemap_get(topic_set->registry, key, key_len, (void**) &cached) == BYTEMAP_OK) return cached;
+        int        hit = c_bytemap_get(topic_set->registry, key, key_len, (void**) &cached);
+
+        if (heap_key) free(heap_key);
+        if (hit == BYTEMAP_OK) return cached;
     }
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr(topic_set->registry);
