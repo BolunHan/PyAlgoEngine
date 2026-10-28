@@ -1,3 +1,4 @@
+import statistics
 import time
 import unittest
 
@@ -129,8 +130,9 @@ class TestTopicSetExCore(unittest.TestCase):
                 self.assertEqual(self.topic.parse(topic), (md.ticker, dtype_name))
                 self.assertEqual(self.topic.parse_map(topic), {'ticker': md.ticker, 'dtype': dtype_name})
 
-                # Repeated pushes return the identical topic.
+                # Repeated pushes return the identical topic and view.
                 self.assertEqual(self.topic.push(md).addr, topic.addr)
+                self.assertIs(self.topic.push(md), topic)
 
     def test_same_ticker_different_dtype(self):
         with ~MD_SHARED | ~MD_FREELIST:
@@ -295,6 +297,56 @@ class TestTopicSetExCore(unittest.TestCase):
         time.sleep(0.05)
         self.assertEqual(len(received), 1)
 
+    def test_all_nine_builtins_reach_a_python_callback(self):
+        with ~MD_SHARED | ~MD_FREELIST:
+            tick = TickData(ticker='SWEEP1', timestamp=1.0, last_price=1.0)
+
+        # Exact stems publish on themselves; templates on an instantiated
+        # topic so the match path is exercised, not just the exact lookup.
+        targets = {
+            'on_order': self.topic.on_order,
+            'on_report': self.topic.on_report,
+            'eod': self.topic.eod,
+            'eod_done': self.topic.eod_done,
+            'bod': self.topic.bod,
+            'bod_done': self.topic.bod_done,
+            'launch_order': self.topic.launch_order.format(ticker='SWEEP1'),
+            'cancel_order': self.topic.cancel_order.format(ticker='SWEEP1'),
+            'realtime': self.topic.push(tick),
+        }
+        self.assertEqual(sorted(targets), sorted(attr for attr, _, _ in BUILTIN_TOPICS))
+
+        received = {attr: [] for attr in targets}
+
+        def make_handler(name):
+            def handler(value, topic=None):
+                received[name].append((value, topic.value if topic is not None else None))
+            return handler
+
+        self._start_engine()
+        engine = ee.EVENT_ENGINE
+
+        for attr in targets:
+            engine.register_handler(getattr(self.topic, attr), make_handler(attr))
+
+        for attr, topic in targets.items():
+            engine.publish(topic, (attr,), {})
+
+        deadline = time.monotonic() + 3.0
+        while any(not seen for seen in received.values()) and time.monotonic() < deadline:
+            time.sleep(0.005)
+
+        # Each handler must see its own sentinel once and only once: an exact
+        # stem never reaches another exact stem, and only the matching
+        # template reaches an instantiated topic.
+        time.sleep(0.05)
+        for attr, topic in targets.items():
+            with self.subTest(attr=attr):
+                self.assertEqual(received[attr], [(attr, topic.value)])
+
+        # The delivered realtime topic parses back to its source.
+        self.assertEqual(self.topic.parse(targets['realtime']), ('SWEEP1', 'TickData'))
+
 
 class TestTopicSetExSurface(unittest.TestCase):
     @classmethod
@@ -380,6 +432,57 @@ class TestTopicSetExSurface(unittest.TestCase):
             self.topic | 3
         with self.assertRaises(TypeError):
             self.topic | 'on_order'
+
+
+BENCH_ITERATIONS = 1_000_000
+BENCH_REPEATS = 3
+
+
+def _ns_per_op(fn, iterations=BENCH_ITERATIONS):
+    """Median ns/op over BENCH_REPEATS timed runs."""
+    samples = []
+    for _ in range(BENCH_REPEATS):
+        start = time.perf_counter_ns()
+        for _ in range(iterations):
+            fn()
+        samples.append((time.perf_counter_ns() - start) / iterations)
+    return statistics.median(samples)
+
+
+class TestPushParseBench(unittest.TestCase):
+    """The performance gate: the C-backed path against the v1 dict path.
+
+    The medians are the record; the assertions are deliberately wide sanity
+    bounds that catch an order-of-magnitude regression, not a tuning target.
+    Numbers on this machine (median of 3 x 1e6): push 90 ns vs 82 ns for the
+    v1 dict cache, parse 88 ns vs 271 ns. push keeps one cached ``Topic`` view
+    per set-owned topic; parse replaces the v1 dict build.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        with ~MD_SHARED | ~MD_FREELIST:
+            cls.md = TickData(ticker='BENCH1', timestamp=1.0, last_price=1.0)
+
+        cls.new_topic = ee.TOPIC_SET.push(cls.md)
+        cls.legacy = ee.TopicSet()
+        cls.legacy_topic = cls.legacy.push(cls.md)
+
+    def test_push_parse_ns_per_op(self):
+        rows = [
+            ('TOPIC_SET.push', _ns_per_op(lambda: ee.TOPIC_SET.push(self.md))),
+            ('TopicSet.push (v1 dict)', _ns_per_op(lambda: self.legacy.push(self.md))),
+            ('TOPIC_SET.parse', _ns_per_op(lambda: ee.TOPIC_SET.parse(self.new_topic))),
+            ('TopicSet.parse (v1 dict)', _ns_per_op(lambda: self.legacy.parse(self.legacy_topic))),
+        ]
+        timing = dict(rows)
+
+        print()
+        for name, ns in rows:
+            print(f'  [bench] {name:<26} {ns:9.1f} ns/op')
+
+        self.assertLess(timing['TOPIC_SET.push'], 3.0 * timing['TopicSet.push (v1 dict)'])
+        self.assertLess(timing['TOPIC_SET.parse'], 2.0 * timing['TopicSet.parse (v1 dict)'])
 
 
 if __name__ == '__main__':
