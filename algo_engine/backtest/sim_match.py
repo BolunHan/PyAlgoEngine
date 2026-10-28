@@ -6,7 +6,7 @@ from event_engine.capi import EventEngine
 
 from . import LOGGER
 from ..base import BarData, MarketData, OrderData, OrderState, OrderType, TickData, TickDataLite, TradeData, TradeInstruction, TradeReport, TransactionData, TransactionDirection, TransactionSide
-from ..engine import EVENT_ENGINE, TOPIC, TopicSet
+from ..engine import EVENT_ENGINE, TOPIC_SET, TopicSet
 from ..exchange_profile import PROFILE
 
 LOGGER = LOGGER.getChild('SimMatch')
@@ -16,7 +16,7 @@ class SimMatch(object):
     def __init__(self, ticker: str, event_engine=None, topic_set=None, seed: int = None, **kwargs):
         self.ticker = ticker
         self.event_engine = event_engine if event_engine is not None else EVENT_ENGINE
-        self.topic_set = topic_set if topic_set is not None else TOPIC
+        self.topic_set = topic_set if topic_set is not None else TOPIC_SET
 
         self.working: dict[str, TradeInstruction] = {}
         self.history: dict[str, TradeInstruction] = {}
