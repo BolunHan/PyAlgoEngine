@@ -19,7 +19,7 @@ from algo_engine.base import (
     TransactionData,
     TransactionSide,
 )
-from algo_engine.engine import TOPIC
+from algo_engine.engine import TOPIC_SET
 from algo_engine.exchange_profile import PROFILE
 
 LOGGER = logging.getLogger(__name__)
@@ -633,19 +633,19 @@ class TestSimMatchEx(unittest.TestCase):
     def test_36_register_unregister_capi(self) -> None:
         """register binds handlers through the event engine C API."""
         engine = EventEngineEx()
-        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC)
+        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET)
         sim.register()
         self.addCleanup(engine.stop)
 
         order = self.create_order()
         engine.start()
         try:
-            engine.put(topic=TOPIC.launch_order(ticker='TEST'), order=order)
+            engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working),
                             'launch_order handler did not fire')
             self.assertEqual(order.order_state, OrderState.STATE_PLACED)
 
-            engine.put(topic=TOPIC.cancel_order(ticker='TEST'), order=order)
+            engine.put(topic=TOPIC_SET.cancel_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.history),
                             'cancel_order handler did not fire')
             self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
@@ -657,7 +657,7 @@ class TestSimMatchEx(unittest.TestCase):
         order2 = self.create_order()
         engine.start()
         try:
-            engine.put(topic=TOPIC.launch_order(ticker='TEST'), order=order2)
+            engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order2)
             self.assertFalse(self._wait_until(lambda: order2.order_id in sim.working, timeout=1.),
                              'handler still fired after unregister')
         finally:
@@ -666,7 +666,7 @@ class TestSimMatchEx(unittest.TestCase):
     def test_37_realtime_dispatch_capi(self) -> None:
         """Market data routed through the realtime topic fills working orders."""
         engine = EventEngineEx()
-        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC)
+        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET)
         sim.register()
         self.addCleanup(sim.unregister)
         self.addCleanup(engine.stop)
@@ -674,10 +674,10 @@ class TestSimMatchEx(unittest.TestCase):
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
         engine.start()
         try:
-            engine.put(topic=TOPIC.launch_order(ticker='TEST'), order=order)
+            engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working))
             tick = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
-            engine.put(topic=TOPIC.realtime(ticker='TEST', dtype='TickData'), market_data=tick)
+            engine.put(topic=TOPIC_SET.realtime(ticker='TEST', dtype='TickData'), market_data=tick)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.history),
                             'realtime handler did not fill the order')
             self.assertEqual(order.order_state, OrderState.STATE_FILLED)
@@ -747,24 +747,24 @@ class TestSimMatchEx(unittest.TestCase):
         engine = EventEngineEx()
         reports = []
         orders = []
-        engine.register_handler(topic=TOPIC.on_report, handler=lambda **kw: reports.append(kw['report']))
-        engine.register_handler(topic=TOPIC.on_order, handler=lambda **kw: orders.append(kw['order']))
+        engine.register_handler(topic=TOPIC_SET.on_report, handler=lambda **kw: reports.append(kw['report']))
+        engine.register_handler(topic=TOPIC_SET.on_order, handler=lambda **kw: orders.append(kw['order']))
 
-        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC, hit_prob=1.)
+        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET, hit_prob=1.)
         sim.register()
         self.addCleanup(engine.stop)
 
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
         engine.start()
         try:
-            engine.put(topic=TOPIC.launch_order(ticker='TEST'), order=order)
+            engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working))
             # placed on_order published natively
             self.assertTrue(self._wait_until(lambda: len(orders) >= 1),
                             'placed on_order not published natively')
 
             tick = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
-            engine.put(topic=TOPIC.realtime(ticker='TEST', dtype='TickData'), market_data=tick)
+            engine.put(topic=TOPIC_SET.realtime(ticker='TEST', dtype='TickData'), market_data=tick)
             self.assertTrue(self._wait_until(lambda: len(reports) >= 1),
                             'on_report not published natively')
             self.assertEqual(len(orders), 2)  # placed + filled
