@@ -3,7 +3,7 @@ from libcpp cimport bool as c_bool
 from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
 from event_engine.capi cimport evt_topic, Topic, EventEngineEx
 
-from algo_engine.base cimport md_data_type, md_variant, MarketData
+from algo_engine.base.c_market_data.c_market_data cimport md_data_type, md_variant, MarketData
 
 
 cdef extern from "algo_engine/engine/c_event_engine.h":

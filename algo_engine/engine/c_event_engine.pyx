@@ -5,7 +5,7 @@ from libc.string cimport strlen
 from event_engine.base cimport EE_DEFAULT_ALLOCATOR
 from event_engine.capi cimport Topic, EventEngineEx, evt_topic, evt_topic_match, evt_topic_part_variant, evt_topic_type, c_topic_match
 
-from algo_engine.base cimport MarketData, c_md_dtype_name, md_data_type, md_variant
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_md_dtype_name, md_data_type, md_variant
 
 
 cdef class TopicSet:

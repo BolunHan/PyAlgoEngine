@@ -6,9 +6,10 @@ from event_engine.capi cimport EventEngine, EventHook, Topic
 from libc.math cimport NAN, isnan
 from libc.string cimport memset
 
-from algo_engine.base cimport MarketData, TradeInstruction, TradeReport, c_get_long_id, md_order_state, md_order_type, report_from_header
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long_id, md_order_state, md_order_type, report_from_header
+from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, TradeReport
 from algo_engine.engine.c_event_engine cimport EVENT_ENGINE, TOPIC_SET
-from algo_engine.exchange_profile cimport PROFILE
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 
 from . import LOGGER
 

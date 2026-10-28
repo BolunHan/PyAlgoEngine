@@ -5,7 +5,7 @@ from cbase.allocator_protocol cimport allocator_protocol
 from cbase.bytemap cimport bytemap
 from event_engine.capi cimport evt_hook, evt_topic, message_queue
 
-from algo_engine.base cimport long_md_id, md_trade_report, md_variant
+from algo_engine.base.c_market_data.c_market_data cimport long_md_id, md_trade_report, md_variant
 
 
 cdef extern from "algo_engine/backtest/c_simmatch_ex.h":
