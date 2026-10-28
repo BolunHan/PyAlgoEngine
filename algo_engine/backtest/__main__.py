@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import event_engine
 
-from ..engine import TOPIC, MarketDataService, Balance, RiskProfile, PositionManagementService
+from ..engine import TOPIC_SET, MarketDataService, Balance, RiskProfile, PositionManagementService
 from ..engine.algo_engine import AlgoRegistry, AlgoEngine
 from ..strategy import EventDMA
 from ..strategy.strategy_engine import StrategyEngine
@@ -41,9 +41,9 @@ POSITION_TRACKER = PositionManagementService(dma=DMA, algo_engine=ALGO_ENGINE)
 STRATEGY_ENGINE = StrategyEngine(event_engine=EVENT_ENGINE, position_tracker=POSITION_TRACKER)
 BALANCE.add(strategy=STRATEGY_ENGINE, position_tracker=POSITION_TRACKER)
 
-EVENT_ENGINE.register_handler(topic=TOPIC.realtime, handler=MDS.on_market_data)
-EVENT_ENGINE.register_handler(topic=TOPIC.on_report, handler=BALANCE.on_report)
-EVENT_ENGINE.register_handler(topic=TOPIC.on_order, handler=BALANCE.on_order)
+EVENT_ENGINE.register_handler(topic=TOPIC_SET.realtime, handler=MDS.on_market_data)
+EVENT_ENGINE.register_handler(topic=TOPIC_SET.on_report, handler=BALANCE.on_report)
+EVENT_ENGINE.register_handler(topic=TOPIC_SET.on_order, handler=BALANCE.on_order)
 STRATEGY_ENGINE.register()
 
 MDS.synthetic_orderbook = True
