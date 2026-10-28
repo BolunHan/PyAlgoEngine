@@ -24,9 +24,13 @@ algo_engine/includes/
 # IDE
 .idea/
 .vscode/
+.orbit/
+.claude
 
 # Test Artifacts
 test/*/artifacts/
+test/backtest/c_simmatch_ex_toolkit.c
+test/exchange_profile/c_exchange_profile_linkage.c
 
 # Macro Probing Cache
 macros.json
