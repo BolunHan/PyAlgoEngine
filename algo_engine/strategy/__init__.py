@@ -3,7 +3,7 @@ from threading import Lock
 
 from .. import LOGGER
 from ..base import TradeInstruction
-from ..engine import EVENT_ENGINE, TOPIC, MDS, MarketDataService, Balance, Inventory, DirectMarketAccess, RiskProfile, PositionManagementService
+from ..engine import EVENT_ENGINE, TOPIC_SET, MDS, MarketDataService, Balance, Inventory, DirectMarketAccess, RiskProfile, PositionManagementService
 
 LOGGER = LOGGER.getChild('Strategy')
 
@@ -16,10 +16,10 @@ class EventDMA(DirectMarketAccess):
         super().__init__(mds=mds, risk_profile=risk_profile, cool_down=cool_down)
 
     def _launch_order_handler(self, order: TradeInstruction, **kwargs):
-        self.event_engine.put(topic=TOPIC.launch_order(ticker=order.ticker), order=order, **kwargs)
+        self.event_engine.put(topic=TOPIC_SET.launch_order(ticker=order.ticker), order=order, **kwargs)
 
     def _cancel_order_handler(self, order: TradeInstruction, **kwargs):
-        self.event_engine.put(topic=TOPIC.cancel_order(ticker=order.ticker), order_id=order.order_id, **kwargs)
+        self.event_engine.put(topic=TOPIC_SET.cancel_order(ticker=order.ticker), order_id=order.order_id, **kwargs)
 
     def _reject_order_handler(self, order: TradeInstruction, **kwargs):
         raise NotImplementedError()

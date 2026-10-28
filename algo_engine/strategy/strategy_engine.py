@@ -7,7 +7,7 @@ from functools import cached_property
 from . import LOGGER
 from ..backtest import SimMatch, ProgressReplay
 from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset
-from ..engine import PositionManagementService, TOPIC, EVENT_ENGINE
+from ..engine import PositionManagementService, TOPIC_SET, EVENT_ENGINE
 
 LOGGER = LOGGER.getChild('Strategy')
 
@@ -60,7 +60,7 @@ class StrategyEngine(StrategyEngineTemplate):
         super().__init__(position_tracker=position_tracker)
 
         self.event_engine = kwargs.pop('event_engine', EVENT_ENGINE)
-        self.topic_set = kwargs.pop('topic_set', TOPIC)
+        self.topic_set = kwargs.pop('topic_set', TOPIC_SET)
 
         self._on_market_data = []
         self._on_report = []
