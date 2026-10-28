@@ -71,7 +71,7 @@ class SimMatchEx:
             ticker: Ticker to match.
             event_engine: Event engine; defaults to the global
                 ``EVENT_ENGINE``.
-            topic_set: Topic set; defaults to the global ``TOPIC``.
+            topic_set: Topic set; defaults to the global ``TOPIC_SET``.
             seed: Seed for the native PRNG (hit probability); random when
                 None.
             **kwargs: Matching configuration:

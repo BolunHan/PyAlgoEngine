@@ -2,60 +2,15 @@ import random as py_random
 
 from cpython.exc cimport PyErr_Clear
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
-from cpython.object cimport PyObject
+from event_engine.capi cimport EventEngine, EventHook, Topic
 from libc.math cimport NAN, isnan
-from libc.stdint cimport int8_t, uint64_t, uintptr_t
 from libc.string cimport memset
 
-from event_engine.capi cimport EventEngine
-from event_engine.capi.c_event cimport EventHook
-from event_engine.capi.c_topic cimport Topic
-
-from algo_engine.base.c_market_data.c_market_data cimport (
-    MarketData,
-    c_get_long_id,
-    long_md_id,
-    md_order_state,
-    md_order_type,
-    md_variant,
-)
-from algo_engine.base.c_market_data.c_trade_utils cimport (
-    TradeInstruction,
-    TradeReport,
-    report_from_header,
-)
-from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
-
-from ..engine.c_event_engine cimport EVENT_ENGINE, TOPIC, TopicSet
+from algo_engine.base import MarketData, TradeInstruction, TradeReport, c_get_long_id, md_order_state, md_order_type, report_from_header
+from algo_engine.engine cimport EVENT_ENGINE, TOPIC_SET
+from algo_engine.exchange_profile cimport PROFILE
 
 from . import LOGGER
-
-from .c_simmatch_ex cimport (
-    SMM_ERR_INVALID_SIDE,
-    SMM_ERR_NO_VALID_PRICE,
-    SMM_EVENT_CANCEL,
-    SMM_EVENT_MATCH,
-    SMM_OK,
-    c_smm_match_best_price,
-    c_smm_match_cancel,
-    c_smm_match_clear,
-    c_smm_match_dealloc,
-    c_smm_match_deregister_listener,
-    c_smm_match_eod,
-    c_smm_match_free,
-    c_smm_match_launch,
-    c_smm_match_new,
-    c_smm_match_process,
-    c_smm_match_register,
-    c_smm_match_register_listener,
-    c_smm_match_set_config,
-    c_smm_match_set_seed,
-    c_smm_match_unregister,
-    c_smm_match_worst_price,
-    smm_engine_binding,
-    smm_match_ctx,
-    smm_match_event,
-)
 
 
 cdef void c_simmatch_ex_callback(smm_match_ctx* ctx, smm_match_event event,
@@ -122,7 +77,7 @@ cdef class SimMatchEx:
 
         self.ticker = ticker
         self.event_engine = event_engine if event_engine is not None else EVENT_ENGINE
-        self.topic_set = topic_set if topic_set is not None else TOPIC
+        self.topic_set = topic_set if topic_set is not None else TOPIC_SET
         self.working = {}
         self.history = {}
 
@@ -184,7 +139,7 @@ cdef class SimMatchEx:
             if ret_code == SMM_ERR_NO_VALID_PRICE:
                 raise ValueError('No valid prices provided')
             elif ret_code == SMM_ERR_INVALID_SIDE:
-                raise ValueError(f'Invalid side {side}!')
+                raise ValueError(f'Invalid side {side}')
             return out
         finally:
             PyMem_Free(prices)
@@ -211,14 +166,14 @@ cdef class SimMatchEx:
             if ret_code == SMM_ERR_NO_VALID_PRICE:
                 raise ValueError('No valid prices provided')
             elif ret_code == SMM_ERR_INVALID_SIDE:
-                raise ValueError(f'Invalid side {side}!')
+                raise ValueError(f'Invalid side {side}')
             return out
         finally:
             PyMem_Free(prices)
 
     def register(self, topic_set=None, event_engine=None):
         cdef EventEngine engine
-        cdef TopicSet ts
+        cdef object ts
         cdef Topic launch_topic
         cdef Topic cancel_topic
         cdef Topic realtime_topic
@@ -236,7 +191,7 @@ cdef class SimMatchEx:
 
         if isinstance(self.event_engine, EventEngine):
             engine = <EventEngine> self.event_engine
-            ts = <TopicSet> self.topic_set
+            ts = self.topic_set
             launch_topic = ts.launch_order(ticker=self.ticker)
             cancel_topic = ts.cancel_order(ticker=self.ticker)
             realtime_topic = ts.realtime(ticker=self.ticker)
@@ -260,9 +215,9 @@ cdef class SimMatchEx:
             binding.realtime_hook = realtime_hook.header
             binding.realtime_hook_obj = <PyObject*> realtime_hook
 
-            binding.on_order_topic = ts.on_order.header
+            binding.on_order_topic = (<Topic> ts.on_order).header
             binding.on_order_topic_obj = <PyObject*> ts.on_order
-            binding.on_report_topic = ts.on_report.header
+            binding.on_report_topic = (<Topic> ts.on_report).header
             binding.on_report_topic_obj = <PyObject*> ts.on_report
 
             if self.ctx.engine:
