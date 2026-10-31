@@ -1,4 +1,4 @@
-__version__ = "0.13.0.post2"
+__version__ = "0.13.0.post3"
 
 import functools
 import logging

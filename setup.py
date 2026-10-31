@@ -315,7 +315,6 @@ if _editable_wheel is not None:
             print(f"[build_py] <{DISPLAY_NAME}> Cython link recorded: {recorded}")
             return wheel_path
 
-
 # =============================
 # Define Cython Extensions
 # =============================
