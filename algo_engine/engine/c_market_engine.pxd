@@ -1,6 +1,8 @@
 from cpython.object cimport PyObject
 from libcpp cimport bool as c_bool
 
+from cbase.bytemap cimport BoundByteMap
+
 from algo_engine.base.c_market_data.c_internal cimport InternalData
 from algo_engine.base.c_market_data.c_market_data cimport MarketData, md_internal, md_variant
 from algo_engine.exchange_profile.c_exchange_profile cimport ExchangeProfile
@@ -52,7 +54,7 @@ cdef struct mds_subscription:
 
 cdef class MarketDataService:
     cdef size_t subscription_capacity
-    cdef dict subscription_mapping
+    cdef BoundByteMap subscription_mapping
     cdef mds_subscription* subscription_status
 
     cdef readonly ExchangeProfile profile
@@ -74,6 +76,8 @@ cdef class MarketDataService:
     cpdef void on_market_data(self, MarketData market_data)
 
     cpdef double get_market_price(self, str ticker)
+
+    cdef double c_get_market_price(self, const char* ticker)
 
     cpdef void set_manager(self, MonitorManager manager)
 

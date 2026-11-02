@@ -5,7 +5,9 @@ from typing import Any
 from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString
 from libc.math cimport NAN, isnan
 from libc.stdlib cimport calloc, free
-from libc.string cimport memcpy, strdup
+from libc.string cimport memcpy, strdup, strlen
+
+from cbase.bytemap cimport bytemap_ret_code, c_bytemap_get
 
 from algo_engine.base.c_market_data.c_market_data cimport c_md_dtype_name, c_md_get_price, md_data_type
 from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
@@ -118,7 +120,7 @@ cdef class MarketDataService:
     def __cinit__(self, ExchangeProfile profile=None):
         self.monitor_manager = MonitorManager()
         self.subscription_capacity = 0
-        self.subscription_mapping = {}
+        self.subscription_mapping = BoundByteMap()
         self.subscription_status = NULL  # Will be extended latter
 
         self.profile = PROFILE if profile is None else profile
@@ -145,18 +147,23 @@ cdef class MarketDataService:
     cdef void c_update_subscription(self, const md_variant* md):
         cdef const char* ticker = md.meta_info.ticker
         cdef md_data_type dtype = md.meta_info.dtype
-        cdef PyObject* py_idx = PyDict_GetItemString(<PyObject*> self.subscription_mapping, ticker)
+        cdef void* py_idx = NULL
         cdef size_t idx = 0
-        if py_idx:
-            idx = PyLong_AsSize_t(py_idx)
+        cdef object py_ticker
+
+        if c_bytemap_get(self.subscription_mapping.header, ticker, strlen(ticker), &py_idx) == bytemap_ret_code.BYTEMAP_OK and py_idx:
+            idx = PyLong_AsSize_t(<PyObject*> py_idx)
         else:
             idx = self.n_subscribed
             if idx >= self.subscription_capacity:
                 self.c_subscription_buffer_extend()
-            PyDict_SetItemString(<PyObject*> self.subscription_mapping, ticker, PyLong_FromSize_t(idx))
-            LOGGER.info(f'MDS confirmed [{PyUnicode_FromString(ticker)}] <{PyUnicode_FromString(c_md_dtype_name(dtype))}> subscribed!')
+
+            py_ticker = PyUnicode_FromString(ticker)
+            self.subscription_mapping[py_ticker] = idx
+            LOGGER.info(f'MDS confirmed [{py_ticker}] <{PyUnicode_FromString(c_md_dtype_name(dtype))}> subscribed!')
             (self.subscription_status + idx).ticker = strdup(ticker)
             self.n_subscribed += 1
+
         cdef mds_subscription* subscription = self.subscription_status + idx
         subscription.last_update = md.meta_info.timestamp
         subscription.last_price = c_md_get_price(md)
@@ -205,13 +212,32 @@ cdef class MarketDataService:
 
     cpdef double get_market_price(self, str ticker):
         cdef const char* key = PyUnicode_AsUTF8(ticker)
-        cdef PyObject* py_idx = PyDict_GetItemString(<PyObject*> self.subscription_mapping, key)
-        if not py_idx:
+        return self.c_get_market_price(key)
+
+    # The C door: the ticker's slot index comes from the subscription bytemap's header,
+    # an O(1) hashed lookup. The bound map keeps the Python dict and the C map in sync, and
+    # the stored value is the Python int index the header hands back.
+    cdef double c_get_market_price(self, const char* ticker):
+        cdef void* value = NULL
+        cdef size_t idx
+        cdef mds_subscription* subscription
+
+        if not ticker:
             return NAN
-        cdef size_t idx = PyLong_AsSize_t(py_idx)
-        cdef mds_subscription* subscription = self.subscription_status + idx
+
+        if c_bytemap_get(self.subscription_mapping.header, ticker, strlen(ticker), &value) != bytemap_ret_code.BYTEMAP_OK:
+            return NAN
+        if not value:
+            return NAN
+
+        idx = PyLong_AsSize_t(<PyObject*> value)
+        if idx >= self.n_subscribed:
+            return NAN
+
+        subscription = self.subscription_status + idx
         if subscription.n_feeds == 0:
             return NAN
+
         return subscription.last_price
 
     cpdef void set_manager(self, MonitorManager manager):
