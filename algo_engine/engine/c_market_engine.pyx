@@ -45,30 +45,30 @@ cdef class MarketDataMonitor(CCPType):
     def __init__(self, str name, md_filter_flag filter_mode=<md_filter_flag> 0, int16_t priority=0, object monitor_id=None):
         self.name = name
 
-        self.header = c_mds_monitor_new(PyUnicode_AsUTF8(name), priority, filter_mode, MD_DEFAULT_ALLOCATOR)
-        if not self.header:
+        self.monitor_meta = c_mds_monitor_new(PyUnicode_AsUTF8(name), priority, filter_mode, MD_DEFAULT_ALLOCATOR)
+        if not self.monitor_meta:
             raise MemoryError(f'Failed to allocate memory for <{self.__class__.__name__}>.')
 
         self.owner = True
 
         if monitor_id is None:
             c_mds_monitor_gen_uid(
-                self.header,
-                self.header.name,
-                strlen(self.header.name) if self.header.name else 0
+                self.monitor_meta,
+                self.monitor_meta.name,
+                strlen(self.monitor_meta.name) if self.monitor_meta.name else 0
             )
         else:
             self.c_set_monitor_id(monitor_id)
 
-        self.ccp_bind(&self.header)
+        self.ccp_bind(&self.monitor_meta)
 
     def __dealloc__(self):
         if not self.owner:
             return
 
-        if self.header:
-            c_mds_monitor_free(self.header)
-            self.header = NULL
+        if self.monitor_meta:
+            c_mds_monitor_free(self.monitor_meta)
+            self.monitor_meta = NULL
 
     cdef void c_set_monitor_id(self, object monitor_id):
         cdef bytes id_bytes
@@ -85,17 +85,17 @@ cdef class MarketDataMonitor(CCPType):
                 f'got {type(monitor_id).__name__}.'
             )
 
-        memcpy(&self.header.monitor_id[0], <const char*> id_bytes, 16)
+        memcpy(&self.monitor_meta.monitor_id[0], <const char*> id_bytes, 16)
 
     @staticmethod
     cdef MarketDataMonitor c_from_header(mds_monitor* header, bint owner):
         cdef MarketDataMonitor instance = MarketDataMonitor.__new__(MarketDataMonitor)
-        instance.header = header
+        instance.monitor_meta = header
         instance.owner = owner
 
         if header:
             instance.name = PyUnicode_FromString(header.name) if header.name else None
-            instance.ccp_bind(&instance.header)
+            instance.ccp_bind(&instance.monitor_meta)
 
         return instance
 
@@ -107,53 +107,53 @@ cdef class MarketDataMonitor(CCPType):
 
     property monitor_id:
         def __get__(self):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return uuid.UUID(bytes=PyBytes_FromStringAndSize(<const char*> self.header.monitor_id, 16))
+            return uuid.UUID(bytes=PyBytes_FromStringAndSize(<const char*> self.monitor_meta.monitor_id, 16))
 
     property enabled:
         def __get__(self):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.enabled
+            return self.monitor_meta.enabled
 
         def __set__(self, bint value):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.enabled = value
+            self.monitor_meta.enabled = value
 
     property is_ready:
         def __get__(self):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.is_ready
+            return self.monitor_meta.is_ready
 
         def __set__(self, bint value):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.is_ready = value
+            self.monitor_meta.is_ready = value
 
     property priority:
         def __get__(self):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.priority
+            return self.monitor_meta.priority
 
         def __set__(self, int16_t value):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.priority = value
+            self.monitor_meta.priority = value
 
     property md_filter:
         def __get__(self):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return FilterMode(self.header.md_filter)
+            return FilterMode(self.monitor_meta.md_filter)
 
         def __set__(self, md_filter_flag value):
-            if not self.header:
+            if not self.monitor_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.md_filter = value
+            self.monitor_meta.md_filter = value
 
     property value:
         def __get__(self):
@@ -199,7 +199,7 @@ cdef class MarketDataMonitorMap(BoundByteMap):
                 f'got {type(obj).__name__}.'
             )
 
-        self.ws_value = <void*> (<MarketDataMonitor> obj).header
+        self.ws_value = <void*> (<MarketDataMonitor> obj).monitor_meta
         if value_len:
             value_len[0] = sizeof(void*)
         return <const char*> &self.ws_value
@@ -278,7 +278,7 @@ cdef class MonitorManager(CCPType):
         cdef MarketDataMonitor monitor = self.monitor.get(monitor_id)
         if monitor is None or not isinstance(monitor, MarketDataMonitor):
             return NULL
-        return monitor.header
+        return monitor.monitor_meta
 
     # === Market Data Feed Skeleton ===
 
