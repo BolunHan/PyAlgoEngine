@@ -448,6 +448,14 @@ if WITH_TESTS:
             sources=['test/backtest/c_simmatch_ex_toolkit.pyx'],
             include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
             extra_compile_args=[*COMPILE_FLAGS],
+        ),
+        # C-level state-access toolkit: the MDS ticker-price scan and the position cache
+        # getters, which are cdef-only and therefore reachable only from a Cython test.
+        Extension(
+            name="test.c_state_access_toolkit",
+            sources=['test/c_state_access_toolkit.pyx'],
+            include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
+            extra_compile_args=[*COMPILE_FLAGS],
         )
     ])
 
