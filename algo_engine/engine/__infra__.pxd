@@ -38,9 +38,56 @@ from .c_event_engine cimport (
 )
 
 from .c_market_engine cimport (
+    # === Enums and structs ===
+    mds_ret_code,
+    mds_monitor_id,
+    mds_monitor,
     mds_subscription,
+    mds_monitor_manager_callback_func,
+    mds_monitor_manager_callback_ctx,
+    mds_monitor_manager,
+    mds,
 
-    MonitorManager, MarketDataService,
+    # === Public APIs (c-layer) ===
+    c_mds_monitor_new,
+    c_mds_monitor_init,
+    c_mds_monitor_dealloc,
+    c_mds_monitor_free,
+    c_mds_monitor_gen_uid,
+    c_mds_monitor_filter_md,
+    c_mds_monitor_set_enabled,
+    c_mds_monitor_is_enabled,
+    c_mds_monitor_manager_new,
+    c_mds_monitor_manager_init,
+    c_mds_monitor_manager_dealloc,
+    c_mds_monitor_manager_free,
+    c_mds_monitor_manager_register_callback,
+    c_mds_monitor_manager_unregister_callback,
+    c_mds_monitor_manager_feed,
+    c_mds_monitor_manager_register_monitor,
+    c_mds_monitor_manager_unregister_monitor,
+    c_mds_monitor_manager_get_monitor,
+    c_mds_monitor_manager_clear_monitors,
+    c_mds_monitor_manager_set_enabled,
+    c_mds_monitor_manager_is_enabled,
+    c_mds_new,
+    c_mds_init,
+    c_mds_dealloc,
+    c_mds_free,
+    c_mds_clear,
+    c_mds_set_manager,
+    c_mds_get_manager,
+    c_mds_register_monitor,
+    c_mds_unregister_monitor,
+    c_mds_get_monitor,
+    c_mds_n_monitors,
+    c_mds_update_subscription,
+    c_mds_on_market_data,
+    c_mds_on_internal_data,
+    c_mds_get_market_price,
+
+    # === Cython classes and globals ===
+    MarketDataMonitor, MonitorManager, MarketDataMonitorMap, MarketDataService,
 
     MDS,
 )
