@@ -85,6 +85,31 @@ cd docs && ./update_docs.sh
 └──────────────────────────────────────────────────────┘
 ```
 
+### MDS core (`algo_engine/engine/c_market_engine.h`)
+
+`MDS` is backed by one C struct, `mds`:
+
+- `subscriptions` — a bytemap of ticker → `mds_subscription`; capacity and
+  growth are the bytemap's own defaults (no second capacity knob).
+- `ts` — the market data's own `session_datetime_t`, copied from
+  `md_meta.dt`; no double timestamp and no runtime conversion.
+- `monitor_manager` — a borrowed `mds_monitor_manager*`.
+- `monitors` — a bytemap of 16-byte monitor id → `mds_monitor*`.
+
+Two C bases carry the generic monitor/manager fields, and downstream code
+inherits them at offset 0: Quark's `fct_monitor` embeds `mds_monitor`, and its
+`fct_concurrent_manager` embeds `mds_monitor_manager`. Constructors take only
+the allocator; callbacks are bound afterwards through
+`c_mds_monitor_manager_register_callback` /
+`c_mds_monitor_manager_unregister_callback`.
+
+On the Python side, `MarketDataMonitor` is a functional cdef class bound to an
+`mds_monitor` block through `CCPType`; the legacy ABC is
+`MarketDataMonitorProtocol`, and `MarketDataMonitor` is registered as its
+virtual subclass. Quark's `FactorMonitorBase` inherits `MarketDataMonitor`
+(and therefore `CCPType`), keeps its `fct_monitor` pointer as `monitor_header`,
+and points the inherited `header` at `&monitor_header.base`.
+
 ## Build System
 
 | Command          | Description                                      |
