@@ -21,8 +21,8 @@
 /** @enum mds_ret_code
  *  @brief 0 is success, positives are success-with-status, negatives are errors. */
 typedef enum mds_ret_code {
-    MDS_OK                =  0,
     MDS_OK_SUBSCRIBED     =  1,  // The feed registered a ticker for the first time.
+    MDS_OK                =  0,
     MDS_ERR_INVALID_INPUT = -1,
     MDS_ERR_UNKNOWN_DTYPE = -2,
     MDS_ERR_INTERNAL_DATA = -3,
@@ -53,7 +53,7 @@ typedef unsigned char mds_monitor_id[16];
  */
 typedef struct mds_monitor {
     int16_t        priority;    // Dispatch order hint (lower first).
-    const char*    name;        // NOT owned - the owner keeps it alive.
+    const char*    name;        // OWNED - strdup'ed by init, freed by dealloc.
     mds_monitor_id monitor_id;  // 16-byte identity used by the registries.
     md_filter_flag md_filter;   // Generic market-data filter.
     bool           enabled;     // false skips the monitor entirely.
@@ -71,9 +71,9 @@ typedef struct mds_monitor {
  * double.
  */
 typedef struct mds_subscription {
-    session_datetime_t last_update;       // Session datetime of the latest observation.
-    double             last_price;        // Price resolved through c_md_get_price.
-    size_t             n_feeds;           // Number of observations routed to the ticker.
+    session_datetime_t last_update;            // Session datetime of the latest observation.
+    double             last_price;             // Price resolved through c_md_get_price.
+    size_t             n_feeds;                // Number of observations routed to the ticker.
     bool               is_subscribed_td;       // A transaction (DTYPE_TRANSACTION) was seen.
     bool               is_subscribed_od;       // An order (DTYPE_ORDER) was seen.
     bool               is_subscribed_tk_lite;  // A lite tick (DTYPE_TICK_LITE) was seen.
@@ -102,10 +102,10 @@ typedef void (*mds_monitor_manager_callback_func)(mds_monitor_manager* manager, 
  * `c_mds_monitor_manager_unregister_callback` takes.
  */
 typedef struct mds_monitor_manager_callback_ctx {
-    mds_monitor_manager_callback_func          fn;
-    void*                                      user_data;
-    uintptr_t                                  id;
-    struct mds_monitor_manager_callback_ctx*   next;
+    mds_monitor_manager_callback_func        fn;
+    void*                                    user_data;
+    uintptr_t                                id;
+    struct mds_monitor_manager_callback_ctx* next;
 } mds_monitor_manager_callback_ctx;
 
 /**
@@ -147,8 +147,8 @@ typedef struct mds {
 
 // ========== Forward Declarations ==========
 
-static inline mds_monitor*         c_mds_monitor_new(allocator_protocol* allocator);
-static inline int                  c_mds_monitor_init(mds_monitor* monitor);
+static inline mds_monitor*         c_mds_monitor_new(const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator);
+static inline int                  c_mds_monitor_init(mds_monitor* monitor, const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator);
 static inline void                 c_mds_monitor_dealloc(mds_monitor* monitor);
 static inline void                 c_mds_monitor_free(mds_monitor* monitor);
 static inline void                 c_mds_monitor_gen_uid(mds_monitor* monitor, const char* salt, size_t salt_len);
@@ -166,7 +166,6 @@ static inline void                 c_mds_monitor_manager_feed(mds_monitor_manage
 static inline int                  c_mds_monitor_manager_register_monitor(mds_monitor_manager* manager, mds_monitor* monitor);
 static inline int                  c_mds_monitor_manager_unregister_monitor(mds_monitor_manager* manager, mds_monitor* monitor);
 static inline mds_monitor*         c_mds_monitor_manager_get_monitor(const mds_monitor_manager* manager, const mds_monitor_id monitor_id);
-static inline size_t               c_mds_monitor_manager_n_monitors(const mds_monitor_manager* manager);
 static inline int                  c_mds_monitor_manager_clear_monitors(mds_monitor_manager* manager);
 static inline void                 c_mds_monitor_manager_set_enabled(mds_monitor_manager* manager, bool enabled);
 static inline bool                 c_mds_monitor_manager_is_enabled(const mds_monitor_manager* manager);
@@ -190,43 +189,65 @@ static inline double               c_mds_get_market_price(const mds* service, co
 // ========== Public APIs (Monitor Base) ==========
 
 /**
- * @brief Allocate a monitor base.
+ * @brief Allocate a monitor base, copy its name and set the generic fields.
+ * @param name The monitor name (copied; NULL leaves the name NULL).
+ * @param priority The dispatch priority.
+ * @param md_filter The generic market-data filter.
  * @param allocator Allocator for the block (NULL falls back to the process default).
- * @return The new monitor, or NULL when the block cannot be allocated.
+ * @return The new monitor, or NULL when the block or the name cannot be allocated.
  */
-static inline mds_monitor* c_mds_monitor_new(allocator_protocol* allocator) {
+static inline mds_monitor* c_mds_monitor_new(const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator) {
     mds_monitor* monitor = (mds_monitor*) c_ap_alloc(sizeof(mds_monitor), allocator);
     if (!monitor) return NULL;
 
-    c_mds_monitor_init(monitor);
+    if (c_mds_monitor_init(monitor, name, priority, md_filter, c_ap_protocol_from_ptr(monitor)) != MDS_OK) {
+        c_ap_free(monitor);
+        return NULL;
+    }
+
     return monitor;
 }
 
 /**
  * @brief Initialize a caller-allocated, zeroed monitor base.
  *
- * A fresh monitor is enabled and ready; the caller overrides those fields as
- * needed.
+ * The name is duplicated into the monitor and released by
+ * `c_mds_monitor_dealloc`. A fresh monitor is enabled and ready.
  *
  * @param monitor The zeroed monitor to initialize.
- * @return MDS_OK, or MDS_ERR_INVALID_INPUT when monitor is NULL.
+ * @param name The monitor name (copied; NULL leaves the name NULL).
+ * @param priority The dispatch priority.
+ * @param md_filter The generic market-data filter.
+ * @param allocator Allocator for the name copy; required for an embedded monitor, NULL derives from a block-start monitor.
+ * @return MDS_OK, MDS_ERR_INVALID_INPUT when monitor is NULL, or MDS_ERR_OOM.
  */
-static inline int c_mds_monitor_init(mds_monitor* monitor) {
+static inline int c_mds_monitor_init(mds_monitor* monitor, const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator) {
     if (!monitor) return MDS_ERR_INVALID_INPUT;
+    if (!allocator) allocator = c_ap_protocol_from_ptr(monitor);
 
     memset(monitor, 0, sizeof(mds_monitor));
+
+    if (name) {
+        monitor->name = c_ap_strdup(name, allocator);
+        if (!monitor->name) return MDS_ERR_OOM;
+        c_ap_acquire_ownership((const void*) monitor->name, (const void*) allocator->buf);
+    }
+
+    monitor->priority = priority;
+    monitor->md_filter = md_filter;
     monitor->enabled = true;
     monitor->is_ready = true;
     return MDS_OK;
 }
 
 /**
- * @brief Tear down a caller-allocated monitor base, leaving it zeroed.
+ * @brief Tear down a caller-allocated monitor base, releasing the name and leaving it zeroed.
  * @param monitor The monitor (NULL-safe).
  */
 static inline void c_mds_monitor_dealloc(mds_monitor* monitor) {
     if (!monitor) return;
 
+    if (monitor->name) c_ap_free((void*) monitor->name);
     memset(monitor, 0, sizeof(mds_monitor));
 }
 
@@ -238,7 +259,7 @@ static inline void c_mds_monitor_free(mds_monitor* monitor) {
     if (!monitor) return;
 
     c_mds_monitor_dealloc(monitor);
-    c_ap_free(monitor);
+    c_ap_free_owned(monitor);
 }
 
 /**
@@ -530,15 +551,6 @@ static inline mds_monitor* c_mds_monitor_manager_get_monitor(const mds_monitor_m
     if (ret_code != BYTEMAP_OK) return NULL;
 
     return *(mds_monitor**) stored;
-}
-
-/**
- * @brief Number of monitors in the manager registry.
- * @param manager The manager (NULL-safe).
- * @return The count, or 0.
- */
-static inline size_t c_mds_monitor_manager_n_monitors(const mds_monitor_manager* manager) {
-    return manager && manager->monitors ? c_bytemap_ex_len(manager->monitors) : 0;
 }
 
 /**

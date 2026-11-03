@@ -1,23 +1,152 @@
 from cpython.object cimport PyObject
+from libc.stdint cimport int16_t, uintptr_t
 from libcpp cimport bool as c_bool
 
-from cbase.bytemap cimport BoundByteMap
+from cbase.allocator_protocol cimport CCPType, allocator_protocol
+from cbase.bytemap cimport BoundByteMap, bytemap
 
 from algo_engine.base.c_market_data.c_internal cimport InternalData
-from algo_engine.base.c_market_data.c_market_data cimport MarketData, md_internal, md_variant
-from algo_engine.exchange_profile.c_exchange_profile cimport ExchangeProfile
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, md_filter_flag, md_internal, md_variant
+from algo_engine.exchange_profile.c_exchange_profile cimport ExchangeProfile, session_datetime_t
 
 
 cdef extern from "Python.h":
-    PyObject* PyDict_GetItemString(PyObject* py_dict, const char* key)
-    int PyDict_SetItemString(PyObject* py_dict, const char* key, PyObject* val)
-    PyObject* PyLong_FromSize_t(size_t v)
-    size_t PyLong_AsSize_t(PyObject* pylong)
-    PyObject* PyFloat_FromDouble(double v)
+    PyObject* PyObject_CallFunctionObjArgs(PyObject* callable, ...)
+    PyObject* PyErr_GetRaisedException()
+    void PyErr_DisplayException(PyObject* exc)
 
 
-cdef class MonitorManager:
-    cdef readonly dict monitor
+cdef extern from "algo_engine/engine/c_market_engine.h":
+    ctypedef enum mds_ret_code:
+        MDS_OK
+        MDS_OK_SUBSCRIBED
+        MDS_ERR_INVALID_INPUT
+        MDS_ERR_UNKNOWN_DTYPE
+        MDS_ERR_INTERNAL_DATA
+        MDS_ERR_OOM
+        MDS_ERR_NOT_FOUND
+
+    ctypedef unsigned char mds_monitor_id[16]
+
+    ctypedef struct mds_monitor:
+        int16_t priority
+        const char* name
+        mds_monitor_id monitor_id
+        md_filter_flag md_filter
+        c_bool enabled
+        c_bool is_ready
+
+    ctypedef struct mds_subscription:
+        session_datetime_t last_update
+        double last_price
+        size_t n_feeds
+        c_bool is_subscribed_td
+        c_bool is_subscribed_od
+        c_bool is_subscribed_tk_lite
+        c_bool is_subscribed_tk
+        c_bool is_subscribed_cs
+
+    ctypedef void (*mds_monitor_manager_callback_func)(mds_monitor_manager* manager, const md_variant* market_data, void* user_data) noexcept
+
+    ctypedef struct mds_monitor_manager_callback_ctx:
+        mds_monitor_manager_callback_func fn
+        void* user_data
+        uintptr_t id
+        mds_monitor_manager_callback_ctx* next
+
+    ctypedef struct mds_monitor_manager:
+        bytemap* monitors
+        mds_monitor_manager_callback_ctx* callbacks
+        c_bool enabled
+
+    ctypedef struct mds:
+        mds_monitor_manager* monitor_manager
+        bytemap* subscriptions
+        bytemap* monitors
+        session_datetime_t ts
+
+    mds_monitor* c_mds_monitor_new(const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator) noexcept nogil
+    int          c_mds_monitor_init(mds_monitor* monitor, const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator) noexcept nogil
+    void         c_mds_monitor_dealloc(mds_monitor* monitor) noexcept nogil
+    void         c_mds_monitor_free(mds_monitor* monitor) noexcept nogil
+    void         c_mds_monitor_gen_uid(mds_monitor* monitor, const char* salt, size_t salt_len) noexcept nogil
+    c_bool       c_mds_monitor_filter_md(const mds_monitor* monitor, const md_variant* market_data) noexcept nogil
+    void         c_mds_monitor_set_enabled(mds_monitor* monitor, c_bool enabled) noexcept nogil
+    c_bool       c_mds_monitor_is_enabled(const mds_monitor* monitor) noexcept nogil
+
+    mds_monitor_manager* c_mds_monitor_manager_new(allocator_protocol* allocator) noexcept nogil
+    int                  c_mds_monitor_manager_init(mds_monitor_manager* manager, allocator_protocol* allocator) noexcept nogil
+    void                 c_mds_monitor_manager_dealloc(mds_monitor_manager* manager) noexcept nogil
+    void                 c_mds_monitor_manager_free(mds_monitor_manager* manager) noexcept nogil
+    int                  c_mds_monitor_manager_register_callback(mds_monitor_manager* manager, mds_monitor_manager_callback_func callback, void* user_data, uintptr_t* out_id) noexcept nogil
+    int                  c_mds_monitor_manager_unregister_callback(mds_monitor_manager* manager, uintptr_t callback_id) noexcept nogil
+    void                 c_mds_monitor_manager_feed(mds_monitor_manager* manager, const md_variant* market_data) noexcept nogil
+    int                  c_mds_monitor_manager_register_monitor(mds_monitor_manager* manager, mds_monitor* monitor) noexcept nogil
+    int                  c_mds_monitor_manager_unregister_monitor(mds_monitor_manager* manager, mds_monitor* monitor) noexcept nogil
+    mds_monitor*         c_mds_monitor_manager_get_monitor(const mds_monitor_manager* manager, const mds_monitor_id monitor_id) noexcept nogil
+    int                  c_mds_monitor_manager_clear_monitors(mds_monitor_manager* manager) noexcept nogil
+    void                 c_mds_monitor_manager_set_enabled(mds_monitor_manager* manager, c_bool enabled) noexcept nogil
+    c_bool               c_mds_monitor_manager_is_enabled(const mds_monitor_manager* manager) noexcept nogil
+
+    mds*         c_mds_new(allocator_protocol* allocator) noexcept nogil
+    int          c_mds_init(mds* service, allocator_protocol* allocator) noexcept nogil
+    void         c_mds_dealloc(mds* service) noexcept nogil
+    void         c_mds_free(mds* service) noexcept nogil
+    int          c_mds_clear(mds* service) noexcept nogil
+    int          c_mds_set_manager(mds* service, mds_monitor_manager* manager) noexcept nogil
+    mds_monitor_manager* c_mds_get_manager(const mds* service) noexcept nogil
+    int          c_mds_register_monitor(mds* service, mds_monitor* monitor) noexcept nogil
+    int          c_mds_unregister_monitor(mds* service, mds_monitor* monitor) noexcept nogil
+    mds_monitor* c_mds_get_monitor(const mds* service, const mds_monitor_id monitor_id) noexcept nogil
+    size_t       c_mds_n_monitors(const mds* service) noexcept nogil
+    int          c_mds_update_subscription(mds* service, const md_variant* market_data) noexcept nogil
+    int          c_mds_on_market_data(mds* service, const md_variant* market_data) noexcept nogil
+    int          c_mds_on_internal_data(mds* service, const md_internal* internal_data) noexcept nogil
+    double       c_mds_get_market_price(const mds* service, const char* ticker) noexcept nogil
+
+
+cdef class MarketDataMonitor(CCPType):
+    cdef dict __dict__
+    cdef mds_monitor* header
+    cdef readonly bint owner
+
+    cdef readonly str name
+
+    cdef void c_set_monitor_id(self, object monitor_id)
+
+    @staticmethod
+    cdef MarketDataMonitor c_from_header(mds_monitor* header, bint owner)
+
+    cpdef void clear(self)
+
+
+cdef class MarketDataMonitorMap(BoundByteMap):
+    cdef bytes ws_key
+    cdef void* ws_value
+
+    @staticmethod
+    cdef MarketDataMonitorMap c_from_header(bytemap* header, bint owner=?)
+
+    cdef const char* c_serialize_key(self, object obj, size_t* key_len)
+
+    cdef object c_deserialize_key(self, const char* key, size_t key_len)
+
+    cdef const char* c_serialize_value(self, object obj, size_t* value_len)
+
+    cdef object c_deserialize_value(self, const char* value, size_t value_len)
+
+
+cdef class MonitorManager(CCPType):
+    cdef mds_monitor_manager* header
+    cdef readonly bint owner
+    cdef uintptr_t callback_id
+
+    cdef readonly MarketDataMonitorMap monitor
+
+    cdef mds_monitor* c_get_monitor(self, object monitor_id)
+
+    @staticmethod
+    cdef void c_callback_adaptor(mds_monitor_manager* manager, const md_variant* market_data, void* user_data) noexcept with gil
 
     cpdef void feed_monitor(self, object monitor_id, MarketData market_data)
 
@@ -40,32 +169,13 @@ cdef class MonitorManager:
     cpdef dict get_values(self)
 
 
-cdef struct mds_subscription:
-    const char* ticker
-    double last_update
-    double last_price
-    size_t n_feeds
-    c_bool is_subscribed_td
-    c_bool is_subscribed_od
-    c_bool is_subscribed_tk_lite
-    c_bool is_subscribed_tk
-    c_bool is_subscribed_cs
-
-
 cdef class MarketDataService:
-    cdef size_t subscription_capacity
-    cdef BoundByteMap subscription_mapping
-    cdef mds_subscription* subscription_status
+    cdef mds* header
+    cdef bint owner
 
     cdef readonly ExchangeProfile profile
-    cdef readonly double timestamp
-    cdef readonly size_t n_subscribed
-    cdef readonly dict monitor
     cdef readonly MonitorManager monitor_manager
-
-    cdef void c_subscription_buffer_extend(self)
-
-    cdef void c_update_subscription(self, const md_variant* md)
+    cdef readonly MarketDataMonitorMap monitor
 
     cdef void c_on_internal_data(self, const md_internal* md)
 

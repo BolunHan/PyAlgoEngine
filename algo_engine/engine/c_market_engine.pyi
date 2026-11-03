@@ -2,13 +2,13 @@ import abc
 from datetime import date, datetime
 from typing import Any
 
-from algo_engine.base import InternalData, MarketData
+from algo_engine.base import FilterMode, InternalData, MarketData
 from algo_engine.exchange_profile import ExchangeProfile
 
 MDS: MarketDataService
 
 
-class MarketDataMonitor(metaclass=abc.ABCMeta):
+class MarketDataMonitorProtocol(metaclass=abc.ABCMeta):
     """
     Template for a market data monitor.
 
@@ -61,7 +61,7 @@ class MarketDataMonitor(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def value(self) -> float | dict[str, float]:
+    def value(self) -> float | dict[str, float] | None:
         """
         Retrieve the computed value(s) from this monitor.
 
@@ -79,6 +79,62 @@ class MarketDataMonitor(metaclass=abc.ABCMeta):
         """
 
 
+
+class MarketDataMonitor(MarketDataMonitorProtocol):
+    """
+    Functional C-backed monitor base, bound to an ``mds_monitor`` block.
+
+    The class is a CCPType-bound cdef class: it owns (or adopts) an
+    ``mds_monitor`` header, exposes the generic monitor fields through C, and
+    is registered as a virtual subclass of :class:`MarketDataMonitorProtocol`.
+    Concrete monitors subclass it and override ``__call__``, ``clear`` and
+    ``value``.
+
+    Attributes:
+        name (str): Monitor name; its UTF-8 bytes back the C base.
+        monitor_id (Any): Python identity; a UUID is written into the C base.
+        enabled (bool): Whether the monitor is active (C field).
+        is_ready (bool): Whether the monitor has output ready (C field).
+        priority (int): Dispatch order hint (C field).
+        md_filter (FilterMode): Generic market-data filter flags.
+    """
+
+    name: str
+    monitor_id: Any
+    enabled: bool
+    is_ready: bool
+    priority: int
+    md_filter: FilterMode
+
+    def __init__(
+            self,
+            name: str,
+            filter_mode: FilterMode | int = 0,
+            priority: int = 0,
+            monitor_id: Any = None,
+    ):
+        """
+        Allocate and bind the monitor's C base.
+
+        Args:
+            name (str): Monitor name; copied into the C base.
+            filter_mode (FilterMode | int): Generic market-data filter; 0 means no filter.
+            priority (int): Dispatch priority.
+            monitor_id (Any): Python identity; a UUID is copied into the C id,
+                any other object is hashed into it.
+        """
+
+    def __call__(self, market_data: MarketData, **kwargs):
+        """Default feed hook; subclasses override."""
+
+    def clear(self) -> None:
+        """Default clear hook; subclasses override."""
+
+    @property
+    def value(self) -> float | dict[str, float] | None:
+        """Default output (None); subclasses override."""
+
+
 class MonitorManager(object):
     """
     Manages market data monitors.
@@ -86,9 +142,11 @@ class MonitorManager(object):
     This is a basic, single-threaded implementation. It is typically used as a component of MDS.
 
     Attributes:
-        monitor (dict[Any, MarketDataMonitor]): Registered monitors.
+        monitor (dict[Any, MarketDataMonitor]): Registered monitors, bound to the manager's C registry.
+        owner (bool): Whether this wrapper owns the C base struct behind it.
     """
     monitor: dict[Any, MarketDataMonitor]
+    owner: bool
 
     def __call__(self, market_data: MarketData):
         """
@@ -183,12 +241,21 @@ class MonitorManager(object):
         """Stop the manager when exiting the context."""
 
     @property
-    def values(self) -> dict[str, float]:
+    def values(self) -> dict[str, Any]:
         """
         Collect current values from all monitors.
 
         Returns:
             A dictionary mapping monitor names to their values.
+        """
+
+    @property
+    def n_monitors(self) -> int:
+        """
+        Number of monitors in the manager's C registry.
+
+        The registry stores the monitor bases (`mds_monitor*`), mirroring the
+        Python ``monitor`` dict.
         """
 
 
@@ -202,7 +269,7 @@ class MarketDataService:
     Attributes:
         profile (ExchangeProfile): The active market profile.
         n_subscribed (int): Number of tickers currently subscribed.
-        monitor (dict): Direct reference to monitor storage.
+        monitor (dict[Any, MarketDataMonitor]): Registered monitors, bound to the service's C registry.
         monitor_manager (MonitorManager): The monitor manager in use.
         timestamp (float): UNIX timestamp of the latest market data (NaN if uninitialized).
     """
@@ -230,7 +297,7 @@ class MarketDataService:
         """
         ...
 
-    def __getitem__(self, monitor_id: Any) -> MarketDataMonitor:
+    def __getitem__(self, monitor_id: Any) -> MarketDataMonitorProtocol:
         """
         Access monitor by ID.
 
@@ -260,12 +327,16 @@ class MarketDataService:
         """
         ...
 
-    def set_manager(self, manager: MonitorManager) -> None:
+    def set_manager(self, manager: MonitorManager | None) -> None:
         """
         Replace the monitor manager, re-registering all existing monitors.
 
+        The manager's C base struct is installed on the service before the
+        previous manager is released, so the feed path never sees a dangling
+        pointer. Passing ``None`` disables manager dispatch.
+
         Args:
-            manager (MonitorManager): The new manager to assign.
+            manager (MonitorManager | None): The new manager to assign.
         """
 
     def get_market_price(self, ticker: str) -> float:
@@ -294,7 +365,7 @@ class MarketDataService:
 
     def pop_monitor(
             self,
-            monitor: MarketDataMonitor = None,
+            monitor: MarketDataMonitorProtocol = None,
             monitor_id: Any = None,
             monitor_name: str = None,
     ) -> None:
@@ -347,9 +418,23 @@ class MarketDataService:
         ...
 
     @property
+    def n_monitors(self) -> int:
+        """
+        Number of monitors in the service's C registry.
+
+        The service mirrors the Python ``monitor`` dict into a C registry of
+        monitor bases, so C consumers can find a monitor without the GIL.
+        """
+
+    @property
     def subscriptions(self) -> dict[str, int]:
         """
-        Current subscription mapping.
+        Current subscription mapping, as a snapshot.
+
+        The service stores each subscription in its C bytemap; this property
+        walks that map and returns a plain dict keyed by ticker, in insertion
+        order. A mapping obtained earlier does not update when new tickers are
+        subscribed -- read the property again for a fresh snapshot.
 
         Returns:
             A dictionary mapping ticker symbols to their subscription indices.
