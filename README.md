@@ -107,8 +107,8 @@ On the Python side, `MarketDataMonitor` is a functional cdef class bound to an
 `mds_monitor` block through `CCPType`; the legacy ABC is
 `MarketDataMonitorProtocol`, and `MarketDataMonitor` is registered as its
 virtual subclass. Quark's `FactorMonitorBase` inherits `MarketDataMonitor`
-(and therefore `CCPType`), keeps its `fct_monitor` pointer as `monitor_header`,
-and points the inherited `header` at `&monitor_header.base`.
+(and therefore `CCPType`), keeps its `fct_monitor` pointer as `header`, and
+points the inherited `monitor_meta` at `&header.base`.
 
 ## Build System
 
