@@ -4,15 +4,12 @@ IndentWidth: 4
 IndentCaseLabels: true
 TabWidth: 4
 SpacesBeforeTrailingComments: 2
+SpaceAfterCStyleCast: true
 
 PointerAlignment: Left
 BreakBeforeBraces: Custom
+BreakBeforeBinaryOperators: NonAssignment
 AlignAfterOpenBracket: BlockIndent
-
-BraceWrapping:
-  AfterFunction: false
-  AfterControlStatement: false
-  BeforeElse: true
 
 AlignConsecutiveDeclarations:
   Enabled: true
@@ -25,10 +22,13 @@ AlignConsecutiveAssignments:
   AcrossEmptyLines: false
   AcrossComments: false
 
+BraceWrapping:
+  AfterFunction: false
+  AfterControlStatement: Never
+  BeforeElse: true
+
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: true
 AllowShortBlocksOnASingleLine: false
 
 ColumnLimit: 0
-
-SpaceAfterCStyleCast: true
