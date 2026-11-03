@@ -27,14 +27,14 @@ class Singleton(type):
 
 
 from .c_event_engine import EVENT_ENGINE, TOPIC_SET, TopicSet, TopicSetEx
-from .c_market_engine import MDS, MarketDataService, MarketDataMonitor, MonitorManager
-from .algo_engine import AlgoTemplate, ALGO_ENGINE, ALGO_REGISTRY
-from .trade_engine import DirectMarketAccess, Balance, PositionManagementService, Inventory, RiskProfile
+from .c_market_engine import MDS, MarketDataMonitor, MarketDataMonitorMap, MarketDataMonitorProtocol, MarketDataService, MonitorManager
+from .algo_engine import ALGO_ENGINE, ALGO_REGISTRY, AlgoTemplate
+from .trade_engine import Balance, DirectMarketAccess, Inventory, PositionManagementService, RiskProfile
 
 __all__ = [
     'LOGGER',
     'EVENT_ENGINE', 'TOPIC_SET', 'TopicSet', 'TopicSetEx',
     'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
-    'MDS', 'MarketDataService', 'MarketDataMonitor', 'MonitorManager', 'Singleton',
+    'MDS', 'MarketDataService', 'MarketDataMonitor', 'MarketDataMonitorProtocol', 'MonitorManager', 'Singleton',
     'DirectMarketAccess', 'Balance', 'PositionManagementService', 'Inventory', 'RiskProfile'
 ]
