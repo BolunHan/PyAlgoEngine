@@ -253,8 +253,19 @@ class BuildExtWithConfig(build_ext):
             import Cython.Includes as _cy_includes
             includes_dir = Path(next(iter(_cy_includes.__path__)))
             algo_link = includes_dir / "algo_engine"
-            if algo_link.exists():
-                backup = algo_link.with_name("algo_engine.cy_bak")
+            backup = algo_link.with_name("algo_engine.cy_bak")
+
+            # Recover a backup left behind by an interrupted previous build,
+            # otherwise the link stays missing forever.
+            if not (algo_link.exists() or algo_link.is_symlink()) and backup.is_symlink():
+                print(f"[build_py] [pre_compile] Recovering stale backup {backup.name} -> {algo_link.name}")
+                backup.rename(algo_link)
+
+            if algo_link.exists() or algo_link.is_symlink():
+                if backup.is_symlink():
+                    backup.unlink()
+                elif backup.exists():
+                    print(f"[build_py] [pre_compile] Warning: {backup} is not a symlink; leaving it in place")
                 print(f"[build_py] [pre_compile] Moving Cython/Includes symlink {algo_link.name} -> {backup.name}")
                 algo_link.rename(backup)
                 cls._pxd_backup.append((backup, algo_link))
@@ -265,7 +276,7 @@ class BuildExtWithConfig(build_ext):
     def restore_pxd(cls) -> None:
         """Restore algo_engine symlink in Cython/Includes after cythonize."""
         for backup, original in getattr(cls, '_pxd_backup', []):
-            if backup.exists():
+            if backup.is_symlink() or backup.exists():
                 print(f"[build_py] [pre_compile] Restoring Cython/Includes symlink {backup.name} -> {original.name}")
                 backup.rename(original)
         cls._pxd_backup = []
