@@ -200,7 +200,7 @@ static inline mds_monitor* c_mds_monitor_new(const char* name, int16_t priority,
     mds_monitor* monitor = (mds_monitor*) c_ap_alloc(sizeof(mds_monitor), allocator);
     if (!monitor) return NULL;
 
-    if (c_mds_monitor_init(monitor, name, priority, md_filter, c_ap_protocol_from_ptr(monitor)) != MDS_OK) {
+    if (c_mds_monitor_init(monitor, name, priority, md_filter, allocator) != MDS_OK) {
         c_ap_free(monitor);
         return NULL;
     }
@@ -218,7 +218,7 @@ static inline mds_monitor* c_mds_monitor_new(const char* name, int16_t priority,
  * @param name The monitor name (copied; NULL leaves the name NULL).
  * @param priority The dispatch priority.
  * @param md_filter The generic market-data filter.
- * @param allocator Allocator for the name copy; required for an embedded monitor, NULL derives from a block-start monitor.
+ * @param allocator Allocator for the name copy; NULL derives it from the monitor block (a block start).
  * @return MDS_OK, MDS_ERR_INVALID_INPUT when monitor is NULL, or MDS_ERR_OOM.
  */
 static inline int c_mds_monitor_init(mds_monitor* monitor, const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator) {
@@ -230,7 +230,7 @@ static inline int c_mds_monitor_init(mds_monitor* monitor, const char* name, int
     if (name) {
         monitor->name = c_ap_strdup(name, allocator);
         if (!monitor->name) return MDS_ERR_OOM;
-        c_ap_acquire_ownership((const void*) monitor->name, (const void*) allocator->buf);
+        c_ap_acquire_ownership((const void*) monitor->name, (const void*) monitor);
     }
 
     monitor->priority = priority;
