@@ -20,7 +20,7 @@ acceleration for latency-critical paths.
 |-------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | **Market Data**         | `TickData`, `TickDataLite`, `BarData`, `DailyBar`, `OrderBook`, `TransactionData`, `OrderData`, `TradeData` — all C-backed via Cython |
 | **Buffers**             | `MarketDataBuffer`, `MarketDataRingBuffer`, `MarketDataConcurrentBuffer`, `MarketDataBufferCache`                                     |
-| **Engines**             | `EVENT_ENGINE` (pub/sub), `MDS` (Market Data Service), `ALGO_ENGINE` (algo lifecycle), trade engine (DMA, positions, risk)            |
+| **Engines**             | `EVENT_ENGINE` (pub/sub), `MDS` (Market Data Service), `ALGO_ENGINE` (algo lifecycle), C-backed DMA, positions, inventory and risk    |
 | **Exchange Profiles**   | CN (A-share) and default global calendars, session phases, holidays via `PROFILE`, `PROFILE_CN`, `PROFILE_DEFAULT`                    |
 | **Backtesting**         | `SimpleReplay`, `ProgressReplay`, `SimMatch` (simulated matching), `TradeMetrics`                                                     |
 | **Strategy Framework**  | `StrategyEngine`, `AlgoTemplate`, global singletons (`BALANCE`, `DMA`, `STRATEGY_ENGINE`)                                             |
@@ -108,7 +108,7 @@ On the Python side, `MarketDataMonitor` is a functional cdef class bound to an
 `MarketDataMonitorProtocol`, and `MarketDataMonitor` is registered as its
 virtual subclass. Quark's `FactorMonitorBase` inherits `MarketDataMonitor`
 (and therefore `CCPType`), keeps its `fct_monitor` pointer as `header`, and
-points the inherited `monitor_meta` at `&header.base`.
+points the inherited `monitor_meta` at the embedded base (offset 0 of `header`).
 
 ## Build System
 
