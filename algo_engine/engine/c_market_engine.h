@@ -209,12 +209,15 @@ static inline mds_monitor* c_mds_monitor_new(const char* name, int16_t priority,
 }
 
 /**
- * @brief Initialize a caller-allocated, zeroed monitor base.
+ * @brief Initialize an allocator-backed, zeroed monitor base.
  *
- * The name is duplicated into the monitor and released by
- * `c_mds_monitor_dealloc`. A fresh monitor is enabled and ready.
+ * The name is duplicated into the monitor, parented to the monitor block, and
+ * released with the block by `c_mds_monitor_free` (or explicitly by
+ * `c_mds_monitor_dealloc`). A fresh monitor is enabled and ready. The monitor
+ * must be an allocator block start: a derived monitor embeds it at offset 0,
+ * which is the derived block's start.
  *
- * @param monitor The zeroed monitor to initialize.
+ * @param monitor The zeroed monitor block to initialize.
  * @param name The monitor name (copied; NULL leaves the name NULL).
  * @param priority The dispatch priority.
  * @param md_filter The generic market-data filter.

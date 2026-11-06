@@ -170,6 +170,7 @@ cdef class MonitorManager(CCPType):
 
 
 cdef class MarketDataService:
+    cdef dict __dict__
     cdef mds* header
     cdef bint owner
 
