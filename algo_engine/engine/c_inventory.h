@@ -80,7 +80,7 @@ typedef struct dma_inventory_stock_conversion {
     const char*                            convert_from;  // NOT owned - source ticker.
     const char*                            convert_to;    // NOT owned - target ticker.
     double                                 multiplier;
-    bool                                   applied;       // true once applied to a lot.
+    bool                                   applied;  // true once applied to a lot.
     struct dma_inventory_stock_conversion* next;
 } dma_inventory_stock_conversion;
 
@@ -89,7 +89,7 @@ typedef struct dma_inventory_stock_conversion {
  * @brief One inventory lot; a stored lot is owned by its node.
  */
 typedef struct dma_inventory_entry {
-    double                          volume;             // Normally positive.
+    double                          volume;  // Normally positive.
     double                          price;
     double                          notional;
     double                          fee;
@@ -107,9 +107,9 @@ typedef struct dma_inventory_entry {
  * @brief All inventory state of one ticker, its own allocator block.
  */
 typedef struct dma_inventory_node {
-    const char*          ticker;      // OWNED - the node's own copy of the ticker.
-    dma_inventory_entry* long_inv;    // OWNED - long lot list.
-    dma_inventory_entry* short_inv;   // OWNED - short lot list.
+    const char*          ticker;     // OWNED - the node's own copy of the ticker.
+    dma_inventory_entry* long_inv;   // OWNED - long lot list.
+    dma_inventory_entry* short_inv;  // OWNED - short lot list.
     double               long_used;
     double               short_used;
 } dma_inventory_node;
@@ -124,28 +124,31 @@ typedef struct dma_inventory {
 
 // ========== Forward Declarations ==========
 
-static inline dma_inventory* c_dma_inventory_new(allocator_protocol* allocator);
-static inline int            c_dma_inventory_init(dma_inventory* inventory, allocator_protocol* allocator);
-static inline void           c_dma_inventory_dealloc(dma_inventory* inventory);
-static inline void           c_dma_inventory_free(dma_inventory* inventory);
+static inline dma_inventory*       c_dma_inventory_new(allocator_protocol* allocator);
+static inline int                  c_dma_inventory_init(dma_inventory* inventory, allocator_protocol* allocator);
+static inline void                 c_dma_inventory_dealloc(dma_inventory* inventory);
+static inline void                 c_dma_inventory_free(dma_inventory* inventory);
 
-static inline int            c_dma_inventory_clear(dma_inventory* inventory);
-static inline double         c_dma_inventory_entry_available(const dma_inventory_entry* entry);
+static inline int                  c_dma_inventory_clear(dma_inventory* inventory);
+static inline double               c_dma_inventory_entry_available(const dma_inventory_entry* entry);
 
-static inline void           c_dma_inventory_entry_clear(dma_inventory_entry* entry);
-static inline int            c_dma_inventory_cash_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
-static inline int            c_dma_inventory_stock_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
-static inline int            c_dma_inventory_stock_split(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double multiplier);
-static inline int            c_dma_inventory_stock_conversion(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, const char* convert_from, const char* convert_to, double multiplier);
-static inline int            c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, double recalled, dma_security_type security_type);
-static inline int            c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, double recalled, dma_security_type security_type);
-static inline int            c_dma_inventory_get_inv_long(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
-static inline int            c_dma_inventory_get_inv_short(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
-static inline int            c_dma_inventory_use_inv_long(dma_inventory* inventory, const char* ticker, double volume);
-static inline int            c_dma_inventory_use_inv_short(dma_inventory* inventory, const char* ticker, double volume);
-static inline int            c_dma_inventory_recall_inv_long(dma_inventory* inventory, const char* ticker, double volume);
-static inline int            c_dma_inventory_recall_inv_short(dma_inventory* inventory, const char* ticker, double volume);
-static inline int            c_dma_inventory_available(const dma_inventory* inventory, const char* ticker, double* out_long, double* out_short);
+static inline dma_inventory_entry* c_dma_inventory_entry_new(allocator_protocol* allocator);
+static inline void                 c_dma_inventory_entry_free(dma_inventory_entry* entry);
+static inline void                 c_dma_inventory_entry_clear(dma_inventory_entry* entry);
+
+static inline int                  c_dma_inventory_cash_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
+static inline int                  c_dma_inventory_stock_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
+static inline int                  c_dma_inventory_stock_split(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double multiplier);
+static inline int                  c_dma_inventory_stock_conversion(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, const char* convert_from, const char* convert_to, double multiplier);
+static inline int                  c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
+static inline int                  c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
+static inline int                  c_dma_inventory_get_inv_long(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
+static inline int                  c_dma_inventory_get_inv_short(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
+static inline int                  c_dma_inventory_use_inv_long(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                  c_dma_inventory_use_inv_short(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                  c_dma_inventory_recall_inv_long(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                  c_dma_inventory_recall_inv_short(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                  c_dma_inventory_available(const dma_inventory* inventory, const char* ticker, double* out_long, double* out_short);
 
 // ========== Utility Functions ==========
 
@@ -339,6 +342,26 @@ static inline double c_dma_inventory_entry_available(const dma_inventory_entry* 
 
     double available = entry->volume - entry->recalled;
     return available > 0 ? available : 0.;
+}
+
+/**
+ * @brief Allocate a zeroed lot block.
+ * @param allocator Allocator for the lot block.
+ * @return The new lot, or NULL on allocation failure.
+ */
+static inline dma_inventory_entry* c_dma_inventory_entry_new(allocator_protocol* allocator) {
+    return (dma_inventory_entry*) c_ap_alloc(sizeof(dma_inventory_entry), allocator);
+}
+
+/**
+ * @brief Free a lot allocated by `c_dma_inventory_entry_new`.
+ * @param entry The lot (NULL-safe).
+ */
+static inline void c_dma_inventory_entry_free(dma_inventory_entry* entry) {
+    if (!entry) return;
+
+    c_dma_inventory_entry_clear(entry);
+    c_ap_free(entry);
 }
 
 /**
@@ -596,7 +619,7 @@ static inline int c_dma_inventory_stock_conversion(dma_inventory* inventory, ses
  * @brief Store one long lot with explicit fields.
  * @return INVENTORY_OK, INVENTORY_ERR_INVALID_INPUT, or INVENTORY_ERR_OOM.
  */
-static inline int c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, double recalled, dma_security_type security_type) {
+static inline int c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type) {
     if (!inventory || !inventory->nodes || !ticker) return INVENTORY_ERR_INVALID_INPUT;
 
     dma_inventory_node* default_node = NULL;
@@ -623,8 +646,6 @@ static inline int c_dma_inventory_add_inv_long(dma_inventory* inventory, const c
         node = (dma_inventory_node*) c_ap_alloc(sizeof(dma_inventory_node), allocator);
         if (!node) return INVENTORY_ERR_OOM;
 
-        memset(node, 0, sizeof(dma_inventory_node));
-
         char* copy = c_ap_strdup(ticker, allocator);
         if (!copy) {
             c_ap_free(node);
@@ -640,13 +661,10 @@ static inline int c_dma_inventory_add_inv_long(dma_inventory* inventory, const c
     dma_inventory_entry* lot = (dma_inventory_entry*) c_ap_alloc_child(sizeof(dma_inventory_entry), allocator, node);
     if (!lot) return INVENTORY_ERR_OOM;
 
-    memset(lot, 0, sizeof(dma_inventory_entry));
-
     lot->price = price;
     lot->volume = volume;
     lot->notional = notional;
     lot->fee = fee;
-    lot->recalled = recalled;
     lot->security_type = security_type;
 
     if (!node->long_inv) {
@@ -665,7 +683,7 @@ static inline int c_dma_inventory_add_inv_long(dma_inventory* inventory, const c
  * @brief Store one short lot with explicit fields.
  * @return INVENTORY_OK, INVENTORY_ERR_INVALID_INPUT, or INVENTORY_ERR_OOM.
  */
-static inline int c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, double recalled, dma_security_type security_type) {
+static inline int c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type) {
     if (!inventory || !inventory->nodes || !ticker) return INVENTORY_ERR_INVALID_INPUT;
 
     dma_inventory_node* default_node = NULL;
@@ -692,8 +710,6 @@ static inline int c_dma_inventory_add_inv_short(dma_inventory* inventory, const 
         node = (dma_inventory_node*) c_ap_alloc(sizeof(dma_inventory_node), allocator);
         if (!node) return INVENTORY_ERR_OOM;
 
-        memset(node, 0, sizeof(dma_inventory_node));
-
         char* copy = c_ap_strdup(ticker, allocator);
         if (!copy) {
             c_ap_free(node);
@@ -709,13 +725,10 @@ static inline int c_dma_inventory_add_inv_short(dma_inventory* inventory, const 
     dma_inventory_entry* lot = (dma_inventory_entry*) c_ap_alloc_child(sizeof(dma_inventory_entry), allocator, node);
     if (!lot) return INVENTORY_ERR_OOM;
 
-    memset(lot, 0, sizeof(dma_inventory_entry));
-
     lot->price = price;
     lot->volume = volume;
     lot->notional = notional;
     lot->fee = fee;
-    lot->recalled = recalled;
     lot->security_type = security_type;
 
     if (!node->short_inv) {
@@ -809,8 +822,6 @@ static inline int c_dma_inventory_use_inv_long(dma_inventory* inventory, const c
         node = (dma_inventory_node*) c_ap_alloc(sizeof(dma_inventory_node), allocator);
         if (!node) return INVENTORY_ERR_OOM;
 
-        memset(node, 0, sizeof(dma_inventory_node));
-
         char* copy = c_ap_strdup(ticker, allocator);
         if (!copy) {
             c_ap_free(node);
@@ -855,8 +866,6 @@ static inline int c_dma_inventory_use_inv_short(dma_inventory* inventory, const 
 
         node = (dma_inventory_node*) c_ap_alloc(sizeof(dma_inventory_node), allocator);
         if (!node) return INVENTORY_ERR_OOM;
-
-        memset(node, 0, sizeof(dma_inventory_node));
 
         char* copy = c_ap_strdup(ticker, allocator);
         if (!copy) {
@@ -987,9 +996,9 @@ static inline int c_dma_inventory_available(const dma_inventory* inventory, cons
     double long_available = 0.;
     double short_available = 0.;
 
-    char* stored = NULL;
+    char*  stored = NULL;
 
-    int   ret_code = c_bytemap_ex_get_ptr(inventory->nodes, ticker, strlen(ticker), &stored, NULL);
+    int    ret_code = c_bytemap_ex_get_ptr(inventory->nodes, ticker, strlen(ticker), &stored, NULL);
     if (ret_code != BYTEMAP_OK && ret_code != BYTEMAP_ERR_NOT_FOUND) return INVENTORY_ERR_INVALID_INPUT;
 
     if (ret_code == BYTEMAP_OK) {
