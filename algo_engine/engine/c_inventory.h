@@ -124,31 +124,40 @@ typedef struct dma_inventory {
 
 // ========== Forward Declarations ==========
 
-static inline dma_inventory*       c_dma_inventory_new(allocator_protocol* allocator);
-static inline int                  c_dma_inventory_init(dma_inventory* inventory, allocator_protocol* allocator);
-static inline void                 c_dma_inventory_dealloc(dma_inventory* inventory);
-static inline void                 c_dma_inventory_free(dma_inventory* inventory);
+static inline dma_inventory*                  c_dma_inventory_new(allocator_protocol* allocator);
+static inline int                             c_dma_inventory_init(dma_inventory* inventory, allocator_protocol* allocator);
+static inline void                            c_dma_inventory_dealloc(dma_inventory* inventory);
+static inline void                            c_dma_inventory_free(dma_inventory* inventory);
 
-static inline int                  c_dma_inventory_clear(dma_inventory* inventory);
-static inline double               c_dma_inventory_entry_available(const dma_inventory_entry* entry);
+static inline int                             c_dma_inventory_clear(dma_inventory* inventory);
+static inline double                          c_dma_inventory_entry_available(const dma_inventory_entry* entry);
 
-static inline dma_inventory_entry* c_dma_inventory_entry_new(allocator_protocol* allocator);
-static inline void                 c_dma_inventory_entry_free(dma_inventory_entry* entry);
-static inline void                 c_dma_inventory_entry_clear(dma_inventory_entry* entry);
+static inline dma_inventory_entry*            c_dma_inventory_entry_new(allocator_protocol* allocator);
+static inline void                            c_dma_inventory_entry_free(dma_inventory_entry* entry);
+static inline void                            c_dma_inventory_entry_clear(dma_inventory_entry* entry);
 
-static inline int                  c_dma_inventory_cash_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
-static inline int                  c_dma_inventory_stock_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
-static inline int                  c_dma_inventory_stock_split(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double multiplier);
-static inline int                  c_dma_inventory_stock_conversion(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, const char* convert_from, const char* convert_to, double multiplier);
-static inline int                  c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
-static inline int                  c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
-static inline int                  c_dma_inventory_get_inv_long(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
-static inline int                  c_dma_inventory_get_inv_short(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
-static inline int                  c_dma_inventory_use_inv_long(dma_inventory* inventory, const char* ticker, double volume);
-static inline int                  c_dma_inventory_use_inv_short(dma_inventory* inventory, const char* ticker, double volume);
-static inline int                  c_dma_inventory_recall_inv_long(dma_inventory* inventory, const char* ticker, double volume);
-static inline int                  c_dma_inventory_recall_inv_short(dma_inventory* inventory, const char* ticker, double volume);
-static inline int                  c_dma_inventory_available(const dma_inventory* inventory, const char* ticker, double* out_long, double* out_short);
+static inline dma_inventory_cash_dividend*    c_dma_inventory_cash_dividend_new(allocator_protocol* allocator);
+static inline void                            c_dma_inventory_cash_dividend_free(dma_inventory_cash_dividend* event);
+static inline dma_inventory_stock_dividend*   c_dma_inventory_stock_dividend_new(allocator_protocol* allocator);
+static inline void                            c_dma_inventory_stock_dividend_free(dma_inventory_stock_dividend* event);
+static inline dma_inventory_stock_split*      c_dma_inventory_stock_split_new(allocator_protocol* allocator);
+static inline void                            c_dma_inventory_stock_split_free(dma_inventory_stock_split* event);
+static inline dma_inventory_stock_conversion* c_dma_inventory_stock_conversion_new(allocator_protocol* allocator);
+static inline void                            c_dma_inventory_stock_conversion_free(dma_inventory_stock_conversion* event);
+
+static inline int                             c_dma_inventory_cash_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
+static inline int                             c_dma_inventory_stock_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
+static inline int                             c_dma_inventory_stock_split(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double multiplier);
+static inline int                             c_dma_inventory_stock_conversion(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, const char* convert_from, const char* convert_to, double multiplier);
+static inline int                             c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
+static inline int                             c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
+static inline int                             c_dma_inventory_get_inv_long(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
+static inline int                             c_dma_inventory_get_inv_short(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
+static inline int                             c_dma_inventory_use_inv_long(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                             c_dma_inventory_use_inv_short(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                             c_dma_inventory_recall_inv_long(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                             c_dma_inventory_recall_inv_short(dma_inventory* inventory, const char* ticker, double volume);
+static inline int                             c_dma_inventory_available(const dma_inventory* inventory, const char* ticker, double* out_long, double* out_short);
 
 // ========== Utility Functions ==========
 
@@ -365,6 +374,25 @@ static inline void c_dma_inventory_entry_free(dma_inventory_entry* entry) {
 }
 
 /**
+ * @brief Allocate a zeroed cash dividend event block.
+ * @param allocator Allocator for the event block.
+ * @return The new event, or NULL on allocation failure.
+ */
+static inline dma_inventory_cash_dividend* c_dma_inventory_cash_dividend_new(allocator_protocol* allocator) {
+    return (dma_inventory_cash_dividend*) c_ap_alloc(sizeof(dma_inventory_cash_dividend), allocator);
+}
+
+/**
+ * @brief Free a cash dividend event allocated by `..._new`.
+ * @param event The event (NULL-safe).
+ */
+static inline void c_dma_inventory_cash_dividend_free(dma_inventory_cash_dividend* event) {
+    if (!event) return;
+
+    c_ap_free(event);
+}
+
+/**
  * @brief Apply and record a cash dividend across every lot.
  *
  * Each lot price is marked down by the dividend per share.
@@ -423,6 +451,25 @@ static inline int c_dma_inventory_cash_dividend(dma_inventory* inventory, sessio
     }
 
     return INVENTORY_OK;
+}
+
+/**
+ * @brief Allocate a zeroed stock dividend event block.
+ * @param allocator Allocator for the event block.
+ * @return The new event, or NULL on allocation failure.
+ */
+static inline dma_inventory_stock_dividend* c_dma_inventory_stock_dividend_new(allocator_protocol* allocator) {
+    return (dma_inventory_stock_dividend*) c_ap_alloc(sizeof(dma_inventory_stock_dividend), allocator);
+}
+
+/**
+ * @brief Free a stock dividend event allocated by `..._new`.
+ * @param event The event (NULL-safe).
+ */
+static inline void c_dma_inventory_stock_dividend_free(dma_inventory_stock_dividend* event) {
+    if (!event) return;
+
+    c_ap_free(event);
 }
 
 /**
@@ -491,6 +538,25 @@ static inline int c_dma_inventory_stock_dividend(dma_inventory* inventory, sessi
 }
 
 /**
+ * @brief Allocate a zeroed split event block.
+ * @param allocator Allocator for the event block.
+ * @return The new event, or NULL on allocation failure.
+ */
+static inline dma_inventory_stock_split* c_dma_inventory_stock_split_new(allocator_protocol* allocator) {
+    return (dma_inventory_stock_split*) c_ap_alloc(sizeof(dma_inventory_stock_split), allocator);
+}
+
+/**
+ * @brief Free a split event allocated by `..._new`.
+ * @param event The event (NULL-safe).
+ */
+static inline void c_dma_inventory_stock_split_free(dma_inventory_stock_split* event) {
+    if (!event) return;
+
+    c_ap_free(event);
+}
+
+/**
  * @brief Apply and record a split across every lot.
  *
  * Volume is multiplied and price divided.
@@ -549,6 +615,25 @@ static inline int c_dma_inventory_stock_split(dma_inventory* inventory, session_
     }
 
     return INVENTORY_OK;
+}
+
+/**
+ * @brief Allocate a zeroed conversion event block.
+ * @param allocator Allocator for the event block.
+ * @return The new event, or NULL on allocation failure.
+ */
+static inline dma_inventory_stock_conversion* c_dma_inventory_stock_conversion_new(allocator_protocol* allocator) {
+    return (dma_inventory_stock_conversion*) c_ap_alloc(sizeof(dma_inventory_stock_conversion), allocator);
+}
+
+/**
+ * @brief Free a conversion event allocated by `..._new`.
+ * @param event The event (NULL-safe).
+ */
+static inline void c_dma_inventory_stock_conversion_free(dma_inventory_stock_conversion* event) {
+    if (!event) return;
+
+    c_ap_free(event);
 }
 
 /**
