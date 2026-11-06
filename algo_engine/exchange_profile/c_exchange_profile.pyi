@@ -281,7 +281,7 @@ class SessionDate(datetime.date):
     Unbound instance has a different __hash__ value, dict lookup will treat it as a different key.
     For a consistent behavior, it is recommended to always use the fully initialized (bound) SessionDate instances.
     The only known way to create unbound instances is via ``SessionDate.__new__``. All other methods are tested to return fully bound instances.
-    Use ``test.exchange_profile.test_03_c_exchange_profile_date_initialization_contract`` to verify the expected behavior across different python major versions.
+    Use ``tests.exchange_profile.test_03_c_exchange_profile_date_initialization_contract`` to verify the expected behavior across different python major versions.
     ``datetime.date`` API is not within Limited-ABI, and is subjected to change across python versions, use with caution.
 
     ``SessionDateEx`` provides a implementation of SessionDate that does not rely on ``datetime.date``.
