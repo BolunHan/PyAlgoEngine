@@ -72,7 +72,16 @@ class BuildExtWithConfig(build_ext):
         super().initialize_options()
         self.parallel = N_THREADS
 
+    def prune_stale_test_extensions(self) -> None:
+        if WITH_TESTS:
+            return
+        stale = Path(self.build_lib, "test")
+        if stale.exists():
+            shutil.rmtree(stale)
+            print(f"[build_py] Removed stale test extensions -> {stale}")
+
     def run(self):
+        self.prune_stale_test_extensions()
         self.pre_compile()
 
         super().run()
@@ -419,6 +428,31 @@ cython_extension.extend([
     Extension(
         name="algo_engine.engine.c_market_engine",
         sources=["algo_engine/engine/c_market_engine.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === DMA Cython Extensions ===
+    Extension(
+        name="algo_engine.engine.c_risk_profile",
+        sources=["algo_engine/engine/c_risk_profile.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.c_inventory",
+        sources=["algo_engine/engine/c_inventory.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.c_position",
+        sources=["algo_engine/engine/c_position.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.c_dma",
+        sources=["algo_engine/engine/c_dma.pyx"],
         include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
