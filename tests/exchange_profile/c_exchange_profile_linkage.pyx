@@ -7,7 +7,7 @@ from libc.string cimport memset
 # GetProcAddress (PE has no RTLD_GLOBAL-equivalent global symbol scope).
 # Must precede the algo_engine cimport so the macro is defined before
 # c_ex_profile_base.h's inline bodies are included. No-op on POSIX.
-cdef extern from "test/exchange_profile/c_exchange_profile_linkage_shim.h":
+cdef extern from "tests/exchange_profile/c_exchange_profile_linkage_shim.h":
     int _pyx_test_resolve_ex_profile(uintptr_t module_handle)
 
 from algo_engine.exchange_profile cimport SessionDate, c_ex_profile_session_date_init, session_date_t

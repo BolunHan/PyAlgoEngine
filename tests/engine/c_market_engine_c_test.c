@@ -135,41 +135,38 @@ static const mds_subscription* subscription_at(mds* service, const char* ticker)
     return (const mds_subscription*) stored;
 }
 
-static mds_monitor make_monitor(const char* name) {
-    mds_monitor monitor;
-    memset(&monitor, 0, sizeof(monitor));
-    c_mds_monitor_init(&monitor, name, 0, (md_filter_flag) 0, g_allocator);
-    c_mds_monitor_gen_uid(&monitor, name, strlen(name));
+static mds_monitor* make_monitor(const char* name) {
+    mds_monitor* monitor = c_mds_monitor_new(name, 0, (md_filter_flag) 0, g_allocator);
+    if (monitor) c_mds_monitor_gen_uid(monitor, name, strlen(name));
     return monitor;
 }
 
 // ========== 1. Monitor Base ==========
 
 static void test_monitor_base(void) {
-    mds_monitor monitor;
-    memset(&monitor, 0, sizeof(monitor));
+    mds_monitor* monitor = c_mds_monitor_new("BASE", 0, (md_filter_flag) 0, g_allocator);
+    CHECK(monitor != NULL);
+    if (!monitor) return;
 
-    CHECK(c_mds_monitor_init(&monitor, "BASE", 0, (md_filter_flag) 0, g_allocator) == MDS_OK);
-    CHECK(monitor.enabled);
-    CHECK(monitor.is_ready);
-    CHECK(monitor.name != NULL && strcmp(monitor.name, "BASE") == 0);
+    CHECK(monitor->enabled);
+    CHECK(monitor->is_ready);
+    CHECK(monitor->name != NULL && strcmp(monitor->name, "BASE") == 0);
 
-    c_mds_monitor_gen_uid(&monitor, monitor.name, strlen(monitor.name));
+    c_mds_monitor_gen_uid(monitor, monitor->name, strlen(monitor->name));
 
     mds_monitor_id zero_id = {0};
-    CHECK(memcmp(monitor.monitor_id, zero_id, sizeof(mds_monitor_id)) != 0);
+    CHECK(memcmp(monitor->monitor_id, zero_id, sizeof(mds_monitor_id)) != 0);
 
     md_variant trade = make_transaction("BASE", 1.0, 1.0);
-    CHECK(c_mds_monitor_filter_md(&monitor, &trade));
+    CHECK(c_mds_monitor_filter_md(monitor, &trade));
 
-    monitor.md_filter = MD_FILTER_NO_TRADE;
-    CHECK(!c_mds_monitor_filter_md(&monitor, &trade));
+    monitor->md_filter = MD_FILTER_NO_TRADE;
+    CHECK(!c_mds_monitor_filter_md(monitor, &trade));
 
-    c_mds_monitor_set_enabled(&monitor, false);
-    CHECK(!c_mds_monitor_is_enabled(&monitor));
+    c_mds_monitor_set_enabled(monitor, false);
+    CHECK(!c_mds_monitor_is_enabled(monitor));
 
-    c_mds_monitor_dealloc(&monitor);
-    CHECK(monitor.name == NULL);
+    c_mds_monitor_free(monitor);
 
     mds_monitor* allocated = c_mds_monitor_new("ALLOCATED", 0, (md_filter_flag) 0, NULL);
     CHECK(allocated != NULL);
@@ -242,16 +239,16 @@ static void test_manager_registry(void) {
     mds_monitor_manager* manager = c_mds_monitor_manager_new(NULL);
     CHECK(manager != NULL);
 
-    mds_monitor monitor = make_monitor("REG");
-    CHECK(c_mds_monitor_manager_register_monitor(manager, &monitor) == MDS_OK);
+    mds_monitor* monitor = make_monitor("REG");
+    CHECK(c_mds_monitor_manager_register_monitor(manager, monitor) == MDS_OK);
     CHECK(c_bytemap_ex_len(manager->monitors) == 1);
-    CHECK(c_mds_monitor_manager_get_monitor(manager, monitor.monitor_id) == &monitor);
-    CHECK(c_mds_monitor_manager_unregister_monitor(manager, &monitor) == MDS_OK);
+    CHECK(c_mds_monitor_manager_get_monitor(manager, monitor->monitor_id) == monitor);
+    CHECK(c_mds_monitor_manager_unregister_monitor(manager, monitor) == MDS_OK);
     CHECK(c_bytemap_ex_len(manager->monitors) == 0);
-    CHECK(c_mds_monitor_manager_get_monitor(manager, monitor.monitor_id) == NULL);
-    CHECK(c_mds_monitor_manager_unregister_monitor(manager, &monitor) == MDS_ERR_NOT_FOUND);
+    CHECK(c_mds_monitor_manager_get_monitor(manager, monitor->monitor_id) == NULL);
+    CHECK(c_mds_monitor_manager_unregister_monitor(manager, monitor) == MDS_ERR_NOT_FOUND);
 
-    c_mds_monitor_dealloc(&monitor);
+    c_mds_monitor_free(monitor);
     c_mds_monitor_manager_free(manager);
     CHECK(c_mds_monitor_manager_init(NULL, NULL) == MDS_ERR_INVALID_INPUT);
     c_mds_monitor_manager_free(NULL);
@@ -387,11 +384,11 @@ static void test_manager_dispatch(void) {
     CHECK(c_mds_set_manager(service, &manager.base) == MDS_OK);
     CHECK(c_mds_get_manager(service) == &manager.base);
 
-    mds_monitor monitor = make_monitor("DISPATCH");
-    CHECK(c_mds_register_monitor(service, &monitor) == MDS_OK);
-    CHECK(c_mds_register_monitor(service, &monitor) == MDS_OK);
+    mds_monitor* monitor = make_monitor("DISPATCH");
+    CHECK(c_mds_register_monitor(service, monitor) == MDS_OK);
+    CHECK(c_mds_register_monitor(service, monitor) == MDS_OK);
     CHECK(c_mds_n_monitors(service) == 1);
-    CHECK(c_mds_get_monitor(service, monitor.monitor_id) == &monitor);
+    CHECK(c_mds_get_monitor(service, monitor->monitor_id) == monitor);
 
     md_variant market_data = make_transaction("DISPATCH", 7.5, 50.0);
     CHECK(c_mds_on_market_data(service, &market_data) == MDS_OK_SUBSCRIBED);
@@ -399,16 +396,16 @@ static void test_manager_dispatch(void) {
     CHECK(strcmp(manager.last_ticker, "DISPATCH") == 0);
     CHECK(manager.last_price == 7.5);
 
-    CHECK(c_mds_unregister_monitor(service, &monitor) == MDS_OK);
+    CHECK(c_mds_unregister_monitor(service, monitor) == MDS_OK);
     CHECK(c_mds_n_monitors(service) == 0);
-    CHECK(c_mds_unregister_monitor(service, &monitor) == MDS_ERR_NOT_FOUND);
+    CHECK(c_mds_unregister_monitor(service, monitor) == MDS_ERR_NOT_FOUND);
 
     CHECK(c_mds_set_manager(service, NULL) == MDS_OK);
     CHECK(c_mds_get_manager(service) == NULL);
     CHECK(c_mds_on_market_data(service, &market_data) == MDS_OK);
     CHECK(manager.n_feeds == 1);
 
-    c_mds_monitor_dealloc(&monitor);
+    c_mds_monitor_free(monitor);
     c_mds_free(service);
 }
 
@@ -417,8 +414,8 @@ static void test_manager_dispatch(void) {
 static void test_clear_and_reuse(void) {
     mds* service = c_mds_new(NULL);
 
-    mds_monitor monitor = make_monitor("REUSE");
-    c_mds_register_monitor(service, &monitor);
+    mds_monitor* monitor = make_monitor("REUSE");
+    c_mds_register_monitor(service, monitor);
 
     md_variant market_data = make_transaction("REUSE", 5.0, 10.0);
     CHECK(c_mds_on_market_data(service, &market_data) == MDS_OK_SUBSCRIBED);
@@ -448,7 +445,7 @@ static void test_clear_and_reuse(void) {
     c_mds_dealloc(service);
     c_ap_free(service);
 
-    c_mds_monitor_dealloc(&monitor);
+    c_mds_monitor_free(monitor);
 }
 
 // ========== 8. Bytemap Growth ==========

@@ -687,7 +687,7 @@ class TestSimMatchEx(unittest.TestCase):
     def test_38_multi_listener_capi(self) -> None:
         """A second native listener receives match and cancel events and can
         be deregistered by id."""
-        from test.backtest import c_simmatch_ex_toolkit
+        from tests.backtest import c_simmatch_ex_toolkit
 
         events = []
         sim = SimMatchEx(ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set, hit_prob=1.)

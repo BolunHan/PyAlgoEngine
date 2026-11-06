@@ -6,7 +6,7 @@ from algo_engine.base import TransactionData, TransactionSide
 from algo_engine.engine import MDS
 from algo_engine.exchange_profile import PROFILE_CN
 
-from test.c_state_access_toolkit import market_price
+from tests.c_state_access_toolkit import market_price
 
 
 class TestCStateAccess(unittest.TestCase):
