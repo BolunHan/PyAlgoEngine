@@ -75,10 +75,11 @@ class BuildExtWithConfig(build_ext):
     def prune_stale_test_extensions(self) -> None:
         if WITH_TESTS:
             return
-        stale = Path(self.build_lib, "test")
-        if stale.exists():
-            shutil.rmtree(stale)
-            print(f"[build_py] Removed stale test extensions -> {stale}")
+        for name in ("test", "tests"):
+            stale = Path(self.build_lib, name)
+            if stale.exists():
+                shutil.rmtree(stale)
+                print(f"[build_py] Removed stale test extensions -> {stale}")
 
     def run(self):
         self.prune_stale_test_extensions()
@@ -477,28 +478,28 @@ if WITH_TESTS:
         # === Test Extensions (built only with --with-tests) ===
         # Linkage probe: an external consumer of the exchange_profile C
         # interface. Exercises cross-module symbol resolution and the shared
-        # EX_PROFILE global (see test/exchange_profile/test_07_exchange_profile_linkage.py).
+        # EX_PROFILE global (see tests/exchange_profile/test_07_exchange_profile_linkage.py).
         Extension(
-            name="test.exchange_profile.c_exchange_profile_linkage",
-            sources=['test/exchange_profile/c_exchange_profile_linkage.pyx'],
+            name="tests.exchange_profile.c_exchange_profile_linkage",
+            sources=['tests/exchange_profile/c_exchange_profile_linkage.pyx'],
             include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
             extra_compile_args=[*COMPILE_FLAGS],
-            depends=['test/exchange_profile/c_exchange_profile_linkage_shim.h'],
+            depends=['tests/exchange_profile/c_exchange_profile_linkage_shim.h'],
         ),
         # C-level listener test toolkit for the backtest sim matcher. Binds a
         # second native listener backed by a Python callable to verify that
         # any number of wrappers (simulators, viewers) can register.
         Extension(
-            name="test.backtest.c_simmatch_ex_toolkit",
-            sources=['test/backtest/c_simmatch_ex_toolkit.pyx'],
+            name="tests.backtest.c_simmatch_ex_toolkit",
+            sources=['tests/backtest/c_simmatch_ex_toolkit.pyx'],
             include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
             extra_compile_args=[*COMPILE_FLAGS],
         ),
         # C-level state-access toolkit: the MDS ticker-price scan and the position cache
         # getters, which are cdef-only and therefore reachable only from a Cython test.
         Extension(
-            name="test.c_state_access_toolkit",
-            sources=['test/c_state_access_toolkit.pyx'],
+            name="tests.c_state_access_toolkit",
+            sources=['tests/c_state_access_toolkit.pyx'],
             include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
             extra_compile_args=[*COMPILE_FLAGS],
         )
