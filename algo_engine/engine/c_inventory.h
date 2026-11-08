@@ -77,8 +77,8 @@ typedef struct dma_inventory_stock_split {
 typedef struct dma_inventory_stock_conversion {
     session_date_t                         record_date;
     session_date_t                         ex_date;
-    const char*                            convert_from;  // NOT owned - source ticker.
-    const char*                            convert_to;    // NOT owned - target ticker.
+    char*                                  convert_from;  // OWNED - source ticker copy.
+    char*                                  convert_to;    // OWNED - target ticker copy.
     double                                 multiplier;
     bool                                   applied;  // true once applied to a lot.
     struct dma_inventory_stock_conversion* next;
@@ -143,6 +143,7 @@ static inline void                            c_dma_inventory_stock_dividend_fre
 static inline dma_inventory_stock_split*      c_dma_inventory_stock_split_new(allocator_protocol* allocator);
 static inline void                            c_dma_inventory_stock_split_free(dma_inventory_stock_split* event);
 static inline dma_inventory_stock_conversion* c_dma_inventory_stock_conversion_new(allocator_protocol* allocator);
+static inline int                             c_dma_inventory_stock_conversion_set_tickers(dma_inventory_stock_conversion* event, const char* convert_from, const char* convert_to);
 static inline void                            c_dma_inventory_stock_conversion_free(dma_inventory_stock_conversion* event);
 
 static inline int                             c_dma_inventory_cash_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
@@ -196,7 +197,7 @@ static inline void c_dma_inventory_entry_clear(dma_inventory_entry* entry) {
 
     while (conversion) {
         dma_inventory_stock_conversion* next = conversion->next;
-        c_ap_free(conversion);
+        c_dma_inventory_stock_conversion_free(conversion);
         conversion = next;
     }
 
@@ -265,8 +266,6 @@ static inline dma_inventory* c_dma_inventory_new(allocator_protocol* allocator) 
 static inline int c_dma_inventory_init(dma_inventory* inventory, allocator_protocol* allocator) {
     if (!inventory) return INVENTORY_ERR_INVALID_INPUT;
     if (!allocator) allocator = c_ap_protocol_from_ptr(inventory);
-
-    memset(inventory, 0, sizeof(dma_inventory));
 
     inventory->nodes = c_bytemap_ex_new(0, sizeof(dma_inventory_node*), allocator);
     if (!inventory->nodes) return INVENTORY_ERR_OOM;
@@ -627,11 +626,48 @@ static inline dma_inventory_stock_conversion* c_dma_inventory_stock_conversion_n
 }
 
 /**
+ * @brief Replace the ticker copies of a conversion event.
+ *
+ * Both strings are copied into the event's own allocator blocks; the inputs
+ * may be released afterwards.
+ *
+ * @param event The event (NULL-safe, must be a block start).
+ * @param convert_from The source ticker (may be NULL).
+ * @param convert_to The target ticker (may be NULL).
+ * @return INVENTORY_OK, INVENTORY_ERR_INVALID_INPUT, or INVENTORY_ERR_OOM.
+ */
+static inline int c_dma_inventory_stock_conversion_set_tickers(dma_inventory_stock_conversion* event, const char* convert_from, const char* convert_to) {
+    if (!event) return INVENTORY_ERR_INVALID_INPUT;
+
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(event);
+
+    char* from_copy = convert_from ? c_ap_strdup(convert_from, allocator) : NULL;
+    if (convert_from && !from_copy) return INVENTORY_ERR_OOM;
+
+    char* to_copy = convert_to ? c_ap_strdup(convert_to, allocator) : NULL;
+    if (convert_to && !to_copy) {
+        if (from_copy) c_ap_free(from_copy);
+        return INVENTORY_ERR_OOM;
+    }
+
+    if (event->convert_from) c_ap_free(event->convert_from);
+    if (event->convert_to) c_ap_free(event->convert_to);
+
+    event->convert_from = from_copy;
+    event->convert_to = to_copy;
+
+    return INVENTORY_OK;
+}
+
+/**
  * @brief Free a conversion event allocated by `..._new`.
  * @param event The event (NULL-safe).
  */
 static inline void c_dma_inventory_stock_conversion_free(dma_inventory_stock_conversion* event) {
     if (!event) return;
+
+    if (event->convert_from) c_ap_free(event->convert_from);
+    if (event->convert_to) c_ap_free(event->convert_to);
 
     c_ap_free(event);
 }
@@ -652,8 +688,6 @@ static inline int c_dma_inventory_stock_conversion(dma_inventory* inventory, ses
 
     event.record_date = record_date;
     event.ex_date = ex_date;
-    event.convert_from = convert_from;
-    event.convert_to = convert_to;
     event.multiplier = multiplier;
     event.applied = true;
 
@@ -670,6 +704,11 @@ static inline int c_dma_inventory_stock_conversion(dma_inventory* inventory, ses
                 *record = event;
                 record->next = NULL;
 
+                if (c_dma_inventory_stock_conversion_set_tickers(record, convert_from, convert_to) != INVENTORY_OK) {
+                    c_dma_inventory_stock_conversion_free(record);
+                    return INVENTORY_ERR_OOM;
+                }
+
                 dma_inventory_stock_conversion** tail = &lot->stock_conversions;
                 while (*tail) tail = &(*tail)->next;
                 *tail = record;
@@ -684,6 +723,11 @@ static inline int c_dma_inventory_stock_conversion(dma_inventory* inventory, ses
 
                 *record = event;
                 record->next = NULL;
+
+                if (c_dma_inventory_stock_conversion_set_tickers(record, convert_from, convert_to) != INVENTORY_OK) {
+                    c_dma_inventory_stock_conversion_free(record);
+                    return INVENTORY_ERR_OOM;
+                }
 
                 dma_inventory_stock_conversion** tail = &lot->stock_conversions;
                 while (*tail) tail = &(*tail)->next;
