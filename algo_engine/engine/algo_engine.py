@@ -16,7 +16,7 @@ from ..exchange_profile import PROFILE
 
 LOGGER = LOGGER.getChild('AlgoEngine')
 if TYPE_CHECKING:
-    from .trade_engine import DirectMarketAccess
+    from .c_dma import DirectMarketAccess
 
 order_id_t = Union[str | bytes | int | uuid.UUID]
 
