@@ -108,7 +108,7 @@ cdef extern from "algo_engine/engine/c_market_engine.h":
 cdef class MarketDataMonitor(CCPType):
     cdef dict __dict__
     cdef mds_monitor* monitor_meta
-    cdef readonly bint owner
+    cdef bint owner
 
     cdef readonly str name
 
@@ -138,7 +138,7 @@ cdef class MarketDataMonitorMap(BoundByteMap):
 
 cdef class MonitorManager(CCPType):
     cdef mds_monitor_manager* header
-    cdef readonly bint owner
+    cdef bint owner
     cdef uintptr_t callback_id
 
     cdef readonly MarketDataMonitorMap monitor

@@ -113,10 +113,9 @@ typedef struct mds_monitor_manager_callback_ctx {
  * @brief The generic monitor manager base every manager derives from.
  *
  * It owns the monitor registry (16-byte monitor id -> borrowed `mds_monitor*`)
- * and the observer callback list, and carries the generic enabled flag. The
- * Python face binds a map view to this registry; dispatch itself still runs
- * through the callbacks, which is what lets a derived manager (Quark) run its
- * own context/worker pipeline.
+ * and the observer callback list, and carries the generic enabled flag.
+ * Dispatch runs through the callbacks, so a derived manager can run its own
+ * context/worker pipeline.
  *
  * Callbacks are bound only through the register/unregister pair -- never
  * through `_new`/`_init`, which take the allocator only.
@@ -134,7 +133,7 @@ struct mds_monitor_manager {
  * `mds` is the single C-side state of the service: the subscription bytemap,
  * the session datetime of the latest observation (the market data's own
  * `md_meta.dt`, never a converted double), the borrowed monitor manager, and
- * the monitor registry the Python face maps.
+ * the monitor registry.
  */
 typedef struct mds {
     mds_monitor_manager* monitor_manager;  // NOT owned - set with c_mds_set_manager.
@@ -228,8 +227,6 @@ static inline int c_mds_monitor_init(mds_monitor* monitor, const char* name, int
     if (!monitor) return MDS_ERR_INVALID_INPUT;
     if (!allocator) allocator = c_ap_protocol_from_ptr(monitor);
 
-    memset(monitor, 0, sizeof(mds_monitor));
-
     if (name) {
         monitor->name = c_ap_strdup(name, allocator);
         if (!monitor->name) return MDS_ERR_OOM;
@@ -268,9 +265,8 @@ static inline void c_mds_monitor_free(mds_monitor* monitor) {
 /**
  * @brief Generate a stable 16-byte monitor id from the block address and a salt.
  *
- * The salt is any caller-chosen string (Quark passes fct_prefix; the Python
- * proxy passes the monitor name). The result is laid out as a UUID (version 4 /
- * RFC variant).
+ * The salt is any caller-chosen string; the result is laid out as a UUID
+ * (version 4 / RFC variant).
  *
  * @param monitor The monitor whose id is written (NULL-safe).
  * @param salt Optional salt bytes.
