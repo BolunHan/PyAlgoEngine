@@ -59,6 +59,15 @@ cpdef py_datetime unix_to_datetime(double unix_ts):
     return py_datetime.__new__(py_datetime, dt.date.year, dt.date.month, dt.date.day, dt.time.hour, dt.time.minute, dt.time.second, dt.time.nanosecond // 1000, PROFILE.time_zone)
 
 
+cdef int c_ex_profile_session_date_init_from_pydate(py_date date, session_date_t* out):
+    return c_ex_profile_session_date_init(
+        out,
+        PyDateTime_GET_YEAR(date),
+        PyDateTime_GET_MONTH(date),
+        PyDateTime_GET_DAY(date),
+    )
+
+
 cdef class SessionTime:
     def __cinit__(self, uint8_t hour=0, uint8_t minute=0, uint8_t second=0, uint32_t nanosecond=0, *, bint no_alloc=False):
         if no_alloc:

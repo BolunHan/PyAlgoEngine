@@ -196,6 +196,7 @@ cdef extern from "algo_engine/exchange_profile/c_ex_profile_cn.h":
 cpdef double local_utc_offset_seconds()
 cdef int c_ex_profile_unix_to_datetime(double unix_ts, session_datetime_t* out)
 cpdef py_datetime unix_to_datetime(double unix_ts)
+cdef int c_ex_profile_session_date_init_from_pydate(py_date date, session_date_t* out)
 
 
 cdef class SessionTime:
