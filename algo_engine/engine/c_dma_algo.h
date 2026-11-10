@@ -77,9 +77,10 @@ typedef struct dma_algo_ctx {
  * ticker so market data can be routed without a per-order probe.
  */
 typedef struct dma_order_ctx {
-    md_trade_instruction  order;
-    dma_algo*             algo;  // NOT owned - the algo that launched the order.
-    struct dma_order_ctx* next;  // Ticker-list link.
+    md_trade_instruction    order;
+    bytemap*                reports;
+    dma_algo*               algo;  // NOT owned - the algo that launched the order.
+    struct dma_order_ctx*   next;  // Ticker-list link.
 } dma_order_ctx;
 
 /**
@@ -107,6 +108,11 @@ typedef struct dma_algo_engine {
 
 // ========== Forward Declarations ==========
 
+// Order context
+static inline int                c_dma_order_ctx_init(dma_order_ctx* ctx, allocator_protocol* allocator);
+static inline int                c_dma_order_ctx_fill(dma_order_ctx* ctx, const md_trade_report* report);
+static inline void               c_dma_order_ctx_dealloc(dma_order_ctx* ctx);
+
 // Registration context
 static inline int                c_dma_algo_ctx_init(dma_algo_ctx* ctx, dma_algo_new algo_new_fn, uint32_t reg_id, allocator_protocol* allocator);
 static inline void               c_dma_algo_ctx_dealloc(dma_algo_ctx* ctx);
@@ -129,6 +135,109 @@ static inline dma_algo*          c_dma_algo_engine_new_algo(dma_algo_engine* eng
 // Limit helpers
 static inline double             c_dma_algo_compare_limit(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode);
 static inline double             c_dma_algo_engine_calculate_limit(dma_algo_engine* engine, const char* ticker, md_side side, double limit_price, double limit_adjust_factor, dma_algo_limit_mode mode);
+
+// ========== Public APIs (Order Context) ==========
+
+/**
+ * @brief Initialize a zeroed order context's report index.
+ * @param ctx The zeroed order context.
+ * @param allocator Allocator for the report index.
+ * @return DMA_ALGO_OK, DMA_ALGO_ERR_INVALID_INPUT, or DMA_ALGO_ERR_OOM.
+ */
+static inline int c_dma_order_ctx_init(dma_order_ctx* ctx, allocator_protocol* allocator) {
+    if (!ctx) return DMA_ALGO_ERR_INVALID_INPUT;
+
+    ctx->reports = c_bytemap_ex_new(8, sizeof(md_trade_report*), allocator);
+    if (!ctx->reports) return DMA_ALGO_ERR_OOM;
+
+    return DMA_ALGO_OK;
+}
+
+/**
+ * @brief Apply a fill or cancel report to the order and store it.
+ *
+ * A report arriving while the order is canceling is the cancel confirmation;
+ * its volume, when non-zero, is the cancelled amount and is not added to the
+ * filled volume. Otherwise the report is a fill.
+ *
+ * @param ctx The order context (NULL-safe).
+ * @param report The report (NULL-safe).
+ * @return DMA_ALGO_OK, DMA_ALGO_ERR_INVALID_INPUT, or DMA_ALGO_ERR_OOM.
+ */
+static inline int c_dma_order_ctx_fill(dma_order_ctx* ctx, const md_trade_report* report) {
+    if (!ctx || !report) return DMA_ALGO_ERR_INVALID_INPUT;
+    if (!c_md_long_id_equal(&ctx->order.order_id, &report->order_id)) return DMA_ALGO_ERR_INVALID_INPUT;
+
+    size_t n_before = c_bytemap_ex_len(ctx->reports);
+
+    int ret_code = c_bytemap_ex_set_default(
+        ctx->reports,
+        (const char*) &report->trade_id,
+        sizeof(long_md_id),
+        (const char*) &report,
+        sizeof(md_trade_report*),
+        0,
+        NULL,
+        NULL
+    );
+
+    if (ret_code != BYTEMAP_OK) return DMA_ALGO_ERR_OOM;
+    if (c_bytemap_ex_len(ctx->reports) == n_before) return DMA_ALGO_OK;
+
+    md_trade_instruction* order     = &ctx->order;
+    double                timestamp = report->meta_info.timestamp;
+    double                volume    = report->volume;
+    bool                  canceled  = order->order_state == STATE_CANCELING || order->order_state == STATE_CANCELED;
+    bool                  valid     = true;
+
+    if (!canceled && volume > 0.) {
+        if (order->filled_volume + volume > order->volume) valid = false;
+        else if (isnan(order->multiplier)) order->multiplier = report->multiplier;
+        else if (order->multiplier != report->multiplier) valid = false;
+    }
+
+    if (!valid) {
+        c_bytemap_ex_pop(ctx->reports, (const char*) &report->trade_id, sizeof(long_md_id), 0, NULL, NULL);
+        return DMA_ALGO_ERR_INVALID_INPUT;
+    }
+
+    if (canceled) {
+        order->order_state = STATE_CANCELED;
+        order->ts_canceled = timestamp;
+        return DMA_ALGO_OK;
+    }
+
+    if (volume <= 0.) return DMA_ALGO_OK;
+
+    order->filled_volume += volume;
+    order->filled_notional += fabs(report->notional);
+    order->fee += report->fee;
+
+    if (order->filled_volume >= order->volume) {
+        order->order_state = STATE_FILLED;
+        order->ts_finished = timestamp;
+    }
+    else {
+        order->order_state = STATE_PARTFILLED;
+    }
+
+    return DMA_ALGO_OK;
+}
+
+/**
+ * @brief Release the report index, leaving the context zeroed.
+ * @param ctx The order context (NULL-safe).
+ */
+static inline void c_dma_order_ctx_dealloc(dma_order_ctx* ctx) {
+    if (!ctx) return;
+
+    if (ctx->reports) {
+        c_bytemap_ex_free(ctx->reports);
+        ctx->reports = NULL;
+    }
+
+    memset(ctx, 0, sizeof(dma_order_ctx));
+}
 
 // ========== Public APIs (Algo Registry) ==========
 
@@ -420,7 +529,11 @@ static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
             bytemap_entry* next = entry->next;
             dma_order_ctx* ctx  = *(dma_order_ctx**) entry->value;
 
-            if (ctx) c_ap_free(ctx);
+            if (ctx) {
+                c_dma_order_ctx_dealloc(ctx);
+                c_ap_free(ctx);
+            }
+
             entry = next;
         }
 
