@@ -50,4 +50,5 @@ cdef inline object instruction_from_header(const md_variant* market_data, bint o
     cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
     instance.header = market_data
     instance.owner = owner
+    instance.trades = {}
     return instance
