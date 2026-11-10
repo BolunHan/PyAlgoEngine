@@ -62,12 +62,12 @@ typedef dma_algo* (*dma_algo_new)(dma_algo_engine* engine, dma* DMA, const char*
  * every order those algos created. An override preserves the replaced context
  * in the registry's `overrided` map, so its maps are never dropped.
  */
-struct dma_algo_ctx {
+typedef struct dma_algo_ctx {
     dma_algo_new algo_new_fn;  // NOT owned - the factory.
     bytemap*     orders;       // OWNED - order id -> borrowed dma_order_ctx*.
     bytemap*     algos;        // OWNED - algo id -> borrowed dma_algo*.
     uint32_t     reg_id;
-};
+} dma_algo_ctx;
 
 /**
  * @struct dma_order_ctx
@@ -76,36 +76,40 @@ struct dma_algo_ctx {
  * `order` is the instruction the algo launched; `next` links the orders of one
  * ticker so market data can be routed without a per-order probe.
  */
-struct dma_order_ctx {
+typedef struct dma_order_ctx {
     md_trade_instruction  order;
     dma_algo*             algo;  // NOT owned - the algo that launched the order.
     struct dma_order_ctx* next;  // Ticker-list link.
-};
+} dma_order_ctx;
 
 /**
  * @struct dma_algo_registry
  * @brief Named algo registrations; re-registering a name overrides it and raises the id.
  */
-struct dma_algo_registry {
+typedef struct dma_algo_registry {
     bytemap* entries;    // OWNED - name -> dma_algo_ctx.
     bytemap* overrided;  // OWNED - reg id -> replaced dma_algo_ctx.
     uint32_t seq_id;     // Id handed to the latest registration.
-};
+} dma_algo_registry;
 
 /**
  * @struct dma_algo_engine
  * @brief The process-global algo engine state.
  */
-struct dma_algo_engine {
+typedef struct dma_algo_engine {
     mds*               MDS;                       // NOT owned - the market data source.
     dma_algo_registry* registry;                  // OWNED - named factories.
     bytemap*           orders;                    // OWNED - order id -> owned dma_order_ctx*.
     bytemap*           working_orders_by_id;      // OWNED - live order id -> owned dma_order_ctx* (alias of orders).
     bytemap*           working_orders_by_ticker;  // OWNED - ticker -> dma_order_ctx* list head.
     double             timestamp;                 // Latest observation timestamp.
-};
+} dma_algo_engine;
 
 // ========== Forward Declarations ==========
+
+// Registration context
+static inline int                c_dma_algo_ctx_init(dma_algo_ctx* ctx, dma_algo_new algo_new_fn, uint32_t reg_id, allocator_protocol* allocator);
+static inline void               c_dma_algo_ctx_dealloc(dma_algo_ctx* ctx);
 
 // Algo registry
 static inline dma_algo_registry* c_dma_algo_registry_new(allocator_protocol* allocator);
@@ -121,7 +125,9 @@ static inline int                c_dma_algo_engine_init(dma_algo_engine* engine,
 static inline void               c_dma_algo_engine_dealloc(dma_algo_engine* engine);
 static inline void               c_dma_algo_engine_free(dma_algo_engine* engine);
 static inline dma_algo*          c_dma_algo_engine_new_algo(dma_algo_engine* engine, const char* algo_name, dma* DMA, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator);
-static inline double             c_dma_algo_engine_compare_price(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode);
+
+// Limit helpers
+static inline double             c_dma_algo_compare_limit(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode);
 static inline double             c_dma_algo_engine_calculate_limit(dma_algo_engine* engine, const char* ticker, md_side side, double limit_price, double limit_adjust_factor, dma_algo_limit_mode mode);
 
 // ========== Public APIs (Algo Registry) ==========
@@ -492,7 +498,7 @@ static inline dma_algo* c_dma_algo_engine_new_algo(dma_algo_engine* engine, cons
  * @param mode Strict takes the tighter price; loose takes the wider one.
  * @return The combined limit, or NaN when neither input is valid.
  */
-static inline double c_dma_algo_engine_compare_price(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode) {
+static inline double c_dma_algo_compare_limit(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode) {
     if (isnan(limit_price)) return original_limit;
     if (isnan(original_limit)) return limit_price;
 
@@ -529,14 +535,14 @@ static inline double c_dma_algo_engine_calculate_limit(dma_algo_engine* engine, 
 
     double calculated = NAN;
 
-    calculated = c_dma_algo_engine_compare_price(side, limit_price, calculated, mode);
+    calculated = c_dma_algo_compare_limit(side, limit_price, calculated, mode);
 
     if (!isnan(limit_adjust_factor)) {
         double adjusted = market_price * (1. + limit_adjust_factor * c_md_side_sign(side));
-        calculated      = c_dma_algo_engine_compare_price(side, adjusted, calculated, mode);
+        calculated      = c_dma_algo_compare_limit(side, adjusted, calculated, mode);
     }
 
-    calculated = c_dma_algo_engine_compare_price(side, market_price, calculated, mode);
+    calculated = c_dma_algo_compare_limit(side, market_price, calculated, mode);
     return calculated;
 }
 
