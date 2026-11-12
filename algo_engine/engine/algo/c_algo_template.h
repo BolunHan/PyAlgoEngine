@@ -163,9 +163,6 @@ static inline const md_trade_instruction* c_dma_algo_get_working_order(const dma
 static inline int                         c_dma_algo_launch(dma_algo* algo);
 static inline int                         c_dma_algo_stop(dma_algo* algo);
 
-// Template helpers
-static inline double                      c_algo_oldest_working_order_unix_ts(const dma_algo* algo);
-
 #include <algo_engine/engine/c_dma.h>
 
 // ========== Public APIs (Algo Lifecycle) ==========
@@ -282,10 +279,11 @@ static inline void c_dma_algo_gen_uid(dma_algo* algo) {
  *
  * The record is linked at creation and keeps its seat through every live
  * status: IDLE, PREPARING, READY, WORKING, STOPPING and REJECTED. DONE and
- * CLOSED release it, refused while a working order is still live; ERROR
- * reports to stderr, releases it and parks it on the engine's error slot.
- * Reaching WORKING copies the access's market-data timestamp into ts_started;
- * completion from WORKING copies it into ts_finished.
+ * CLOSED release it; the status is recorded first, so a refused exit keeps
+ * its seat and reports DMA_ALGO_ERR_WORKING_ORDERS until the order set
+ * empties. ERROR reports to stderr, releases it and parks it on the engine's
+ * error slot. Reaching WORKING copies the access's market-data timestamp into
+ * ts_started; completion from WORKING copies it into ts_finished.
  *
  * @param algo The record.
  * @param status The status to enter.
@@ -519,32 +517,6 @@ static inline int c_dma_algo_stop(dma_algo* algo) {
     if (!algo || !algo->handlers.stop) return DMA_ALGO_ERR_INVALID_INPUT;
 
     return algo->handlers.stop(algo->DMA, algo, algo->handlers.user_data);
-}
-
-// ========== Public APIs (Template Helpers) ==========
-
-/**
- * @brief Earliest placement time among the live orders, in unix seconds.
- * @param algo The algo record (NULL-safe).
- * @return The earliest `ts_placed` (unix seconds), or 0 when no live order exists.
- */
-static inline double c_algo_oldest_working_order_unix_ts(const dma_algo* algo) {
-    if (!algo || !algo->working_orders) return 0.;
-
-    double         oldest = 0.;
-    bytemap_entry* entry  = algo->working_orders->first;
-
-    while (entry) {
-        const md_trade_instruction* order = *(const md_trade_instruction**) entry->value;
-
-        if (order && c_md_state_working(order->order_state)) {
-            if (oldest == 0. || order->ts_placed < oldest) oldest = order->ts_placed;
-        }
-
-        entry = entry->next;
-    }
-
-    return oldest;
 }
 
 #endif /* C_ALGO_TEMPLATE_H */
