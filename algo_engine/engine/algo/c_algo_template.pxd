@@ -80,7 +80,7 @@ cdef extern from "algo_engine/engine/algo/c_algo_template.h":
 
 
 cdef class AlgoTemplate(CCPType):
-    cdef dma_algo* header
+    cdef dma_algo* algo_meta
 
     cdef OrderMapView orders_map
     cdef OrderMapView working_orders_map

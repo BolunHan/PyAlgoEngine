@@ -43,14 +43,14 @@ cdef class AlgoTemplate(CCPType):
     @staticmethod
     cdef AlgoTemplate c_from_header(dma_algo* header):
         cdef AlgoTemplate instance = AlgoTemplate.__new__(AlgoTemplate)
-        instance.header = header
-        instance.ccp_bind(&instance.header)
+        instance.algo_meta = header
+        instance.ccp_bind(&instance.algo_meta)
         return instance
 
     # === Cython Internal Binding ===
 
     cdef int c_launch(self):
-        cdef int ret_code = c_dma_algo_launch(self.header)
+        cdef int ret_code = c_dma_algo_launch(self.algo_meta)
 
         if ret_code == dma_algo_ret_code.DMA_ALGO_OK:
             return ret_code
@@ -62,7 +62,7 @@ cdef class AlgoTemplate(CCPType):
             raise RuntimeError(f'c_dma_algo_launch failed with err code: {ret_code}')
 
     cdef int c_stop(self):
-        cdef int ret_code = c_dma_algo_stop(self.header)
+        cdef int ret_code = c_dma_algo_stop(self.algo_meta)
 
         if ret_code == dma_algo_ret_code.DMA_ALGO_OK:
             return ret_code
@@ -74,7 +74,7 @@ cdef class AlgoTemplate(CCPType):
     # === Python Dunders ===
 
     def __repr__(self):
-        if not self.header:
+        if not self.algo_meta:
             return f'<{self.__class__.__name__}> Unbound'
         return f'<{self.__class__.__name__} {self.ticker} {self.side.name} target={self.target_volume} status={self.status.name}>'
 
@@ -87,7 +87,7 @@ cdef class AlgoTemplate(CCPType):
         self.c_stop()
 
     def to_json(self, fmt='str'):
-        if not self.header:
+        if not self.algo_meta:
             raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
 
         cdef dict json_dict = {
@@ -113,162 +113,162 @@ cdef class AlgoTemplate(CCPType):
 
     property algo_id:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return uuid.UUID(bytes=PyBytes_FromStringAndSize(<const char*> self.header.algo_id, 16))
+            return uuid.UUID(bytes=PyBytes_FromStringAndSize(<const char*> self.algo_meta.algo_id, 16))
 
     property algo_reg_id:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.algo_reg_id
+            return self.algo_meta.algo_reg_id
 
     property ticker:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            if not self.header.ticker:
+            if not self.algo_meta.ticker:
                 return None
-            return PyUnicode_FromString(self.header.ticker)
+            return PyUnicode_FromString(self.algo_meta.ticker)
 
     property side:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return TransactionSide(<int> self.header.side)
+            return TransactionSide(<int> self.algo_meta.side)
 
     property status:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return AlgoStatus(self.header.status)
+            return AlgoStatus(self.algo_meta.status)
 
     property target_volume:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.target_volume
+            return self.algo_meta.target_volume
 
     property working_volume:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.working_volume
+            return self.algo_meta.working_volume
 
     property exposure_volume:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.exposure_volume
+            return self.algo_meta.exposure_volume
 
     property filled_volume:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.filled_volume
+            return self.algo_meta.filled_volume
 
     property filled_notional:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.filled_notional
+            return self.algo_meta.filled_notional
 
     property fee:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.fee
+            return self.algo_meta.fee
 
     property cash_flow:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.cash_flow
+            return self.algo_meta.cash_flow
 
     property multiplier:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.multiplier
+            return self.algo_meta.multiplier
 
     property n_orders:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return c_bytemap_ex_len(self.header.orders)
+            return c_bytemap_ex_len(self.algo_meta.orders)
 
     property n_working_orders:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return c_bytemap_ex_len(self.header.working_orders)
+            return c_bytemap_ex_len(self.algo_meta.working_orders)
 
     property is_active:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.status == dma_algo_status.DMA_ALGO_STATUS_WORKING
+            return self.algo_meta.status == dma_algo_status.DMA_ALGO_STATUS_WORKING
 
     property average_price:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            if self.header.filled_volume == 0.:
+            if self.algo_meta.filled_volume == 0.:
                 return NAN
-            return self.header.filled_notional / self.header.filled_volume
+            return self.algo_meta.filled_notional / self.algo_meta.filled_volume
 
     property filled_progress:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.filled_volume / self.header.target_volume
+            return self.algo_meta.filled_volume / self.algo_meta.target_volume
 
     property placed_progress:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return abs(self.header.working_volume / self.header.target_volume) + self.filled_progress
+            return abs(self.algo_meta.working_volume / self.algo_meta.target_volume) + self.filled_progress
 
     property ts_started:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            if not self.header.ts_started.date.year:
+            if not self.algo_meta.ts_started.date.year:
                 return None
-            return self.header.ts_started.unix_ts
+            return self.algo_meta.ts_started.unix_ts
 
     property ts_finished:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            if not self.header.ts_finished.date.year:
+            if not self.algo_meta.ts_finished.date.year:
                 return None
-            return self.header.ts_finished.unix_ts
+            return self.algo_meta.ts_finished.unix_ts
 
     property orders:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
 
             if self.orders_map is None:
-                self.orders_map = OrderMapView.c_from_header(self.header.orders, False)
+                self.orders_map = OrderMapView.c_from_header(self.algo_meta.orders, False)
             return self.orders_map
 
     property working_orders:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
 
             if self.working_orders_map is None:
-                self.working_orders_map = OrderMapView.c_from_header(self.header.working_orders, False)
+                self.working_orders_map = OrderMapView.c_from_header(self.algo_meta.working_orders, False)
             return self.working_orders_map
 
     property trades:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
 
-            cdef bytemap_entry* order_entry = self.header.orders.first
+            cdef bytemap_entry* order_entry = self.algo_meta.orders.first
             cdef bytemap_entry* report_entry
             cdef dma_order_ctx* ctx
             cdef md_trade_report* report
