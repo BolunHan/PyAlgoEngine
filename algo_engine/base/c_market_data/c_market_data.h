@@ -200,10 +200,16 @@ typedef enum md_filter_flag {
 
 // ========== Structs ==========
 
+/**
+ * @struct md_meta
+ * @brief The common header of every market-data payload.
+ *
+ * `dt.unix_ts` carries the event time. A date-only record (DailyBar) leaves
+ * every `dt` field zero except `dt.date`, which carries the market date.
+ */
 typedef struct md_meta {
     md_data_type       dtype;
     const char*        ticker;
-    double             timestamp;
     session_datetime_t dt;
 } md_meta;
 
@@ -405,6 +411,17 @@ static inline int8_t c_md_side_sign(md_side side);
 static inline size_t c_md_get_size(md_data_type dtype);
 
 /**
+ * @brief Ordering key for a session datetime.
+ *
+ * Returns `unix_ts` when set; otherwise, for a date-only record, the packed
+ * YYYYMMDD date so DailyBar ordering matches the former timestamp.
+ *
+ * @param dt Session datetime (NULL-safe).
+ * @return Sort key; 0 when neither a unix timestamp nor a date is set.
+ */
+static inline double c_md_dt_sort_key(const session_datetime_t* dt);
+
+/**
  * @brief Get the human-readable name of a dtype.
  * @param dtype Data type.
  * @return Constant string name, or NULL if unknown.
@@ -510,7 +527,7 @@ static inline bool c_md_state_placed(md_order_state state);
 static inline bool c_md_state_done(md_order_state state);
 
 /**
- * @brief Compare two meta_info pointers by timestamp (ascending).
+ * @brief Compare two meta_info pointers by session datetime (ascending).
  * @param a Pointer to pointer of md_meta.
  * @param b Pointer to pointer of md_meta.
  * @return -1, 0, or 1 like strcmp semantics.
@@ -616,6 +633,13 @@ static inline md_variant* c_md_new(md_data_type dtype, allocator_protocol* alloc
     if (!meta) return NULL;
     meta->dtype = dtype;
     return (md_variant*) meta;
+}
+
+static inline double c_md_dt_sort_key(const session_datetime_t* dt) {
+    if (!dt) return 0.;
+    if (dt->unix_ts != 0.) return dt->unix_ts;
+    if (dt->date.year) return (double) (10000u * dt->date.year + 100u * dt->date.month + dt->date.day);
+    return 0.;
 }
 
 static inline double c_md_get_price(const md_variant* market_data) {
@@ -898,7 +922,6 @@ static inline size_t c_md_serialized_size(const md_variant* market_data) {
     }
 
     return sizeof(uint8_t)              /* dtype */
-           + sizeof(double)             /* timestamp */
            + sizeof(session_datetime_t) /* session_datetime */
            + sizeof(uint32_t)           /* ticker length */
            + ticker_len + 1             /* ticker bytes with nul terminator*/
@@ -906,7 +929,7 @@ static inline size_t c_md_serialized_size(const md_variant* market_data) {
 }
 
 static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
-    // [uint8 dtype][double timestamp][uint32 ticker_len][ticker bytes][payload w/o meta_info].
+    // [uint8 dtype][session_datetime_t dt][uint32 ticker_len][ticker bytes][payload w/o meta_info].
     if (!market_data || !out) return 0;
 
     const md_meta* meta = &market_data->meta_info;
@@ -917,9 +940,6 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     const uint8_t  dtype_byte = (uint8_t) meta->dtype;
     memcpy(cursor, &dtype_byte, sizeof(uint8_t));
     cursor += sizeof(uint8_t);
-
-    memcpy(cursor, &meta->timestamp, sizeof(double));
-    cursor += sizeof(double);
 
     memcpy(cursor, &meta->dt, sizeof(meta->dt));
     cursor += sizeof(session_datetime_t);
@@ -1063,9 +1083,6 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
     md_meta* meta = &market_data->meta_info;
     // dtype already assigned
     // meta->dtype = dtype;
-    memcpy(&meta->timestamp, cursor, sizeof(double));
-    cursor += sizeof(double);
-
     memcpy(&meta->dt, cursor, sizeof(session_datetime_t));
     cursor += sizeof(session_datetime_t);
 
@@ -1295,9 +1312,11 @@ static inline bool c_md_state_done(md_order_state state) {
 static inline int c_md_compare_ptr(const void* a, const void* b) {
     const md_meta* md_a = *(const md_meta* const*) a;
     const md_meta* md_b = *(const md_meta* const*) b;
+    double         key_a = c_md_dt_sort_key(&md_a->dt);
+    double         key_b = c_md_dt_sort_key(&md_b->dt);
 
-    if (md_a->timestamp < md_b->timestamp) return -1;
-    if (md_a->timestamp > md_b->timestamp) return 1;
+    if (key_a < key_b) return -1;
+    if (key_a > key_b) return 1;
     return 0;
 }
 
