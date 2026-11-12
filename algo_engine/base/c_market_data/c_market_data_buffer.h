@@ -105,13 +105,17 @@ static inline int                   c_md_concurrent_buffer_listen(md_concurrent_
 // ========== Utility Functions ==========
 
 static inline int c_md_compare_serialized(const void* a, const void* b) {
-    const char* md_serialized_a = *(const char* const*) a;
-    const char* md_serialized_b = *(const char* const*) b;
-    double      timestamp_a = *(const double*) (md_serialized_a + sizeof(uint8_t));
-    double      timestamp_b = *(const double*) (md_serialized_b + sizeof(uint8_t));
+    const char*        md_serialized_a = *(const char* const*) a;
+    const char*        md_serialized_b = *(const char* const*) b;
+    session_datetime_t dt_a;
+    session_datetime_t dt_b;
+    memcpy(&dt_a, md_serialized_a + sizeof(uint8_t), sizeof(dt_a));
+    memcpy(&dt_b, md_serialized_b + sizeof(uint8_t), sizeof(dt_b));
+    double             key_a = c_md_dt_sort_key(&dt_a);
+    double             key_b = c_md_dt_sort_key(&dt_b);
 
-    if (timestamp_a < timestamp_b) return -1;
-    if (timestamp_a > timestamp_b) return 1;
+    if (key_a < key_b) return -1;
+    if (key_a > key_b) return 1;
     return 0;
 }
 
@@ -301,7 +305,7 @@ static inline int c_md_block_buffer_put(md_block_buffer* buffer, const md_varian
     buffer->ptr_array.idx_tail++;
     buffer->data_array.occupied += serialized_size;
 
-    double ts = market_data->meta_info.timestamp;
+    double ts = c_md_dt_sort_key(&market_data->meta_info.dt);
     if (idx_tail > 0) {
         if (ts < buffer->current_timestamp) buffer->sorted = 0;
         else buffer->current_timestamp = ts;
