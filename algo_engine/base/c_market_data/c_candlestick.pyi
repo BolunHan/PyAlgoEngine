@@ -149,9 +149,9 @@ class DailyBar(BarData):
     """
     Specialized candlestick bar representing a full trading day.
 
-    Note: The timestamp field is repurposed to store market date information.
-    This is transparent when using the Python interface but requires conversion
-    when accessing the underlying buffer directly via Cython or ctypes.
+    Note: The date is stored in the underlying ``session_datetime_t.date``.
+    Every other session-datetime field is zero, so ``timestamp`` returns 0.0;
+    use ``market_date`` (or ``session_date``) for the trading date.
     """
 
     def __init__(

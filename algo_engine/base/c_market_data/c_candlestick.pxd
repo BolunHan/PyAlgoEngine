@@ -10,12 +10,11 @@ cdef class DailyBar(BarData):
 
 
 cdef inline object bar_from_header(const md_variant* market_data, bint owner):
-    cdef ts = market_data.bar_data.meta_info.timestamp
     cdef DailyBar daily_bar
     cdef BarData bar_data
-    if ts < 1_0000_00_00:
-        # The DailyBar.timestamp is repurposed to store datetime, in format YYYYMMDD
-        # if the ts is less than 100M, this is highly likely to be a DailyBar, not BarData.
+    if market_data.bar_data.meta_info.dt.unix_ts == 0. and market_data.bar_data.meta_info.dt.date.year != 0:
+        # A date-only record is a DailyBar: dt.date carries the market date and
+        # every other dt field is zero.
         daily_bar = DailyBar.__new__(DailyBar)
         daily_bar.header = market_data
         daily_bar.owner = owner

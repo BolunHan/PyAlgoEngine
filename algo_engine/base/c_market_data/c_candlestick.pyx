@@ -2,9 +2,10 @@ from cpython.datetime cimport datetime, date, timedelta
 from cpython.unicode cimport PyUnicode_AsUTF8
 from libc.math cimport NAN
 from libc.stdint cimport uint64_t, uintptr_t
+from libc.string cimport memset
 
-from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
-from .c_market_data cimport md_data_type, c_init_buffer
+from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE, session_datetime_t
+from .c_market_data cimport md_data_type, md_variant, c_init_buffer
 
 
 cdef class BarData(MarketData):
@@ -132,7 +133,7 @@ cdef class BarData(MarketData):
 
     property start_timestamp:
         def __get__(self):
-            return self.header.bar_data.meta_info.timestamp - self.header.bar_data.bar_span
+            return self.header.bar_data.meta_info.dt.unix_ts - self.header.bar_data.bar_span
 
     property bar_span_seconds:
         def __get__(self):
@@ -164,11 +165,11 @@ cdef class BarData(MarketData):
 
     property bar_end_time:
         def __get__(self):
-            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.dt.unix_ts)
 
     property bar_start_time:
         def __get__(self):
-            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp - self.header.bar_data.bar_span)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.dt.unix_ts - self.header.bar_data.bar_span)
 
 
 cdef class DailyBar(BarData):
@@ -187,11 +188,9 @@ cdef class DailyBar(BarData):
             int bar_span=1,
             **kwargs
     ):
-        cdef double timestamp = 10000 * market_date.year + 100 * market_date.month + market_date.day
-
         super().__init__(
             ticker=ticker,
-            timestamp=timestamp,
+            timestamp=0.,
             high_price=high_price,
             low_price=low_price,
             open_price=open_price,
@@ -202,6 +201,12 @@ cdef class DailyBar(BarData):
             bar_span=bar_span,
             **kwargs
         )
+
+        cdef md_variant* header = <md_variant*> self.header
+        memset(&header.meta_info.dt, 0, sizeof(header.meta_info.dt))
+        header.meta_info.dt.date.year = market_date.year
+        header.meta_info.dt.date.month = market_date.month
+        header.meta_info.dt.date.day = market_date.day
 
     def __repr__(self) -> str:
         if not self.header:
@@ -215,11 +220,8 @@ cdef class DailyBar(BarData):
 
     property market_date:
         def __get__(self):
-            cdef size_t int_date = int(self.timestamp)
-            cdef size_t y, m, d, _m
-            y, _m = divmod(int_date, 10000)
-            m, d = divmod(_m, 100)
-            return date(year=y, month=m, day=d)
+            cdef const session_datetime_t* dt = &self.header.meta_info.dt
+            return date(year=dt.date.year, month=dt.date.month, day=dt.date.day)
 
     property market_time:
         def __get__(self):
