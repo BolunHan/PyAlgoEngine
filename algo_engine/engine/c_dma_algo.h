@@ -108,7 +108,6 @@ typedef struct dma_algo_engine {
     bytemap*           algo;                      // OWNED - algo id -> owned dma_algo* (the engine owns the records).
     bytemap*           working_algo;              // OWNED - ticker -> dma_algo* working-list head (borrowed; joined at creation, left on completion or error).
     dma_algo*          error_algo;                // Algo in error state which needs manual intervene
-    double             timestamp;                 // Latest observation timestamp.
 } dma_algo_engine;
 
 // ========== Forward Declarations ==========
@@ -133,6 +132,7 @@ static inline dma_algo_ctx*         c_dma_algo_registry_get(const dma_algo_regis
 // Algo engine
 static inline dma_algo_engine*      c_dma_algo_engine_new(allocator_protocol* allocator);
 static inline int                   c_dma_algo_engine_init(dma_algo_engine* engine, allocator_protocol* allocator);
+static inline int                   c_dma_algo_engine_clear(dma_algo_engine* engine);
 static inline void                  c_dma_algo_engine_dealloc(dma_algo_engine* engine);
 static inline void                  c_dma_algo_engine_free(dma_algo_engine* engine);
 
@@ -550,15 +550,20 @@ static inline int c_dma_algo_engine_init(dma_algo_engine* engine, allocator_prot
 }
 
 /**
- * @brief Tear down a caller-allocated engine, releasing its order contexts, algo records and storage.
+ * @brief Remove every algo record, order context and stored trade the engine owns.
  *
- * The engine index owns the algo records; every record is freed before the
- * indexes that reference it.
+ * The order contexts go first: each frees its owned trade-report copies and
+ * pops its id from the engine's working index, the owning algo's history and
+ * live indexes, and the registration's order index. The algo records follow,
+ * each leaving the working list and the engine index. The engine's maps, the
+ * registry and every registration survive, so the engine can build new
+ * records after the sweep.
  *
  * @param engine The engine (NULL-safe).
+ * @return DMA_ALGO_OK, or DMA_ALGO_ERR_INVALID_INPUT.
  */
-static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
-    if (!engine) return;
+static inline int c_dma_algo_engine_clear(dma_algo_engine* engine) {
+    if (!engine) return DMA_ALGO_ERR_INVALID_INPUT;
 
     if (engine->orders) {
         bytemap_entry* entry = engine->orders->first;
@@ -568,6 +573,19 @@ static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
             dma_order_ctx* ctx  = *(dma_order_ctx**) entry->value;
 
             if (ctx) {
+                const long_md_id* order_id = &ctx->order.order_id;
+
+                if (engine->working_orders_by_id) c_bytemap_ex_pop(engine->working_orders_by_id, (const char*) order_id, sizeof(long_md_id), 0, NULL, NULL);
+
+                if (ctx->algo) {
+                    if (ctx->algo->working_orders) c_bytemap_ex_pop(ctx->algo->working_orders, (const char*) order_id, sizeof(long_md_id), 0, NULL, NULL);
+                    if (ctx->algo->orders) c_bytemap_ex_pop(ctx->algo->orders, (const char*) order_id, sizeof(long_md_id), 0, NULL, NULL);
+
+                    dma_algo_ctx* factory_ctx = engine->registry ? c_dma_algo_registry_get(engine->registry, ctx->algo->algo_reg_id) : NULL;
+
+                    if (factory_ctx && factory_ctx->orders) c_bytemap_ex_pop(factory_ctx->orders, (const char*) order_id, sizeof(long_md_id), 0, NULL, NULL);
+                }
+
                 c_dma_order_ctx_dealloc(ctx);
                 c_ap_free(ctx);
             }
@@ -575,9 +593,11 @@ static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
             entry = next;
         }
 
-        c_bytemap_ex_free(engine->orders);
-        engine->orders = NULL;
+        c_bytemap_ex_clear(engine->orders);
     }
+
+    if (engine->working_orders_by_id) c_bytemap_ex_clear(engine->working_orders_by_id);
+    if (engine->working_orders_by_ticker) c_bytemap_ex_clear(engine->working_orders_by_ticker);
 
     if (engine->algo) {
         while (c_bytemap_ex_len(engine->algo)) {
@@ -589,13 +609,53 @@ static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
             c_bytemap_ex_pop(engine->algo, (const char*) key, sizeof(uuid_t), 0, NULL, NULL);
 
             if (algo) {
-                algo->DMA = NULL;  // The access may already be gone at teardown.
+                algo->DMA = NULL;  // The working list is cleared wholesale below.
                 c_dma_algo_free(algo);
             }
         }
+    }
 
-        c_bytemap_ex_free(engine->algo);
-        engine->algo = NULL;
+    if (engine->working_algo) c_bytemap_ex_clear(engine->working_algo);
+
+    engine->error_algo = NULL;
+
+    // The registration contexts survive; their borrowed indexes are emptied so
+    // a new record of the same kind starts from a clean map.
+    if (engine->registry && engine->registry->id_map) {
+        bytemap_entry* entry = engine->registry->id_map->first;
+
+        while (entry) {
+            bytemap_entry* next = entry->next;
+            dma_algo_ctx*  ctx  = *(dma_algo_ctx**) entry->value;
+
+            if (ctx) {
+                if (ctx->orders) c_bytemap_ex_clear(ctx->orders);
+                if (ctx->algos) c_bytemap_ex_clear(ctx->algos);
+            }
+
+            entry = next;
+        }
+    }
+
+    return DMA_ALGO_OK;
+}
+
+/**
+ * @brief Tear down a caller-allocated engine, leaving it zeroed.
+ *
+ * The record sweep runs first; the engine's maps, the registry and every
+ * registration context are then released.
+ *
+ * @param engine The engine (NULL-safe).
+ */
+static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
+    if (!engine) return;
+
+    c_dma_algo_engine_clear(engine);
+
+    if (engine->orders) {
+        c_bytemap_ex_free(engine->orders);
+        engine->orders = NULL;
     }
 
     if (engine->working_orders_by_id) {
@@ -606,6 +666,11 @@ static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
     if (engine->working_orders_by_ticker) {
         c_bytemap_ex_free(engine->working_orders_by_ticker);
         engine->working_orders_by_ticker = NULL;
+    }
+
+    if (engine->algo) {
+        c_bytemap_ex_free(engine->algo);
+        engine->algo = NULL;
     }
 
     if (engine->working_algo) {
@@ -690,7 +755,7 @@ static inline void c_dma_algo_engine_pop_working_order(dma_algo_engine* engine, 
  * @return The borrowed instruction (the context's order), or NULL.
  */
 static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume) {
-    if (!engine || !engine->orders || !algo || volume <= 0.) return NULL;
+    if (!engine || !engine->orders || !algo || !isfinite(volume) || volume <= 0.) return NULL;
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr(engine->orders);
 
@@ -714,7 +779,7 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
 
     order->meta_info.dtype  = DTYPE_INSTRUCTION;
     order->meta_info.ticker = algo->ticker;
-    order->meta_info.dt = algo->DMA->mds->ts;
+    order->meta_info.dt     = algo->DMA->mds->ts;
 
     order->limit_price = limit_price;
     order->volume      = volume;
@@ -778,15 +843,16 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
         c_bytemap_ex_set(factory_ctx->orders, (const char*) order_id, sizeof(long_md_id), (const char*) &ctx, sizeof(dma_order_ctx*), 0, NULL);
     }
 
+    // The live set grew by this order, whose remaining volume is the volume sent.
+    algo->working_volume += volume;
+
     return order;
 }
 
 /**
  * @brief Drop an algo's order contexts from the engine.
- *
- * The engine owns the order contexts; the algo record is owned by its position
- * and is not freed here.
- *
+ * The engine owns the order contexts; the algo record is owned by the engine's
+ * algo index and is not freed here.
  * @param engine The engine (NULL-safe).
  * @param algo The algo (NULL-safe).
  */
@@ -813,6 +879,12 @@ static inline void c_dma_algo_engine_free_orders(dma_algo_engine* engine, dma_al
 
                 if (factory_ctx && factory_ctx->orders) {
                     c_bytemap_ex_pop(factory_ctx->orders, (const char*) &order_id, sizeof(long_md_id), 0, NULL, NULL);
+                }
+
+                // The algo's own history index points at the context: the key
+                // must leave before the block is freed.
+                if (algo->orders) {
+                    c_bytemap_ex_pop(algo->orders, (const char*) &order_id, sizeof(long_md_id), 0, NULL, NULL);
                 }
 
                 c_bytemap_ex_pop(engine->orders, (const char*) &order_id, sizeof(long_md_id), 0, NULL, NULL);
@@ -855,7 +927,10 @@ static inline int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_t
 
     if (!algo) return DMA_ALGO_ERR_NOT_FOUND;
 
-    if (order != &ctx->order) memcpy(&ctx->order, order, sizeof(md_trade_instruction));
+    if (order != &ctx->order) {
+        memcpy(&ctx->order, order, sizeof(md_trade_instruction));
+        ctx->order.meta_info.ticker = algo->ticker;
+    }
 
     md_trade_instruction* tracked  = &ctx->order;
     dma_algo_order_func   callback = NULL;
