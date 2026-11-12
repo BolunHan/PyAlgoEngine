@@ -260,7 +260,7 @@ cdef class TradeReport(MarketData):
 
     property trade_time:
         def __get__(self):
-            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.dt.unix_ts)
 
 
 cdef class TradeInstruction(MarketData):
@@ -445,7 +445,7 @@ cdef class TradeInstruction(MarketData):
         cdef double trade_volume = trade_report.header.trade_report.volume
         cdef double trade_notional = trade_report.header.trade_report.notional
         cdef double trade_fee = trade_report.header.trade_report.fee
-        cdef double timestamp = trade_report.header.meta_info.timestamp
+        cdef double timestamp = trade_report.header.meta_info.dt.unix_ts
 
         if trade_volume + header.trade_instruction.filled_volume > header.trade_instruction.volume:
             trades_str = '\n\t'.join([str(x) for x in self.trades.values()]) + f'\n\t<new> {trade_report}'
@@ -474,7 +474,7 @@ cdef class TradeInstruction(MarketData):
         cdef double trade_volume = trade_report.header.trade_report.volume
         cdef double trade_notional = trade_report.header.trade_report.notional
         cdef double trade_fee = trade_report.header.trade_report.fee
-        cdef double timestamp = trade_report.header.meta_info.timestamp
+        cdef double timestamp = trade_report.header.meta_info.dt.unix_ts
 
         header.trade_instruction.filled_volume += trade_volume
         header.trade_instruction.filled_notional += fabs(trade_notional)
@@ -581,7 +581,7 @@ cdef class TradeInstruction(MarketData):
 
     property start_time:
         def __get__(self):
-            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.timestamp)
+            return PROFILE.c_timestamp_to_datetime(self.header.meta_info.dt.unix_ts)
 
     property placed_ts:
         def __get__(self):

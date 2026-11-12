@@ -571,7 +571,7 @@ cdef class TickData(MarketData):
         cdef md_variant* tk_lite = c_init_buffer(
             md_data_type.DTYPE_TICK_LITE,
             self.header.meta_info.ticker,
-            self.header.meta_info.timestamp
+            self.header.meta_info.dt.unix_ts
         )
         memcpy(
             <char*> tk_lite + sizeof(md_meta),

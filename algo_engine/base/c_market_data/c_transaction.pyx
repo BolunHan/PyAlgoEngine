@@ -242,8 +242,8 @@ cdef class TransactionData(MarketData):
             # Calculations
             sum_volume += td.volume * sign
             sum_notional += td.notional * sign
-            if td.meta_info.timestamp > timestamp:
-                timestamp = td.meta_info.timestamp
+            if td.meta_info.dt.unix_ts > timestamp:
+                timestamp = td.meta_info.dt.unix_ts
 
         # Determine trade parameters using copysign and fabs
         cdef md_side trade_side = md_side.SIDE_LONG if sum_volume > 0 else md_side.SIDE_SHORT if sum_volume < 0 else md_side.SIDE_NEUTRAL_OPEN
