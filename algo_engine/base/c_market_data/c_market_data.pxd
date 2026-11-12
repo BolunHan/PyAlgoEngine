@@ -169,7 +169,6 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
     ctypedef struct md_meta:
         md_data_type dtype
         const char* ticker
-        double timestamp
         session_datetime_t dt
 
     ctypedef struct md_id:
@@ -308,6 +307,7 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
     md_side c_md_side_opposite(md_side side) noexcept nogil
     int8_t c_md_side_sign(md_side side) noexcept nogil
     size_t c_md_get_size(md_data_type dtype) noexcept nogil
+    double c_md_dt_sort_key(const session_datetime_t* dt) noexcept nogil
     const char* c_md_dtype_name(md_data_type dtype) noexcept nogil
     const char* c_md_side_name(md_side side) noexcept nogil
     const char* c_md_order_type_name(md_order_type order_type) noexcept nogil

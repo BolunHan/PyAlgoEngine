@@ -87,7 +87,6 @@ cdef inline md_variant* c_init_buffer(md_data_type dtype, const char* ticker, do
         raise MemoryError('Failed to intern ticker string')
 
     meta_data.dtype = dtype
-    meta_data.timestamp = timestamp
     c_ex_profile_unix_to_datetime(timestamp, &meta_data.dt)
     meta_data.dt.date.stype = session_type.SESSION_TYPE_NORMINAL
     return market_data
@@ -434,7 +433,7 @@ cdef class MarketData:
 
     property timestamp:
         def __get__(self):
-            return self.header.meta_info.timestamp
+            return self.header.meta_info.dt.unix_ts
 
     property session_time:
         def __get__(self):

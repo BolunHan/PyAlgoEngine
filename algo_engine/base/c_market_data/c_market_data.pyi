@@ -167,6 +167,8 @@ class MarketData(object):
         Get the Unix timestamp of this market data.
 
         Note: Represents the "last time" (not start time) to prevent future data issues.
+        Date-only records (``DailyBar``) return 0.0; their date lives in
+        ``session_datetime.date``.
         """
         ...
 
