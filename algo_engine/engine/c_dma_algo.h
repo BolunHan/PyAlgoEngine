@@ -141,7 +141,7 @@ static inline void                  c_dma_algo_free(dma_algo* algo);
 
 // Engine entries
 static inline void                  c_dma_algo_engine_pop_working_order(dma_algo_engine* engine, const long_md_id* order_id);
-static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume, double timestamp);
+static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume);
 static inline void                  c_dma_algo_engine_free_orders(dma_algo_engine* engine, dma_algo* algo);
 static inline int                   c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_trade_instruction* order);
 static inline int                   c_dma_algo_engine_on_trade(dma_algo_engine* engine, const md_trade_report* trade);
@@ -149,6 +149,10 @@ static inline void                  c_dma_algo_engine_on_md(dma_algo_engine* eng
 
 // Limit helpers
 static inline double                c_dma_algo_compare_limit(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode);
+
+// The engine entries read the access's MDS, so the access struct is complete
+// before they are defined.
+#include <algo_engine/engine/c_dma.h>
 
 #include <algo_engine/engine/algo/c_algo_template.h>
 
@@ -215,7 +219,7 @@ static inline int c_dma_order_ctx_fill(dma_order_ctx* ctx, const md_trade_report
     }
 
     md_trade_instruction* order     = &ctx->order;
-    double                timestamp = owned->meta_info.timestamp;
+    double                timestamp = owned->meta_info.dt.unix_ts;
     double                volume    = owned->volume;
     bool                  canceled  = order->order_state == STATE_CANCELING || order->order_state == STATE_CANCELED;
     bool                  valid     = true;
@@ -675,16 +679,17 @@ static inline void c_dma_algo_engine_pop_working_order(dma_algo_engine* engine, 
 /**
  * @brief Create, fill and register a sent limit order owned by the engine.
  *
- * The order id is the context address, unique while the order lives.
+ * The order id is the context address, unique while the order lives. The
+ * order's session datetime is copied whole from the access's MDS
+ * (`algo->DMA->mds->ts`); `ts_placed` is that pack's unix_ts.
  *
  * @param engine The engine (NULL-safe).
  * @param algo The algo (NULL-safe).
  * @param limit_price The limit price.
  * @param volume The volume to trade (must be positive).
- * @param timestamp The launch timestamp.
  * @return The borrowed instruction (the context's order), or NULL.
  */
-static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume, double timestamp) {
+static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume) {
     if (!engine || !engine->orders || !algo || volume <= 0.) return NULL;
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr(engine->orders);
@@ -707,9 +712,9 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
     // seed it, and the id is the context address.
     md_trade_instruction* order = &ctx->order;
 
-    order->meta_info.dtype     = DTYPE_INSTRUCTION;
-    order->meta_info.ticker    = algo->ticker;
-    order->meta_info.timestamp = timestamp;
+    order->meta_info.dtype  = DTYPE_INSTRUCTION;
+    order->meta_info.ticker = algo->ticker;
+    order->meta_info.dt = algo->DMA->mds->ts;
 
     order->limit_price = limit_price;
     order->volume      = volume;
@@ -717,7 +722,7 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
     order->order_type  = ORDER_LIMIT;
     order->multiplier  = algo->multiplier;
     order->order_state = STATE_SENT;
-    order->ts_placed   = timestamp;
+    order->ts_placed   = order->meta_info.dt.unix_ts;
 
     order->order_id.id_type               = MID_UINT64;
     ((uint64_t*) order->order_id.data)[0] = (uint64_t) (uintptr_t) ctx;
