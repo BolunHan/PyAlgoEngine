@@ -20,10 +20,11 @@ typedef struct dma_algo dma_algo;
 /** @enum dma_algo_ret_code
  *  @brief 0 is success, negatives are errors. */
 typedef enum dma_algo_ret_code {
-    DMA_ALGO_OK                = 0,
-    DMA_ALGO_ERR_INVALID_INPUT = -1,
-    DMA_ALGO_ERR_OOM           = -2,
-    DMA_ALGO_ERR_NOT_FOUND     = -3,
+    DMA_ALGO_OK                 = 0,
+    DMA_ALGO_ERR_INVALID_INPUT  = -1,
+    DMA_ALGO_ERR_OOM            = -2,
+    DMA_ALGO_ERR_NOT_FOUND      = -3,
+    DMA_ALGO_ERR_WORKING_ORDERS = -4,  // A live order refuses the working-list exit.
 } dma_algo_ret_code;
 
 /** @enum dma_algo_limit_mode
@@ -103,7 +104,8 @@ typedef struct dma_algo_engine {
     bytemap*           working_orders_by_id;      // OWNED - live order id -> owned dma_order_ctx* (alias of orders).
     bytemap*           working_orders_by_ticker;  // OWNED - ticker -> dma_order_ctx* list head.
     bytemap*           algo;                      // OWNED - algo id -> owned dma_algo* (the engine owns the records).
-    bytemap*           working_algo;              // OWNED - ticker -> dma_algo* working-list head (borrowed aliases).
+    bytemap*           working_algo;              // OWNED - ticker -> dma_algo* working-list head (borrowed; joined at creation, left on completion or error).
+    dma_algo*          error_algo;                // Algo in error state which needs manual intervene
     double             timestamp;                 // Latest observation timestamp.
 } dma_algo_engine;
 
@@ -518,8 +520,8 @@ static inline int c_dma_algo_engine_init(dma_algo_engine* engine, allocator_prot
 /**
  * @brief Tear down a caller-allocated engine, releasing its order contexts, algo records and storage.
  *
- * The engine index owns the algo records; every record is unlinked and freed
- * before the indexes that reference it.
+ * The engine index owns the algo records; every record is freed before the
+ * indexes that reference it.
  *
  * @param engine The engine (NULL-safe).
  */
@@ -946,11 +948,13 @@ static inline int c_dma_algo_engine_on_trade(dma_algo_engine* engine, const md_t
 }
 
 /**
- * @brief Dispatch a market-data observation to every working algo of the ticker.
+ * @brief Dispatch a market-data observation to every algo in the working set of the ticker.
  *
  * The engine keeps one working list per ticker, linked through the algo's
- * prev/next and driven by c_dma_algo_set_status, so each algo is dispatched
- * once per observation regardless of how many orders it has.
+ * prev/next and driven by c_dma_algo_set_status. The list holds every algo from
+ * creation until it completes or errors - STOPPING and REJECTED keep their seat
+ * - so each listed algo is dispatched once per observation regardless of how
+ * many orders it has.
  *
  * @param engine The engine (NULL-safe).
  * @param market_data The observation (NULL-safe).
