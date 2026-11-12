@@ -112,11 +112,12 @@ typedef struct dma_algo_handler_ctx {
  * @brief The C state of one registered algo.
  *
  * The numeric fields are the algo's own state. `orders` indexes every order
- * the algo created and `working_orders` the live ones; the engine's order
- * contexts own the instructions. `prev` and `next` link the algo into the
- * engine's per-ticker working list from creation until it completes or errors;
- * STOPPING and REJECTED keep their seat. An algo record is an allocator block
- * owned by the engine's algo index.
+ * the algo created and `working_orders` the live ones; every entry is the
+ * address of the engine's dma_order_ctx block, whose instruction starts at
+ * offset 0, so the index answers both the instruction and the order context.
+ * `prev` and `next` link the algo into the engine's per-ticker working list
+ * from creation until it completes or errors; STOPPING and REJECTED keep their
+ * seat. An algo record is an allocator block owned by the engine's algo index.
  */
 typedef struct dma_algo {
     dma*                  DMA;              // NOT owned - the process-global access.
@@ -135,7 +136,7 @@ typedef struct dma_algo {
     double                multiplier;       // Contract multiplier.
     dma_algo_callback_ctx callbacks;        // on_canceled/on_rejected/on_listed/on_filled/on_md callbacks.
     dma_algo_handler_ctx  handlers;         // launch/stop hooks.
-    bytemap*              orders;           // NOT owned - order id -> borrowed md_trade_instruction* (engine-owned).
+    bytemap*              orders;           // NOT owned - order id -> borrowed instruction (dma_order_ctx address; engine-owned).
     bytemap*              working_orders;   // NOT owned - live order id -> borrowed instruction alias.
     session_datetime_t    ts_started;       // Session datetime the algo started working.
     session_datetime_t    ts_finished;      // Session datetime the algo completed.
