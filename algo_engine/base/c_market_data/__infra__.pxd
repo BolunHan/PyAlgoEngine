@@ -105,6 +105,7 @@ from .c_market_data cimport (
     c_md_side_opposite,
     c_md_side_sign,
     c_md_get_size,
+    c_md_dt_sort_key,
     c_md_dtype_name,
     c_md_side_name,
     c_md_order_type_name,
