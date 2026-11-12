@@ -75,14 +75,16 @@ typedef struct dma_algo_ctx {
  * @struct dma_order_ctx
  * @brief One engine-owned order.
  *
- * `order` is the instruction the algo launched; `next` links the orders of one
- * ticker so market data can be routed without a per-order probe.
+ * `order` is the instruction the algo launched and sits at offset 0, so the
+ * instruction address is also the context address; `reports` owns a copy of
+ * every applied report. `next` links the orders of one ticker so market data
+ * can be routed without a per-order probe.
  */
 typedef struct dma_order_ctx {
     md_trade_instruction  order;
-    bytemap*              reports;
-    dma_algo*             algo;  // NOT owned - the algo that launched the order.
-    struct dma_order_ctx* next;  // Ticker-list link.
+    bytemap*              reports;  // OWNED - trade id -> owned md_trade_report copy.
+    dma_algo*             algo;     // NOT owned - the algo that launched the order.
+    struct dma_order_ctx* next;     // Ticker-list link.
 } dma_order_ctx;
 
 /**
@@ -182,36 +184,51 @@ static inline int c_dma_order_ctx_fill(dma_order_ctx* ctx, const md_trade_report
     if (!ctx || !report) return DMA_ALGO_ERR_INVALID_INPUT;
     if (!c_md_long_id_equal(&ctx->order.order_id, &report->order_id)) return DMA_ALGO_ERR_INVALID_INPUT;
 
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(ctx->reports);
+    md_trade_report*    owned     = (md_trade_report*) c_ap_alloc(sizeof(md_trade_report), allocator);
+
+    if (!owned) return DMA_ALGO_ERR_OOM;
+
+    memcpy(owned, report, sizeof(md_trade_report));
+
     size_t n_before = c_bytemap_ex_len(ctx->reports);
 
     int    ret_code = c_bytemap_ex_set_default(
         ctx->reports,
         (const char*) &report->trade_id,
         sizeof(long_md_id),
-        (const char*) &report,
+        (const char*) &owned,
         sizeof(md_trade_report*),
         0,
         NULL,
         NULL
     );
 
-    if (ret_code != BYTEMAP_OK) return DMA_ALGO_ERR_OOM;
-    if (c_bytemap_ex_len(ctx->reports) == n_before) return DMA_ALGO_OK;
+    if (ret_code != BYTEMAP_OK) {
+        c_ap_free(owned);
+        return DMA_ALGO_ERR_OOM;
+    }
+
+    if (c_bytemap_ex_len(ctx->reports) == n_before) {
+        c_ap_free(owned);
+        return DMA_ALGO_OK;
+    }
 
     md_trade_instruction* order     = &ctx->order;
-    double                timestamp = report->meta_info.timestamp;
-    double                volume    = report->volume;
+    double                timestamp = owned->meta_info.timestamp;
+    double                volume    = owned->volume;
     bool                  canceled  = order->order_state == STATE_CANCELING || order->order_state == STATE_CANCELED;
     bool                  valid     = true;
 
     if (!canceled && volume > 0.) {
         if (order->filled_volume + volume > order->volume) valid = false;
-        else if (isnan(order->multiplier)) order->multiplier = report->multiplier;
-        else if (order->multiplier != report->multiplier) valid = false;
+        else if (isnan(order->multiplier)) order->multiplier = owned->multiplier;
+        else if (order->multiplier != owned->multiplier) valid = false;
     }
 
     if (!valid) {
         c_bytemap_ex_pop(ctx->reports, (const char*) &report->trade_id, sizeof(long_md_id), 0, NULL, NULL);
+        c_ap_free(owned);
         return DMA_ALGO_ERR_INVALID_INPUT;
     }
 
@@ -246,6 +263,17 @@ static inline void c_dma_order_ctx_dealloc(dma_order_ctx* ctx) {
     if (!ctx) return;
 
     if (ctx->reports) {
+        bytemap_entry* entry = ctx->reports->first;
+
+        while (entry) {
+            bytemap_entry*   next   = entry->next;
+            md_trade_report* report = *(md_trade_report**) entry->value;
+
+            if (report) c_ap_free(report);
+
+            entry = next;
+        }
+
         c_bytemap_ex_free(ctx->reports);
         ctx->reports = NULL;
     }
