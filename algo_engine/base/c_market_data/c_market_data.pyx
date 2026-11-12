@@ -129,7 +129,7 @@ cdef inline void c_set_id(md_id* id_ptr, object id_value):
     cdef int128_t _ival
     cdef Py_ssize_t _nb
 
-    memset(<void*> id_ptr.data, 0, ID_SIZE + 1)
+    memset(<void*> id_ptr, 0, sizeof(md_id))
 
     if id_value is None:
         # None type
@@ -193,6 +193,8 @@ cdef inline void c_set_id(md_id* id_ptr, object id_value):
             return
         else:
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
+    else:
+        raise TypeError(f'Unsupported id type {type(id_value).__name__}.')
 
 
 cdef object c_get_id(const md_id* id_ptr):
@@ -228,7 +230,7 @@ cdef inline void c_set_long_id(long_md_id* id_ptr, object id_value):
     cdef int128_t _ival
     cdef Py_ssize_t _nb
 
-    memset(<void*> id_ptr.data, 0, LONG_ID_SIZE + 1)
+    memset(<void*> id_ptr, 0, sizeof(long_md_id))
 
     if id_value is None:
         # None type
@@ -292,6 +294,8 @@ cdef inline void c_set_long_id(long_md_id* id_ptr, object id_value):
             return
         else:
             raise ValueError(f'UUID ID {id_value} is too long to fit in the ID buffer.')
+    else:
+        raise TypeError(f'Unsupported id type {type(id_value).__name__}.')
 
 
 cdef inline object c_get_long_id(const long_md_id* id_ptr):
