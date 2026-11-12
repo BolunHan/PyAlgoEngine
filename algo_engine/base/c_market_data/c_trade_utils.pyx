@@ -2,10 +2,13 @@ import enum
 import json
 import time
 import uuid
+
+from cpython.object cimport PyObject
 from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString
 from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport int8_t, uintptr_t
 
+from cbase.allocator_protocol cimport CCPType
 from algo_engine.base import LOGGER
 from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 
@@ -101,9 +104,19 @@ cdef class TradeReport(MarketData):
         self.header = header
         self.data_addr = <uintptr_t> header
         self.owner = True
+        self.ccp_attach()
 
         if kwargs:
             (<object> self).__dict__.update(kwargs)
+
+    def __dealloc__(self):
+        self.ccp_detach()
+
+    cdef inline void ccp_attach(self):
+        CCPType.ccp_attach(<PyObject*> self, <const void**> &self.header, &self.ccp_ctx, <void*> NULL)
+
+    cdef inline void ccp_detach(self):
+        CCPType.ccp_detach(<PyObject*> self, &self.ccp_ctx)
 
     cdef dict c_to_json(self):
         cdef dict json_dict = {
@@ -161,7 +174,7 @@ cdef class TradeReport(MarketData):
 
     cpdef TradeReport reset_trade_id(self, object trade_id=NO_DEFAULT):
         cdef md_variant* header = <md_variant*> self.header
-        if trade_id is None:
+        if trade_id is NO_DEFAULT or trade_id is None:
             trade_id = uuid.uuid4()
         c_set_long_id(&header.trade_report.trade_id, trade_id)
         return self
@@ -293,9 +306,19 @@ cdef class TradeInstruction(MarketData):
         self.header = header
         self.data_addr = <uintptr_t> header
         self.owner = True
+        self.ccp_attach()
 
         if kwargs:
             (<object> self).__dict__.update(kwargs)
+
+    def __dealloc__(self):
+        self.ccp_detach()
+
+    cdef inline void ccp_attach(self):
+        CCPType.ccp_attach(<PyObject*> self, <const void**> &self.header, &self.ccp_ctx, <void*> NULL)
+
+    cdef inline void ccp_detach(self):
+        CCPType.ccp_detach(<PyObject*> self, &self.ccp_ctx)
 
     cdef dict c_to_json(self):
         cdef dict json_dict = {

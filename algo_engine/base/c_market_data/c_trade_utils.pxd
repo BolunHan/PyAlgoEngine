@@ -1,8 +1,13 @@
+from libc.string cimport memset
+
+from cbase.allocator_protocol cimport ccp_ctx
+
 from .c_market_data cimport MarketData, md_order_state, md_variant
 from .c_transaction cimport TransactionData
 
 
 cdef class TradeReport(MarketData):
+    cdef ccp_ctx ccp_ctx
 
     cdef dict c_to_json(self)
 
@@ -15,8 +20,14 @@ cdef class TradeReport(MarketData):
 
     cpdef TransactionData to_trade(self)
 
+    cdef void ccp_attach(self)
+
+    cdef void ccp_detach(self)
+
 
 cdef class TradeInstruction(MarketData):
+    cdef ccp_ctx ccp_ctx
+
     cdef readonly dict trades
 
     cdef dict c_to_json(self)
@@ -38,17 +49,25 @@ cdef class TradeInstruction(MarketData):
 
     cpdef TradeInstruction canceled(self, double timestamp=?)
 
+    cdef void ccp_attach(self)
+
+    cdef void ccp_detach(self)
+
 
 cdef inline object report_from_header(const md_variant* market_data, bint owner):
     cdef TradeReport instance = TradeReport.__new__(TradeReport)
+    memset(&instance.ccp_ctx, 0, sizeof(ccp_ctx))
     instance.header = market_data
     instance.owner = owner
+    instance.ccp_attach()
     return instance
 
 
 cdef inline object instruction_from_header(const md_variant* market_data, bint owner):
     cdef TradeInstruction instance = TradeInstruction.__new__(TradeInstruction)
+    memset(&instance.ccp_ctx, 0, sizeof(ccp_ctx))
     instance.header = market_data
     instance.owner = owner
     instance.trades = {}
+    instance.ccp_attach()
     return instance
