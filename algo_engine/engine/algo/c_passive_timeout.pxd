@@ -1,5 +1,6 @@
-from cbase.allocator_protocol cimport allocator_protocol
 from libc.stdint cimport uint32_t
+
+from cbase.allocator_protocol cimport allocator_protocol
 
 from algo_engine.base.c_market_data.c_market_data cimport md_side
 from algo_engine.engine.c_dma cimport dma
