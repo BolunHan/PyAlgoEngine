@@ -1,4 +1,4 @@
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint8_t, uint32_t
 
 from cbase.allocator_protocol cimport CCPType, allocator_protocol
 from cbase.bytemap cimport BoundByteMap, bytemap
@@ -23,6 +23,12 @@ cdef extern from "algo_engine/engine/c_dma_algo.h":
         DMA_ALGO_LIMIT_STRICT
         DMA_ALGO_LIMIT_LOOSE
 
+    ctypedef enum dma_order_flag:
+        DMA_ORDER_LISTED
+        DMA_ORDER_CANCELED
+        DMA_ORDER_REJECTED
+        DMA_ORDER_ERROR
+
     ctypedef dma_algo* (*dma_algo_new)(dma* DMA, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator) noexcept
 
     ctypedef struct dma_algo_registry:
@@ -37,6 +43,7 @@ cdef extern from "algo_engine/engine/c_dma_algo.h":
         bytemap* algo
         bytemap* working_algo
         dma_algo* error_algo
+        bytemap* position
 
     ctypedef struct dma_algo_ctx:
         dma_algo_new algo_new_fn
@@ -49,6 +56,7 @@ cdef extern from "algo_engine/engine/c_dma_algo.h":
         bytemap* reports
         dma_algo* algo
         dma_order_ctx* next
+        uint8_t flags
 
     int c_dma_order_ctx_init(dma_order_ctx* ctx, allocator_protocol* allocator) noexcept nogil
     int c_dma_order_ctx_fill(dma_order_ctx* ctx, const md_trade_report* report) noexcept nogil
