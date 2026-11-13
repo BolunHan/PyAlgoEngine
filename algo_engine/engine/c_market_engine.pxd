@@ -29,10 +29,10 @@ cdef extern from "algo_engine/engine/c_market_engine.h":
     ctypedef unsigned char mds_monitor_id[16]
 
     ctypedef struct mds_monitor:
-        int16_t priority
         const char* name
         mds_monitor_id monitor_id
         md_filter_flag md_filter
+        int16_t priority
         c_bool enabled
         c_bool is_ready
 
@@ -169,7 +169,7 @@ cdef class MonitorManager(CCPType):
     cpdef dict get_values(self)
 
 
-cdef class MarketDataService:
+cdef class MarketDataService(CCPType):
     cdef dict __dict__
     cdef mds* header
     cdef bint owner

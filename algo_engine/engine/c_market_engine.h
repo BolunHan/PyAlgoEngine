@@ -52,10 +52,10 @@ typedef unsigned char mds_monitor_id[16];
  * monitor may be registered.
  */
 typedef struct mds_monitor {
-    int16_t        priority;    // Dispatch order hint (lower first).
     const char*    name;        // OWNED - strdup'ed by init, freed by dealloc.
     mds_monitor_id monitor_id;  // 16-byte identity used by the registries.
     md_filter_flag md_filter;   // Generic market-data filter.
+    int16_t        priority;    // Dispatch order hint (lower first).
     bool           enabled;     // false skips the monitor entirely.
     bool           is_ready;    // false means the monitor has no output yet.
 } mds_monitor;
@@ -146,6 +146,7 @@ typedef struct mds {
 
 // ========== Forward Declarations ==========
 
+// Monitor
 static inline mds_monitor*         c_mds_monitor_new(const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator);
 static inline int                  c_mds_monitor_init(mds_monitor* monitor, const char* name, int16_t priority, md_filter_flag md_filter, allocator_protocol* allocator);
 static inline void                 c_mds_monitor_dealloc(mds_monitor* monitor);
@@ -155,6 +156,7 @@ static inline bool                 c_mds_monitor_filter_md(const mds_monitor* mo
 static inline void                 c_mds_monitor_set_enabled(mds_monitor* monitor, bool enabled);
 static inline bool                 c_mds_monitor_is_enabled(const mds_monitor* monitor);
 
+// Monitor manager
 static inline mds_monitor_manager* c_mds_monitor_manager_new(allocator_protocol* allocator);
 static inline int                  c_mds_monitor_manager_init(mds_monitor_manager* manager, allocator_protocol* allocator);
 static inline void                 c_mds_monitor_manager_dealloc(mds_monitor_manager* manager);
@@ -169,6 +171,7 @@ static inline int                  c_mds_monitor_manager_clear_monitors(mds_moni
 static inline void                 c_mds_monitor_manager_set_enabled(mds_monitor_manager* manager, bool enabled);
 static inline bool                 c_mds_monitor_manager_is_enabled(const mds_monitor_manager* manager);
 
+// Market data service
 static inline mds*                 c_mds_new(allocator_protocol* allocator);
 static inline int                  c_mds_init(mds* service, allocator_protocol* allocator);
 static inline void                 c_mds_dealloc(mds* service);
@@ -181,6 +184,8 @@ static inline int                  c_mds_unregister_monitor(mds* service, mds_mo
 static inline mds_monitor*         c_mds_get_monitor(const mds* service, const mds_monitor_id monitor_id);
 static inline size_t               c_mds_n_monitors(const mds* service);
 static inline int                  c_mds_update_subscription(mds* service, const md_variant* market_data);
+
+// Hot path
 static inline int                  c_mds_on_market_data(mds* service, const md_variant* market_data);
 static inline int                  c_mds_on_internal_data(mds* service, const md_internal* internal_data);
 static inline double               c_mds_get_market_price(const mds* service, const char* ticker);

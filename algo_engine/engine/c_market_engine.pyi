@@ -143,10 +143,8 @@ class MonitorManager(object):
 
     Attributes:
         monitor (dict[Any, MarketDataMonitor]): Registered monitors, bound to the manager's C registry.
-        owner (bool): Whether this wrapper owns the C base struct behind it.
     """
     monitor: dict[Any, MarketDataMonitor]
-    owner: bool
 
     def __call__(self, market_data: MarketData):
         """

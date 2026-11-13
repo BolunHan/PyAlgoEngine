@@ -28,16 +28,16 @@ class MarketDataMonitorProtocol(object, metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def clear(self) -> None:
+    def clear(self):
         ...
 
     @property
     @abc.abstractmethod
-    def value(self) -> dict[str, float] | float:
+    def value(self):
         ...
 
     @property
-    def is_ready(self) -> bool:
+    def is_ready(self):
         return True
 
 
@@ -373,7 +373,7 @@ cdef class MonitorManager(CCPType):
             return c_bytemap_ex_len(self.header.monitors)
 
 
-cdef class MarketDataService:
+cdef class MarketDataService(CCPType):
     def __init__(self, ExchangeProfile profile=None):
         self.profile = PROFILE if profile is None else profile
 
@@ -383,6 +383,7 @@ cdef class MarketDataService:
 
         self.monitor = MarketDataMonitorMap.c_from_header(self.header.monitors)
         self.owner = True
+        self.ccp_bind(&self.header)
         self.monitor_manager = MonitorManager()
         c_mds_set_manager(self.header, self.monitor_manager.header)
 
