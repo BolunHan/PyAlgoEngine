@@ -12,8 +12,9 @@
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <cbase/bytemap/c_bytemap.h>
 
-typedef struct dma      dma;
-typedef struct dma_algo dma_algo;
+typedef struct dma          dma;
+typedef struct dma_algo     dma_algo;
+typedef struct dma_position dma_position;
 
 // ========== Enums ==========
 
@@ -33,6 +34,19 @@ typedef enum dma_algo_limit_mode {
     DMA_ALGO_LIMIT_STRICT = 0,
     DMA_ALGO_LIMIT_LOOSE  = 1,
 } dma_algo_limit_mode;
+
+/** @enum dma_order_flag
+ *  @brief The order transitions that move working volume, one bit each.
+ *
+ * The listed bit is immutable once set; every higher bit is a stop flag. A
+ * stop flag records that the order's remaining volume left the host, so any
+ * stop bit already set makes a repeated terminal update a no-op. */
+typedef enum dma_order_flag {
+    DMA_ORDER_LISTED   = 1 << 0,  // Immutable: the remaining volume entered the host.
+    DMA_ORDER_CANCELED = 1 << 1,  // Stop flag: the cancel released the remaining volume.
+    DMA_ORDER_REJECTED = 1 << 2,  // Stop flag: the rejection released the remaining volume.
+    DMA_ORDER_ERROR    = 1 << 3,  // Stop flag: the invalid transition released the remaining volume.
+} dma_order_flag;
 
 // ========== Structs ==========
 
@@ -85,6 +99,7 @@ typedef struct dma_order_ctx {
     bytemap*              reports;  // OWNED - trade id -> owned md_trade_report copy.
     dma_algo*             algo;     // NOT owned - the algo that launched the order.
     struct dma_order_ctx* next;     // Ticker-list link.
+    uint8_t               flags;    // Applied transitions; dma_order_flag bits.
 } dma_order_ctx;
 
 /**
@@ -108,6 +123,7 @@ typedef struct dma_algo_engine {
     bytemap*           algo;                      // OWNED - algo id -> owned dma_algo* (the engine owns the records).
     bytemap*           working_algo;              // OWNED - ticker -> dma_algo* working-list head (borrowed; joined at creation, left on completion or error).
     dma_algo*          error_algo;                // Algo in error state which needs manual intervene
+    bytemap*           position;                  // OWNED - algo id -> borrowed dma_position* (the position that hosts the record).
 } dma_algo_engine;
 
 // ========== Forward Declarations ==========
@@ -150,11 +166,14 @@ static inline void                  c_dma_algo_engine_on_md(dma_algo_engine* eng
 // Limit helpers
 static inline double                c_dma_algo_compare_limit(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode);
 
-// The engine entries read the access's MDS, so the access struct is complete
-// before they are defined.
 #include <algo_engine/engine/c_dma.h>
-
 #include <algo_engine/engine/algo/c_algo_template.h>
+#include <algo_engine/engine/c_position.h>
+
+// Position helpers used by the engine entries (defined in c_position.h)
+static inline int  c_dma_position_pop_algo(dma_position* position, const unsigned char* algo_id);
+static inline bool c_dma_position_status_is_active(dma_algo_status status);
+static inline int  c_dma_position_invoke_callbacks(dma_position* position, dma_callback_event event, const dma_algo* algo, const md_trade_instruction* order, const md_trade_report* trade);
 
 // ========== Public APIs (Order Context) ==========
 
@@ -546,6 +565,9 @@ static inline int c_dma_algo_engine_init(dma_algo_engine* engine, allocator_prot
     engine->working_algo = c_bytemap_ex_new(0, sizeof(dma_algo*), allocator);
     if (!engine->working_algo) return DMA_ALGO_ERR_OOM;
 
+    engine->position = c_bytemap_ex_new(8, sizeof(dma_position*), allocator);
+    if (!engine->position) return DMA_ALGO_ERR_OOM;
+
     return DMA_ALGO_OK;
 }
 
@@ -555,9 +577,9 @@ static inline int c_dma_algo_engine_init(dma_algo_engine* engine, allocator_prot
  * The order contexts go first: each frees its owned trade-report copies and
  * pops its id from the engine's working index, the owning algo's history and
  * live indexes, and the registration's order index. The algo records follow,
- * each leaving the working list and the engine index. The engine's maps, the
- * registry and every registration survive, so the engine can build new
- * records after the sweep.
+ * each leaving the working list, the engine index and its hosting position.
+ * The engine's maps, the registry and every registration survive, so the
+ * engine can build new records after the sweep.
  *
  * @param engine The engine (NULL-safe).
  * @return DMA_ALGO_OK, or DMA_ALGO_ERR_INVALID_INPUT.
@@ -606,6 +628,18 @@ static inline int c_dma_algo_engine_clear(dma_algo_engine* engine) {
             uuid_t         key;
 
             memcpy(key, entry->key, sizeof(uuid_t));
+
+            // The hosting position indexes the record freed below; drop the
+            // reference and its routing entry in the same pass.
+            if (algo) {
+                dma_position* position        = NULL;
+                char*         position_stored = NULL;
+
+                if (engine->position && c_bytemap_ex_get_ptr(engine->position, (const char*) algo->algo_id, sizeof(uuid_t), &position_stored, NULL) == BYTEMAP_OK) position = *(dma_position**) position_stored;
+
+                if (position) c_dma_position_pop_algo(position, key);
+            }
+
             c_bytemap_ex_pop(engine->algo, (const char*) key, sizeof(uuid_t), 0, NULL, NULL);
 
             if (algo) {
@@ -616,6 +650,8 @@ static inline int c_dma_algo_engine_clear(dma_algo_engine* engine) {
     }
 
     if (engine->working_algo) c_bytemap_ex_clear(engine->working_algo);
+
+    if (engine->position) c_bytemap_ex_clear(engine->position);
 
     engine->error_algo = NULL;
 
@@ -676,6 +712,11 @@ static inline void c_dma_algo_engine_dealloc(dma_algo_engine* engine) {
     if (engine->working_algo) {
         c_bytemap_ex_free(engine->working_algo);
         engine->working_algo = NULL;
+    }
+
+    if (engine->position) {
+        c_bytemap_ex_free(engine->position);
+        engine->position = NULL;
     }
 
     if (engine->registry) {
@@ -846,13 +887,44 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
     // The live set grew by this order, whose remaining volume is the volume sent.
     algo->working_volume += volume;
 
+    // The order's remaining volume entered the algo; the immutable listed bit
+    // records it once, and the hosting position mirrors the same delta. The
+    // bit is set even without a host: a later host takes the volume through
+    // add_algo, so no order event may add it again.
+    ctx->flags |= DMA_ORDER_LISTED;
+
+    // === Step 4: Mirror the sent volume into the hosting position ===
+    dma_position* position        = NULL;
+    char*         position_stored = NULL;
+
+    if (engine->position && c_bytemap_ex_get_ptr(engine->position, (const char*) algo->algo_id, sizeof(uuid_t), &position_stored, NULL) == BYTEMAP_OK) position = *(dma_position**) position_stored;
+
+    if (position && position->tickers && position->working_algos) {
+        dma_position_ticker defaults;
+        memset(&defaults, 0, sizeof(defaults));
+
+        char* ticker_stored = NULL;
+
+        if (c_bytemap_ex_set_default(position->tickers, algo->ticker, strlen(algo->ticker), (const char*) &defaults, sizeof(defaults), 0, &ticker_stored, NULL) == BYTEMAP_OK) {
+            dma_position_ticker* cache = (dma_position_ticker*) ticker_stored;
+            int                  sign  = c_md_side_sign(algo->side);
+
+            if (sign > 0) cache->working_long += volume;
+            else if (sign < 0) cache->working_short += volume;
+        }
+
+        if (c_dma_position_status_is_active(algo->status)) c_bytemap_ex_set(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), (const char*) &algo, sizeof(dma_algo*), 0, NULL);
+        else c_bytemap_ex_pop(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), 0, NULL, NULL);
+    }
+
     return order;
 }
 
 /**
  * @brief Drop an algo's order contexts from the engine.
  * The engine owns the order contexts; the algo record is owned by the engine's
- * algo index and is not freed here.
+ * algo index and is not freed here. The hosting position keeps its cached view
+ * until the record leaves its host or the position is cleared.
  * @param engine The engine (NULL-safe).
  * @param algo The algo (NULL-safe).
  */
@@ -907,9 +979,12 @@ static inline void c_dma_algo_engine_free_orders(dma_algo_engine* engine, dma_al
  *
  * A rejected or invalid order dispatches on_rejected, a canceled order
  * on_canceled (a venue may report the cancel as order data), and a placed
- * order on_listed. A terminal order leaves the working indexes, the algo's
- * working volume is refreshed from the live set, and only then is the callback
- * dispatched, so the algo sees the state it will act on.
+ * order on_listed. The order context's bits decide the one working-volume
+ * delta; any working state, pending included, opens the order's remaining
+ * volume once, so an out-of-order venue report cannot leave it uncounted. It
+ * is applied to the algo and mirrored by the hosting position. A terminal
+ * order leaves the working indexes, and only then is the callback dispatched,
+ * so the algo sees the state it will act on.
  *
  * @param engine The engine (NULL-safe).
  * @param order The order (NULL-safe; its id must be live).
@@ -918,6 +993,8 @@ static inline void c_dma_algo_engine_free_orders(dma_algo_engine* engine, dma_al
 static inline int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_trade_instruction* order) {
     if (!engine || !order) return DMA_ALGO_ERR_INVALID_INPUT;
 
+    // === Step 0 ===
+    // Resolve the tracked order context.
     char* stored = NULL;
 
     if (c_bytemap_ex_get_ptr(engine->working_orders_by_id, (const char*) &order->order_id, sizeof(long_md_id), &stored, NULL) != BYTEMAP_OK) return DMA_ALGO_ERR_NOT_FOUND;
@@ -927,21 +1004,33 @@ static inline int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_t
 
     if (!algo) return DMA_ALGO_ERR_NOT_FOUND;
 
+    // === Step 1 ===
+    // Update the stored order from the venue snapshot.
+
     if (order != &ctx->order) {
         memcpy(&ctx->order, order, sizeof(md_trade_instruction));
         ctx->order.meta_info.ticker = algo->ticker;
     }
 
-    md_trade_instruction* tracked  = &ctx->order;
-    dma_algo_order_func   callback = NULL;
+    md_trade_instruction* tracked       = &ctx->order;
+    dma_algo_order_func   callback      = NULL;
+    uint8_t               terminal_flag = 0;
+
+    // === Step 2 ===
+    // Classify the event and its callback.
 
     switch (tracked->order_state) {
         case STATE_REJECTED:
+            callback      = algo->callbacks.on_rejected;
+            terminal_flag = DMA_ORDER_REJECTED;
+            break;
         case STATE_INVALID:
-            callback = algo->callbacks.on_rejected;
+            callback      = algo->callbacks.on_rejected;
+            terminal_flag = DMA_ORDER_ERROR;
             break;
         case STATE_CANCELED:
-            callback = algo->callbacks.on_canceled;
+            callback      = algo->callbacks.on_canceled;
+            terminal_flag = DMA_ORDER_CANCELED;
             break;
         case STATE_PLACED:
             callback = algo->callbacks.on_listed;
@@ -950,28 +1039,80 @@ static inline int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_t
             break;
     }
 
-    if (c_md_state_done(tracked->order_state)) {
-        c_dma_algo_engine_pop_working_order(engine, &tracked->order_id);
+    // === Step 3 ===
+    // Apply the one working-volume delta to the context bits and the algo.
+    // Any working state - pending included - opens the remaining volume once,
+    // whatever state the venue reports first; a stop bit closes it once, and a
+    // stop recorded before the volume enters still blocks a later reopen.
 
-        double         working_volume = 0.;
-        bytemap_entry* entry          = algo->working_orders->first;
+    bool   working_state = c_md_state_working(tracked->order_state) || tracked->order_state == STATE_PENDING;
+    bool   stopped       = ctx->flags > DMA_ORDER_LISTED;
+    double working_delta = 0.;
 
-        while (entry) {
-            md_trade_instruction* working = *(md_trade_instruction**) entry->value;
-
-            if (working) {
-                double remaining = working->volume - working->filled_volume;
-
-                if (remaining > 0.) working_volume += remaining;
-            }
-
-            entry = entry->next;
+    if (working_state) {
+        if (!(ctx->flags & DMA_ORDER_LISTED) && !stopped) {
+            ctx->flags |= DMA_ORDER_LISTED;
+            working_delta = tracked->volume - tracked->filled_volume;
         }
-
-        algo->working_volume = working_volume;
+    }
+    else if (terminal_flag && !stopped) {
+        ctx->flags |= terminal_flag;
+        if (ctx->flags & DMA_ORDER_LISTED) working_delta = -(tracked->volume - tracked->filled_volume);
     }
 
+    algo->working_volume += working_delta;
+
+    // === Step 4 ===
+    // Leave the working indexes when the order is done.
+    if (c_md_state_done(tracked->order_state)) c_dma_algo_engine_pop_working_order(engine, &tracked->order_id);
+
+    // === Step 5 ===
+    // Dispatch the algo callback.
     if (callback) callback(algo->DMA, algo, tracked, algo->callbacks.user_data);
+
+    // === Step 6 ===
+    // Update the hosting position from the same delta: its ticker cache,
+    // active set and strategy callbacks.
+    dma_position* position        = NULL;
+    char*         position_stored = NULL;
+
+    if (engine->position && c_bytemap_ex_get_ptr(engine->position, (const char*) algo->algo_id, sizeof(uuid_t), &position_stored, NULL) == BYTEMAP_OK) position = *(dma_position**) position_stored;
+
+    if (position && position->tickers && position->working_algos) {
+        dma_position_ticker defaults;
+        memset(&defaults, 0, sizeof(defaults));
+
+        char* ticker_stored = NULL;
+
+        if (c_bytemap_ex_set_default(position->tickers, algo->ticker, strlen(algo->ticker), (const char*) &defaults, sizeof(defaults), 0, &ticker_stored, NULL) == BYTEMAP_OK) {
+            dma_position_ticker* cache = (dma_position_ticker*) ticker_stored;
+
+            if (working_delta != 0.) {
+                int sign = c_md_side_sign(algo->side);
+
+                if (sign > 0) cache->working_long += working_delta;
+                else if (sign < 0) cache->working_short += working_delta;
+            }
+        }
+
+        if (c_dma_position_status_is_active(algo->status)) c_bytemap_ex_set(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), (const char*) &algo, sizeof(dma_algo*), 0, NULL);
+        else c_bytemap_ex_pop(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), 0, NULL, NULL);
+
+        switch (tracked->order_state) {
+            case STATE_REJECTED:
+            case STATE_INVALID:
+                c_dma_position_invoke_callbacks(position, on_rejected, algo, tracked, NULL);
+                break;
+            case STATE_CANCELED:
+                c_dma_position_invoke_callbacks(position, on_canceled, algo, tracked, NULL);
+                break;
+            case STATE_PLACED:
+                c_dma_position_invoke_callbacks(position, on_listed, algo, tracked, NULL);
+                break;
+            default:
+                break;
+        }
+    }
 
     return DMA_ALGO_OK;
 }
@@ -982,10 +1123,10 @@ static inline int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_t
  * The order context applies the report first: a report that arrives while the
  * order is canceling is the cancel confirmation and dispatches on_canceled;
  * an applied fill updates the algo aggregates (filled volume and notional, fee,
- * signed exposure and cash flow), leaves the working indexes when the order is
- * finished, and refreshes the algo's working volume from the live set. The
- * callback is dispatched last. A report that moves nothing (a repeated trade id
- * or a zero-volume report) dispatches nothing.
+ * signed exposure and cash flow), applies the working delta to the algo, and
+ * leaves the working indexes when the order is finished. The callback is
+ * dispatched last. A report that moves nothing (a repeated trade id or a
+ * zero-volume report) dispatches nothing.
  *
  * @param engine The engine (NULL-safe).
  * @param trade The fill (NULL-safe; its order id must be live).
@@ -994,6 +1135,8 @@ static inline int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_t
 static inline int c_dma_algo_engine_on_trade(dma_algo_engine* engine, const md_trade_report* trade) {
     if (!engine || !trade) return DMA_ALGO_ERR_INVALID_INPUT;
 
+    // === Step 0 ===
+    // Resolve the tracked order and the hosting position.
     char* stored = NULL;
 
     if (c_bytemap_ex_get_ptr(engine->working_orders_by_id, (const char*) &trade->order_id, sizeof(long_md_id), &stored, NULL) != BYTEMAP_OK) return DMA_ALGO_ERR_NOT_FOUND;
@@ -1003,54 +1146,95 @@ static inline int c_dma_algo_engine_on_trade(dma_algo_engine* engine, const md_t
 
     if (!algo) return DMA_ALGO_ERR_NOT_FOUND;
 
-    md_trade_instruction* order = &ctx->order;
+    dma_position* position        = NULL;
+    char*         position_stored = NULL;
 
+    if (engine->position && c_bytemap_ex_get_ptr(engine->position, (const char*) algo->algo_id, sizeof(uuid_t), &position_stored, NULL) == BYTEMAP_OK) position = *(dma_position**) position_stored;
+
+    // === Step 1 ===
+    // Apply the report; a repeated trade id or a zero-volume report moves nothing.
+    md_trade_instruction* order         = &ctx->order;
     double                filled_before = order->filled_volume;
+    int                   ret_code      = c_dma_order_ctx_fill(ctx, trade);
 
-    int                   ret_code = c_dma_order_ctx_fill(ctx, trade);
     if (ret_code != DMA_ALGO_OK) return ret_code;
 
     bool canceled = order->order_state == STATE_CANCELED;
 
     if (!canceled && order->filled_volume == filled_before) return DMA_ALGO_OK;
 
+    // === Step 2 ===
+    // Compute the one working delta and update the algo aggregates.
+    double working_delta = 0.;
+
     if (canceled) {
-        c_dma_algo_engine_pop_working_order(engine, &order->order_id);
+        // The cancel confirmation releases the remaining volume once; any stop
+        // bit already set means the volume left the host.
+        if (ctx->flags > DMA_ORDER_LISTED) return DMA_ALGO_OK;
+
+        ctx->flags |= DMA_ORDER_CANCELED;
+        working_delta = -(order->volume - order->filled_volume);
     }
     else {
+        working_delta = -trade->volume;
+
         algo->filled_volume += trade->volume;
         algo->filled_notional += fabs(trade->notional);
         algo->fee += trade->fee;
         algo->exposure_volume += trade->volume * c_md_side_sign(trade->side);
         algo->cash_flow = -algo->filled_notional * c_md_side_sign(algo->side);
-
-        if (c_md_state_done(order->order_state)) c_dma_algo_engine_pop_working_order(engine, &order->order_id);
     }
 
-    double         working_volume = 0.;
-    bytemap_entry* entry          = algo->working_orders->first;
+    algo->working_volume += working_delta;
 
-    while (entry) {
-        md_trade_instruction* working = *(md_trade_instruction**) entry->value;
+    // === Step 3 ===
+    // Leave the working indexes when the order is finished.
+    if (canceled || c_md_state_done(order->order_state)) c_dma_algo_engine_pop_working_order(engine, &order->order_id);
 
-        if (working) {
-            double remaining = working->volume - working->filled_volume;
-
-            if (remaining > 0.) working_volume += remaining;
-        }
-
-        entry = entry->next;
-    }
-
-    algo->working_volume = working_volume;
-
+    // === Step 4 ===
+    // Dispatch the callback and mirror the delta into the position.
     if (canceled) {
         if (algo->callbacks.on_canceled) algo->callbacks.on_canceled(algo->DMA, algo, order, algo->callbacks.user_data);
-
-        return DMA_ALGO_OK;
+    }
+    else if (algo->callbacks.on_filled) {
+        algo->callbacks.on_filled(algo->DMA, algo, trade, algo->callbacks.user_data);
     }
 
-    if (algo->callbacks.on_filled) algo->callbacks.on_filled(algo->DMA, algo, trade, algo->callbacks.user_data);
+    // Update the hosting position from the same deltas: its ticker cache,
+    // active set and strategy callbacks.
+    if (position && position->tickers && position->working_algos) {
+        dma_position_ticker defaults;
+        memset(&defaults, 0, sizeof(defaults));
+
+        char* ticker_stored = NULL;
+
+        if (c_bytemap_ex_set_default(position->tickers, algo->ticker, strlen(algo->ticker), (const char*) &defaults, sizeof(defaults), 0, &ticker_stored, NULL) == BYTEMAP_OK) {
+            dma_position_ticker* cache = (dma_position_ticker*) ticker_stored;
+
+            if (working_delta != 0.) {
+                int sign = c_md_side_sign(algo->side);
+
+                if (sign > 0) cache->working_long += working_delta;
+                else if (sign < 0) cache->working_short += working_delta;
+            }
+
+            if (!canceled) {
+                double exposure_delta = trade->volume * c_md_side_sign(trade->side);
+                double notional_delta = fabs(trade->notional);
+                double cash_delta     = -notional_delta * c_md_side_sign(algo->side);
+
+                cache->exposure_volume += exposure_delta;
+                cache->filled_notional += notional_delta;
+                cache->cash_flow += cash_delta;
+            }
+        }
+
+        if (c_dma_position_status_is_active(algo->status)) c_bytemap_ex_set(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), (const char*) &algo, sizeof(dma_algo*), 0, NULL);
+        else c_bytemap_ex_pop(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), 0, NULL, NULL);
+
+        if (canceled) c_dma_position_invoke_callbacks(position, on_canceled, algo, order, NULL);
+        else c_dma_position_invoke_callbacks(position, on_filled, algo, order, trade);
+    }
 
     return DMA_ALGO_OK;
 }
