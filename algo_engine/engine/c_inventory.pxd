@@ -59,12 +59,12 @@ cdef extern from "algo_engine/engine/c_inventory.h":
         double               notional
         double               fee
         double               recalled
-        dma_security_type    security_type
         dma_inventory_cash_dividend*    cash_dividends
         dma_inventory_stock_dividend*   stock_dividends
         dma_inventory_stock_split*      stock_splits
         dma_inventory_stock_conversion* stock_conversions
         dma_inventory_entry* next
+        dma_security_type    security_type
 
     ctypedef struct dma_inventory_node:
         const char*          ticker

@@ -281,12 +281,17 @@ cdef class InventoryStockConversion(CCPType):
 
 
 cdef class InventoryEntry(CCPType):
-    def __init__(self, str ticker, double volume, double price, object security_type, md_direction direction=md_direction.DIRECTION_LONG, **kwargs):
+    def __init__(
+            self,
+            str ticker,
+            double volume,
+            double price,
+            dma_security_type security_type,
+            md_direction direction=md_direction.DIRECTION_LONG,
+            **kwargs
+    ):
         if volume < 0:
             LOGGER.warning('volume of Inventory.Entry normally should be positive!')
-
-        if not isinstance(security_type, InventorySecurityType):
-            security_type = InventorySecurityType(security_type)
 
         if c_md_side_sign(<md_side> direction) == 0:
             raise ValueError('Inventory supports only DIRECTION_LONG and DIRECTION_SHORT.')
@@ -305,7 +310,7 @@ cdef class InventoryEntry(CCPType):
         self.header.notional = kwargs.pop('notional', volume * price)
         self.header.fee = kwargs.pop('fee', 0.)
         self.header.recalled = kwargs.pop('recalled', 0.)
-        self.header.security_type = <dma_security_type> <int> security_type
+        self.header.security_type = security_type
 
         self.ccp_bind(&self.header)
 
@@ -351,7 +356,7 @@ cdef class InventoryEntry(CCPType):
 
     # === Cython Internal Binding ===
 
-    def to_json(self, fmt='str') -> str | dict:
+    def to_json(self, fmt='str'):
         json_dict = dict(
             ticker=self.ticker,
             volume=self.header.volume,

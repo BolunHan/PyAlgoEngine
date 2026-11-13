@@ -94,12 +94,12 @@ typedef struct dma_inventory_entry {
     double                          notional;
     double                          fee;
     double                          recalled;
-    dma_security_type               security_type;
     dma_inventory_cash_dividend*    cash_dividends;     // OWNED - applied cash dividends.
     dma_inventory_stock_dividend*   stock_dividends;    // OWNED - applied stock dividends.
     dma_inventory_stock_split*      stock_splits;       // OWNED - applied splits.
     dma_inventory_stock_conversion* stock_conversions;  // OWNED - applied conversions.
     struct dma_inventory_entry*     next;
+    dma_security_type               security_type;
 } dma_inventory_entry;
 
 /**
@@ -124,18 +124,22 @@ typedef struct dma_inventory {
 
 // ========== Forward Declarations ==========
 
+// Lifecycle
 static inline dma_inventory*                  c_dma_inventory_new(allocator_protocol* allocator);
 static inline int                             c_dma_inventory_init(dma_inventory* inventory, allocator_protocol* allocator);
 static inline void                            c_dma_inventory_dealloc(dma_inventory* inventory);
 static inline void                            c_dma_inventory_free(dma_inventory* inventory);
-
 static inline int                             c_dma_inventory_clear(dma_inventory* inventory);
+
+// Entry query
 static inline double                          c_dma_inventory_entry_available(const dma_inventory_entry* entry);
 
+// Entry lifecycle
 static inline dma_inventory_entry*            c_dma_inventory_entry_new(allocator_protocol* allocator);
 static inline void                            c_dma_inventory_entry_free(dma_inventory_entry* entry);
 static inline void                            c_dma_inventory_entry_clear(dma_inventory_entry* entry);
 
+// Corporate action events
 static inline dma_inventory_cash_dividend*    c_dma_inventory_cash_dividend_new(allocator_protocol* allocator);
 static inline void                            c_dma_inventory_cash_dividend_free(dma_inventory_cash_dividend* event);
 static inline dma_inventory_stock_dividend*   c_dma_inventory_stock_dividend_new(allocator_protocol* allocator);
@@ -146,10 +150,13 @@ static inline dma_inventory_stock_conversion* c_dma_inventory_stock_conversion_n
 static inline int                             c_dma_inventory_stock_conversion_set_tickers(dma_inventory_stock_conversion* event, const char* convert_from, const char* convert_to);
 static inline void                            c_dma_inventory_stock_conversion_free(dma_inventory_stock_conversion* event);
 
+// Corporate actions
 static inline int                             c_dma_inventory_cash_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
 static inline int                             c_dma_inventory_stock_dividend(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double dividend_per_share);
 static inline int                             c_dma_inventory_stock_split(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, double multiplier);
 static inline int                             c_dma_inventory_stock_conversion(dma_inventory* inventory, session_date_t record_date, session_date_t ex_date, const char* convert_from, const char* convert_to, double multiplier);
+
+// Lots
 static inline int                             c_dma_inventory_add_inv_long(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
 static inline int                             c_dma_inventory_add_inv_short(dma_inventory* inventory, const char* ticker, double price, double volume, double notional, double fee, dma_security_type security_type);
 static inline int                             c_dma_inventory_get_inv_long(const dma_inventory* inventory, const char* ticker, const dma_inventory_entry** out);
@@ -158,6 +165,8 @@ static inline int                             c_dma_inventory_use_inv_long(dma_i
 static inline int                             c_dma_inventory_use_inv_short(dma_inventory* inventory, const char* ticker, double volume);
 static inline int                             c_dma_inventory_recall_inv_long(dma_inventory* inventory, const char* ticker, double volume);
 static inline int                             c_dma_inventory_recall_inv_short(dma_inventory* inventory, const char* ticker, double volume);
+
+// Queries
 static inline int                             c_dma_inventory_available(const dma_inventory* inventory, const char* ticker, double* out_long, double* out_short);
 
 // ========== Utility Functions ==========
