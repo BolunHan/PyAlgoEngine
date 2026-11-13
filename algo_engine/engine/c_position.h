@@ -26,8 +26,8 @@ typedef unsigned char          uuid_t[16];
 
 // ========== Constants ==========
 
-#ifndef DMA_POSITION_UNWIND_ALGO
-#define DMA_POSITION_UNWIND_ALGO "passive"
+#ifndef DMA_POSITION_DEFAULT_ALGO
+#define DMA_POSITION_DEFAULT_ALGO "passive"
 #endif
 
 // ========== Enums ==========
@@ -94,8 +94,8 @@ typedef struct dma_position_callback_ctx {
  * @brief The running aggregates of one ticker.
  *
  * Every event updates this record in place; a query reads it without walking
- * the hosted algos. `multiplier` is the contract multiplier of the ticker's
- * first hosted record.
+ * the hosted algos. `multiplier` is the ticker's contract multiplier, taken
+ * from the first hosted record or from an exposure add.
  */
 typedef struct dma_position_ticker {
     double exposure_volume;  // Signed net exposure volume.
@@ -127,6 +127,8 @@ typedef struct dma_position {
     dma_position_callback_ctx* callbacks;      // OWNED - calloc'ed strategy callback nodes.
 } dma_position;
 
+static inline dma_algo* c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator);
+
 #include "algo_engine/engine/c_dma_algo.h"
 
 // ========== Forward Declarations ==========
@@ -140,6 +142,9 @@ static inline int           c_dma_position_clear(dma_position* position);
 
 // Identity
 static inline void          c_dma_position_gen_uid(dma_position* position);
+
+// Status
+static inline bool          c_dma_position_status_is_active(dma_algo_status status);
 
 // Algo registry
 static inline int           c_dma_position_add_algo(dma_position* position, dma_algo* algo);
@@ -155,6 +160,9 @@ static inline int           c_dma_position_get_working(const dma_position* posit
 static inline double        c_dma_position_working_net(const dma_position* position, const char* ticker);
 static inline double        c_dma_position_notional(const dma_position* position, const char* ticker);
 static inline double        c_dma_position_pnl(const dma_position* position, const char* ticker);
+
+// Exposure
+static inline int           c_dma_position_add_exposure(dma_position* position, const char* ticker, double volume, double notional, double multiplier, md_side side);
 
 // Callbacks (only for hosted dma_algo)
 static inline int           c_dma_position_register_callback(dma_position* position, dma_callback_event event, void* callback, void* user_data, uintptr_t* out_id);
@@ -177,7 +185,7 @@ static inline int           c_dma_position_invoke_callbacks(dma_position* positi
  *
  * @param access The access this position trades through (borrowed; its positions map must exist).
  * @param engine The engine that owns the hosted records (borrowed).
- * @param default_algo The default algo name (copied; NULL leaves it NULL).
+ * @param default_algo The default algo name (copied; NULL selects DMA_POSITION_DEFAULT_ALGO).
  * @param allocator Allocator for the block and its children.
  * @return The new position, or NULL on allocation or registration failure.
  */
@@ -214,7 +222,7 @@ static inline dma_position* c_dma_position_new(dma* access, dma_algo_engine* eng
  * @param position The zeroed position to initialize.
  * @param access The access this position trades through (borrowed).
  * @param engine The engine that owns the hosted records (borrowed).
- * @param default_algo The default algo name (copied; NULL leaves it NULL).
+ * @param default_algo The default algo name (copied; NULL selects DMA_POSITION_DEFAULT_ALGO).
  * @param allocator Allocator for the children; derived from position when NULL.
  * @return POSITION_OK, POSITION_ERR_INVALID_INPUT, or POSITION_ERR_OOM.
  */
@@ -225,11 +233,11 @@ static inline int c_dma_position_init(dma_position* position, dma* access, dma_a
     position->dma         = access;
     position->algo_engine = engine;
 
-    if (default_algo) {
-        position->default_algo = c_ap_strdup(default_algo, allocator);
-        if (!position->default_algo) return POSITION_ERR_OOM;
-        c_ap_acquire_ownership(position->default_algo, position);
-    }
+    if (!default_algo) default_algo = DMA_POSITION_DEFAULT_ALGO;
+
+    position->default_algo = c_ap_strdup(default_algo, allocator);
+    if (!position->default_algo) return POSITION_ERR_OOM;
+    c_ap_acquire_ownership(position->default_algo, position);
 
     position->algos = c_bytemap_ex_new(0, sizeof(dma_algo*), allocator);
     if (!position->algos) return POSITION_ERR_OOM;
@@ -681,6 +689,43 @@ static inline double c_dma_position_pnl(const dma_position* position, const char
     return market_price * cache->exposure_volume * cache->multiplier + cache->cash_flow;
 }
 
+// ========== Public APIs (Exposure) ==========
+
+/**
+ * @brief Add synthetic exposure to a ticker's cache.
+ *
+ * The volume signs the exposure by the side; the notional accrues to the
+ * filled notional, and its absolute value leaves the cash flow on the side's
+ * sign. The multiplier is stored on the ticker cache.
+ *
+ * @param position The position (NULL-safe).
+ * @param ticker The instrument (NULL is refused).
+ * @param volume The exposure volume.
+ * @param notional The exposure notional.
+ * @param multiplier The contract multiplier stored on the ticker cache.
+ * @param side The trade side.
+ * @return POSITION_OK, POSITION_ERR_INVALID_INPUT, or POSITION_ERR_OOM.
+ */
+static inline int c_dma_position_add_exposure(dma_position* position, const char* ticker, double volume, double notional, double multiplier, md_side side) {
+    if (!position || !position->tickers || !ticker) return POSITION_ERR_INVALID_INPUT;
+
+    dma_position_ticker defaults = {0};
+
+    char*               stored = NULL;
+
+    if (c_bytemap_ex_set_default(position->tickers, ticker, strlen(ticker), (const char*) &defaults, sizeof(defaults), 0, &stored, NULL) != BYTEMAP_OK) return POSITION_ERR_OOM;
+
+    dma_position_ticker* cache = (dma_position_ticker*) stored;
+    int                  sign  = c_md_side_sign(side);
+
+    cache->multiplier = multiplier;
+    cache->exposure_volume += volume * sign;
+    cache->filled_notional += fabs(notional);
+    cache->cash_flow -= fabs(notional) * sign;
+
+    return POSITION_OK;
+}
+
 // ========== Public APIs (Callbacks) ==========
 
 /**
@@ -795,7 +840,7 @@ static inline int c_dma_position_fully_stop(dma_position* position) {
  * @brief Open a closing algo for every exposed ticker through the unwind kind.
  *
  * The position must be an allocator block. The kind is
- * `DMA_POSITION_UNWIND_ALGO` (passive by default). Each exposed ticker builds
+ * `DMA_POSITION_DEFAULT_ALGO` (passive by default). Each exposed ticker builds
  * one algo on the opposite side with the absolute exposure as its target,
  * hosts it, and launches it.
  *
@@ -811,7 +856,7 @@ static inline int c_dma_position_fully_unwind(dma_position* position) {
 
     char* stored = NULL;
 
-    if (c_bytemap_ex_get_ptr(registry->entries, DMA_POSITION_UNWIND_ALGO, strlen(DMA_POSITION_UNWIND_ALGO), &stored, NULL) != BYTEMAP_OK) return POSITION_ERR_NOT_FOUND;
+    if (c_bytemap_ex_get_ptr(registry->entries, DMA_POSITION_DEFAULT_ALGO, strlen(DMA_POSITION_DEFAULT_ALGO), &stored, NULL) != BYTEMAP_OK) return POSITION_ERR_NOT_FOUND;
 
     dma_algo_ctx* registration = *(dma_algo_ctx**) stored;
 
