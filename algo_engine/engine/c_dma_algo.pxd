@@ -90,6 +90,12 @@ cdef class OrderMapView(BoundByteMap):
     cdef OrderMapView c_from_header(bytemap* header, bint owner=?)
 
 
+cdef class AlgoMapView(BoundByteMap):
+    @staticmethod
+    cdef AlgoMapView c_from_header(bytemap* header, bint owner=?)
+
+
+
 cdef class AlgoRegistry(CCPType):
     cdef dma_algo_registry* header
     cdef bint owner
@@ -110,6 +116,7 @@ cdef class AlgoEngine(CCPType):
     cdef readonly AlgoRegistry registry
     cdef OrderMapView orders_map
     cdef OrderMapView working_orders_map
+    cdef AlgoMapView algos_map
 
     cdef int c_on_order(self, const md_trade_instruction* order)
 

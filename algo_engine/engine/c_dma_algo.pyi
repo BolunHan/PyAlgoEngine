@@ -2,6 +2,7 @@ import enum
 from typing import Any
 
 from algo_engine.base import MarketData, TradeInstruction, TradeReport
+from algo_engine.engine.algo import AlgoTemplate
 
 
 class AlgoLimitMode(enum.IntEnum):
@@ -13,6 +14,10 @@ class AlgoLimitMode(enum.IntEnum):
 
 class OrderMapView(dict[Any, TradeInstruction]):
     """The order-id view over an algo or engine order index; entries are borrowed views, so the map is read-only."""
+
+
+class AlgoMapView(dict[str, AlgoTemplate]):
+    """The algo-id view over an engine or position algo index; entries are borrowed views, so the map is read-only."""
 
 
 class AlgoRegistry:
@@ -51,6 +56,9 @@ class AlgoEngine:
     """
 
     registry: AlgoRegistry
+
+    algos: AlgoMapView
+    """The algo-id view of every engine algo."""
 
     orders: OrderMapView
     """The order-id view of every engine order."""

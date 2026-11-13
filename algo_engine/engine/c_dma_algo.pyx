@@ -1,5 +1,6 @@
 import enum
 
+from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.unicode cimport PyUnicode_AsUTF8AndSize, PyUnicode_FromStringAndSize
 
 from cbase.bytemap cimport bytemap_entry, bytemap_ret_code, c_bytemap_ex_get_ptr, c_bytemap_gen_seq_id
@@ -7,6 +8,8 @@ from cbase.bytemap cimport bytemap_entry, bytemap_ret_code, c_bytemap_ex_get_ptr
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long_id
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, TradeReport, instruction_from_header
+
+from .algo.c_algo_template cimport AlgoTemplate
 
 
 class AlgoLimitMode(enum.IntEnum):
@@ -40,6 +43,34 @@ cdef class OrderMapView(BoundByteMap):
         if not order:
             return None
         return instruction_from_header(<const md_variant*> order, False)
+
+
+cdef class AlgoMapView(BoundByteMap):
+    @staticmethod
+    cdef AlgoMapView c_from_header(bytemap* header, bint owner=False):
+        if owner:
+            raise PermissionError('Must not assign the algo map ownership to <AlgoMapView>')
+
+        cdef AlgoMapView instance = AlgoMapView.__new__(AlgoMapView)
+        instance.owner = False
+        instance.seq_id = c_bytemap_gen_seq_id(<void*> instance)
+        instance.c_bind(header)
+        return instance
+
+    cdef const char* c_serialize_key(self, object obj, size_t* key_len):
+        raise PermissionError(f'Must not assign algo to {self.__class__.__name__}')
+
+    cdef object c_deserialize_key(self, const char* key, size_t key_len):
+        return PyBytes_FromStringAndSize(key, key_len).hex()
+
+    cdef const char* c_serialize_value(self, object obj, size_t* value_len):
+        raise PermissionError(f'Must not assign algo to {self.__class__.__name__}')
+
+    cdef object c_deserialize_value(self, const char* value, size_t value_len):
+        cdef dma_algo* algo = (<dma_algo**> value)[0]
+        if not algo:
+            return None
+        return AlgoTemplate.c_from_header(algo)
 
 
 cdef class AlgoRegistry(CCPType):
@@ -115,6 +146,7 @@ cdef class AlgoEngine(CCPType):
         self.registry = None
         self.orders_map = None
         self.working_orders_map = None
+        self.algos_map = None
 
     def __repr__(self):
         if not self.header:
@@ -180,6 +212,15 @@ cdef class AlgoEngine(CCPType):
             if self.working_orders_map is None:
                 self.working_orders_map = OrderMapView.c_from_header(self.header.working_orders_by_id, False)
             return self.working_orders_map
+
+    property algos:
+        def __get__(self):
+            if not self.header:
+                raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
+
+            if self.algos_map is None:
+                self.algos_map = AlgoMapView.c_from_header(self.header.algo, False)
+            return self.algos_map
 
 
 cdef AlgoEngine ALGO_ENGINE = AlgoEngine()
