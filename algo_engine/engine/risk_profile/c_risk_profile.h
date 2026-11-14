@@ -163,15 +163,17 @@ typedef struct dma_risk_profile  dma_risk_profile;
  * @struct dma_risk_limits_globals
  * @brief The portfolio-wide rule values and the global custom rule chain.
  *
- * A NaN value is an undefined rule; `c_dma_risk_profile_clear` resets the four
- * limits to infinity, which keeps them defined but non-binding. A global custom
- * rule applies to every ticker and runs after the ticker's own custom rules.
+ * A rule is enabled when its bit in `enabled` is set; a disabled rule stores
+ * 0 and the check skips it. The allocator returns the block zeroed, so a fresh
+ * profile enables nothing. A global custom rule applies to every ticker and
+ * runs after the ticker's own custom rules.
  */
 typedef struct dma_risk_limits_globals {
-    double             max_ttl_notional_long;   // Total notional limit, long side; NaN when undefined.
-    double             max_ttl_notional_short;  // Total notional limit, short side; NaN when undefined.
-    double             max_net_notional_long;   // Net notional limit, long side; NaN when undefined.
-    double             max_net_notional_short;  // Net notional limit, short side; NaN when undefined.
+    double             max_ttl_notional_long;   // Total notional limit, long side; 0 when disabled.
+    double             max_ttl_notional_short;  // Total notional limit, short side; 0 when disabled.
+    double             max_net_notional_long;   // Net notional limit, long side; 0 when disabled.
+    double             max_net_notional_short;  // Net notional limit, short side; 0 when disabled.
+    uint32_t           enabled;                 // One bit per dma_risk_rule; a clear bit disables the rule.
     dma_risk_rule_ctx* rules;                   // The global custom rule chain; the profile owns the nodes.
 } dma_risk_limits_globals;
 
@@ -180,9 +182,9 @@ typedef struct dma_risk_limits_globals {
  * @brief The risk profile rules: one limit set per ticker, the global limits
  *        and the two ticker gates.
  *
- * A check runs the rules defined for the ticker and the side; a side with no
- * absolute risk value for it is refused as incomplete. The profile is a
- * 64-byte block, so the gates, the entries map and the globals it reads span
+ * A check runs the rules enabled for the ticker and the side; a side with no
+ * enabled absolute risk value for it is refused as incomplete. The profile is
+ * a 72-byte block, so the gates, the entries map and the globals it reads span
  * at most two cache lines.
  *
  * Either gate list may be absent. A ticker on the `blacklist` is refused; when
@@ -200,7 +202,7 @@ typedef struct dma_risk_profile {
  * @struct dma_risk_violation
  * @brief The rejection a failed check reports.
  *
- * `msg` carries the human-readable reason, including the undefined rules when
+ * `msg` carries the human-readable reason, including the disabled rules when
  * the profile cannot constrain the side. A passing check leaves the type PASS,
  * the code 0 and the message empty: the type/code header leads the block and
  * the 512-byte message is written only on a rejection.
@@ -253,24 +255,25 @@ _Static_assert(sizeof(dma_risk_rule_ctx) <= 64, "dma_risk_rule_ctx must fit a ca
  * @struct dma_risk_limits
  * @brief One ticker's rule values and its custom rule chain.
  *
- * A NaN value is an undefined rule: the check skips it. A side with no
- * defined absolute risk value is refused as incomplete.
+ * A rule is enabled when its bit in `enabled` is set: a disabled rule stores 0
+ * and the check skips it. A side with no enabled absolute risk value is
+ * refused as incomplete.
  *
  * The profile hosts each limit set by pointer in its entries map. The block is
  * its own allocation, so a `dma_risk_limits*` stays valid while the profile
- * lives, even when the map grows or rehashes. The set is exactly 64 bytes, so
- * it spans at most two cache lines, and a check reads it front to back.
+ * lives, even when the map grows or rehashes. The set is 72 bytes, so it spans
+ * at most two cache lines, and a check reads it front to back.
  */
 typedef struct dma_risk_limits {
-    double             max_percentile;      // Maximum share of the portfolio, in [0, 1); NaN when undefined.
-    double             max_trade_long;      // Maximum traded + working long volume; NaN when undefined.
-    double             max_trade_short;     // Maximum traded + working short volume; NaN when undefined.
-    double             max_exposure_long;   // Maximum net long exposure volume; NaN when undefined.
-    double             max_exposure_short;  // Maximum net short exposure volume; NaN when undefined.
-    double             max_notional_long;   // Maximum net long exposure notional; NaN when undefined.
-    double             max_notional_short;  // Maximum net short exposure notional; NaN when undefined.
-
-    dma_risk_rule_ctx* rules;  // The ticker's custom rule chain; the nodes are children of this block.
+    double             max_percentile;      // Maximum share of the portfolio, in [0, 1); 0 when disabled.
+    double             max_trade_long;      // Maximum traded + working long volume; 0 when disabled.
+    double             max_trade_short;     // Maximum traded + working short volume; 0 when disabled.
+    double             max_exposure_long;   // Maximum net long exposure volume; 0 when disabled.
+    double             max_exposure_short;  // Maximum net short exposure volume; 0 when disabled.
+    double             max_notional_long;   // Maximum net long exposure notional; 0 when disabled.
+    double             max_notional_short;  // Maximum net short exposure notional; 0 when disabled.
+    uint32_t           enabled;             // One bit per dma_risk_rule; a clear bit disables the rule.
+    dma_risk_rule_ctx* rules;               // The ticker's custom rule chain; the nodes are children of this block.
 } dma_risk_limits;
 
 /**
@@ -310,6 +313,7 @@ typedef struct dma_risk_check_state {
 // Rule tables
 static inline const char*        c_dma_risk_rule_name(dma_risk_rule rule);
 static inline bool               c_dma_risk_rule_is_global(dma_risk_rule rule);
+static inline uint32_t           c_dma_risk_rule_bit(dma_risk_rule rule);
 static inline const char*        c_dma_risk_type_name(dma_risk_type type);
 static inline int                c_dma_risk_violation_code(dma_risk_type type);
 
@@ -347,6 +351,7 @@ static inline dma_risk_type      c_dma_risk_profile_check(const dma_risk_profile
 static inline dma_risk_violation c_dma_risk_profile_check_algo(const dma* DMA, const dma_risk_profile* risk_profile, const dma_algo* algo);
 static inline dma_risk_violation c_dma_risk_profile_check_order(const dma* DMA, const dma_risk_profile* risk_profile, const md_trade_instruction* order);
 static inline dma_risk_violation c_dma_risk_profile_check_volume(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume);
+static inline void               c_dma_risk_profile_check_state_init(const dma* DMA, const char* ticker, double price, dma_risk_check_state* check_state);
 static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price);
 
 #include <algo_engine/engine/c_dma.h>
@@ -371,6 +376,15 @@ static inline const char* c_dma_risk_rule_name(dma_risk_rule rule) {
  */
 static inline bool c_dma_risk_rule_is_global(dma_risk_rule rule) {
     return rule >= DMA_RULE_MAX_TTL_NOTIONAL_LONG && rule <= DMA_RULE_MAX_NET_NOTIONAL_SHORT;
+}
+
+/**
+ * @brief The enable bit of a rule in a limit mask.
+ * @param rule The rule.
+ * @return 1 shifted by the rule index.
+ */
+static inline uint32_t c_dma_risk_rule_bit(dma_risk_rule rule) {
+    return (uint32_t) 1u << (uint32_t) rule;
 }
 
 /**
@@ -415,23 +429,6 @@ static inline int c_dma_risk_violation_code(dma_risk_type type) {
 }
 
 /**
- * @brief Mark every rule of a limit set undefined.
- * @param limits The limit set (NULL-safe).
- */
-static inline void c_dma_risk_limits_unset(dma_risk_limits* limits) {
-    if (!limits) return;
-
-    limits->max_percentile     = NAN;
-    limits->max_trade_long     = NAN;
-    limits->max_trade_short    = NAN;
-    limits->max_exposure_long  = NAN;
-    limits->max_exposure_short = NAN;
-    limits->max_notional_long  = NAN;
-    limits->max_notional_short = NAN;
-    limits->rules              = NULL;
-}
-
-/**
  * @brief Get a ticker's limit set, creating it on first use.
  *
  * The map stores the limit set by pointer, so the pointer is stable across map
@@ -450,8 +447,6 @@ static inline dma_risk_limits* c_dma_risk_profile_get_or_insert_limits(dma_risk_
 
     dma_risk_limits*    new_limits = (dma_risk_limits*) c_ap_alloc(sizeof(dma_risk_limits), allocator);
     if (!new_limits) return NULL;
-
-    c_dma_risk_limits_unset(new_limits);
 
     char* stored = NULL;
 
@@ -580,7 +575,7 @@ static inline void c_dma_risk_profile_global_rules_dealloc(dma_risk_profile* ris
 /**
  * @brief Tell whether the profile constrains a side of a ticker.
  *
- * A side is constrained by a defined absolute risk value that applies to it:
+ * A side is constrained by an enabled absolute risk value that applies to it:
  * a trade, exposure or notional limit on the ticker, or a portfolio total or
  * net limit. The percentile limit is relative to the portfolio, and a custom
  * rule never completes a profile, so neither constrains a side.
@@ -595,52 +590,27 @@ static inline bool c_dma_risk_profile_side_is_constrained(const dma_risk_profile
 
     if (side_sign >= 0) {
         if (limits) {
-            if (!isnan(limits->max_trade_long)) return true;
-            if (!isnan(limits->max_exposure_long)) return true;
-            if (!isnan(limits->max_notional_long)) return true;
+            if (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_TRADE_LONG)) return true;
+            if (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_EXPOSURE_LONG)) return true;
+            if (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_NOTIONAL_LONG)) return true;
         }
 
-        if (!isnan(risk_profile->globals.max_ttl_notional_long)) return true;
-        if (!isnan(risk_profile->globals.max_net_notional_long)) return true;
+        if (risk_profile->globals.enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_TTL_NOTIONAL_LONG)) return true;
+        if (risk_profile->globals.enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_NET_NOTIONAL_LONG)) return true;
     }
 
     if (side_sign <= 0) {
         if (limits) {
-            if (!isnan(limits->max_trade_short)) return true;
-            if (!isnan(limits->max_exposure_short)) return true;
-            if (!isnan(limits->max_notional_short)) return true;
+            if (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_TRADE_SHORT)) return true;
+            if (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_EXPOSURE_SHORT)) return true;
+            if (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_NOTIONAL_SHORT)) return true;
         }
 
-        if (!isnan(risk_profile->globals.max_ttl_notional_short)) return true;
-        if (!isnan(risk_profile->globals.max_net_notional_short)) return true;
+        if (risk_profile->globals.enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_TTL_NOTIONAL_SHORT)) return true;
+        if (risk_profile->globals.enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_NET_NOTIONAL_SHORT)) return true;
     }
 
     return false;
-}
-
-/**
- * @brief Tell whether a side's defined rules need a market price.
- *
- * The trade and exposure rules are volume-only; the percentile, notional,
- * portfolio-net and portfolio-total rules price the order.
- *
- * @param risk_profile The profile (NULL-safe).
- * @param limits The ticker's limit set (NULL when the ticker has no rule).
- * @param side_sign -1 short, 0 neutral, 1 long.
- * @return true when a defined rule prices the order.
- */
-static inline bool c_dma_risk_profile_side_needs_price(const dma_risk_profile* risk_profile, const dma_risk_limits* limits, int side_sign) {
-    if (!risk_profile || side_sign == 0) return false;
-
-    if (limits) {
-        if (!isnan(limits->max_percentile)) return true;
-        if (side_sign > 0 && !isnan(limits->max_notional_long)) return true;
-        if (side_sign < 0 && !isnan(limits->max_notional_short)) return true;
-    }
-
-    if (side_sign > 0) return !isnan(risk_profile->globals.max_ttl_notional_long) || !isnan(risk_profile->globals.max_net_notional_long);
-
-    return !isnan(risk_profile->globals.max_ttl_notional_short) || !isnan(risk_profile->globals.max_net_notional_short);
 }
 
 /**
@@ -665,7 +635,7 @@ static inline void c_dma_risk_violation_format(dma_risk_violation* out, dma_risk
 /**
  * @brief Fill a violation with the incomplete-profile message.
  *
- * Lists the rules that apply to the side and are undefined.
+ * Lists the rules that apply to the side and are disabled.
  *
  * @param out The violation being filled (NULL-safe).
  * @param risk_profile The profile.
@@ -677,7 +647,7 @@ static inline void c_dma_risk_violation_incomplete(dma_risk_violation* out, cons
 
     const char* side_name = side_sign > 0 ? "LONG" : (side_sign < 0 ? "SHORT" : "any");
 
-    int         n     = snprintf(out->msg, DMA_RISK_MESSAGE_SIZE, "RiskProfile incomplete: no rule constrains a %s order for <%s>; undefined rules: ", side_name, ticker ? ticker : "(null)");
+    int         n     = snprintf(out->msg, DMA_RISK_MESSAGE_SIZE, "RiskProfile incomplete: no rule constrains a %s order for <%s>; disabled rules: ", side_name, ticker ? ticker : "(null)");
     size_t      used  = (n < 0) ? 0 : (size_t) n;
     bool        first = true;
 
@@ -711,7 +681,6 @@ static inline void c_dma_risk_violation_incomplete(dma_risk_violation* out, cons
  */
 static inline bool c_dma_risk_limits_check_percentile(const dma_risk_limits* limits, const dma_risk_check_state* check_state, dma_risk_violation* out) {
     if (check_state->side_sign == 0) return true;
-    if (limits->max_percentile >= 1) return true;
     if (!isfinite(check_state->portfolio_exposure_notional_abs)) return true;
 
     double max_notional = check_state->portfolio_exposure_notional_abs / (1 - limits->max_percentile) * limits->max_percentile;
@@ -925,12 +894,6 @@ static inline int c_dma_risk_profile_init(dma_risk_profile* risk_profile, alloca
     risk_profile->whitelist = NULL;
     risk_profile->blacklist = NULL;
 
-    risk_profile->globals.max_ttl_notional_long  = NAN;
-    risk_profile->globals.max_ttl_notional_short = NAN;
-    risk_profile->globals.max_net_notional_long  = NAN;
-    risk_profile->globals.max_net_notional_short = NAN;
-    risk_profile->globals.rules                  = NULL;
-
     return DMA_RISK_OK_RET;
 }
 
@@ -988,9 +951,9 @@ static inline void c_dma_risk_profile_free(dma_risk_profile* risk_profile) {
  * @brief Remove every ticker rule, every custom rule and both ticker gates.
  *
  * Each ticker's limit set is freed with its custom rule tree, the global
- * custom rules are freed, and the two gate maps are released so both gates
- * are absent afterwards. The four portfolio limits reset to infinity, which
- * keeps them defined but non-binding.
+ * custom rules are freed, both gate maps are released, and the four portfolio
+ * limits reset to disabled. A cleared profile constrains nothing, so the next
+ * check is refused as incomplete until a rule is set.
  *
  * @param risk_profile The profile (NULL-safe).
  * @return DMA_RISK_OK_RET, or DMA_RISK_ERR_INVALID_INPUT.
@@ -1020,10 +983,7 @@ static inline int c_dma_risk_profile_clear(dma_risk_profile* risk_profile) {
         risk_profile->blacklist = NULL;
     }
 
-    risk_profile->globals.max_ttl_notional_long  = INFINITY;
-    risk_profile->globals.max_ttl_notional_short = INFINITY;
-    risk_profile->globals.max_net_notional_long  = INFINITY;
-    risk_profile->globals.max_net_notional_short = INFINITY;
+    memset(&risk_profile->globals, 0, sizeof(risk_profile->globals));
 
     return DMA_RISK_OK_RET;
 }
@@ -1164,39 +1124,65 @@ static inline bool c_dma_risk_profile_is_ticker_allowed(const dma_risk_profile* 
 }
 
 /**
+ * @brief Write one rule value and its enable bit.
+ *
+ * A percentile of one or more, and an infinite value of any other rule, does
+ * not constrain: the field resets to 0 and the bit clears. The caller refuses
+ * NaN and negative values.
+ *
+ * @param field The rule's value.
+ * @param enabled The limit set's enable mask.
+ * @param rule The rule being written.
+ * @param value The value (not NaN, not negative).
+ */
+static inline void c_dma_risk_field_set(double* field, uint32_t* enabled, dma_risk_rule rule, double value) {
+    uint32_t bit = c_dma_risk_rule_bit(rule);
+
+    if (rule == DMA_RULE_MAX_PERCENTILE ? value >= 1. : isinf(value)) {
+        *field = 0.;
+        *enabled &= ~bit;
+        return;
+    }
+
+    *field = value;
+    *enabled |= bit;
+}
+
+/**
  * @brief Set one rule, globally or for a ticker.
  *
  * The ticker's limit set is created on first write (get-or-insert in one
- * probe) with every rule undefined. A NaN value is refused: a rule is
- * undefined at creation, never written as NaN.
+ * probe) with every rule disabled. NaN and negative values are refused. A
+ * percentile of one or more, and an infinite value of any other rule, disables
+ * the rule: the field resets to 0 and its enable bit clears.
  *
  * @param risk_profile The profile (NULL-safe).
  * @param ticker The ticker, or NULL for a portfolio-wide rule.
  * @param rule The rule to set.
- * @param value The limit value (not NaN).
+ * @param value The limit value (not NaN, not negative).
  * @return DMA_RISK_OK_RET, DMA_RISK_ERR_INVALID_INPUT, DMA_RISK_ERR_UNKNOWN_RULE,
  *         DMA_RISK_ERR_RULE_SCOPE, or DMA_RISK_ERR_OOM.
  */
 static inline int c_dma_risk_profile_set_limit(dma_risk_profile* risk_profile, const char* ticker, dma_risk_rule rule, double value) {
     if (!risk_profile || !risk_profile->entries) return DMA_RISK_ERR_INVALID_INPUT;
-    if (isnan(value)) return DMA_RISK_ERR_INVALID_INPUT;
     if (!c_dma_risk_rule_name(rule)) return DMA_RISK_ERR_UNKNOWN_RULE;
+    if (isnan(value) || value < 0.) return DMA_RISK_ERR_INVALID_INPUT;
 
     if (!ticker) {
         if (!c_dma_risk_rule_is_global(rule)) return DMA_RISK_ERR_RULE_SCOPE;
 
         switch (rule) {
             case DMA_RULE_MAX_TTL_NOTIONAL_LONG:
-                risk_profile->globals.max_ttl_notional_long = value;
+                c_dma_risk_field_set(&risk_profile->globals.max_ttl_notional_long, &risk_profile->globals.enabled, rule, value);
                 break;
             case DMA_RULE_MAX_TTL_NOTIONAL_SHORT:
-                risk_profile->globals.max_ttl_notional_short = value;
+                c_dma_risk_field_set(&risk_profile->globals.max_ttl_notional_short, &risk_profile->globals.enabled, rule, value);
                 break;
             case DMA_RULE_MAX_NET_NOTIONAL_LONG:
-                risk_profile->globals.max_net_notional_long = value;
+                c_dma_risk_field_set(&risk_profile->globals.max_net_notional_long, &risk_profile->globals.enabled, rule, value);
                 break;
             case DMA_RULE_MAX_NET_NOTIONAL_SHORT:
-                risk_profile->globals.max_net_notional_short = value;
+                c_dma_risk_field_set(&risk_profile->globals.max_net_notional_short, &risk_profile->globals.enabled, rule, value);
                 break;
             default:
                 return DMA_RISK_ERR_RULE_SCOPE;
@@ -1212,25 +1198,25 @@ static inline int c_dma_risk_profile_set_limit(dma_risk_profile* risk_profile, c
 
     switch (rule) {
         case DMA_RULE_MAX_PERCENTILE:
-            limits->max_percentile = value;
+            c_dma_risk_field_set(&limits->max_percentile, &limits->enabled, rule, value);
             break;
         case DMA_RULE_MAX_TRADE_LONG:
-            limits->max_trade_long = value;
+            c_dma_risk_field_set(&limits->max_trade_long, &limits->enabled, rule, value);
             break;
         case DMA_RULE_MAX_TRADE_SHORT:
-            limits->max_trade_short = value;
+            c_dma_risk_field_set(&limits->max_trade_short, &limits->enabled, rule, value);
             break;
         case DMA_RULE_MAX_EXPOSURE_LONG:
-            limits->max_exposure_long = value;
+            c_dma_risk_field_set(&limits->max_exposure_long, &limits->enabled, rule, value);
             break;
         case DMA_RULE_MAX_EXPOSURE_SHORT:
-            limits->max_exposure_short = value;
+            c_dma_risk_field_set(&limits->max_exposure_short, &limits->enabled, rule, value);
             break;
         case DMA_RULE_MAX_NOTIONAL_LONG:
-            limits->max_notional_long = value;
+            c_dma_risk_field_set(&limits->max_notional_long, &limits->enabled, rule, value);
             break;
         case DMA_RULE_MAX_NOTIONAL_SHORT:
-            limits->max_notional_short = value;
+            c_dma_risk_field_set(&limits->max_notional_short, &limits->enabled, rule, value);
             break;
         default:
             return DMA_RISK_ERR_RULE_SCOPE;
@@ -1242,19 +1228,22 @@ static inline int c_dma_risk_profile_set_limit(dma_risk_profile* risk_profile, c
 /**
  * @brief Read one rule's value.
  *
+ * A rule is readable only while it is enabled: a disabled rule reports false.
  * A global rule ignores the ticker argument; a ticker rule requires it.
  *
  * @param risk_profile The profile (NULL-safe).
  * @param ticker The ticker, or NULL for a portfolio-wide rule.
  * @param rule The rule to read.
- * @param out Optional: receives the value when the rule is defined.
- * @return true when the rule is defined and the value was written.
+ * @param out Optional: receives the value when the rule is enabled.
+ * @return true when the rule is enabled and the value was written.
  */
 static inline bool c_dma_risk_profile_get_limit(const dma_risk_profile* risk_profile, const char* ticker, dma_risk_rule rule, double* out) {
     if (!risk_profile || !c_dma_risk_rule_name(rule)) return false;
 
     if (c_dma_risk_rule_is_global(rule)) {
-        double value = NAN;
+        if (!(risk_profile->globals.enabled & c_dma_risk_rule_bit(rule))) return false;
+
+        double value;
 
         switch (rule) {
             case DMA_RULE_MAX_TTL_NOTIONAL_LONG:
@@ -1273,7 +1262,6 @@ static inline bool c_dma_risk_profile_get_limit(const dma_risk_profile* risk_pro
                 return false;
         }
 
-        if (isnan(value)) return false;
         if (out) *out = value;
         return true;
     }
@@ -1281,9 +1269,9 @@ static inline bool c_dma_risk_profile_get_limit(const dma_risk_profile* risk_pro
     if (!ticker) return false;
 
     const dma_risk_limits* limits = c_dma_risk_profile_get_limits(risk_profile, ticker);
-    if (!limits) return false;
+    if (!limits || !(limits->enabled & c_dma_risk_rule_bit(rule))) return false;
 
-    double value = NAN;
+    double value;
 
     switch (rule) {
         case DMA_RULE_MAX_PERCENTILE:
@@ -1311,7 +1299,6 @@ static inline bool c_dma_risk_profile_get_limit(const dma_risk_profile* risk_pro
             return false;
     }
 
-    if (isnan(value)) return false;
     if (out) *out = value;
     return true;
 }
@@ -1342,7 +1329,7 @@ static inline dma_risk_limits* c_dma_risk_profile_get_limits(const dma_risk_prof
  * @brief Compose and append a custom rule to a ticker's chain.
  *
  * The ticker's limit set is created on first registration with every rule
- * undefined. The profile allocates the node under the ticker's limit set, sets
+ * disabled. The profile allocates the node under the ticker's limit set, sets
  * its id to the node address and owns it: unregister, clear and dealloc free
  * it. `name` is borrowed and must outlive the registration. `user_data` is the
  * rule's state; a rule that adopts it under the node gives the node its
@@ -1507,12 +1494,13 @@ static inline int c_dma_risk_profile_disable_global_rule(dma_risk_profile* risk_
  * @brief Check one order against the profile.
  *
  * The gate runs first: a blacklisted ticker, or a ticker missing from a
- * non-empty whitelist, is refused. The check then requires a defined absolute
+ * non-empty whitelist, is refused. The check then requires an enabled absolute
  * risk value for the side; with none, it reports DMA_RISK_INCOMPLETE and
- * lists the undefined rules that apply. Only the defined rules run, in the
- * upstream order: price validity (when a defined rule prices the order),
- * traded volume, exposure, percentile, notional, portfolio net, portfolio
- * total. The first failure fills `out` and returns its type.
+ * lists the disabled rules that apply. It then requires the ticker's market
+ * price; without one, it reports DMA_RISK_PRICE. Only the enabled rules run,
+ * in the upstream order: traded volume, exposure, percentile, notional,
+ * portfolio net, portfolio total. The first failure fills `out` and returns
+ * its type.
  *
  * The pure check_state check cannot run the custom rules (they need the access);
  * `c_dma_risk_profile_check_limit` runs them after this check passes.
@@ -1558,9 +1546,8 @@ static inline dma_risk_type c_dma_risk_profile_check(const dma_risk_profile* ris
         return DMA_RISK_INCOMPLETE;
     }
 
-    // Step 2: validity -- a price is required only when a defined rule prices
-    // the order.
-    if (c_dma_risk_profile_side_needs_price(risk_profile, limits, side_sign) && isnan(check_state->market_price)) {
+    // Step 2: validity -- a trade needs its ticker's market price.
+    if (isnan(check_state->market_price)) {
         c_dma_risk_violation_format(out, DMA_RISK_PRICE, "no valid market price for ticker %s", check_state->ticker);
         return DMA_RISK_PRICE;
     }
@@ -1569,9 +1556,11 @@ static inline dma_risk_type c_dma_risk_profile_check(const dma_risk_profile* ris
 
     // Step 3: traded volume.
     if (side_sign != 0 && limits) {
-        double limit = is_long ? limits->max_trade_long : limits->max_trade_short;
+        dma_risk_rule rule = is_long ? DMA_RULE_MAX_TRADE_LONG : DMA_RULE_MAX_TRADE_SHORT;
 
-        if (!isnan(limit)) {
+        if (limits->enabled & c_dma_risk_rule_bit(rule)) {
+            double limit = is_long ? limits->max_trade_long : limits->max_trade_short;
+
             double trade_count = is_long ? check_state->working_long + check_state->traded_long : check_state->working_short + check_state->traded_short;
 
             if (trade_count + action > limit) {
@@ -1587,9 +1576,11 @@ static inline dma_risk_type c_dma_risk_profile_check(const dma_risk_profile* ris
 
     // Step 4: exposure.
     if (side_sign != 0 && limits) {
-        double limit = is_long ? limits->max_exposure_long : limits->max_exposure_short;
+        dma_risk_rule rule = is_long ? DMA_RULE_MAX_EXPOSURE_LONG : DMA_RULE_MAX_EXPOSURE_SHORT;
 
-        if (!isnan(limit)) {
+        if (limits->enabled & c_dma_risk_rule_bit(rule)) {
+            double limit = is_long ? limits->max_exposure_long : limits->max_exposure_short;
+
             double ttl_exposure = check_state->exposure_long - check_state->exposure_short;
             double working      = is_long ? check_state->working_long : check_state->working_short;
 
@@ -1612,28 +1603,28 @@ static inline dma_risk_type c_dma_risk_profile_check(const dma_risk_profile* ris
     }
 
     // Step 5: percentile.
-    if (limits && !isnan(limits->max_percentile)) {
+    if (limits && (limits->enabled & c_dma_risk_rule_bit(DMA_RULE_MAX_PERCENTILE))) {
         if (!c_dma_risk_limits_check_percentile(limits, check_state, out)) {
             return out ? out->type : DMA_RISK_INVALID;
         }
     }
 
     // Step 6: notional.
-    if (limits && !isnan(is_long ? limits->max_notional_long : limits->max_notional_short)) {
+    if (limits && (limits->enabled & c_dma_risk_rule_bit(is_long ? DMA_RULE_MAX_NOTIONAL_LONG : DMA_RULE_MAX_NOTIONAL_SHORT))) {
         if (!c_dma_risk_limits_check_notional(limits, check_state, out)) {
             return out ? out->type : DMA_RISK_INVALID;
         }
     }
 
     // Step 7: portfolio net.
-    if ((is_long && !isnan(risk_profile->globals.max_net_notional_long)) || (!is_long && !isnan(risk_profile->globals.max_net_notional_short))) {
+    if (risk_profile->globals.enabled & c_dma_risk_rule_bit(is_long ? DMA_RULE_MAX_NET_NOTIONAL_LONG : DMA_RULE_MAX_NET_NOTIONAL_SHORT)) {
         if (!c_dma_risk_limits_globals_check_net(&risk_profile->globals, check_state, out)) {
             return out ? out->type : DMA_RISK_INVALID;
         }
     }
 
     // Step 8: portfolio total.
-    if ((is_long && !isnan(risk_profile->globals.max_ttl_notional_long)) || (!is_long && !isnan(risk_profile->globals.max_ttl_notional_short))) {
+    if (risk_profile->globals.enabled & c_dma_risk_rule_bit(is_long ? DMA_RULE_MAX_TTL_NOTIONAL_LONG : DMA_RULE_MAX_TTL_NOTIONAL_SHORT)) {
         if (!c_dma_risk_limits_globals_check_ttl(&risk_profile->globals, check_state, out)) {
             return out ? out->type : DMA_RISK_INVALID;
         }
@@ -1649,38 +1640,28 @@ static inline dma_risk_type c_dma_risk_profile_check(const dma_risk_profile* ris
 // writes the violation only on a rejection.
 
 /**
- * @brief Check a volume on a side at an explicit price against the profile.
+ * @brief Fill the access-derived volumes of a check state for one ticker.
  *
- * Runs once per algo open and per order launch. The check_state is built from the
- * access: the hosted positions supply the ticker's working and net exposure
- * volumes and the portfolio notional totals, and the engine's orders supply
- * the ticker's filled volume for the access's session date. A portfolio
- * ticker without a market price counts as zero. The ticker's custom rules run
- * after the standard rules pass; the first rejection is returned.
+ * The hosted positions supply the ticker's working and net exposure volumes
+ * and the portfolio notional totals, each ticker priced at its own market
+ * price; the engine's orders supply the ticker's filled volume for the
+ * access's session date. The record is zeroed first, so the caller sets only
+ * the order's own volume and side.
  *
  * @param DMA The access (NULL-safe).
- * @param risk_profile The profile (NULL-safe).
- * @param ticker The instrument (non-empty).
- * @param side The trade side.
- * @param volume The volume to check.
- * @param price The price the rules are checked at (NaN when unavailable).
- * @return The check's violation; a passing check reports DMA_RISK_PASS.
+ * @param ticker The instrument (borrowed).
+ * @param price The price the ticker is priced at (NaN when unavailable).
+ * @param check_state The state to fill (NULL-safe).
  */
-static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price) {
-    dma_risk_check_state check_state;
-    dma_risk_violation   violation;
+static inline void c_dma_risk_profile_check_state_init(const dma* DMA, const char* ticker, double price, dma_risk_check_state* check_state) {
+    if (!check_state) return;
 
-    memset(&check_state, 0, sizeof(check_state));
+    memset(check_state, 0, sizeof(*check_state));
 
-    if (!DMA || !risk_profile || !ticker) {
-        c_dma_risk_violation_format(&violation, DMA_RISK_INVALID, "invalid risk_profile check input");
-        return violation;
-    }
+    check_state->ticker       = ticker;
+    check_state->market_price = price;
 
-    check_state.ticker       = ticker;
-    check_state.volume       = volume;
-    check_state.side_sign    = c_md_side_sign(side);
-    check_state.market_price = price;
+    if (!DMA || !ticker) return;
 
     // === Step 0 ===
     // The hosted positions supply the ticker's working and net exposure and
@@ -1703,25 +1684,25 @@ static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, 
                     if (!isfinite(ticker_price)) ticker_price = 0.;
 
                     if (own) {
-                        check_state.working_long += cache->working_long;
-                        check_state.working_short += cache->working_short;
+                        check_state->working_long += cache->working_long;
+                        check_state->working_short += cache->working_short;
 
-                        if (cache->exposure_volume > 0) check_state.exposure_long += cache->exposure_volume;
-                        else check_state.exposure_short -= cache->exposure_volume;
+                        if (cache->exposure_volume > 0) check_state->exposure_long += cache->exposure_volume;
+                        else check_state->exposure_short -= cache->exposure_volume;
                     }
 
                     double net_notional     = cache->exposure_volume * ticker_price;
                     double working_notional = (cache->working_long + cache->working_short) * ticker_price;
 
-                    check_state.portfolio_exposure_notional += net_notional;
-                    check_state.portfolio_exposure_notional_abs += fabs(net_notional);
-                    check_state.portfolio_working_notional += working_notional;
+                    check_state->portfolio_exposure_notional += net_notional;
+                    check_state->portfolio_exposure_notional_abs += fabs(net_notional);
+                    check_state->portfolio_working_notional += working_notional;
 
-                    if (net_notional > 0) check_state.ttl_exposure_notional_long += net_notional;
-                    else check_state.ttl_exposure_notional_short -= net_notional;
+                    if (net_notional > 0) check_state->ttl_exposure_notional_long += net_notional;
+                    else check_state->ttl_exposure_notional_short -= net_notional;
 
-                    check_state.ttl_working_notional_long += cache->working_long * ticker_price;
-                    check_state.ttl_working_notional_short += cache->working_short * ticker_price;
+                    check_state->ttl_working_notional_long += cache->working_long * ticker_price;
+                    check_state->ttl_working_notional_short += cache->working_short * ticker_price;
 
                     ticker_entry = ticker_entry->next;
                 }
@@ -1746,14 +1727,45 @@ static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, 
                 int                  sign   = c_md_side_sign(ctx->order.side);
 
                 if (placed.year == today.year && placed.month == today.month && placed.day == today.day) {
-                    if (sign > 0) check_state.traded_long += ctx->order.filled_volume;
-                    else if (sign < 0) check_state.traded_short += ctx->order.filled_volume;
+                    if (sign > 0) check_state->traded_long += ctx->order.filled_volume;
+                    else if (sign < 0) check_state->traded_short += ctx->order.filled_volume;
                 }
             }
 
             entry = entry->next;
         }
     }
+}
+
+/**
+ * @brief Check a volume on a side at an explicit price against the profile.
+ *
+ * Runs once per algo open and per order launch. The check_state is filled from
+ * the access by `c_dma_risk_profile_check_state_init`; a portfolio ticker
+ * without a market price counts as zero. The ticker's custom rules run after
+ * the standard rules pass; the first rejection is returned.
+ *
+ * @param DMA The access (NULL-safe).
+ * @param risk_profile The profile (NULL-safe).
+ * @param ticker The instrument (non-empty).
+ * @param side The trade side.
+ * @param volume The volume to check.
+ * @param price The price the rules are checked at (NaN when unavailable).
+ * @return The check's violation; a passing check reports DMA_RISK_PASS.
+ */
+static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price) {
+    dma_risk_check_state check_state;
+    dma_risk_violation   violation;
+
+    if (!DMA || !risk_profile || !ticker) {
+        c_dma_risk_violation_format(&violation, DMA_RISK_INVALID, "invalid risk_profile check input");
+        return violation;
+    }
+
+    c_dma_risk_profile_check_state_init(DMA, ticker, price, &check_state);
+
+    check_state.volume    = volume;
+    check_state.side_sign = c_md_side_sign(side);
 
     // === Step 2 ===
     // The standard rules run first; a rejection returns immediately.
