@@ -118,7 +118,7 @@ static inline int c_dma_algo_passive_stop(dma* DMA, dma_algo* base, void* user_d
         bytemap_entry*        next  = entry->next;
         md_trade_instruction* order = *(md_trade_instruction**) entry->value;
 
-        if (order && c_md_state_working(order->order_state)) {
+        if (order && c_md_state_cancellable(order->order_state)) {
             c_dma_cancel_order(DMA, order);
             canceled++;
         }
