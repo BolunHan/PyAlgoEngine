@@ -1,16 +1,15 @@
-from cpython.unicode cimport PyUnicode_AsUTF8
+from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString
 from libc.math cimport NAN
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from algo_engine.engine.c_dma cimport DMA, c_dma_new_algo
 from algo_engine.engine.c_dma_algo cimport ALGO_REGISTRY, c_dma_algo_registry_reg, dma_algo_ctx, dma_algo_limit_mode, dma_algo_new
 
-from .c_passive cimport dma_algo_passive
-
 
 cdef dma_algo_ctx* REG_CTX = c_dma_algo_registry_reg(ALGO_REGISTRY.header, DMA_ALGO_AGGRESSIVE_NAME, <dma_algo_new> c_dma_algo_aggressive_new, DMA_ALGO_AGGRESSIVE_REG_ID)
 if not REG_CTX:
     raise RuntimeError('Failed to register <aggressive>.')
+ALGO_REGISTRY.add_algo(PyUnicode_FromString(DMA_ALGO_AGGRESSIVE_NAME), Aggressive)
 
 
 cdef class Aggressive(Passive):
@@ -46,5 +45,4 @@ cdef class Aggressive(Passive):
             raise MemoryError(f'Failed to allocate memory for <{self.__class__.__name__}>.')
 
         self.algo_meta = algo
-        self.header = <dma_algo_passive*> algo
         self.ccp_bind(&self.algo_meta)
