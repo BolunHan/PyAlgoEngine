@@ -70,7 +70,7 @@ cdef class AlgoMapView(BoundByteMap):
         cdef dma_algo* algo = (<dma_algo**> value)[0]
         if not algo:
             return None
-        return AlgoTemplate.c_from_header(algo)
+        return ALGO_REGISTRY.c_from_algo(algo)
 
 
 cdef class AlgoRegistry(CCPType):
@@ -100,14 +100,69 @@ cdef class AlgoRegistry(CCPType):
         cdef const char* key = PyUnicode_AsUTF8AndSize(name, &key_len)
         return c_bytemap_ex_get_ptr(self.header.entries, key, key_len, NULL, NULL) == bytemap_ret_code.BYTEMAP_OK
 
-    cpdef void add_algo(self, str name, object handler):
-        self.classes[name] = handler
+    cpdef void add_algo(self, str name, type handler):
+        if not issubclass(handler, AlgoTemplate):
+            raise TypeError(f'<{self.__class__.__name__}> requires an <AlgoTemplate> subclass, got <{handler!r}>.')
+
+        if not self.header or not self.header.entries:
+            raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
+
+        cdef Py_ssize_t key_len
+        cdef const char* key = PyUnicode_AsUTF8AndSize(name, &key_len)
+        if not key:
+            raise MemoryError(f'<{self.__class__.__name__}> failed to encode the algo name.')
+
+        cdef char* stored = NULL
+
+        if c_bytemap_ex_get_ptr(self.header.entries, key, key_len, &stored, NULL) != bytemap_ret_code.BYTEMAP_OK:
+            raise KeyError(f'<{self.__class__.__name__}> has no registered factory named <{name}>.')
+
+        cdef dma_algo_ctx* ctx = (<dma_algo_ctx**> stored)[0]
+
+        if not ctx:
+            raise KeyError(f'<{self.__class__.__name__}> has no registered factory named <{name}>.')
+
+        self.classes[ctx.reg_id] = handler
 
     cpdef object cast(self, str name):
-        cdef object handler = self.classes.get(name)
+        if not self.header or not self.header.entries:
+            raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
+
+        cdef Py_ssize_t key_len
+        cdef const char* key = PyUnicode_AsUTF8AndSize(name, &key_len)
+        if not key:
+            raise MemoryError(f'<{self.__class__.__name__}> failed to encode the algo name.')
+
+        cdef char* stored = NULL
+
+        if c_bytemap_ex_get_ptr(self.header.entries, key, key_len, &stored, NULL) != bytemap_ret_code.BYTEMAP_OK:
+            raise ValueError(f'Invalid name {name}')
+
+        cdef dma_algo_ctx* ctx = (<dma_algo_ctx**> stored)[0]
+
+        if not ctx:
+            raise ValueError(f'Invalid name {name}')
+
+        cdef object handler = self.classes.get(ctx.reg_id)
+
         if handler is None:
             raise ValueError(f'Invalid name {name}')
+
         return handler
+
+    cdef AlgoTemplate c_from_algo(self, dma_algo* algo):
+        if not algo:
+            raise ValueError(f'<{self.__class__.__name__}> requires an algo record.')
+
+        cdef object handler = self.classes.get(algo.algo_reg_id)
+
+        if handler is None:
+            return AlgoTemplate.c_from_header(algo)
+
+        cdef AlgoTemplate instance = <AlgoTemplate> handler.__new__(handler)
+        instance.algo_meta = algo
+        instance.ccp_bind(&instance.algo_meta)
+        return instance
 
     property names:
         def __get__(self):
@@ -121,7 +176,24 @@ cdef class AlgoRegistry(CCPType):
 
     property reversed_registry:
         def __get__(self):
-            return {handler.__name__: name for name, handler in self.classes.items()}
+            if not self.header or not self.header.entries:
+                raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
+
+            cdef bytemap_entry* entry = self.header.entries.first
+            cdef dma_algo_ctx* ctx
+            cdef object handler
+            cdef dict reversed = {}
+
+            while entry:
+                ctx = (<dma_algo_ctx**> entry.value)[0]
+                handler = self.classes.get(ctx.reg_id) if ctx else None
+
+                if handler is not None:
+                    reversed[handler.__name__] = PyUnicode_FromStringAndSize(entry.key, entry.key_length)
+
+                entry = entry.next
+
+            return reversed
 
 
 cdef class AlgoEngine(CCPType):

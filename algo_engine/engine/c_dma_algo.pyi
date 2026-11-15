@@ -26,7 +26,9 @@ class AlgoRegistry:
 
     The C registry points each name at its current registration context and
     owns every context, current or replaced, by registration id; the Python
-    class table maps the same name to the wrapper class.
+    class table maps the registration id to the wrapper class, so a record
+    resolves to the wrapper that built it. A name resolves to the class of the
+    registration it currently names.
     """
 
     passive: str
@@ -37,10 +39,15 @@ class AlgoRegistry:
     names: set[str]
     reversed_registry: dict[str, str]
 
-    def add_algo(self, name: str, handler: object) -> None:
-        """Register a wrapper class under a name."""
+    def add_algo(self, name: str, handler: type[AlgoTemplate]) -> None:
+        """Register a wrapper class under a name.
 
-    def cast(self, name: str) -> object:
+        Args:
+            name: The name the C registry already holds a factory under.
+            handler: The ``AlgoTemplate`` subclass that wraps the built record.
+        """
+
+    def cast(self, name: str) -> type[AlgoTemplate]:
         """Resolve a name to its wrapper class."""
 
 

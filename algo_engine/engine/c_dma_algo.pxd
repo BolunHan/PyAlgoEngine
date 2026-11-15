@@ -5,7 +5,7 @@ from cbase.bytemap cimport BoundByteMap, bytemap
 
 from algo_engine.base.c_market_data.c_market_data cimport long_md_id, md_side, md_trade_instruction, md_trade_report, md_variant
 
-from .algo.c_algo_template cimport dma_algo
+from .algo.c_algo_template cimport AlgoTemplate, dma_algo
 
 
 cdef extern from "algo_engine/engine/c_dma_algo.h":
@@ -101,9 +101,11 @@ cdef class AlgoRegistry(CCPType):
     cdef bint owner
     cdef dict classes
 
-    cpdef void add_algo(self, str name, object handler)
+    cpdef void add_algo(self, str name, type handler)
 
     cpdef object cast(self, str name)
+
+    cdef AlgoTemplate c_from_algo(self, dma_algo* algo)
 
     @staticmethod
     cdef AlgoRegistry c_from_header(dma_algo_registry* header, bint owner)
