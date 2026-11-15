@@ -41,7 +41,9 @@ class AlgoTemplate:
     the order and fill feeds. The class is not an abstract algo base and is not
     constructed directly: a kind is built by its concrete wrapper (`Passive`,
     `Aggressive`, ...), whose record embeds `dma_algo` at offset 0, and the
-    kind's behavior lives in the record's C callbacks.
+    kind's behavior lives in the record's C callbacks. Wrapping a record that
+    already exists resolves through the registry to the concrete wrapper of the
+    kind that built it.
     """
 
     algo_id: uuid.UUID
