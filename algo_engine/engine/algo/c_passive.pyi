@@ -13,8 +13,22 @@ class Passive(AlgoTemplate):
     factor and the market price, picked by ``limit_mode``.
     """
 
-    limit_price: float | None
-    limit_adjust_factor: float | None
+    @property
+    def limit_price(self) -> float | None:
+        """The absolute limit; None when unset."""
+        ...
+
+    @limit_price.setter
+    def limit_price(self, value: float) -> None: ...
+
+    @property
+    def limit_adjust_factor(self) -> float | None:
+        """The market-price factor; None when unset."""
+        ...
+
+    @limit_adjust_factor.setter
+    def limit_adjust_factor(self, value: float) -> None: ...
+
     limit_mode: AlgoLimitMode
     timeout: float
     relaunch: bool

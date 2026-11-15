@@ -40,4 +40,4 @@ cdef extern from "algo_engine/engine/algo/c_passive.h":
 
 
 cdef class Passive(AlgoTemplate):
-    cdef dma_algo_passive* header
+    pass

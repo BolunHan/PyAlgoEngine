@@ -1,4 +1,4 @@
-from cpython.unicode cimport PyUnicode_AsUTF8
+from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString
 from libc.math cimport NAN, isnan
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
@@ -10,6 +10,7 @@ from algo_engine.engine.c_dma_algo import AlgoLimitMode
 cdef dma_algo_ctx* REG_CTX = c_dma_algo_registry_reg(ALGO_REGISTRY.header, DMA_ALGO_PASSIVE_NAME, <dma_algo_new> c_dma_algo_passive_new, DMA_ALGO_PASSIVE_REG_ID)
 if not REG_CTX:
     raise RuntimeError('Failed to register <passive>.')
+ALGO_REGISTRY.add_algo(PyUnicode_FromString(DMA_ALGO_PASSIVE_NAME), Passive)
 
 
 cdef class Passive(AlgoTemplate):
@@ -45,62 +46,65 @@ cdef class Passive(AlgoTemplate):
             raise MemoryError(f'Failed to allocate memory for <{self.__class__.__name__}>.')
 
         self.algo_meta = algo
-        self.header = <dma_algo_passive*> algo
         self.ccp_bind(&self.algo_meta)
-
-    cdef void __ccp_dealloc__(self):
-        self.header = NULL
-        self.orders_map = None
-        self.working_orders_map = None
 
     # === Python Properties ===
 
     property limit_price:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return None if isnan(self.header.limit_price) else self.header.limit_price
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            return None if isnan(record.limit_price) else record.limit_price
 
-        def __set__(self, object value):
-            if not self.header:
+        def __set__(self, double value):
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.limit_price = NAN if value is None else value
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            record.limit_price = value
 
     property limit_adjust_factor:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return None if isnan(self.header.limit_adjust_factor) else self.header.limit_adjust_factor
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            return None if isnan(record.limit_adjust_factor) else record.limit_adjust_factor
 
-        def __set__(self, object value):
-            if not self.header:
+        def __set__(self, double value):
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.limit_adjust_factor = NAN if value is None else value
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            record.limit_adjust_factor = value
 
     property limit_mode:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return AlgoLimitMode(<int> self.header.limit_mode)
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            return AlgoLimitMode(<int> record.limit_mode)
 
         def __set__(self, dma_algo_limit_mode mode):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.limit_mode = mode
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            record.limit_mode = mode
 
     property timeout:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.timeout
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            return record.timeout
 
         def __set__(self, double value):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            self.header.timeout = value
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            record.timeout = value
 
     property relaunch:
         def __get__(self):
-            if not self.header:
+            if not self.algo_meta:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
-            return self.header.relaunch
+            cdef dma_algo_passive* record = <dma_algo_passive*> self.algo_meta
+            return record.relaunch
