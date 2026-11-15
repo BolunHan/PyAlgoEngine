@@ -4,20 +4,21 @@ import os
 import pathlib
 from collections import defaultdict
 
-import pandas as pd
-from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_FromString, PyUnicode_FromStringAndSize, PyUnicode_AsUTF8AndSize
 from cpython.object cimport PyObject
-from libc.math cimport NAN, isnan
+from cpython.unicode cimport PyUnicode_AsUTF8, PyUnicode_AsUTF8AndSize, PyUnicode_FromString, PyUnicode_FromStringAndSize
+from libc.math cimport isnan
 from libc.string cimport memcpy
 
-from cbase.allocator_protocol cimport c_ap_acquire_ownership, c_ap_alloc, c_ap_free
+from cbase.allocator_protocol cimport c_ap_alloc, c_ap_free
 from cbase.bytemap cimport bytemap_entry, c_bytemap_gen_seq_id
+
+import pandas as pd
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction
+from algo_engine.engine import LOGGER
 from algo_engine.engine.c_dma cimport DMA
 from algo_engine.engine.c_market_engine cimport MDS, c_mds_get_market_price
-from algo_engine.engine import LOGGER
 
 
 class RiskRule(enum.IntEnum):
@@ -643,11 +644,14 @@ cdef class RiskRuleTemplate(CCPType):
     cdef dma_risk_type c_check(self, const dma_risk_rule_ctx* rule, const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price, dma_risk_violation* out):
         return dma_risk_type.DMA_RISK_PASS
 
-    cdef dma_risk_rule_ctx* c_compose_rule(self, RiskProfile risk_profile, str ticker):
+    cdef void c_register(self, RiskProfile risk_profile, str ticker):
+        if self.profile is not None:
+            raise RuntimeError(f'<{self}> is already registered.')
+
         if ticker is None:
             raise TypeError(f'<{self.__class__.__name__}> requires a ticker; use register_global for a global rule.')
 
-        return c_dma_risk_profile_register_rule(
+        cdef dma_risk_rule_ctx* rule = c_dma_risk_profile_register_rule(
             risk_profile.header,
             PyUnicode_AsUTF8(ticker),
             RiskRuleTemplate.c_risk_rule_check_adaptor,
@@ -656,20 +660,6 @@ cdef class RiskRuleTemplate(CCPType):
             <void*> <PyObject*> self
         )
 
-    cdef dma_risk_rule_ctx* c_compose_global_rule(self, RiskProfile risk_profile):
-        return c_dma_risk_profile_register_global_rule(
-            risk_profile.header,
-            RiskRuleTemplate.c_risk_rule_check_adaptor,
-            self.code,
-            PyUnicode_AsUTF8(self.name),
-            <void*> <PyObject*> self
-        )
-
-    cdef void c_register(self, RiskProfile risk_profile, str ticker):
-        if self.profile is not None:
-            raise RuntimeError(f'<{self}> is already registered.')
-
-        cdef dma_risk_rule_ctx* rule = self.c_compose_rule(risk_profile, ticker)
         if not rule:
             raise RuntimeError(f'Failed to register <{self.__class__.__name__}>.')
 
@@ -683,7 +673,14 @@ cdef class RiskRuleTemplate(CCPType):
         if self.profile is not None:
             raise RuntimeError(f'<{self}> is already registered.')
 
-        cdef dma_risk_rule_ctx* rule = self.c_compose_global_rule(risk_profile)
+        cdef dma_risk_rule_ctx* rule = c_dma_risk_profile_register_global_rule(
+            risk_profile.header,
+            RiskRuleTemplate.c_risk_rule_check_adaptor,
+            self.code,
+            PyUnicode_AsUTF8(self.name),
+            <void*> <PyObject*> self
+        )
+
         if not rule:
             raise RuntimeError(f'Failed to register <{self.__class__.__name__}>.')
 

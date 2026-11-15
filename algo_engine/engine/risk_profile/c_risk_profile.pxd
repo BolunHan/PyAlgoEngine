@@ -9,6 +9,7 @@ from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction
 from algo_engine.engine.algo.c_algo_template cimport dma_algo
 from algo_engine.engine.c_dma cimport dma
 
+
 cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
     # === Enums and constants ===
     const size_t DMA_RISK_MESSAGE_SIZE
@@ -239,10 +240,6 @@ cdef class RiskRuleTemplate(CCPType):
     cdef RiskRuleTemplate c_from_header(dma_risk_rule_ctx* risk_rule_ctx, RiskProfile parent)
 
     cdef dma_risk_type c_check(self, const dma_risk_rule_ctx* rule, const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price, dma_risk_violation* out)
-
-    cdef dma_risk_rule_ctx* c_compose_rule(self, RiskProfile risk_profile, str ticker)
-
-    cdef dma_risk_rule_ctx* c_compose_global_rule(self, RiskProfile risk_profile)
 
     cdef void c_register(self, RiskProfile risk_profile, str ticker)
 

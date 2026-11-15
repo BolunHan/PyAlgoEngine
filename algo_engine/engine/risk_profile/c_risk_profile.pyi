@@ -163,9 +163,9 @@ class RiskRuleTemplate:
 
         The profile composes the rule node, owns it, and keeps this wrapper
         alive while the rule is registered. A rule already holding a node
-        refuses a second registration. A subclass that composes its own node
-        (``BanAuctionRule``) takes the scope from its C state and ignores the
-        argument.
+        refuses a second registration. A subclass overrides the registration
+        the same way: ``NoTradeWindowRule`` builds its C state from the ticker
+        and its window.
 
         Args:
             risk_profile (RiskProfile): The profile to register on.
@@ -211,7 +211,7 @@ class RiskProfile:
     Either gate may be absent; an absent gate is skipped. A ticker cannot be on
     both lists: the add refuses the conflict and logs it.
 
-    A ticker can also carry custom rules (see ``BanAuctionRule``); they run
+    A ticker can also carry custom rules (see ``NoTradeWindowRule``); they run
     after the standard rules pass, ticker rules before global ones, and a
     disabled rule is skipped.
 
