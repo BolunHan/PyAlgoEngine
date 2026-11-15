@@ -229,13 +229,14 @@ typedef dma_risk_type (*dma_risk_rule_check_func)(const dma_risk_rule_ctx* rule,
  * @brief One custom rule of a ticker; owned by the ticker's limit set.
  *
  * The fields follow the chain walk: the check, its state and the next link
- * lead, the rejection-only name and the identity follow, and the flags word
- * closes the block. The node is 48 bytes, so a 16-byte-aligned node spans two
- * cache lines only when it starts 48 bytes into a line.
+ * lead, the ticker scope, the name and the identity follow, and the flags word
+ * closes the block. The node is 56 bytes, so a 16-byte-aligned node spans two
+ * cache lines only when it starts 56 bytes into a line.
  *
  * The profile composes the node in `c_dma_risk_profile_register_rule` under
- * the ticker's limit set and frees it on unregister, clear and dealloc. `name`
- * is borrowed. `user_data` is the rule's state: a rule that parents its state
+ * the ticker's limit set and frees it on unregister, clear and dealloc. The
+ * ticker and the name are copies owned by the node; the ticker is NULL for a
+ * global rule. `user_data` is the rule's state: a rule that parents its state
  * under the node (`c_ap_acquire_ownership`) gives the node its lifetime too. A
  * disabled rule stays linked but the check skips it.
  */
@@ -243,7 +244,8 @@ typedef struct dma_risk_rule_ctx {
     dma_risk_rule_check_func  check_fn;        // NOT owned - the rule; invoked while the rule is enabled.
     void*                     user_data;       // The rule's state; adoption under the node frees it with the rule.
     struct dma_risk_rule_ctx* next;            // The next rule in the chain.
-    const char*               name;            // NOT owned - the rule name reported in a message.
+    const char*               ticker;          // The ticker scope; a copy owned by the node, NULL for a global rule.
+    const char*               name;            // The rule name reported in a message; a copy owned by the node.
     uintptr_t                 rule_id;         // The node address.
     int                       risk_rule_code;  // The code a rejection reports.
     bool                      enabled;         // A disabled rule stays linked and is skipped.
@@ -1326,12 +1328,29 @@ static inline dma_risk_limits* c_dma_risk_profile_get_limits(const dma_risk_prof
 }
 
 /**
+ * @brief Copy a string under a rule node.
+ * @param source The string to copy (NULL returns NULL).
+ * @param rule The node that owns the copy.
+ * @return The copy, or NULL when source is NULL or the allocation fails.
+ */
+static inline const char* c_dma_risk_rule_strdup(const char* source, dma_risk_rule_ctx* rule) {
+    if (!source) return NULL;
+
+    size_t len  = strlen(source) + 1;
+    char*  copy = (char*) c_ap_alloc_child(len, NULL, rule);
+    if (!copy) return NULL;
+
+    memcpy(copy, source, len);
+    return copy;
+}
+
+/**
  * @brief Compose and append a custom rule to a ticker's chain.
  *
  * The ticker's limit set is created on first registration with every rule
  * disabled. The profile allocates the node under the ticker's limit set, sets
  * its id to the node address and owns it: unregister, clear and dealloc free
- * it. `name` is borrowed and must outlive the registration. `user_data` is the
+ * it. `ticker` and `name` are copied under the node. `user_data` is the
  * rule's state; a rule that adopts it under the node gives the node its
  * lifetime.
  *
@@ -1355,10 +1374,23 @@ static inline dma_risk_rule_ctx* c_dma_risk_profile_register_rule(dma_risk_profi
     rule->risk_rule_code = risk_rule_code;
     rule->enabled        = true;
     rule->check_fn       = check_fn;
-    rule->name           = name;
     rule->user_data      = user_data;
     rule->rule_id        = (uintptr_t) rule;
     rule->next           = NULL;
+
+    rule->ticker = c_dma_risk_rule_strdup(ticker, rule);
+    if (!rule->ticker) {
+        c_ap_free_owned(rule);
+        return NULL;
+    }
+
+    if (name) {
+        rule->name = c_dma_risk_rule_strdup(name, rule);
+        if (!rule->name) {
+            c_ap_free_owned(rule);
+            return NULL;
+        }
+    }
 
     c_dma_risk_profile_link_rule(&limits->rules, rule);
 
@@ -1370,8 +1402,8 @@ static inline dma_risk_rule_ctx* c_dma_risk_profile_register_rule(dma_risk_profi
  *
  * A global rule applies to every ticker and runs after the ticker's own custom
  * rules. The node is its own allocator block; unregister, clear and dealloc
- * free it. `name` is borrowed, and `user_data` follows the same adoption rule
- * as a ticker rule.
+ * free it. `name` is copied under the node, and `user_data` follows the same
+ * adoption rule as a ticker rule.
  *
  * @param risk_profile The profile (NULL-safe).
  * @param check_fn The rule's check (NULL is refused).
@@ -1391,10 +1423,18 @@ static inline dma_risk_rule_ctx* c_dma_risk_profile_register_global_rule(dma_ris
     rule->risk_rule_code = risk_rule_code;
     rule->enabled        = true;
     rule->check_fn       = check_fn;
-    rule->name           = name;
     rule->user_data      = user_data;
     rule->rule_id        = (uintptr_t) rule;
     rule->next           = NULL;
+    rule->ticker         = NULL;
+
+    if (name) {
+        rule->name = c_dma_risk_rule_strdup(name, rule);
+        if (!rule->name) {
+            c_ap_free_owned(rule);
+            return NULL;
+        }
+    }
 
     c_dma_risk_profile_link_rule(&risk_profile->globals.rules, rule);
 
