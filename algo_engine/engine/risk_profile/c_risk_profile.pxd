@@ -1,12 +1,13 @@
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uint32_t, uintptr_t
 from libcpp cimport bool as c_bool
 
-from cbase.allocator_protocol cimport CCPType, allocator_protocol
+from cbase.allocator_protocol cimport CCPType, allocator_protocol, ccp_ctx
 from cbase.bytemap cimport BoundByteMap, bytemap
 
 from algo_engine.base.c_market_data.c_market_data cimport md_side, md_trade_instruction
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction
-
+from algo_engine.engine.algo.c_algo_template cimport dma_algo
+from algo_engine.engine.c_dma cimport dma
 
 cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
     # === Enums and constants ===
@@ -57,15 +58,13 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
         DMA_RISK_CUSTOM
 
     # === Structs ===
-    ctypedef struct dma
-    ctypedef struct dma_algo
-    ctypedef struct dma_risk_rule_ctx
 
     ctypedef struct dma_risk_limits_globals:
         double max_ttl_notional_long
         double max_ttl_notional_short
         double max_net_notional_long
         double max_net_notional_short
+        uint32_t enabled
         dma_risk_rule_ctx* rules
 
     ctypedef struct dma_risk_profile:
@@ -89,12 +88,14 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
         double             max_exposure_short
         double             max_notional_long
         double             max_notional_short
+        uint32_t           enabled
         dma_risk_rule_ctx* rules
 
     ctypedef struct dma_risk_rule_ctx:
         dma_risk_rule_check_func  check_fn
         void*                     user_data
         dma_risk_rule_ctx*        next
+        const char*               ticker
         const char*               name
         uintptr_t                 rule_id
         int                       risk_rule_code
@@ -122,6 +123,7 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
     # === Rule tables ===
     const char*           c_dma_risk_rule_name(dma_risk_rule rule) noexcept nogil
     c_bool                c_dma_risk_rule_is_global(dma_risk_rule rule) noexcept nogil
+    uint32_t              c_dma_risk_rule_bit(dma_risk_rule rule) noexcept nogil
     const char*           c_dma_risk_type_name(dma_risk_type type) noexcept nogil
     int                   c_dma_risk_violation_code(dma_risk_type type) noexcept nogil
 
@@ -159,10 +161,26 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
     dma_risk_violation    c_dma_risk_profile_check_algo(const dma* DMA, const dma_risk_profile* risk_profile, const dma_algo* algo) noexcept nogil
     dma_risk_violation    c_dma_risk_profile_check_order(const dma* DMA, const dma_risk_profile* risk_profile, const md_trade_instruction* order) noexcept nogil
     dma_risk_violation    c_dma_risk_profile_check_volume(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume) noexcept nogil
+    void                  c_dma_risk_profile_check_state_init(const dma* DMA, const char* ticker, double price, dma_risk_check_state* check_state) noexcept nogil
     dma_risk_violation    c_dma_risk_profile_check_limit(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price) noexcept nogil
 
 
-cdef void c_dma_risk_profile_set_process_access(dma* DMA) noexcept
+cdef class RiskViolation(Exception):
+    cdef ccp_ctx ccp_ctx
+    cdef const dma_risk_violation* header
+    cdef bint owner
+
+    cdef dict __dict__
+
+    cdef inline void ccp_attach(self)
+
+    cdef inline void ccp_detach(self)
+
+    @staticmethod
+    cdef RiskViolation c_from_header(const dma_risk_violation* header, bint owner=?)
+
+    @staticmethod
+    cdef RiskViolation c_from_value(dma_risk_violation value)
 
 
 cdef class RiskLimits(CCPType):
@@ -181,21 +199,19 @@ cdef class RiskProfile(CCPType):
     cdef dma_risk_profile* header
     cdef bint owner
 
-    cdef readonly object balance
+    cdef dict registered_rules
 
     cdef RiskLimitsMapView limits_map
 
-    cdef void c_apply_payload(self, dict payload)
+    cpdef void set_rules(self, dict rules)
 
-    cdef void c_set_limit(self, dma_risk_rule rule, str key, object ticker, double value)
-
-    cdef dict c_get_volume(self, str ticker, str flag)
+    cdef void c_set_limit(self, dma_risk_rule rule, str ticker, double value)
 
     cdef dict c_snapshot_rules(self)
 
     cdef bint c_report_violation(self, const dma_risk_violation* violation)
 
-    cpdef void set_rule(self, str key, double value, object ticker=?)
+    cpdef void set_rule(self, object key, double value, str ticker=?)
 
     cpdef void set_whitelist(self, str ticker, bint enabled=?)
 
@@ -211,11 +227,25 @@ cdef class RiskProfile(CCPType):
 
 
 cdef class RiskRuleTemplate(CCPType):
-    cdef dma_risk_rule_ctx* header
+    cdef dma_risk_rule_ctx* risk_rule_ctx
     cdef RiskProfile profile
-    cdef readonly str ticker
+    cdef readonly str name
+    cdef readonly int code
 
     @staticmethod
-    cdef RiskRuleTemplate c_from_header(dma_risk_rule_ctx* header)
+    cdef dma_risk_type c_risk_rule_check_adaptor(const dma_risk_rule_ctx* rule, const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price, void* user_data, dma_risk_violation* out) noexcept
 
-    cdef void c_bind_rule(self, RiskProfile risk_profile, str ticker, dma_risk_rule_ctx* rule)
+    @staticmethod
+    cdef RiskRuleTemplate c_from_header(dma_risk_rule_ctx* risk_rule_ctx, RiskProfile parent)
+
+    cdef dma_risk_type c_check(self, const dma_risk_rule_ctx* rule, const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price, dma_risk_violation* out)
+
+    cdef dma_risk_rule_ctx* c_compose_rule(self, RiskProfile risk_profile, str ticker)
+
+    cdef dma_risk_rule_ctx* c_compose_global_rule(self, RiskProfile risk_profile)
+
+    cdef void c_register(self, RiskProfile risk_profile, str ticker)
+
+    cdef void c_register_global(self, RiskProfile risk_profile)
+
+    cdef void c_unregister(self)
