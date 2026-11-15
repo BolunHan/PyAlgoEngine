@@ -90,7 +90,7 @@ static inline int c_dma_algo_passive_launch(dma* DMA, dma_algo* base, void* user
 
     c_dma_algo_set_status(base, DMA_ALGO_STATUS_WORKING);
 
-    c_dma_invoke_launch_order(DMA, order);
+    c_dma_launch_order(DMA, order);
     return DMA_ALGO_OK;
 }
 
@@ -119,8 +119,7 @@ static inline int c_dma_algo_passive_stop(dma* DMA, dma_algo* base, void* user_d
         md_trade_instruction* order = *(md_trade_instruction**) entry->value;
 
         if (order && c_md_state_working(order->order_state)) {
-            order->order_state = STATE_CANCELING;
-            c_dma_invoke_cancel_order(DMA, order);
+            c_dma_cancel_order(DMA, order);
             canceled++;
         }
 
