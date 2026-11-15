@@ -827,7 +827,7 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
     order->side        = algo->side;
     order->order_type  = ORDER_LIMIT;
     order->multiplier  = algo->multiplier;
-    order->order_state = STATE_SENT;
+    order->order_state = STATE_PENDING;
     order->ts_placed   = order->meta_info.dt.unix_ts;
 
     order->order_id.id_type               = MID_UINT64;
