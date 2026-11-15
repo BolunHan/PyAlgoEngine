@@ -21,7 +21,7 @@ from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, Trad
 from . import LOGGER
 from .algo.c_algo_template cimport AlgoTemplate, c_dma_algo_stop, dma_algo
 from .c_dma cimport DMA
-from .c_dma_algo cimport ALGO_ENGINE, AlgoMapView
+from .c_dma_algo cimport ALGO_ENGINE, ALGO_REGISTRY, AlgoMapView
 
 
 class PositionCallbackEvent(enum.IntEnum):
@@ -103,7 +103,7 @@ cdef class PositionManagementService(CCPType):
             void* user_data
     ) noexcept with gil:
         cdef PositionManagementService self = <PositionManagementService> <object> <PyObject*> user_data
-        cdef AlgoTemplate py_algo = AlgoTemplate.c_from_header(<dma_algo*> algo)
+        cdef AlgoTemplate py_algo = ALGO_REGISTRY.c_from_algo(<dma_algo*> algo)
         cdef TradeInstruction py_order = instruction_from_header(<const md_variant*> order, False)
         cdef PyObject* res = NULL
         cdef PyObject* exc = NULL
@@ -129,7 +129,7 @@ cdef class PositionManagementService(CCPType):
             void* user_data
     ) noexcept with gil:
         cdef PositionManagementService self = <PositionManagementService> <object> <PyObject*> user_data
-        cdef AlgoTemplate py_algo = AlgoTemplate.c_from_header(<dma_algo*> algo)
+        cdef AlgoTemplate py_algo = ALGO_REGISTRY.c_from_algo(<dma_algo*> algo)
         cdef TradeInstruction py_order = instruction_from_header(<const md_variant*> order, False)
         cdef PyObject* res = NULL
         cdef PyObject* exc = NULL
@@ -155,7 +155,7 @@ cdef class PositionManagementService(CCPType):
             void* user_data
     ) noexcept with gil:
         cdef PositionManagementService self = <PositionManagementService> <object> <PyObject*> user_data
-        cdef AlgoTemplate py_algo = AlgoTemplate.c_from_header(<dma_algo*> algo)
+        cdef AlgoTemplate py_algo = ALGO_REGISTRY.c_from_algo(<dma_algo*> algo)
         cdef TradeInstruction py_order = instruction_from_header(<const md_variant*> order, False)
         cdef PyObject* res = NULL
         cdef PyObject* exc = NULL
@@ -182,7 +182,7 @@ cdef class PositionManagementService(CCPType):
             void* user_data
     ) noexcept with gil:
         cdef PositionManagementService self = <PositionManagementService> <object> <PyObject*> user_data
-        cdef AlgoTemplate py_algo = AlgoTemplate.c_from_header(<dma_algo*> algo)
+        cdef AlgoTemplate py_algo = ALGO_REGISTRY.c_from_algo(<dma_algo*> algo)
         cdef TradeInstruction py_order = instruction_from_header(<const md_variant*> order, False)
         cdef TradeReport py_trade = report_from_header(<const md_variant*> trade, False)
         cdef PyObject* res = NULL
