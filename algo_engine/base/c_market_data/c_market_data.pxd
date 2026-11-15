@@ -122,8 +122,7 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
 
     ctypedef enum md_order_state:
         STATE_UNKNOWN
-        STATE_REJECTED
-        STATE_INVALID
+        STATE_IDLE
         STATE_PENDING
         STATE_SENT
         STATE_PLACED
@@ -131,6 +130,8 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
         STATE_FILLED
         STATE_CANCELING
         STATE_CANCELED
+        STATE_REJECTED
+        STATE_INVALID
 
     ctypedef enum md_id_type:
         MID_UNKNOWN
@@ -323,6 +324,7 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
     c_bool c_md_state_working(md_order_state state) noexcept nogil
     c_bool c_md_state_placed(md_order_state state) noexcept nogil
     c_bool c_md_state_done(md_order_state state) noexcept nogil
+    c_bool c_md_state_cancellable(md_order_state state) noexcept nogil
     int c_md_compare_ptr(const void* a, const void* b) noexcept nogil
     int c_md_compare_bid(const void* a, const void* b) noexcept nogil
     int c_md_compare_ask(const void* a, const void* b) noexcept nogil

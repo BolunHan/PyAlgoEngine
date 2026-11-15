@@ -73,6 +73,7 @@ static const char offset_name_close[]       = "close";
 static const char offset_name_unknown[]     = "unknown";
 
 static const char state_name_unknown[]      = "unknown";
+static const char state_name_idle[]         = "idle";
 static const char state_name_rejected[]     = "rejected";
 static const char state_name_invalid[]      = "invalid";
 static const char state_name_pending[]      = "pending";
@@ -145,16 +146,17 @@ typedef enum md_order_type {
 } md_order_type;
 
 typedef enum md_order_state {
-    STATE_UNKNOWN       = 0,
-    STATE_REJECTED      = 1,
-    STATE_INVALID       = 2,
-    STATE_PENDING       = 3,
-    STATE_SENT          = 4,
-    STATE_PLACED        = 5,
-    STATE_PARTFILLED    = 6,
-    STATE_FILLED        = 7,
-    STATE_CANCELING     = 8,
-    STATE_CANCELED      = 9
+    STATE_UNKNOWN       =   0,
+    STATE_IDLE          = 100,
+    STATE_PENDING       = 201,
+    STATE_SENT          = 202,
+    STATE_PLACED        = 300,
+    STATE_PARTFILLED    = 301,
+    STATE_FILLED        = 302,
+    STATE_CANCELING     = 400,
+    STATE_CANCELED      = 401,
+    STATE_REJECTED      = 500,
+    STATE_INVALID       = 501
 } md_order_state;
 
 typedef enum md_id_type {
@@ -341,16 +343,16 @@ typedef union md_variant {
 } md_variant;
 
 typedef enum md_ret_code {
-    MD_OK = 0,
-    MD_ERR_INVALID_INPUT = -1,
+    MD_OK                    = 0,
+    MD_ERR_INVALID_INPUT     = -1,
     MD_ERR_INVALID_ALLOCATOR = -2,
-    MD_ERR_BUF_FULL = -3,
-    MD_ERR_BUF_EMPTY = -4,
-    MD_ERR_BUF_CORRUPTED = -5,
-    MD_ERR_DISABLED = -6,
-    MD_ERR_TIMEOUT = -7,
-    MD_ERR_OOR = -8,
-    MD_ERR_OOM = -9,
+    MD_ERR_BUF_FULL          = -3,
+    MD_ERR_BUF_EMPTY         = -4,
+    MD_ERR_BUF_CORRUPTED     = -5,
+    MD_ERR_DISABLED          = -6,
+    MD_ERR_TIMEOUT           = -7,
+    MD_ERR_OOR               = -8,
+    MD_ERR_OOM               = -9,
 } md_ret_code;
 
 // ========== Forward Declarations (Public API) ==========
@@ -359,56 +361,56 @@ typedef enum md_ret_code {
  * @brief Sleep for a number of microseconds (cross-platform).
  * @param usec Microseconds to sleep.
  */
-static inline void c_usleep(unsigned int usec);
+static inline void              c_usleep(unsigned int usec);
 
 /**
  * @brief Allocate a new market_data buffer of the specified dtype.
  * @param dtype Concrete data type to allocate.
  * @return Pointer to allocated `md_variant`, or NULL on failure.
  */
-static inline md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator);
+static inline md_variant*       c_md_new(md_data_type dtype, allocator_protocol* allocator);
 
 /**
  * @brief Get the representative price from a market_data union.
  * @param market_data The data buffer.
  * @return Extracted price or 0.0 if unavailable.
  */
-static inline double c_md_get_price(const md_variant* market_data);
+static inline double            c_md_get_price(const md_variant* market_data);
 
 /**
  * @brief Extract the offset bits from a composed `md_side`.
  * @param side Composed side value.
  * @return `md_offset` component.
  */
-static inline md_offset c_md_side_offset(md_side side);
+static inline md_offset         c_md_side_offset(md_side side);
 
 /**
  * @brief Extract the direction bits from a composed `md_side`.
  * @param side Composed side value.
  * @return `md_direction` component.
  */
-static inline md_direction c_md_side_direction(md_side side);
+static inline md_direction      c_md_side_direction(md_side side);
 
 /**
  * @brief Get the opposite side of a composed `md_side`.
  * @param side Composed side value.
  * @return Opposite `md_side` value.
  */
-static inline md_side c_md_side_opposite(md_side side);
+static inline md_side           c_md_side_opposite(md_side side);
 
 /**
  * @brief Map a direction to its sign (-1, 0, 1).
  * @param side Side value.
  * @return Sign as int8_t.
  */
-static inline int8_t c_md_side_sign(md_side side);
+static inline int8_t            c_md_side_sign(md_side side);
 
 /**
  * @brief Get the size in bytes of a concrete dtype.
  * @param dtype Data type.
  * @return Size of the corresponding struct/union.
  */
-static inline size_t c_md_get_size(md_data_type dtype);
+static inline size_t            c_md_get_size(md_data_type dtype);
 
 /**
  * @brief Ordering key for a session datetime.
@@ -419,56 +421,56 @@ static inline size_t c_md_get_size(md_data_type dtype);
  * @param dt Session datetime (NULL-safe).
  * @return Sort key; 0 when neither a unix timestamp nor a date is set.
  */
-static inline double c_md_dt_sort_key(const session_datetime_t* dt);
+static inline double            c_md_dt_sort_key(const session_datetime_t* dt);
 
 /**
  * @brief Get the human-readable name of a dtype.
  * @param dtype Data type.
  * @return Constant string name, or NULL if unknown.
  */
-static inline const char* c_md_dtype_name(md_data_type dtype);
+static inline const char*       c_md_dtype_name(md_data_type dtype);
 
 /**
  * @brief Get the human-readable name of a side.
  * @param side Side value.
  * @return Constant string name.
  */
-static inline const char* c_md_side_name(md_side side);
+static inline const char*       c_md_side_name(md_side side);
 
 /**
  * @brief Get the human-readable name of an order type.
  * @param order_type Order type value.
  * @return Constant string name.
  */
-static inline const char* c_md_order_type_name(md_order_type order_type);
+static inline const char*       c_md_order_type_name(md_order_type order_type);
 
 /**
  * @brief Get the human-readable name of a direction.
  * @param side Side value.
  * @return Constant string name.
  */
-static inline const char* c_md_direction_name(md_side side);
+static inline const char*       c_md_direction_name(md_side side);
 
 /**
  * @brief Get the human-readable name of an offset.
  * @param side Side value.
  * @return Constant string name.
  */
-static inline const char* c_md_offset_name(md_side side);
+static inline const char*       c_md_offset_name(md_side side);
 
 /**
  * @brief Get the human-readable name of an order state.
  * @param state Order state value.
  * @return Constant string name.
  */
-static inline const char* c_md_state_name(md_order_state state);
+static inline const char*       c_md_state_name(md_order_state state);
 
 /**
  * @brief Compute serialized size of a market_data buffer.
  * @param market_data Buffer to measure.
  * @return Total bytes required for serialization.
  */
-static inline size_t c_md_serialized_size(const md_variant* market_data);
+static inline size_t            c_md_serialized_size(const md_variant* market_data);
 
 /**
  * @brief Serialize market_data into a contiguous buffer.
@@ -476,7 +478,7 @@ static inline size_t c_md_serialized_size(const md_variant* market_data);
  * @param out Destination byte buffer (preallocated).
  * @return Number of bytes written.
  */
-static inline size_t c_md_serialize(const md_variant* market_data, char* out);
+static inline size_t            c_md_serialize(const md_variant* market_data, char* out);
 
 /**
  * @brief Deserialize market_data from a contiguous buffer.
@@ -490,41 +492,48 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
  * @param book_size Number of levels in the order book.
  * @return Pointer to allocated `md_orderbook`, or NULL on failure.
  */
-static inline md_orderbook* c_md_orderbook_new(size_t book_size, allocator_protocol* allocator);
+static inline md_orderbook*     c_md_orderbook_new(size_t book_size, allocator_protocol* allocator);
 
 /**
  * @brief Free or recycle a previously allocated order book.
  * @param orderbook Pointer returned by `c_md_orderbook_new`.
  */
-static inline void c_md_orderbook_free(md_orderbook* orderbook);
+static inline void              c_md_orderbook_free(md_orderbook* orderbook);
 
 /**
  * @brief Sort the order book entries in place.
  * @param orderbook Pointer to the order book.
  * @return 0 on success, -1 on failure.
  */
-static inline int c_md_orderbook_sort(md_orderbook* orderbook);
+static inline int               c_md_orderbook_sort(md_orderbook* orderbook);
 
 /**
  * @brief Check if an order_state is a working state.
  * @param state Order state to check.
  * @return 1 if working, 0 otherwise.
  */
-static inline bool c_md_state_working(md_order_state state);
+static inline bool              c_md_state_working(md_order_state state);
 
 /**
  * @brief Check if an order_state is a placed state.
  * @param state Order state to check.
  * @return 1 if placed, 0 otherwise.
  */
-static inline bool c_md_state_placed(md_order_state state);
+static inline bool              c_md_state_placed(md_order_state state);
 
 /**
  * @brief Check if an order_state is a done state.
  * @param state Order state to check.
  * @return 1 if done, 0 otherwise.
  */
-static inline bool c_md_state_done(md_order_state state);
+static inline bool              c_md_state_done(md_order_state state);
+
+/**
+ * @brief Check if an order_state is cancellable at the venue.
+ * @param state Order state to check.
+ * @return true for SENT, PLACED and PARTFILLED.
+ */
+static inline bool              c_md_state_cancellable(md_order_state state);
 
 /**
  * @brief Compare two meta_info pointers by session datetime (ascending).
@@ -532,7 +541,7 @@ static inline bool c_md_state_done(md_order_state state);
  * @param b Pointer to pointer of md_meta.
  * @return -1, 0, or 1 like strcmp semantics.
  */
-static inline int c_md_compare_ptr(const void* a, const void* b);
+static inline int               c_md_compare_ptr(const void* a, const void* b);
 
 /**
  * @brief Order-book comparator for bids (descending price, non-empty first).
@@ -540,7 +549,7 @@ static inline int c_md_compare_ptr(const void* a, const void* b);
  * @param b Pointer to md_orderbook_entry.
  * @return -1, 0, or 1 for sorting.
  */
-static inline int c_md_compare_bid(const void* a, const void* b);
+static inline int               c_md_compare_bid(const void* a, const void* b);
 
 /**
  * @brief Order-book comparator for asks (ascending price, non-empty first).
@@ -548,7 +557,7 @@ static inline int c_md_compare_bid(const void* a, const void* b);
  * @param b Pointer to md_orderbook_entry.
  * @return -1, 0, or 1 for sorting.
  */
-static inline int c_md_compare_ask(const void* a, const void* b);
+static inline int               c_md_compare_ask(const void* a, const void* b);
 
 /**
  * @brief Compare two md_id identifiers (qsort-compatible).
@@ -560,7 +569,7 @@ static inline int c_md_compare_ask(const void* a, const void* b);
  *       (safe regardless of platform endianness). For STRING, BYTE, and UUID,
  *       lexicographic byte comparison is used.
  */
-static inline int c_md_compare_id(const md_id* id1, const md_id* id2);
+static inline int               c_md_compare_id(const md_id* id1, const md_id* id2);
 
 /**
  * @brief Compare two long_md_id identifiers (qsort-compatible).
@@ -572,7 +581,7 @@ static inline int c_md_compare_id(const md_id* id1, const md_id* id2);
  *       (safe regardless of platform endianness). For STRING, BYTE, and UUID,
  *       lexicographic byte comparison is used.
  */
-static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2);
+static inline int               c_md_compare_long_id(const long_md_id* id1, const long_md_id* id2);
 
 /**
  * @brief Equality check for two md_id identifiers.
@@ -581,7 +590,7 @@ static inline int c_md_compare_long_id(const long_md_id* id1, const long_md_id* 
  * @return true if equal, false otherwise.
  * @note Both ids must have the same id_type.
  */
-static inline bool c_md_id_equal(const md_id* id1, const md_id* id2);
+static inline bool              c_md_id_equal(const md_id* id1, const md_id* id2);
 
 /**
  * @brief Equality check for two long_md_id identifiers.
@@ -590,7 +599,7 @@ static inline bool c_md_id_equal(const md_id* id1, const md_id* id2);
  * @return true if equal, false otherwise.
  * @note Both ids must have the same id_type.
  */
-static inline bool c_md_long_id_equal(const long_md_id* id1, const long_md_id* id2);
+static inline bool              c_md_long_id_equal(const long_md_id* id1, const long_md_id* id2);
 
 /**
  * @brief Filter market_data based on specified flags.
@@ -598,7 +607,7 @@ static inline bool c_md_long_id_equal(const long_md_id* id1, const long_md_id* i
  * @param flags Bitwise combination of md_filter_flag to exclude certain types.
  * @return true if the market_data passes the filter, false if it should be excluded.
  */
-static inline bool c_md_filter(const md_variant* market_data, md_filter_flag flags);
+static inline bool              c_md_filter(const md_variant* market_data, md_filter_flag flags);
 
 /**
  * @brief Enable specific filter flags for market data filtering.
@@ -606,7 +615,7 @@ static inline bool c_md_filter(const md_variant* market_data, md_filter_flag fla
  * @param flag_to_enable The specific md_filter_flag to enable.
  * @details Cython has difficulty with manipulating enum values with bitwise ops. This simple helper function allows enabling flags without Cython needing to understand the enum definition.
  */
-static inline void c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag_to_enable);
+static inline void              c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag_to_enable);
 
 /**
  * @brief Disable specific filter flags for market data filtering.
@@ -614,7 +623,7 @@ static inline void c_md_filter_enable(md_filter_flag* flags, md_filter_flag flag
  * @param flag_to_disable The specific md_filter_flag to disable.
  * @details Cython has difficulty with manipulating enum values with bitwise ops. This simple helper function allows disabling flags without Cython needing to understand the enum definition.
  */
-static inline void c_md_filter_disable(md_filter_flag* flags, md_filter_flag flag_to_disable);
+static inline void              c_md_filter_disable(md_filter_flag* flags, md_filter_flag flag_to_disable);
 
 // ========== Utility Functions ==========
 
@@ -678,7 +687,7 @@ static inline md_direction c_md_side_direction(md_side side) {
 }
 
 static inline md_side c_md_side_opposite(md_side side) {
-    md_offset    offset = (md_offset) (side & 0xFC);        // Extract the offset bits      (0xFC = 11111100)
+    md_offset    offset    = (md_offset) (side & 0xFC);     // Extract the offset bits      (0xFC = 11111100)
     md_direction direction = (md_direction) (side & 0x03);  // Extract the direction bits   (0x03 = 00000011)
 
     if (direction == DIRECTION_LONG) {
@@ -850,6 +859,8 @@ static inline const char* c_md_state_name(md_order_state state) {
             return state_name_canceling;
         case STATE_CANCELED:
             return state_name_canceled;
+        case STATE_IDLE:
+            return state_name_idle;
         case STATE_UNKNOWN:
         default:
             return state_name_unknown;
@@ -859,9 +870,9 @@ static inline const char* c_md_state_name(md_order_state state) {
 static inline size_t c_md_serialized_size(const md_variant* market_data) {
     if (!market_data) return 0;
 
-    const md_meta* meta = &market_data->meta_info;
-    const char*    ticker = meta->ticker ? meta->ticker : "";
-    const size_t   ticker_len = strlen(ticker);
+    const md_meta* meta         = &market_data->meta_info;
+    const char*    ticker       = meta->ticker ? meta->ticker : "";
+    const size_t   ticker_len   = strlen(ticker);
     size_t         payload_size = 0;
     switch (meta->dtype) {
         case DTYPE_INTERNAL:
@@ -883,12 +894,12 @@ static inline size_t c_md_serialized_size(const md_variant* market_data) {
             // - four doubles (totals/weighted prices)
             // - bid order book: [uint8 has][capacity][size][uint8 direction][uint8 sorted][entries]
             // - ask order book: same as bid
-            const md_tick_data* tick = &market_data->tick_data_full;
+            const md_tick_data* tick         = &market_data->tick_data_full;
             const size_t        lite_payload = sizeof(md_tick_data_lite) - sizeof(md_meta);
             const size_t        fixed_fields = sizeof(double) * 4;  // total_bid_volume, total_ask_volume, weighted_bid_price, weighted_ask_price
 
             // Helper lambda-like macros for order book serialized size
-            size_t ob_payload = 0;
+            size_t              ob_payload = 0;
             // Bid
             ob_payload += sizeof(uint8_t);
             if (tick->bid) {
@@ -932,10 +943,10 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
     // [uint8 dtype][session_datetime_t dt][uint32 ticker_len][ticker bytes][payload w/o meta_info].
     if (!market_data || !out) return 0;
 
-    const md_meta* meta = &market_data->meta_info;
-    const char*    ticker = meta->ticker ? meta->ticker : "";
+    const md_meta* meta       = &market_data->meta_info;
+    const char*    ticker     = meta->ticker ? meta->ticker : "";
     const uint32_t ticker_len = (uint32_t) strlen(ticker);
-    char*          cursor = out;
+    char*          cursor     = out;
 
     const uint8_t  dtype_byte = (uint8_t) meta->dtype;
     memcpy(cursor, &dtype_byte, sizeof(uint8_t));
@@ -1069,7 +1080,7 @@ static inline size_t c_md_serialize(const md_variant* market_data, char* out) {
 static inline const md_variant* c_md_deserialize(const char* src, allocator_protocol* allocator) {
     if (!src) return NULL;
 
-    const char* cursor = src;
+    const char*  cursor = src;
 
     // Step 1: Read dtype
     md_data_type dtype = (md_data_type) cursor[0];
@@ -1092,7 +1103,7 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
 
     // Use a borrowed ptr for ticker, if it needs to be owned, user should intern or strdup it later.
     const char* ticker = cursor;
-    meta->ticker = ticker_len > 0 ? ticker : NULL;
+    meta->ticker       = ticker_len > 0 ? ticker : NULL;
     cursor += ticker_len + 1;
 
     // Step 4: Deserialize payload
@@ -1155,9 +1166,9 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
                         c_ap_free(market_data);
                         return NULL;
                     }
-                    ob->size = size;
+                    ob->size      = size;
                     ob->direction = (md_direction) dir_byte;
-                    ob->sorted = (int) (sorted_byte ? 1 : 0);
+                    ob->sorted    = (int) (sorted_byte ? 1 : 0);
 
                     if (size > 0) {
                         const size_t bytes_in_src = size * sizeof(md_orderbook_entry);
@@ -1199,9 +1210,9 @@ static inline const md_variant* c_md_deserialize(const char* src, allocator_prot
                         c_ap_free(market_data);
                         return NULL;
                     }
-                    ob->size = size;
+                    ob->size      = size;
                     ob->direction = (md_direction) dir_byte;
-                    ob->sorted = (int) (sorted_byte ? 1 : 0);
+                    ob->sorted    = (int) (sorted_byte ? 1 : 0);
 
                     if (size > 0) {
                         const size_t bytes_in_src = size * sizeof(md_orderbook_entry);
@@ -1309,9 +1320,20 @@ static inline bool c_md_state_done(md_order_state state) {
     }
 }
 
+static inline bool c_md_state_cancellable(md_order_state state) {
+    switch (state) {
+        case STATE_SENT:
+        case STATE_PLACED:
+        case STATE_PARTFILLED:
+            return true;
+        default:
+            return false;
+    }
+}
+
 static inline int c_md_compare_ptr(const void* a, const void* b) {
-    const md_meta* md_a = *(const md_meta* const*) a;
-    const md_meta* md_b = *(const md_meta* const*) b;
+    const md_meta* md_a  = *(const md_meta* const*) a;
+    const md_meta* md_b  = *(const md_meta* const*) b;
     double         key_a = c_md_dt_sort_key(&md_a->dt);
     double         key_b = c_md_dt_sort_key(&md_b->dt);
 
