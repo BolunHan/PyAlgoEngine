@@ -13,6 +13,7 @@ class OrderState(enum.IntEnum):
     Enum representing the various states an order can be in during its lifecycle.
     """
     STATE_UNKNOWN: OrderState
+    STATE_IDLE: OrderState
     STATE_REJECTED: OrderState
     STATE_INVALID: OrderState
     STATE_PENDING: OrderState
@@ -25,6 +26,7 @@ class OrderState(enum.IntEnum):
 
     # Deprecated aliases
     UNKNOWN: deprecated('Use STATE_UNKNOWN instead')(OrderState)
+    Idle: deprecated('Use STATE_IDLE instead')(OrderState)
     Rejected: deprecated('Use STATE_REJECTED instead')(OrderState)
     Invalid: deprecated('Use STATE_INVALID instead')(OrderState)
     Pending: deprecated('Use STATE_PENDING instead')(OrderState)
@@ -55,7 +57,7 @@ class OrderState(enum.IntEnum):
         Check if order has been placed, require confirmation from exchange.
 
         Returns:
-            True for PLACED, PARTFILLED, FILLED, or CANCELING states
+            True for PLACED, PARTFILLED, or CANCELING states
         """
         ...
 
@@ -66,6 +68,16 @@ class OrderState(enum.IntEnum):
 
         Returns:
             True for FILLED, CANCELED, REJECTED, or INVALID states
+        """
+        ...
+
+    @property
+    def is_cancellable(self) -> bool:
+        """
+        Check if order is cancellable at the venue.
+
+        Returns:
+            True for SENT, PLACED, or PARTFILLED states
         """
         ...
 

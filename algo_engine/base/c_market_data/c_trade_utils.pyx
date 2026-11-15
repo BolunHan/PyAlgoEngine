@@ -9,10 +9,11 @@ from libc.math cimport NAN, fabs, isnan
 from libc.stdint cimport int8_t, uintptr_t
 
 from cbase.allocator_protocol cimport CCPType
+
 from algo_engine.base import LOGGER
 from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 
-from .c_market_data cimport c_get_long_id, c_init_buffer, c_md_long_id_equal, c_md_order_type_name, c_md_side_name, c_md_side_sign, c_md_state_done, c_md_state_name, c_md_state_placed, c_md_state_working, c_set_long_id, md_data_type, md_order_type, md_side
+from .c_market_data cimport c_get_long_id, c_init_buffer, c_md_long_id_equal, c_md_order_type_name, c_md_side_name, c_md_side_sign, c_md_state_cancellable, c_md_state_done, c_md_state_name, c_md_state_placed, c_md_state_working, c_set_long_id, md_data_type, md_order_type, md_side
 from .c_transaction import OrderType, TransactionSide
 
 cdef object NO_DEFAULT = object()
@@ -20,6 +21,7 @@ cdef object NO_DEFAULT = object()
 
 class OrderState(enum.IntEnum):
     STATE_UNKNOWN       = md_order_state.STATE_UNKNOWN
+    STATE_IDLE          = md_order_state.STATE_IDLE          # order created, not submitted
     STATE_REJECTED      = md_order_state.STATE_REJECTED      # order rejected
     STATE_INVALID       = md_order_state.STATE_INVALID       # invalid order
     STATE_PENDING       = md_order_state.STATE_PENDING       # order not sent
@@ -32,6 +34,7 @@ class OrderState(enum.IntEnum):
 
     # Alias for compatibility
     UNKNOWN             = STATE_UNKNOWN
+    Idle                = STATE_IDLE
     Rejected            = STATE_REJECTED
     Invalid             = STATE_INVALID
     Pending             = STATE_PENDING
@@ -56,6 +59,10 @@ class OrderState(enum.IntEnum):
     @property
     def is_done(self):
         return c_md_state_done(self.value)
+
+    @property
+    def is_cancellable(self):
+        return c_md_state_cancellable(self.value)
 
     @property
     def state_name(self):
@@ -294,7 +301,7 @@ cdef class TradeInstruction(MarketData):
 
         c_set_long_id(&header.trade_instruction.order_id, uuid.uuid4() if order_id is NO_DEFAULT else order_id)
 
-        header.trade_instruction.order_state = md_order_state.STATE_PENDING
+        header.trade_instruction.order_state = md_order_state.STATE_IDLE
         header.trade_instruction.filled_volume = 0.
         header.trade_instruction.filled_notional = 0.
         header.trade_instruction.fee = 0.
@@ -382,7 +389,7 @@ cdef class TradeInstruction(MarketData):
         cdef md_variant* header = <md_variant*> self.header
         self.trades.clear()
 
-        header.trade_instruction.order_state = md_order_state.STATE_PENDING
+        header.trade_instruction.order_state = md_order_state.STATE_IDLE
         header.trade_instruction.filled_volume = 0.
         header.trade_instruction.filled_notional = 0.
         header.trade_instruction.fee = 0.
