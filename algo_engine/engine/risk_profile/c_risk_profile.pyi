@@ -56,6 +56,7 @@ class RiskType(enum.IntEnum):
     ticker_blocked: RiskType
     ticker_unlisted: RiskType
     custom: RiskType
+    balance: RiskType
 
 
 class RiskViolation(Exception):
@@ -303,6 +304,19 @@ class RiskProfile:
             ticker (str): The instrument.
             enabled (bool): True to list the ticker, False to drop it.
         """
+
+    def set_margin_rate(self, ticker: str, margin_rate: float) -> None:
+        """
+        Designate a ticker's margin rate.
+
+        Args:
+            ticker (str): The instrument.
+            margin_rate (float): The rate; NaN removes the designation and
+                returns the ticker to the cash check.
+        """
+
+    def get_margin_rate(self, ticker: str) -> float | None:
+        """The ticker's designated margin rate, or None when it trades on cash."""
 
     def get(self, ticker: str) -> dict:
         """

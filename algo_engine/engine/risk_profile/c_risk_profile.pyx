@@ -60,6 +60,7 @@ class RiskType(enum.IntEnum):
     ticker_blocked        = dma_risk_type.DMA_RISK_TICKER_BLOCKED
     ticker_unlisted       = dma_risk_type.DMA_RISK_TICKER_UNLISTED
     custom                = dma_risk_type.DMA_RISK_CUSTOM
+    balance               = dma_risk_type.DMA_RISK_BALANCE
 
 
 cdef class RiskViolation(Exception):
@@ -290,6 +291,18 @@ cdef class RiskProfile(CCPType):
         if self.registered_rules is not None:
             self.registered_rules.clear()
 
+    @staticmethod
+    cdef RiskProfile c_from_header(dma_risk_profile* header, bint owner=True):
+        if not header:
+            raise MemoryError('Failed to allocate memory for <RiskProfile>.')
+
+        cdef RiskProfile instance = RiskProfile.__new__(RiskProfile)
+        instance.registered_rules = {}
+        instance.header = header
+        instance.owner = owner
+        instance.ccp_bind(&instance.header)
+        return instance
+
     def __repr__(self):
         return f'<{self.__class__.__name__}>{{id={id(self)}}}'
 
@@ -471,6 +484,24 @@ cdef class RiskProfile(CCPType):
             LOGGER.error(f'Invalid action: <{ticker}> is whitelisted, drop it from the whitelist first')
         else:
             LOGGER.error(f'Failed to update the blacklist for <{ticker}>, err code: {ret_code}')
+
+    cpdef void set_margin_rate(self, str ticker, double margin_rate):
+        cdef int ret_code = c_dma_risk_profile_set_margin_rate(self.header, PyUnicode_AsUTF8(ticker), margin_rate)
+
+        if ret_code == dma_risk_ret_code.DMA_RISK_OK_RET:
+            return
+
+        if ret_code == dma_risk_ret_code.DMA_RISK_ERR_INVALID_INPUT:
+            LOGGER.error(f'Invalid action: margin rate <{margin_rate}> for <{ticker}> must be finite and non-negative, or NaN to remove')
+        elif ret_code == dma_risk_ret_code.DMA_RISK_ERR_OOM:
+            LOGGER.error(f'Failed to store the margin rate for <{ticker}>, out of memory')
+        else:
+            LOGGER.error(f'Failed to set the margin rate for <{ticker}>, err code: {ret_code}')
+
+    cpdef object get_margin_rate(self, str ticker):
+        cdef double margin_rate = c_dma_risk_profile_get_margin_rate(self.header, PyUnicode_AsUTF8(ticker))
+
+        return None if isnan(margin_rate) else margin_rate
 
     cpdef dict get(self, str ticker):
         cdef const char* ticker_ptr = PyUnicode_AsUTF8(ticker)

@@ -7,7 +7,11 @@ from cbase.bytemap cimport BoundByteMap, bytemap
 from algo_engine.base.c_market_data.c_market_data cimport md_side, md_trade_instruction
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction
 from algo_engine.engine.algo.c_algo_template cimport dma_algo
-from algo_engine.engine.c_dma cimport dma
+
+
+cdef extern from "algo_engine/engine/c_dma.h":
+    ctypedef struct dma:
+        pass
 
 
 cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
@@ -57,6 +61,7 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
         DMA_RISK_TICKER_BLOCKED
         DMA_RISK_TICKER_UNLISTED
         DMA_RISK_CUSTOM
+        DMA_RISK_BALANCE
 
     # === Structs ===
 
@@ -72,6 +77,7 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
         bytemap*                entries
         bytemap*                whitelist
         bytemap*                blacklist
+        bytemap*                margin_rate
         dma_risk_limits_globals globals
 
     ctypedef struct dma_risk_violation:
@@ -106,6 +112,7 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
         const char* ticker
         double      volume
         double      market_price
+        double      margin_rate
         double      working_long
         double      working_short
         double      traded_long
@@ -141,6 +148,10 @@ cdef extern from "algo_engine/engine/risk_profile/c_risk_profile.h":
     int                   c_dma_risk_profile_blacklist_add(dma_risk_profile* risk_profile, const char* ticker) noexcept nogil
     int                   c_dma_risk_profile_blacklist_remove(dma_risk_profile* risk_profile, const char* ticker) noexcept nogil
     c_bool                c_dma_risk_profile_is_ticker_allowed(const dma_risk_profile* risk_profile, const char* ticker) noexcept nogil
+
+    # === Margin rates ===
+    int                   c_dma_risk_profile_set_margin_rate(dma_risk_profile* risk_profile, const char* ticker, double margin_rate) noexcept nogil
+    double                c_dma_risk_profile_get_margin_rate(const dma_risk_profile* risk_profile, const char* ticker) noexcept nogil
 
     # === Limits and queries ===
     int                   c_dma_risk_profile_set_limit(dma_risk_profile* risk_profile, const char* ticker, dma_risk_rule rule, double value) noexcept nogil
@@ -218,6 +229,10 @@ cdef class RiskProfile(CCPType):
 
     cpdef void set_blacklist(self, str ticker, bint enabled=?)
 
+    cpdef void set_margin_rate(self, str ticker, double margin_rate)
+
+    cpdef object get_margin_rate(self, str ticker)
+
     cpdef dict get(self, str ticker)
 
     cpdef void clear(self)
@@ -225,6 +240,9 @@ cdef class RiskProfile(CCPType):
     cpdef bint check(self, TradeInstruction order)
 
     cpdef bint check_order(self, str ticker, double volume, md_side side)
+
+    @staticmethod
+    cdef RiskProfile c_from_header(dma_risk_profile* header, bint owner=?)
 
 
 cdef class RiskRuleTemplate(CCPType):

@@ -87,6 +87,7 @@ typedef enum dma_risk_type {
     DMA_RISK_TICKER_BLOCKED           = 16,
     DMA_RISK_TICKER_UNLISTED          = 17,
     DMA_RISK_CUSTOM                   = 18,  // A custom rule rejected; the violation code names the rule.
+    DMA_RISK_BALANCE                  = 19,  // The supplied balance cannot fund the buy.
 } dma_risk_type;
 
 // ========== Tables ==========
@@ -127,6 +128,7 @@ static const char* const DMA_RISK_TYPE_NAMES[] = {
     [DMA_RISK_TICKER_BLOCKED]        = "RiskProfile.TickerLimit.Blocked",
     [DMA_RISK_TICKER_UNLISTED]       = "RiskProfile.TickerLimit.Unlisted",
     [DMA_RISK_CUSTOM]                = "RiskProfile.Custom",
+    [DMA_RISK_BALANCE]               = "RiskProfile.Balance",
 };
 
 /** @brief The numeric code of each violation, indexed by `dma_risk_type`. */
@@ -150,6 +152,7 @@ static const int DMA_RISK_VIOLATION_CODES[] = {
     [DMA_RISK_TICKER_BLOCKED]        = 1004,
     [DMA_RISK_TICKER_UNLISTED]       = 1005,
     [DMA_RISK_CUSTOM]                = 0,  // The rule reports its own code.
+    [DMA_RISK_BALANCE]               = 6000,
 };
 
 // clang-format on
@@ -192,10 +195,11 @@ typedef struct dma_risk_limits_globals {
  * on both lists: the add refuses the conflict.
  */
 typedef struct dma_risk_profile {
-    bytemap*                entries;    // OWNED - ticker -> dma_risk_limits*; each limit set is its own block.
-    bytemap*                whitelist;  // OWNED when present - ticker -> uint8_t; NULL when no whitelist gate.
-    bytemap*                blacklist;  // OWNED when present - ticker -> uint8_t; NULL when no blacklist gate.
-    dma_risk_limits_globals globals;    // Portfolio-wide limits and the global custom rule chain.
+    bytemap*                entries;      // OWNED - ticker -> dma_risk_limits*; each limit set is its own block.
+    bytemap*                whitelist;    // OWNED when present - ticker -> uint8_t; NULL when no whitelist gate.
+    bytemap*                blacklist;    // OWNED when present - ticker -> uint8_t; NULL when no blacklist gate.
+    bytemap*                margin_rate;  // OWNED when present - ticker -> double margin rate; NULL when none is designated.
+    dma_risk_limits_globals globals;      // Portfolio-wide limits and the global custom rule chain.
 } dma_risk_profile;
 
 /**
@@ -291,6 +295,7 @@ typedef struct dma_risk_check_state {
     const char* ticker;        // The order's ticker (borrowed).
     double      volume;        // The order volume; the sign comes from side_sign.
     double      market_price;  // NAN when unavailable.
+    double      margin_rate;   // NAN as not with margin, any value including 1 is trading with margin.
 
     double      working_long;    // Working long volume of the ticker.
     double      working_short;   // Working short volume of the ticker.
@@ -332,6 +337,10 @@ static inline int                c_dma_risk_profile_whitelist_remove(dma_risk_pr
 static inline int                c_dma_risk_profile_blacklist_add(dma_risk_profile* risk_profile, const char* ticker);
 static inline int                c_dma_risk_profile_blacklist_remove(dma_risk_profile* risk_profile, const char* ticker);
 static inline bool               c_dma_risk_profile_is_ticker_allowed(const dma_risk_profile* risk_profile, const char* ticker);
+
+// Margin rates
+static inline int                c_dma_risk_profile_set_margin_rate(dma_risk_profile* risk_profile, const char* ticker, double margin_rate);
+static inline double             c_dma_risk_profile_get_margin_rate(const dma_risk_profile* risk_profile, const char* ticker);
 
 // Limits and queries
 static inline int                c_dma_risk_profile_set_limit(dma_risk_profile* risk_profile, const char* ticker, dma_risk_rule rule, double value);
@@ -414,7 +423,7 @@ static inline bool c_dma_risk_rule_applies_to(dma_risk_rule rule, int side_sign)
  * @return The constant name; "RiskProfile.Invalid" for an unknown type.
  */
 static inline const char* c_dma_risk_type_name(dma_risk_type type) {
-    if ((int) type < DMA_RISK_PASS || type > DMA_RISK_CUSTOM) return "RiskProfile.Invalid";
+    if ((int) type < DMA_RISK_PASS || type > DMA_RISK_BALANCE) return "RiskProfile.Invalid";
 
     return DMA_RISK_TYPE_NAMES[type];
 }
@@ -425,7 +434,7 @@ static inline const char* c_dma_risk_type_name(dma_risk_type type) {
  * @return The code; 0 for an unknown type or a custom rule (which reports its own code).
  */
 static inline int c_dma_risk_violation_code(dma_risk_type type) {
-    if ((int) type < DMA_RISK_PASS || type > DMA_RISK_CUSTOM) return 0;
+    if ((int) type < DMA_RISK_PASS || type > DMA_RISK_BALANCE) return 0;
 
     return DMA_RISK_VIOLATION_CODES[type];
 }
@@ -935,6 +944,11 @@ static inline void c_dma_risk_profile_dealloc(dma_risk_profile* risk_profile) {
         risk_profile->blacklist = NULL;
     }
 
+    if (risk_profile->margin_rate) {
+        c_bytemap_ex_free(risk_profile->margin_rate);
+        risk_profile->margin_rate = NULL;
+    }
+
     memset(risk_profile, 0, sizeof(dma_risk_profile));
 }
 
@@ -983,6 +997,11 @@ static inline int c_dma_risk_profile_clear(dma_risk_profile* risk_profile) {
     if (risk_profile->blacklist) {
         c_bytemap_ex_free(risk_profile->blacklist);
         risk_profile->blacklist = NULL;
+    }
+
+    if (risk_profile->margin_rate) {
+        c_bytemap_ex_free(risk_profile->margin_rate);
+        risk_profile->margin_rate = NULL;
     }
 
     memset(&risk_profile->globals, 0, sizeof(risk_profile->globals));
@@ -1123,6 +1142,65 @@ static inline bool c_dma_risk_profile_is_ticker_allowed(const dma_risk_profile* 
     if (risk_profile->whitelist && c_bytemap_ex_contains(risk_profile->whitelist, ticker, ticker_len) != BYTEMAP_OK) return false;
 
     return true;
+}
+
+/**
+ * @brief Designate a ticker's margin rate; NaN removes the designation.
+ *
+ * A finite non-negative rate marks the ticker as traded on margin, and the
+ * balance gate then checks the notional times the rate against available
+ * margin. NaN returns the ticker to the cash check.
+ *
+ * @param risk_profile The profile (non-NULL).
+ * @param ticker The instrument (non-empty).
+ * @param margin_rate The rate, or NaN to remove.
+ * @return DMA_RISK_OK_RET, DMA_RISK_ERR_INVALID_INPUT, or DMA_RISK_ERR_OOM.
+ */
+static inline int c_dma_risk_profile_set_margin_rate(dma_risk_profile* risk_profile, const char* ticker, double margin_rate) {
+    if (!risk_profile || !ticker || !ticker[0]) return DMA_RISK_ERR_INVALID_INPUT;
+
+    size_t ticker_len = strlen(ticker);
+
+    if (isnan(margin_rate)) {
+        if (!risk_profile->margin_rate) return DMA_RISK_OK_RET;
+
+        c_bytemap_ex_pop(risk_profile->margin_rate, ticker, ticker_len, 0, NULL, NULL);
+
+        if (!c_bytemap_ex_len(risk_profile->margin_rate)) {
+            c_bytemap_ex_free(risk_profile->margin_rate);
+            risk_profile->margin_rate = NULL;
+        }
+
+        return DMA_RISK_OK_RET;
+    }
+
+    if (!isfinite(margin_rate) || margin_rate < 0.) return DMA_RISK_ERR_INVALID_INPUT;
+
+    if (!risk_profile->margin_rate) {
+        allocator_protocol* allocator = c_ap_protocol_from_ptr(risk_profile);
+        risk_profile->margin_rate      = c_bytemap_ex_new(0, sizeof(double), allocator);
+        if (!risk_profile->margin_rate) return DMA_RISK_ERR_OOM;
+    }
+
+    int ret_code = c_bytemap_ex_set(risk_profile->margin_rate, ticker, ticker_len, (const char*) &margin_rate, sizeof(double), 0, NULL);
+
+    return ret_code == BYTEMAP_OK ? DMA_RISK_OK_RET : DMA_RISK_ERR_OOM;
+}
+
+/**
+ * @brief The ticker's designated margin rate, or NaN when it trades on cash.
+ * @param risk_profile The profile (NULL-safe).
+ * @param ticker The instrument (NULL-safe).
+ * @return The rate, or NaN.
+ */
+static inline double c_dma_risk_profile_get_margin_rate(const dma_risk_profile* risk_profile, const char* ticker) {
+    if (!risk_profile || !risk_profile->margin_rate || !ticker) return NAN;
+
+    char* stored = NULL;
+
+    if (c_bytemap_ex_get_ptr(risk_profile->margin_rate, ticker, strlen(ticker), &stored, NULL) != BYTEMAP_OK) return NAN;
+
+    return *(const double*) stored;
 }
 
 /**
@@ -1755,9 +1833,9 @@ static inline void c_dma_risk_profile_check_state_init(const dma* DMA, const cha
     // === Step 1 ===
     // The engine's orders supply the ticker's filled volume for the access's
     // session date.
-    if (DMA->algo_engine && DMA->algo_engine->orders && DMA->MDS) {
+    if (DMA->ALGO_ENGINE && DMA->ALGO_ENGINE->orders && DMA->MDS) {
         const session_date_t today = DMA->MDS->ts.date;
-        bytemap_entry*       entry = DMA->algo_engine->orders->first;
+        bytemap_entry*       entry = DMA->ALGO_ENGINE->orders->first;
 
         while (entry) {
             const dma_order_ctx* ctx = *(const dma_order_ctx**) entry->value;
@@ -1804,8 +1882,9 @@ static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, 
 
     c_dma_risk_profile_check_state_init(DMA, ticker, price, &check_state);
 
-    check_state.volume    = volume;
-    check_state.side_sign = c_md_side_sign(side);
+    check_state.volume      = volume;
+    check_state.side_sign   = c_md_side_sign(side);
+    check_state.margin_rate = c_dma_risk_profile_get_margin_rate(risk_profile, ticker);
 
     // === Step 2 ===
     // The standard rules run first; a rejection returns immediately.
@@ -1852,6 +1931,44 @@ static inline dma_risk_violation c_dma_risk_profile_check_volume(const dma* DMA,
  * @param algo The algo (NULL-safe).
  * @return The check's violation; a passing check reports DMA_RISK_PASS.
  */
+/**
+ * @brief Check the access's queried balance against a priced trade.
+ *
+ * The trade is valued at the order or algo multiplier and full cash (margin
+ * rate 1); an absent, failed or unfilled balance passes by design.
+ *
+ * @param DMA The access (NULL-safe).
+ * @param ticker The instrument (non-empty).
+ * @param side The trade side.
+ * @param volume The volume to check.
+ * @param price The price the trade is checked at (NaN when unavailable).
+ * @param multiplier The contract multiplier (NaN or non-positive counts as 1).
+ * @return The check's violation; a passing check reports DMA_RISK_PASS.
+ */
+static inline dma_risk_violation c_dma_risk_profile_check_balance(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume, double price, double multiplier) {
+    dma_risk_violation violation;
+
+    violation.type   = DMA_RISK_PASS;
+    violation.code   = 0;
+    violation.msg[0] = '\0';
+
+    if (!DMA || !DMA->balance_valid || !DMA->BALANCE) return violation;
+
+    double margin_rate = c_dma_risk_profile_get_margin_rate(risk_profile, ticker);
+    double notional    = fabs(volume * price * multiplier);
+
+    if (c_balance_check(DMA->BALANCE, side, volume, price, multiplier, margin_rate)) return violation;
+
+    if (isnan(margin_rate)) {
+        c_dma_risk_violation_format(&violation, DMA_RISK_BALANCE, "%s %s %.6f at %.6f needs %.6f, available cash %.6f", ticker, c_md_side_name(side), volume, price, notional, DMA->BALANCE->available_cash);
+    }
+    else {
+        c_dma_risk_violation_format(&violation, DMA_RISK_BALANCE, "%s %s %.6f at %.6f margin %.4f needs %.6f, available margin %.6f", ticker, c_md_side_name(side), volume, price, margin_rate, notional * margin_rate, DMA->BALANCE->available_margin);
+    }
+
+    return violation;
+}
+
 static inline dma_risk_violation c_dma_risk_profile_check_algo(const dma* DMA, const dma_risk_profile* risk_profile, const dma_algo* algo) {
     dma_risk_violation violation;
 
@@ -1862,7 +1979,13 @@ static inline dma_risk_violation c_dma_risk_profile_check_algo(const dma* DMA, c
 
     double remaining = algo->target_volume - algo->filled_volume;
 
-    return c_dma_risk_profile_check_volume(DMA, risk_profile, algo->ticker, algo->side, remaining);
+    violation = c_dma_risk_profile_check_volume(DMA, risk_profile, algo->ticker, algo->side, remaining);
+
+    if (violation.type != DMA_RISK_PASS) return violation;
+
+    double price = DMA->MDS ? c_mds_get_market_price(DMA->MDS, algo->ticker) : NAN;
+
+    return c_dma_risk_profile_check_balance(DMA, risk_profile, algo->ticker, algo->side, remaining, price, algo->multiplier);
 }
 
 /**
@@ -1887,7 +2010,11 @@ static inline dma_risk_violation c_dma_risk_profile_check_order(const dma* DMA, 
     double price = order->limit_price;
     if (!isfinite(price) || price <= 0.) price = DMA->MDS ? c_mds_get_market_price(DMA->MDS, order->meta_info.ticker) : NAN;
 
-    return c_dma_risk_profile_check_limit(DMA, risk_profile, order->meta_info.ticker, order->side, order->volume, price);
+    violation = c_dma_risk_profile_check_limit(DMA, risk_profile, order->meta_info.ticker, order->side, order->volume, price);
+
+    if (violation.type != DMA_RISK_PASS) return violation;
+
+    return c_dma_risk_profile_check_balance(DMA, risk_profile, order->meta_info.ticker, order->side, order->volume, price, order->multiplier);
 }
 
 #endif /* C_RISK_PROFILE_H */
