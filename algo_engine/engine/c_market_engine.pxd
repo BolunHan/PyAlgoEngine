@@ -89,20 +89,20 @@ cdef extern from "algo_engine/engine/c_market_engine.h":
     c_bool               c_mds_monitor_manager_is_enabled(const mds_monitor_manager* manager) noexcept nogil
 
     mds*         c_mds_new(allocator_protocol* allocator) noexcept nogil
-    int          c_mds_init(mds* service, allocator_protocol* allocator) noexcept nogil
-    void         c_mds_dealloc(mds* service) noexcept nogil
-    void         c_mds_free(mds* service) noexcept nogil
-    int          c_mds_clear(mds* service) noexcept nogil
-    int          c_mds_set_manager(mds* service, mds_monitor_manager* manager) noexcept nogil
-    mds_monitor_manager* c_mds_get_manager(const mds* service) noexcept nogil
-    int          c_mds_register_monitor(mds* service, mds_monitor* monitor) noexcept nogil
-    int          c_mds_unregister_monitor(mds* service, mds_monitor* monitor) noexcept nogil
-    mds_monitor* c_mds_get_monitor(const mds* service, const mds_monitor_id monitor_id) noexcept nogil
-    size_t       c_mds_n_monitors(const mds* service) noexcept nogil
-    int          c_mds_update_subscription(mds* service, const md_variant* market_data) noexcept nogil
-    int          c_mds_on_market_data(mds* service, const md_variant* market_data) noexcept nogil
-    int          c_mds_on_internal_data(mds* service, const md_internal* internal_data) noexcept nogil
-    double       c_mds_get_market_price(const mds* service, const char* ticker) noexcept nogil
+    int          c_mds_init(mds* MDS, allocator_protocol* allocator) noexcept nogil
+    void         c_mds_dealloc(mds* MDS) noexcept nogil
+    void         c_mds_free(mds* MDS) noexcept nogil
+    int          c_mds_clear(mds* MDS) noexcept nogil
+    int          c_mds_set_manager(mds* MDS, mds_monitor_manager* manager) noexcept nogil
+    mds_monitor_manager* c_mds_get_manager(const mds* MDS) noexcept nogil
+    int          c_mds_register_monitor(mds* MDS, mds_monitor* monitor) noexcept nogil
+    int          c_mds_unregister_monitor(mds* MDS, mds_monitor* monitor) noexcept nogil
+    mds_monitor* c_mds_get_monitor(const mds* MDS, const mds_monitor_id monitor_id) noexcept nogil
+    size_t       c_mds_n_monitors(const mds* MDS) noexcept nogil
+    int          c_mds_update_subscription(mds* MDS, const md_variant* market_data) noexcept nogil
+    int          c_mds_on_market_data(mds* MDS, const md_variant* market_data) noexcept nogil
+    int          c_mds_on_internal_data(mds* MDS, const md_internal* internal_data) noexcept nogil
+    double       c_mds_get_market_price(const mds* MDS, const char* ticker) noexcept nogil
 
 
 cdef class MarketDataMonitor(CCPType):
