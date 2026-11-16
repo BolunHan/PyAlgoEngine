@@ -59,8 +59,10 @@ cdef extern from "algo_engine/engine/c_dma_algo.h":
         uint8_t flags
 
     int c_dma_order_ctx_init(dma_order_ctx* ctx, allocator_protocol* allocator) noexcept nogil
-    int c_dma_order_ctx_fill(dma_order_ctx* ctx, const md_trade_report* report) noexcept nogil
     void c_dma_order_ctx_dealloc(dma_order_ctx* ctx) noexcept nogil
+
+    int c_dma_algo_ctx_init(dma_algo_ctx* ctx, dma_algo_new algo_new_fn, uint32_t reg_id, allocator_protocol* allocator) noexcept nogil
+    void c_dma_algo_ctx_dealloc(dma_algo_ctx* ctx) noexcept nogil
 
     dma_algo_registry* c_dma_algo_registry_new(allocator_protocol* allocator) noexcept nogil
     int c_dma_algo_registry_init(dma_algo_registry* registry, allocator_protocol* allocator) noexcept nogil
@@ -79,6 +81,7 @@ cdef extern from "algo_engine/engine/c_dma_algo.h":
     md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume) noexcept nogil
     void c_dma_algo_engine_free_orders(dma_algo_engine* engine, dma_algo* algo) noexcept nogil
     int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_trade_instruction* order) noexcept nogil
+    int c_dma_algo_engine_on_order_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
     int c_dma_algo_engine_on_trade(dma_algo_engine* engine, const md_trade_report* trade) noexcept nogil
     void c_dma_algo_engine_on_md(dma_algo_engine* engine, const md_variant* market_data) noexcept nogil
 
