@@ -198,10 +198,10 @@ static inline dma_algo* c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const cha
 static inline double    c_dma_calculate_limit(dma* DMA, const char* ticker, md_side side, double limit_price, double limit_adjust_factor, dma_algo_limit_mode mode);
 
 // Protocol
-static inline int       c_dma_attach_order_handler(dma* DMA, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_balance_query balance_check_fn, void* user_data);
-static inline int       c_dma_attach_order_callback(dma* DMA, dma_order_rejected_func order_reject_fn, dma_order_filled_func order_filled_fn);
-static inline int       c_dma_detach_order_handler(dma* DMA);
-static inline int       c_dma_detach_order_callback(dma* DMA);
+static inline int       c_dma_attach_protocol_handler(dma* DMA, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_balance_query balance_check_fn, void* user_data);
+static inline int       c_dma_attach_protocol_callback(dma* DMA, dma_order_rejected_func order_reject_fn, dma_order_filled_func order_filled_fn);
+static inline int       c_dma_detach_protocol_handler(dma* DMA);
+static inline int       c_dma_detach_protocol_callback(dma* DMA);
 static inline int       c_dma_query_balance(dma* DMA);
 
 // Order entry (hot path: one check and one dispatch per order request)
@@ -482,7 +482,7 @@ static inline double c_dma_calculate_limit(dma* DMA, const char* ticker, md_side
  * @param user_data Opaque value handed to every handler.
  * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_attach_order_handler(dma* DMA, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_balance_query balance_check_fn, void* user_data) {
+static inline int c_dma_attach_protocol_handler(dma* DMA, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_balance_query balance_check_fn, void* user_data) {
     if (!DMA || !order_launch_fn || !order_cancel_fn) return DMA_ERR_INVALID_INPUT;
 
     DMA->protocol.handlers.order_launch_fn  = order_launch_fn;
@@ -499,7 +499,7 @@ static inline int c_dma_attach_order_handler(dma* DMA, dma_order_launch_func ord
  * @param order_filled_fn The filled callback (optional).
  * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_attach_order_callback(dma* DMA, dma_order_rejected_func order_reject_fn, dma_order_filled_func order_filled_fn) {
+static inline int c_dma_attach_protocol_callback(dma* DMA, dma_order_rejected_func order_reject_fn, dma_order_filled_func order_filled_fn) {
     if (!DMA) return DMA_ERR_INVALID_INPUT;
 
     DMA->protocol.callbacks.order_reject_fn = order_reject_fn;
@@ -512,7 +512,7 @@ static inline int c_dma_attach_order_callback(dma* DMA, dma_order_rejected_func 
  * @param DMA The access (NULL-safe).
  * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_detach_order_handler(dma* DMA) {
+static inline int c_dma_detach_protocol_handler(dma* DMA) {
     if (!DMA) return DMA_ERR_INVALID_INPUT;
 
     memset(&DMA->protocol.handlers, 0, sizeof(DMA->protocol.handlers));
@@ -526,7 +526,7 @@ static inline int c_dma_detach_order_handler(dma* DMA) {
  * @param DMA The access (NULL-safe).
  * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_detach_order_callback(dma* DMA) {
+static inline int c_dma_detach_protocol_callback(dma* DMA) {
     if (!DMA) return DMA_ERR_INVALID_INPUT;
 
     memset(&DMA->protocol.callbacks, 0, sizeof(DMA->protocol.callbacks));
