@@ -144,8 +144,6 @@ typedef struct dma_algo {
     struct dma_algo*      next;             // Ticker linked list.
 } dma_algo;
 
-#include <algo_engine/engine/c_dma_algo.h>
-
 // ========== Forward Declarations ==========
 
 // Lifecycle
@@ -164,6 +162,7 @@ static inline int                         c_dma_algo_launch(dma_algo* algo);
 static inline int                         c_dma_algo_stop(dma_algo* algo);
 
 #include <algo_engine/engine/c_dma.h>
+#include <algo_engine/engine/c_dma_algo.h>
 
 // ========== Public APIs (Algo Lifecycle) ==========
 
