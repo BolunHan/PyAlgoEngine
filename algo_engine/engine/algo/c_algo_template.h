@@ -156,6 +156,7 @@ static inline void                        c_dma_algo_free(dma_algo* algo);
 // Queries
 static inline const md_trade_instruction* c_dma_algo_get_order(const dma_algo* algo, const long_md_id* order_id);
 static inline const md_trade_instruction* c_dma_algo_get_working_order(const dma_algo* algo, const long_md_id* order_id);
+static inline bool                         c_dma_algo_status_is_active(dma_algo_status status);
 
 // Hooks
 static inline int                         c_dma_algo_launch(dma_algo* algo);
@@ -492,6 +493,18 @@ static inline const md_trade_instruction* c_dma_algo_get_working_order(const dma
     if (c_bytemap_ex_get_ptr(algo->working_orders, (const char*) order_id, sizeof(long_md_id), &stored, NULL) != BYTEMAP_OK) return NULL;
 
     return *(const md_trade_instruction**) stored;
+}
+
+/**
+ * @brief Whether an algo status may still act.
+ *
+ * A completed, closed, rejected or errored record is not stopped again.
+ *
+ * @param status The algo status.
+ * @return true while the record may still act.
+ */
+static inline bool c_dma_algo_status_is_active(dma_algo_status status) {
+    return status != DMA_ALGO_STATUS_DONE && status != DMA_ALGO_STATUS_CLOSED && status != DMA_ALGO_STATUS_REJECTED && status != DMA_ALGO_STATUS_ERROR;
 }
 
 // ========== Public APIs (Hooks) ==========

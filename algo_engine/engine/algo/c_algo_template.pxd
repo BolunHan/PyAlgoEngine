@@ -1,4 +1,5 @@
 from libc.stdint cimport uint32_t
+from libcpp cimport bool as c_bool
 
 from cbase.allocator_protocol cimport CCPType, allocator_protocol
 from cbase.bytemap cimport bytemap
@@ -74,6 +75,7 @@ cdef extern from "algo_engine/engine/algo/c_algo_template.h":
 
     const md_trade_instruction* c_dma_algo_get_order(const dma_algo* algo, const long_md_id* order_id) noexcept nogil
     const md_trade_instruction* c_dma_algo_get_working_order(const dma_algo* algo, const long_md_id* order_id) noexcept nogil
+    c_bool                      c_dma_algo_status_is_active(dma_algo_status status) noexcept nogil
 
     int  c_dma_algo_launch(dma_algo* algo) noexcept nogil
     int  c_dma_algo_stop(dma_algo* algo) noexcept nogil
