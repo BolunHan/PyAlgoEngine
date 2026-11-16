@@ -666,7 +666,7 @@ static inline double c_dma_position_pnl(const dma_position* position, const char
 
     if (!cache->exposure_volume) return cache->cash_flow;
 
-    double market_price = position->dma && position->dma->mds ? c_mds_get_market_price(position->dma->mds, ticker) : NAN;
+    double market_price = position->dma && position->dma->MDS ? c_mds_get_market_price(position->dma->MDS, ticker) : NAN;
 
     if (isnan(market_price)) return NAN;
 

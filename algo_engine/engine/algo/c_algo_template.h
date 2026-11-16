@@ -297,7 +297,7 @@ static inline int c_dma_algo_set_status(dma_algo* algo, dma_algo_status status) 
 
     switch (status) {
         case DMA_ALGO_STATUS_WORKING: {
-            if (prev_status != DMA_ALGO_STATUS_WORKING && algo->DMA->mds) algo->ts_started = algo->DMA->mds->ts;
+            if (prev_status != DMA_ALGO_STATUS_WORKING && algo->DMA->MDS) algo->ts_started = algo->DMA->MDS->ts;
         }
         // fall through
         // Case 1: Start working
@@ -330,7 +330,7 @@ static inline int c_dma_algo_set_status(dma_algo* algo, dma_algo_status status) 
             if (algo->working_orders && c_bytemap_ex_len(algo->working_orders)) return DMA_ALGO_ERR_WORKING_ORDERS;
 
             // A finish time only exists for an algo that was working.
-            if (prev_status == DMA_ALGO_STATUS_WORKING && algo->DMA->mds) algo->ts_finished = algo->DMA->mds->ts;
+            if (prev_status == DMA_ALGO_STATUS_WORKING && algo->DMA->MDS) algo->ts_finished = algo->DMA->MDS->ts;
 
             if (algo->prev) algo->prev->next = algo->next;
             else {

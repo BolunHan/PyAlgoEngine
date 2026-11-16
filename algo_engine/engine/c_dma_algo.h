@@ -703,7 +703,7 @@ static inline void c_dma_algo_engine_pop_working_order(dma_algo_engine* engine, 
  *
  * The order id is the context address, unique while the order lives. The
  * order's session datetime is copied whole from the access's MDS
- * (`algo->DMA->mds->ts`); `ts_placed` is that pack's unix_ts. The order starts
+ * (`algo->DMA->MDS->ts`); `ts_placed` is that pack's unix_ts. The order starts
  * idle and carries no working volume; the first working state opens it.
  *
  * @param engine The engine (NULL-safe).
@@ -737,7 +737,7 @@ static inline md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine*
 
     order->meta_info.dtype  = DTYPE_INSTRUCTION;
     order->meta_info.ticker = algo->ticker;
-    order->meta_info.dt     = algo->DMA->mds->ts;
+    order->meta_info.dt     = algo->DMA->MDS->ts;
 
     order->limit_price = limit_price;
     order->volume      = volume;

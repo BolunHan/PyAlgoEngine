@@ -1719,7 +1719,7 @@ static inline void c_dma_risk_profile_check_state_init(const dma* DMA, const cha
                     const dma_position_ticker* cache        = (const dma_position_ticker*) ticker_entry->value;
                     const char*                name         = ticker_entry->key;
                     bool                       own          = name && strcmp(name, ticker) == 0;
-                    double                     ticker_price = own ? price : c_mds_get_market_price(DMA->mds, name);
+                    double                     ticker_price = own ? price : c_mds_get_market_price(DMA->MDS, name);
 
                     if (!isfinite(ticker_price)) ticker_price = 0.;
 
@@ -1755,8 +1755,8 @@ static inline void c_dma_risk_profile_check_state_init(const dma* DMA, const cha
     // === Step 1 ===
     // The engine's orders supply the ticker's filled volume for the access's
     // session date.
-    if (DMA->algo_engine && DMA->algo_engine->orders && DMA->mds) {
-        const session_date_t today = DMA->mds->ts.date;
+    if (DMA->algo_engine && DMA->algo_engine->orders && DMA->MDS) {
+        const session_date_t today = DMA->MDS->ts.date;
         bytemap_entry*       entry = DMA->algo_engine->orders->first;
 
         while (entry) {
@@ -1840,7 +1840,7 @@ static inline dma_risk_violation c_dma_risk_profile_check_limit(const dma* DMA, 
  * @return The check's violation; a passing check reports DMA_RISK_PASS.
  */
 static inline dma_risk_violation c_dma_risk_profile_check_volume(const dma* DMA, const dma_risk_profile* risk_profile, const char* ticker, md_side side, double volume) {
-    double price = (DMA && DMA->mds) ? c_mds_get_market_price(DMA->mds, ticker) : NAN;
+    double price = (DMA && DMA->MDS) ? c_mds_get_market_price(DMA->MDS, ticker) : NAN;
 
     return c_dma_risk_profile_check_limit(DMA, risk_profile, ticker, side, volume, price);
 }
@@ -1885,7 +1885,7 @@ static inline dma_risk_violation c_dma_risk_profile_check_order(const dma* DMA, 
     }
 
     double price = order->limit_price;
-    if (!isfinite(price) || price <= 0.) price = DMA->mds ? c_mds_get_market_price(DMA->mds, order->meta_info.ticker) : NAN;
+    if (!isfinite(price) || price <= 0.) price = DMA->MDS ? c_mds_get_market_price(DMA->MDS, order->meta_info.ticker) : NAN;
 
     return c_dma_risk_profile_check_limit(DMA, risk_profile, order->meta_info.ticker, order->side, order->volume, price);
 }

@@ -217,13 +217,13 @@ static inline dma_risk_type c_refusal_window_check(const dma_risk_rule_ctx* rule
 
     const char* name = rule->name ? rule->name : "custom";
 
-    if (!DMA || !DMA->mds) {
+    if (!DMA || !DMA->MDS) {
         c_dma_risk_violation_format(out, DMA_RISK_CUSTOM, "%s rejected! the %s rule needs a session clock", ticker, name);
         if (out) out->code = rule->risk_rule_code;
         return DMA_RISK_CUSTOM;
     }
 
-    const session_time_t* now       = &DMA->mds->ts.time;
+    const session_time_t* now       = &DMA->MDS->ts.time;
     bool                  has_start = window->enabled & REFUSAL_WINDOW_BOUND_START;
     bool                  has_end   = window->enabled & REFUSAL_WINDOW_BOUND_END;
 
