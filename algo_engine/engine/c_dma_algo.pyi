@@ -95,7 +95,7 @@ class AlgoEngine:
 
 
 ALGO_ENGINE: AlgoEngine
-"""The process-global algo engine; every access and position binds it."""
+"""The process access's algo engine, adopted from ``DMA.algo_engine`` when this module initializes."""
 
 ALGO_REGISTRY: AlgoRegistry
-"""The engine's registry of named algo factories and wrapper classes."""
+"""The process engine's registry of named algo factories and wrapper classes."""

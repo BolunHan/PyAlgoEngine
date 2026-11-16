@@ -19,7 +19,7 @@ from ..base import (
 from ..engine import TopicSet
 
 
-class SimMatchEx:
+class SimMatch:
     """C-layer simulation matcher for backtesting.
 
     Full C implementation of the matching engine: the working order registry,

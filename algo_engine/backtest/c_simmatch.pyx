@@ -6,19 +6,19 @@ from event_engine.capi cimport EventEngine, EventHook, Topic
 from libc.math cimport NAN, isnan
 from libc.string cimport memset
 
-from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long_id, md_order_state, md_order_type, report_from_header
-from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, TradeReport
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long_id, md_order_state, md_order_type
+from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, TradeReport, report_from_header
 from algo_engine.engine.c_event_engine cimport EVENT_ENGINE, TOPIC_SET
 from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 
 from . import LOGGER
 
 
-cdef void c_simmatch_ex_callback(smm_match_ctx* ctx, smm_match_event event,
+cdef void c_simmatch_callback(smm_match_ctx* ctx, smm_match_event event,
                                  const smm_order_entry* entry,
                                  const md_trade_report* report,
                                  void* user_data) noexcept:
-    cdef SimMatchEx sim = <SimMatchEx> user_data
+    cdef SimMatch sim = <SimMatch> user_data
     cdef object key
     cdef object order
     cdef TradeReport py_report
@@ -51,7 +51,7 @@ cdef void c_simmatch_ex_callback(smm_match_ctx* ctx, smm_match_event event,
         PyErr_Clear()
 
 
-cdef class SimMatchEx:
+cdef class SimMatch:
     def __cinit__(self, str ticker, object event_engine=None, object topic_set=None,
                   object seed=None, **kwargs):
         self.owner = True
@@ -71,7 +71,7 @@ cdef class SimMatchEx:
 
         cdef uintptr_t callback_id
         cdef int ret_code = c_smm_match_register_listener(
-            self.ctx, c_simmatch_ex_callback, <void*> <PyObject*> self, &callback_id)
+            self.ctx, c_simmatch_callback, <void*> <PyObject*> self, &callback_id)
         if ret_code != SMM_OK:
             raise RuntimeError(f'Failed to register callback for {self.__class__.__name__}, error code {ret_code}')
         self._callback_id = callback_id

@@ -58,7 +58,7 @@ class DirectMarketAccess(DirectMarketAccessProtocol):
     Attributes:
         mds (MarketDataService): The market data source.
         risk_profile (RiskProfile): The access-owned profile, borrowed by this wrapper.
-        algo_engine (AlgoEngine): The process algo engine the access dispatches through.
+        algo_engine (AlgoEngine): The access-owned engine the access dispatches through.
         balance (Balance): The access-owned balance, borrowed by this wrapper.
     """
 

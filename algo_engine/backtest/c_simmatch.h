@@ -1,5 +1,5 @@
-#ifndef C_SIMMATCH_EX_H
-#define C_SIMMATCH_EX_H
+#ifndef C_SIMMATCH_H
+#define C_SIMMATCH_H
 
 #include <math.h>
 #include <stdbool.h>
@@ -201,7 +201,7 @@ struct smm_match_ctx {
     smm_engine_binding* engine;  // < OWNED — native event engine interface (may be NULL)
 
     // === workspace ===
-    md_variant ws_report;  // < workspace buffer for report construction
+    md_variant* ws_report;  // < OWNED - allocator block reused for report construction
 };
 
 // ========== Utility Functions ==========
@@ -289,7 +289,7 @@ static inline bool c_smm_lag_allowed(const smm_match_ctx* ctx, const smm_order_e
     if (!ctx || !entry || !entry->header) return true;
     if (ctx->lag_ts <= 0 && ctx->lag_n_transaction <= 0) return true;
 
-    double time_elapsed = ctx->timestamp - entry->header->meta_info.timestamp;
+    double time_elapsed = ctx->timestamp - entry->header->meta_info.dt.unix_ts;
     if (ctx->lag_ts > 0 && time_elapsed < ctx->lag_ts) return false;
 
     uint64_t transactions_since = ctx->last_transaction_count - entry->transaction_count_at_placement;
@@ -348,7 +348,7 @@ static inline bool c_smm_order_eligible(const smm_match_ctx* ctx, const smm_orde
     if (!ctx || !entry || !entry->header || !market_data) return false;
     const md_trade_instruction* order = &entry->header->trade_instruction;
     if (!c_md_state_working(order->order_state)) return false;
-    if (order->meta_info.timestamp > market_data->meta_info.timestamp) return false;
+    if (order->meta_info.dt.unix_ts > market_data->meta_info.dt.unix_ts) return false;
     return true;
 }
 
@@ -688,6 +688,11 @@ static inline void c_smm_match_dealloc(smm_match_ctx* ctx) {
     }
     ctx->listeners = NULL;
 
+    if (ctx->ws_report) {
+        c_ap_free(ctx->ws_report);
+        ctx->ws_report = NULL;
+    }
+
     if (ctx->engine) c_smm_match_unregister(ctx);
 }
 
@@ -759,6 +764,7 @@ static inline void c_smm_match_clear(smm_match_ctx* ctx) {
     bool                incremental_order_volume = ctx->incremental_order_volume;
     uint64_t            seed = ctx->seed;
     allocator_protocol* allocator = ctx->allocator;
+    md_variant*         ws_report = ctx->ws_report;  // keep the report workspace
     smm_listener*       listeners = ctx->listeners;  // keep listener bindings
     smm_engine_binding* engine = ctx->engine;        // keep engine binding
 
@@ -775,6 +781,7 @@ static inline void c_smm_match_clear(smm_match_ctx* ctx) {
 
     c_smm_match_init(ctx);
     ctx->allocator = allocator;
+    ctx->ws_report = ws_report;
     ctx->listeners = listeners;
     ctx->engine = engine;
     c_smm_match_set_config(ctx, fee_rate, instant_fill, lag_ts, lag_n_transaction, hit_prob, slippery_rate, incremental_order_volume);
@@ -1014,7 +1021,7 @@ static inline int c_smm_match_process(smm_match_ctx* ctx, const md_variant* mark
     if (!ctx || !market_data) return SMM_ERR_INVALID_ARG;
     c_smm_allocator(ctx, market_data);
 
-    ctx->timestamp = market_data->meta_info.timestamp;
+    ctx->timestamp = market_data->meta_info.dt.unix_ts;
     ctx->last_price = c_md_get_price(market_data);
 
     switch (market_data->meta_info.dtype) {
@@ -1160,11 +1167,17 @@ static inline void c_smm_try_match(smm_match_ctx* ctx, smm_order_entry* entry, d
 
     if (match_volume <= 0) return;
 
-    md_trade_report* rpt = &ctx->ws_report.trade_report;
-    memset(&ctx->ws_report, 0, sizeof(md_variant));
+    if (!ctx->ws_report) {
+        allocator_protocol* allocator = c_smm_allocator(ctx, NULL);
+        if (!allocator) return;
+        ctx->ws_report = (md_variant*) c_ap_alloc(sizeof(md_variant), allocator);
+        if (!ctx->ws_report) return;
+    }
+
+    md_trade_report* rpt = &ctx->ws_report->trade_report;
+    memset(ctx->ws_report, 0, sizeof(md_variant));
     rpt->meta_info.dtype = DTYPE_REPORT;
     rpt->meta_info.ticker = order->meta_info.ticker;
-    rpt->meta_info.timestamp = ctx->timestamp;
     if (c_ex_profile_session_datetime_from_unix(ctx->timestamp, &rpt->meta_info.dt) != 0) {
         memset(&rpt->meta_info.dt, 0, sizeof(session_datetime_t));
     }
@@ -1192,7 +1205,7 @@ static inline void c_smm_try_match(smm_match_ctx* ctx, smm_order_entry* entry, d
     c_smm_match_fire(ctx, SMM_EVENT_MATCH, entry, rpt);
 
     if (ctx->engine) {
-        c_smm_publish_report(ctx, &ctx->ws_report);
+        c_smm_publish_report(ctx, ctx->ws_report);
         if (entry->py_order) {
             c_smm_publish(ctx, ctx->engine->on_order_topic, ctx->engine->on_order_topic_obj, "order", entry->py_order);
         }
@@ -1431,4 +1444,4 @@ static inline void c_smm_check_trade(smm_match_ctx* ctx, const md_variant* md) {
     }
 }
 
-#endif /* C_SIMMATCH_EX_H */
+#endif /* C_SIMMATCH_H */

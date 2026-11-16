@@ -8,7 +8,7 @@ from event_engine.capi cimport evt_hook, evt_topic, message_queue
 from algo_engine.base.c_market_data.c_market_data cimport long_md_id, md_trade_report, md_variant
 
 
-cdef extern from "algo_engine/backtest/c_simmatch_ex.h":
+cdef extern from "algo_engine/backtest/c_simmatch.h":
     ctypedef enum smm_match_event:
         SMM_EVENT_MATCH
         SMM_EVENT_CANCEL
@@ -112,7 +112,7 @@ cdef extern from "algo_engine/backtest/c_simmatch_ex.h":
     int c_smm_match_worst_price(const double* prices, size_t n, int8_t sign, double* out)
 
 
-cdef class SimMatchEx:
+cdef class SimMatch:
     cdef smm_match_ctx* ctx
     cdef bint owner
     cdef uintptr_t _callback_id
