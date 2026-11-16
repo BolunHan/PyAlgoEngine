@@ -32,9 +32,9 @@ pre-state for a launch.
 
 `STATE_CANCELED` does not imply a partial fill, a full fill, or no fill. The
 trade reports may still be incomplete when the cancel is confirmed. A fill
-that arrives afterwards runs the full fill flow — the volume, notional and fee
-are booked and the callbacks run — and only the post-state field stays
-`STATE_CANCELED`.
+that arrives afterwards is booked and its callbacks run; it writes no state —
+the state column follows the exchange's order-state event. The report protocol
+is in `dma_algo_protocol.md`.
 
 `STATE_CANCELING` lasts from the algo's cancel instruction until the actual
 outcome: the exchange confirms the cancel, reports a full fill, or refuses the
@@ -43,8 +43,10 @@ on it is tolerated.
 
 ## Guard outcomes
 
-Every operation classifies its pre-state into exactly one of three classes. The
-three classes partition the eleven states for every operation.
+Every operation that guards a pre-state classifies it into exactly one of three
+classes. The three classes partition the eleven states for every such
+operation. A fill is not one of them: the exchange report is authoritative and
+the fill applies from every pre-state.
 
 | class     | operation                                      | return                                              | output                                                                              |
 |-----------|------------------------------------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------|
@@ -61,7 +63,7 @@ so a caller can tell a deliberate no-op from a performed operation.
 The order-state predicates live in `c_market_data.h` beside `md_order_state`:
 `c_md_state_working`, `c_md_state_placed`, `c_md_state_done` and
 `c_md_state_cancellable`. `c_dma.h` consumes them; it does not define its own
-state predicate. `c_md_state_cancellable` is the venue-live cancel predicate:
+state predicate. `c_md_state_cancellable` is the exchange-live cancel predicate:
 `STATE_SENT`, `STATE_PLACED` or `STATE_PARTFILLED`.
 
 ## Flows
@@ -174,13 +176,13 @@ flowchart TD
 
 | class     | pre-states                                                                                                                                            | outcome                                                            |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| expected  | `STATE_PENDING`                                                                                                                                       | `STATE_REJECTED`; the reject handler runs                          |
+| expected  | `STATE_PENDING`                                                                                                                                       | `STATE_REJECTED`; the rejected callback runs                          |
 | tolerated | `STATE_REJECTED`                                                                                                                                      | no operation; `DMA_OK_NOOP`                                        |
 | banned    | `STATE_IDLE`, `STATE_UNKNOWN`, `STATE_SENT`, `STATE_PLACED`, `STATE_PARTFILLED`, `STATE_CANCELING`, `STATE_FILLED`, `STATE_CANCELED`, `STATE_INVALID` | no operation; `DMA_ERR_INVALID_INPUT`; stderr; `DMA_VIGILANT` stop |
 
 ```mermaid
 flowchart TD
-    A["STATE_PENDING"] -->|expected| R1["STATE_REJECTED<br/>reject handler runs"]
+    A["STATE_PENDING"] -->|expected| R1["STATE_REJECTED<br/>rejected callback runs"]
     B["STATE_REJECTED"] -->|tolerated| R2["no operation<br/>DMA_OK_NOOP"]
     C["STATE_IDLE / STATE_UNKNOWN / STATE_SENT /<br/>STATE_PLACED / STATE_PARTFILLED / STATE_CANCELING /<br/>STATE_FILLED / STATE_CANCELED / STATE_INVALID"] -->|banned| R3["no operation<br/>DMA_ERR_INVALID_INPUT<br/>stderr; DMA_VIGILANT stop + telemetry"]
 ```
@@ -189,7 +191,7 @@ flowchart TD
 
 | class     | pre-states                                                                                                                                               | outcome                                                            |
 |-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| expected  | `STATE_SENT`                                                                                                                                             | `STATE_REJECTED`; the reject handler runs                          |
+| expected  | `STATE_SENT`                                                                                                                                             | `STATE_REJECTED`; the rejected callback runs                          |
 | tolerated | `STATE_REJECTED`                                                                                                                                         | no operation; `DMA_OK_NOOP`                                        |
 | banned    | `STATE_IDLE`, `STATE_UNKNOWN`, `STATE_PENDING`, `STATE_PLACED`, `STATE_PARTFILLED`, `STATE_CANCELING`, `STATE_FILLED`, `STATE_CANCELED`, `STATE_INVALID` | no operation; `DMA_ERR_INVALID_INPUT`; stderr; `DMA_VIGILANT` stop |
 
@@ -197,7 +199,7 @@ A refused cancel is not this operation.
 
 ```mermaid
 flowchart TD
-    A["STATE_SENT"] -->|expected| R1["STATE_REJECTED<br/>reject handler runs"]
+    A["STATE_SENT"] -->|expected| R1["STATE_REJECTED<br/>rejected callback runs"]
     B["STATE_REJECTED"] -->|tolerated| R2["no operation<br/>DMA_OK_NOOP"]
     C["STATE_IDLE / STATE_UNKNOWN / STATE_PENDING /<br/>STATE_PLACED / STATE_PARTFILLED / STATE_CANCELING /<br/>STATE_FILLED / STATE_CANCELED / STATE_INVALID"] -->|banned| R3["no operation<br/>DMA_ERR_INVALID_INPUT<br/>stderr; DMA_VIGILANT stop + telemetry"]
 ```
@@ -222,27 +224,31 @@ flowchart TD
     C["STATE_UNKNOWN / STATE_REJECTED / STATE_INVALID"] -->|banned| R3["no operation<br/>DMA_ERR_INVALID_INPUT<br/>stderr; DMA_VIGILANT stop + telemetry"]
 ```
 
-### Fill — partial or full
+### Fill — a trade report without `OFFSET_CANCEL`
 
-| class     | pre-states                                                                        | outcome                                                                                                                         |
-|-----------|-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| expected  | `STATE_SENT`, `STATE_PLACED`, `STATE_PARTFILLED`, `STATE_CANCELING`               | `STATE_PARTFILLED` or `STATE_FILLED` by the cumulative filled volume; stays `STATE_CANCELING` on a partial fill while canceling |
-| expected  | `STATE_CANCELED`                                                                  | the full fill flow runs: `filled_volume`, `filled_notional`, `fee` and the callbacks; the post-state stays `STATE_CANCELED`     |
-| tolerated | `STATE_FILLED`                                                                    | no operation; `DMA_OK_NOOP`; the duplicate report is deduped                                                                    |
-| banned    | `STATE_IDLE`, `STATE_UNKNOWN`, `STATE_PENDING`, `STATE_REJECTED`, `STATE_INVALID` | no operation; `DMA_ERR_INVALID_INPUT`; stderr; `DMA_VIGILANT` stop                                                              |
+| class     | pre-states  | outcome                                                                                       |
+|-----------|-------------|-----------------------------------------------------------------------------------------------|
+| expected  | every state | the volume, notional and fee are booked; the `on_filled` callbacks and the position mirror run |
+| tolerated | none        | —                                                                                             |
+| banned    | none        | —                                                                                             |
 
-A fill on `STATE_FILLED` is a duplicate report; the trade dedup is enforced, so
-it is a tolerated no-op.
+A fill is identified by its trade side, not by its volume: a trade report whose
+side offset is not `OFFSET_CANCEL` is a fill. It applies from every pre-state —
+the exchange report is authoritative — and it writes no order state: the state
+column follows the order-state event. The trade-id dedup is the only gate, so
+a repeated report is a no-op. The protocol is in `dma_algo_protocol.md`.
 
 ```mermaid
 flowchart TD
-    A["STATE_SENT / STATE_PLACED / STATE_PARTFILLED /<br/>STATE_CANCELING"] -->|expected| R1["STATE_PARTFILLED / STATE_FILLED<br/>by the cumulative volume; stays STATE_CANCELING on a partial fill"]
-    B["STATE_CANCELED"] -->|expected| R2["the full fill flow runs<br/>post-state stays STATE_CANCELED"]
-    C["STATE_FILLED"] -->|tolerated| R3["no operation<br/>DMA_OK_NOOP; duplicate report deduped"]
-    D["STATE_IDLE / STATE_UNKNOWN / STATE_PENDING /<br/>STATE_REJECTED / STATE_INVALID"] -->|banned| R4["no operation<br/>DMA_ERR_INVALID_INPUT<br/>stderr; DMA_VIGILANT stop + telemetry"]
+    A["every pre-state"] -->|expected| R1["book volume / notional / fee<br/>on_filled; position mirror<br/>no state write"]
 ```
 
 ### Cancel confirmation — the exchange confirms the cancel
+
+The confirmation comes from exactly two sources: an order-state event carrying
+`STATE_CANCELED`, or a trade report whose side carries `OFFSET_CANCEL`. The
+volume is never the indication, and a cancel report may carry a positive volume
+(the canceled amount); that amount is not booked as a fill.
 
 | class     | pre-states                                                                                        | outcome                                                            |
 |-----------|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
@@ -292,7 +298,7 @@ flowchart TD
 The dry run, `c_dma_check_order`, changes no state; it has no pre-state guard.
 
 `STATE_IDLE` is the explicit start and `STATE_UNKNOWN` is not a valid launch
-pre-state. `STATE_PENDING` is not venue-live: a cancel on it is local and marks
+pre-state. `STATE_PENDING` is not exchange-live: a cancel on it is local and marks
 the order `STATE_CANCELED`; the queue processor tolerates the stale entry
 without calling the launch handler. `STATE_INVALID` is terminal and outside
 these flows.
