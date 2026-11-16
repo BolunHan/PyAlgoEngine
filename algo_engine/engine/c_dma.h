@@ -146,13 +146,13 @@ _Static_assert(DMA_ORDER_QUEUE_MAX_CAPACITY <= SIZE_MAX / sizeof(dma_order_reque
  * @struct dma
  * @brief The direct market access state.
  *
- * `mds`, `algo_engine` and `risk_profile` are borrowed; `inventory`,
+ * `MDS`, `algo_engine` and `risk_profile` are borrowed; `inventory`,
  * `positions`, `handlers` and `requests` are owned. The access sweeps the
  * records its algo engine owns at teardown and frees every position it owns at
  * dealloc; the engine keeps its own maps and registrations.
  */
 typedef struct dma {
-    mds*                  mds;           // NOT owned - the market data source.
+    mds*                  MDS;           // NOT owned - the market data source.
     dma_algo_engine*      algo_engine;   // NOT owned - the algo engine bound to this access; outlives it.
     dma_risk_profile*     risk_profile;  // NOT owned - the risk profile.
     dma_inventory         inventory;     // OWNED - embedded inventory, initialized by c_dma_new.
@@ -266,7 +266,7 @@ static inline dma* c_dma_new(mds* market_data, dma_risk_profile* risk_profile, a
 static inline int c_dma_init(dma* DMA, mds* market_data, dma_risk_profile* risk_profile) {
     if (!DMA) return DMA_ERR_INVALID_INPUT;
 
-    DMA->mds          = market_data;
+    DMA->MDS          = market_data;
     DMA->risk_profile = risk_profile;
     return DMA_OK;
 }
@@ -402,9 +402,9 @@ static inline dma_algo* c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const cha
  * @return The calculated limit, or NaN.
  */
 static inline double c_dma_calculate_limit(dma* DMA, const char* ticker, md_side side, double limit_price, double limit_adjust_factor, dma_algo_limit_mode mode) {
-    if (!DMA || !DMA->mds || !ticker) return NAN;
+    if (!DMA || !DMA->MDS || !ticker) return NAN;
 
-    double market_price = c_mds_get_market_price(DMA->mds, ticker);
+    double market_price = c_mds_get_market_price(DMA->MDS, ticker);
     if (isnan(market_price)) return NAN;
 
     double calculated = c_dma_algo_compare_limit(side, limit_price, NAN, mode);
