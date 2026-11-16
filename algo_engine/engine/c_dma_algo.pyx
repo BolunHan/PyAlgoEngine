@@ -10,6 +10,7 @@ from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, TradeReport, instruction_from_header
 
 from .algo.c_algo_template cimport AlgoTemplate
+from .c_dma cimport DMA
 
 
 class AlgoLimitMode(enum.IntEnum):
@@ -206,6 +207,18 @@ cdef class AlgoEngine(CCPType):
         self.ccp_bind(&self.header)
         self.registry = AlgoRegistry.c_from_header(self.header.registry, False)
 
+    @staticmethod
+    cdef AlgoEngine c_from_header(dma_algo_engine* header, bint owner=False):
+        if not header:
+            raise MemoryError('Failed to allocate memory for <AlgoEngine>.')
+
+        cdef AlgoEngine instance = AlgoEngine.__new__(AlgoEngine)
+        instance.header = header
+        instance.owner = owner
+        instance.ccp_bind(&instance.header)
+        instance.registry = AlgoRegistry.c_from_header(header.registry, False)
+        return instance
+
     def __dealloc__(self):
         if not self.owner:
             return
@@ -295,7 +308,7 @@ cdef class AlgoEngine(CCPType):
             return self.algos_map
 
 
-cdef AlgoEngine ALGO_ENGINE = AlgoEngine()
+cdef AlgoEngine ALGO_ENGINE = DMA.algo_engine
 cdef AlgoRegistry ALGO_REGISTRY = ALGO_ENGINE.registry
 globals()['ALGO_REGISTRY'] = ALGO_REGISTRY
 globals()['ALGO_ENGINE'] = ALGO_ENGINE

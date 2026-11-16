@@ -133,6 +133,9 @@ cdef class AlgoEngine(CCPType):
     cdef OrderMapView working_orders_map
     cdef AlgoMapView algos_map
 
+    @staticmethod
+    cdef AlgoEngine c_from_header(dma_algo_engine* header, bint owner=?)
+
     cdef int c_on_order(self, const md_trade_instruction* order)
 
     cdef int c_on_trade(self, const md_trade_report* trade)
