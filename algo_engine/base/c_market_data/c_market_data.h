@@ -529,7 +529,7 @@ static inline bool              c_md_state_placed(md_order_state state);
 static inline bool              c_md_state_done(md_order_state state);
 
 /**
- * @brief Check if an order_state is cancellable at the venue.
+ * @brief Check if an order_state is cancellable at the exchange.
  * @param state Order state to check.
  * @return true for SENT, PLACED and PARTFILLED.
  */

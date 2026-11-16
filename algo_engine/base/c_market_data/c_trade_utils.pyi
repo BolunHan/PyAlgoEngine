@@ -74,7 +74,7 @@ class OrderState(enum.IntEnum):
     @property
     def is_cancellable(self) -> bool:
         """
-        Check if order is cancellable at the venue.
+        Check if order is cancellable at the exchange.
 
         Returns:
             True for SENT, PLACED, or PARTFILLED states
