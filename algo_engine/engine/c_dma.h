@@ -1,71 +1,119 @@
 #ifndef C_DMA_H
 #define C_DMA_H
 
+#include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <algo_engine/base/c_market_data/c_market_data.h>
 #include <algo_engine/engine/c_inventory.h>
 #include <algo_engine/engine/c_market_engine.h>
-#include <algo_engine/engine/c_risk_profile.h>
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <cbase/bytemap/c_bytemap.h>
 
+// ========== Constants ==========
+
+#ifndef DMA_ORDER_QUEUE_INITIAL_CAPACITY
+#define DMA_ORDER_QUEUE_INITIAL_CAPACITY 8U
+#endif
+
+#ifndef DMA_ORDER_QUEUE_MAX_CAPACITY
+#define DMA_ORDER_QUEUE_MAX_CAPACITY 0xFFFFFFFFU
+#endif
+
+#if DMA_ORDER_QUEUE_INITIAL_CAPACITY < 1U
+#error "DMA_ORDER_QUEUE_INITIAL_CAPACITY must be at least 1"
+#endif
+
+#if DMA_ORDER_QUEUE_MAX_CAPACITY < DMA_ORDER_QUEUE_INITIAL_CAPACITY
+#error "DMA_ORDER_QUEUE_MAX_CAPACITY must be at least the initial capacity"
+#endif
+
+#ifndef DMA_NO_QUEUE_MODE
+#define DMA_NO_QUEUE_MODE 1U
+#endif
+
+#if DMA_NO_QUEUE_MODE != 0U && DMA_NO_QUEUE_MODE != 1U
+#error "DMA_NO_QUEUE_MODE must be 0 or 1"
+#endif
+
+#ifndef DMA_VIGILANT
+#define DMA_VIGILANT 0
+#endif
+
+#if DMA_VIGILANT != 0 && DMA_VIGILANT != 1
+#error "DMA_VIGILANT must be 0 or 1"
+#endif
+
 // ========== Enums ==========
+
+// clang-format off
 
 /** @enum dma_ret_code
  *  @brief 0 is success, positives are success-with-status, negatives are errors. */
 typedef enum dma_ret_code {
-    DMA_OK_BUFFERED       = 1,  // The request was queued for the buffered path.
-    DMA_OK                = 0,
+    DMA_OK_NOOP           =  2,  // The pre-state is tolerated; no operation ran.
+    DMA_OK_BUFFERED       =  1,  // The request was queued for the buffered path.
+    DMA_OK                =  0,
     DMA_ERR_INVALID_INPUT = -1,
     DMA_ERR_OOM           = -2,
     DMA_ERR_NOT_FOUND     = -3,
     DMA_ERR_EMPTY         = -4,  // The request queue is empty.
-    DMA_ERR_DISABLED      = -5,  // The access is not enabled; no transaction may leave.
-    DMA_ERR_NO_RISK       = -6,  // No risk profile is bound; no transaction may leave.
-    DMA_ERR_RISK          = -7,  // The risk profile refused the order.
+    DMA_ERR_NO_RISK       = -5,  // No risk profile is bound; no transaction may leave.
+    DMA_ERR_RISK          = -6,  // The risk profile refused the order.
+    DMA_ERR_FULL          = -7,  // The request ring reached its configured maximum.
 } dma_ret_code;
 
 /** @enum dma_order_action
  *  @brief The buffered order actions. */
 typedef enum dma_order_action {
-    DMA_ACTION_LAUNCH = 0,
-    DMA_ACTION_CANCEL = 1,
+    DMA_ACTION_LAUNCH     = 0,
+    DMA_ACTION_CANCEL     = 1,
 } dma_order_action;
+
+// clang-format on
 
 // ========== Structs ==========
 
-typedef struct dma             dma;
-typedef struct dma_position    dma_position;
-typedef struct dma_algo_engine dma_algo_engine;
+typedef enum dma_algo_limit_mode  dma_algo_limit_mode;
+
+typedef struct dma                dma;
+typedef struct dma_algo           dma_algo;
+typedef struct dma_algo_engine    dma_algo_engine;
+typedef struct dma_position       dma_position;
+typedef struct dma_risk_profile   dma_risk_profile;
+typedef struct dma_risk_violation dma_risk_violation;
 
 /**
  * @brief The four per-action trading interface handlers.
  *
- * Only the launch handler carries the registration's `seq_id`; `user_data` is
- * always the last parameter.
+ * The launch and cancel handlers receive the access's per-send `seq_id`; the
+ * reject and filled handlers process an event and carry no send sequence.
+ * `user_data` is always the last parameter.
  */
 typedef void (*dma_order_launch_func)(md_trade_instruction* order, uint32_t seq_id, void* user_data);
-typedef void (*dma_order_cancel_func)(const md_trade_instruction* order, void* user_data);
+typedef void (*dma_order_cancel_func)(const md_trade_instruction* order, uint32_t seq_id, void* user_data);
 typedef void (*dma_order_reject_func)(const md_trade_instruction* order, void* user_data);
-typedef void (*dma_order_filled_callback)(const md_trade_instruction* order, md_trade_report* report, void* user_data);
+typedef void (*dma_order_filled_func)(const md_trade_instruction* order, md_trade_report* report, void* user_data);
 
 /**
  * @struct dma_order_handler_ctx
- * @brief One registered handler set; a calloc'ed linked-list node.
+ * @brief The access's single attached order handler set.
+ *
+ * A handler performs the order actions (an exchange connection in production,
+ * a simulated matcher in backtest). The access dispatches to exactly one set,
+ * so it is attached and detached rather than registered.
  */
 typedef struct dma_order_handler_ctx {
-    dma_order_launch_func         order_launch_fn;
-    dma_order_cancel_func         order_cancel_fn;
-    dma_order_reject_func         order_reject_fn;
-    dma_order_filled_callback     order_filled_fn;
-    void*                         user_data;
-    struct dma_order_handler_ctx* next;
-    uintptr_t                     reg_id;
-    uint32_t                      seq_id;
+    dma_order_launch_func order_launch_fn;
+    dma_order_cancel_func order_cancel_fn;
+    dma_order_reject_func order_reject_fn;
+    dma_order_filled_func order_filled_fn;
+    void*                 user_data;
 } dma_order_handler_ctx;
 
 /**
@@ -73,183 +121,231 @@ typedef struct dma_order_handler_ctx {
  * @brief One buffered launch/cancel request; the order is borrowed.
  */
 typedef struct dma_order_request {
-    md_trade_instruction*     order;  // NOT owned - the order being routed.
-    struct dma_order_request* next;
-    dma_order_action          action;
+    md_trade_instruction* order;  // NOT owned - the order being routed.
+    dma_order_action      action;
 } dma_order_request;
+
+/**
+ * @struct dma_order_queue
+ * @brief The contiguous FIFO ring of buffered requests.
+ *
+ * The buffer doubles when full, up to DMA_ORDER_QUEUE_MAX_CAPACITY; `head` is
+ * the oldest entry and `size` is the live count. The buffer is its own owned
+ * block, not a child of the access.
+ */
+typedef struct dma_order_queue {
+    dma_order_request* entries;  // OWNED - contiguous ring buffer.
+    size_t             capacity;
+    size_t             head;
+    size_t             size;
+} dma_order_queue;
+
+_Static_assert(DMA_ORDER_QUEUE_MAX_CAPACITY <= SIZE_MAX / sizeof(dma_order_request), "DMA_ORDER_QUEUE_MAX_CAPACITY overflows the ring byte size");
 
 /**
  * @struct dma
  * @brief The direct market access state.
  *
- * `mds`, `algo_engine`, `risk` and `position` are borrowed; `inventory`,
- * `handlers` and the request queue are owned.
+ * `mds`, `algo_engine` and `risk_profile` are borrowed; `inventory`,
+ * `positions`, `handlers` and `requests` are owned. The access sweeps the
+ * records its algo engine owns at teardown and frees every position it owns at
+ * dealloc; the engine keeps its own maps and registrations.
  */
 typedef struct dma {
-    mds*                   mds;          // NOT owned - the market data source.
-    dma_algo_engine*       algo_engine;  // NOT owned - the algo engine bound to this access.
-    dma_risk*              risk;         // NOT owned - the risk profile.
-    dma_position*          position;     // NOT owned - the position bound to this access.
-    dma_inventory          inventory;    // OWNED - embedded inventory, initialized by c_dma_new.
-    dma_order_handler_ctx* handlers;     // OWNED - calloc'ed registration nodes.
-    double                 cool_down;    // Order launch cool-down in seconds; 0 disables buffering.
-    bool                   enabled;      // false rejects every launch.
-    dma_order_request*     head;         // OWNED - FIFO head.
-    dma_order_request*     tail;         // OWNED - FIFO tail.
-    size_t                 n_requests;
+    mds*                  mds;           // NOT owned - the market data source.
+    dma_algo_engine*      algo_engine;   // NOT owned - the algo engine bound to this access; outlives it.
+    dma_risk_profile*     risk_profile;  // NOT owned - the risk profile.
+    dma_inventory         inventory;     // OWNED - embedded inventory, initialized by c_dma_new.
+    bytemap*              positions;     // OWNED - position id -> owned dma_position* (created by c_dma_new).
+    dma_order_handler_ctx handlers;      // OWNED - embedded single handler set.
+    dma_order_queue       requests;      // OWNED - buffered launch/cancel ring.
+    uint32_t              seq_id;        // Per-send sequence; incremented on launch and cancel.
 } dma;
-
-#include <algo_engine/engine/algo/c_algo_template.h>
-#include <algo_engine/engine/c_dma_algo.h>
 
 // ========== Forward Declarations ==========
 
 // Lifecycle
-static inline dma*          c_dma_new(mds* market_data, dma_risk* risk, double cool_down, allocator_protocol* allocator);
-static inline int           c_dma_init(dma* self, mds* market_data, dma_risk* risk, double cool_down);
-static inline void          c_dma_dealloc(dma* self);
-static inline void          c_dma_free(dma* self);
-static inline int           c_dma_clear(dma* self);
+static inline dma*      c_dma_new(mds* market_data, dma_risk_profile* risk_profile, allocator_protocol* allocator);
+static inline int       c_dma_init(dma* DMA, mds* market_data, dma_risk_profile* risk_profile);
+static inline int       c_dma_clear(dma* DMA);
+static inline void      c_dma_dealloc(dma* DMA);
+static inline void      c_dma_free(dma* DMA);
 
-// Position
-static inline void          c_dma_set_position(dma* self, dma_position* position);
-static inline dma_position* c_dma_get_position(const dma* self);
-
-// Algo engine
-static inline dma_algo*     c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator);
-static inline double        c_dma_calculate_limit(dma* DMA, const char* ticker, md_side side, double limit_price, double limit_adjust_factor, dma_algo_limit_mode mode);
+// Positions (defined in c_position.h)
+static inline void      c_dma_position_free(dma_position* position);
 
 // Order handlers
-static inline int           c_dma_register_order_handler(dma* self, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_order_reject_func order_reject_fn, dma_order_filled_callback order_filled_fn, void* user_data, uint32_t seq_id, uintptr_t* out_id);
-static inline int           c_dma_unregister_order_handler(dma* self, uintptr_t handler_id);
+static inline int       c_dma_attach_order_handler(dma* DMA, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_order_reject_func order_reject_fn, dma_order_filled_func order_filled_fn, void* user_data);
+static inline int       c_dma_detach_order_handler(dma* DMA);
 
-// Order dispatch
-static inline void          c_dma_invoke_launch_order(dma* self, md_trade_instruction* order);
-static inline void          c_dma_invoke_cancel_order(dma* self, const md_trade_instruction* order);
-static inline void          c_dma_invoke_reject_order(dma* self, const md_trade_instruction* order);
-static inline void          c_dma_invoke_filled_order(dma* self, const md_trade_instruction* order, md_trade_report* report);
+// Order entry
+static inline void      c_dma_refuse(const dma* DMA, const md_trade_instruction* order, const char* op);
+static inline int       c_dma_check_order(const dma* DMA, const md_trade_instruction* order, dma_risk_violation* out_violation);
+static inline uint32_t  c_dma_next_seq_id(dma* DMA);
+static inline int       c_dma_launch_order(dma* DMA, md_trade_instruction* order);
+static inline int       c_dma_cancel_order(dma* DMA, md_trade_instruction* order);
+static inline int       c_dma_launch_order_unchecked(dma* DMA, md_trade_instruction* order);
+static inline int       c_dma_process_queue(dma* DMA);
 
-// Gating
-static inline void          c_dma_set_enabled(dma* self, bool enabled);
-static inline bool          c_dma_is_enabled(const dma* self);
-static inline int           c_dma_check_order(const dma* self, const dma_risk_query* query, dma_risk_violation* out_violation);
+// Internal request queue
+static inline int       c_dma_order_queue_init(dma_order_queue* queue, allocator_protocol* allocator);
+static inline void      c_dma_order_queue_dealloc(dma_order_queue* queue);
+static inline int       c_dma_order_queue_grow(dma_order_queue* queue);
+static inline int       c_dma_order_queue_push(dma_order_queue* queue, dma_order_action action, md_trade_instruction* order);
+static inline int       c_dma_order_queue_pop(dma_order_queue* queue, dma_order_action* out_action, md_trade_instruction** out_order);
+static inline void      c_dma_order_queue_clear(dma_order_queue* queue);
 
-// Request queue
-static inline int           c_dma_request_order(dma* self, dma_order_action action, md_trade_instruction* order);
-static inline int           c_dma_pop_request(dma* self, dma_order_action* out_action, md_trade_instruction** out_order);
-static inline void          c_dma_clear_requests(dma* self);
+// Algo engine entries (the record and limit-mode types are defined by the includes above)
+static inline dma_algo* c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator);
+static inline double    c_dma_calculate_limit(dma* DMA, const char* ticker, md_side side, double limit_price, double limit_adjust_factor, dma_algo_limit_mode mode);
+
+#include <algo_engine/engine/algo/c_algo_template.h>
+#include <algo_engine/engine/c_dma_algo.h>
+#include <algo_engine/engine/c_position.h>
+#include <algo_engine/engine/risk_profile/c_risk_profile.h>
 
 // ========== Public APIs (Direct Market Access) ==========
 
 /**
  * @brief Allocate and initialize a direct market access.
  *
- * The embedded inventory is a child of the access block and is initialized
- * here.
+ * The embedded inventory and the request ring are initialized here; the
+ * handler set starts detached.
  *
  * @param allocator Allocator for the block and its children.
  * @return The new access, or NULL on allocation failure.
  */
-static inline dma*          c_dma_new(mds* market_data, dma_risk* risk, double cool_down, allocator_protocol* allocator) {
-    dma* self = (dma*) c_ap_alloc(sizeof(dma), allocator);
-    if (!self) return NULL;
+static inline dma* c_dma_new(mds* market_data, dma_risk_profile* risk_profile, allocator_protocol* allocator) {
+    dma* DMA = (dma*) c_ap_alloc(sizeof(dma), allocator);
+    if (!DMA) return NULL;
 
-    c_dma_init(self, market_data, risk, cool_down);
-
-    // The inventory is embedded, so its block start is the access: the access
-    // protocol is derived when the caller did not supply an allocator.
-    allocator_protocol* protocol = allocator ? allocator : c_ap_protocol_from_ptr(self);
-
-    if (c_dma_inventory_init(&self->inventory, protocol) != INVENTORY_OK) {
-        c_ap_free(self);
+    if (c_dma_init(DMA, market_data, risk_profile) != DMA_OK) {
+        c_ap_free(DMA);
         return NULL;
     }
 
-    return self;
+    // The inventory is embedded, so its block start is the access: the access
+    // protocol is derived when the caller did not supply an allocator.
+    allocator_protocol* protocol = allocator ? allocator : c_ap_protocol_from_ptr(DMA);
+
+    if (c_dma_inventory_init(&DMA->inventory, protocol) != INVENTORY_OK) {
+        c_ap_free(DMA);
+        return NULL;
+    }
+
+    DMA->positions = c_bytemap_ex_new(8, sizeof(dma_position*), protocol);
+    if (!DMA->positions) {
+        c_dma_inventory_dealloc(&DMA->inventory);
+        c_ap_free(DMA);
+        return NULL;
+    }
+
+    if (c_dma_order_queue_init(&DMA->requests, protocol) != DMA_OK) {
+        c_bytemap_ex_free(DMA->positions);
+        DMA->positions = NULL;
+        c_dma_inventory_dealloc(&DMA->inventory);
+        c_ap_free(DMA);
+        return NULL;
+    }
+
+    return DMA;
 }
 
 /**
  * @brief Initialize a caller-allocated, zeroed direct market access.
  *
- * The embedded inventory is left zeroed; initialize it with
- * `c_dma_inventory_init(&self->inventory, allocator)`.
+ * The embedded inventory, handler set and request ring are left zeroed;
+ * initialize the inventory with `c_dma_inventory_init(&DMA->inventory,
+ * allocator)` and the ring with `c_dma_order_queue_init(&DMA->requests,
+ * allocator)`. Creating positions requires an access built by `c_dma_new`,
+ * which owns their map.
  *
- * @param self The zeroed access to initialize.
+ * @param DMA The zeroed access to initialize.
  * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_init(dma* self, mds* market_data, dma_risk* risk, double cool_down) {
-    if (!self) return DMA_ERR_INVALID_INPUT;
+static inline int c_dma_init(dma* DMA, mds* market_data, dma_risk_profile* risk_profile) {
+    if (!DMA) return DMA_ERR_INVALID_INPUT;
 
-    self->mds       = market_data;
-    self->risk      = risk;
-    self->cool_down = cool_down > 0 ? cool_down : 0.;
-    self->enabled   = false;
+    DMA->mds          = market_data;
+    DMA->risk_profile = risk_profile;
     return DMA_OK;
 }
 
 /**
- * @brief Tear down a caller-allocated access, releasing the embedded
- *        inventory, the buffered requests and the registered interface nodes.
- * @param self The access (NULL-safe).
+ * @brief Remove every algo record, order and stored trade the bound algo engine tracks.
+ *
+ * The engine is borrowed, so the sweep covers every record in that engine, not
+ * only the records this access created. It frees every order context (with the
+ * trade reports it stored), every algo record, and every registration index
+ * entry; the hosted positions drop the references to those records in the same
+ * pass. The engine's maps, the registrations and the access's own configuration
+ * (handlers, inventory, positions, request ring) survive, so the access can
+ * trade again after the sweep.
+ *
+ * @param DMA The access (NULL-safe).
+ * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline void c_dma_dealloc(dma* self) {
-    if (!self) return;
+static inline int c_dma_clear(dma* DMA) {
+    if (!DMA) return DMA_ERR_INVALID_INPUT;
 
-    c_dma_clear_requests(self);
-    c_dma_inventory_dealloc(&self->inventory);
+    c_dma_order_queue_clear(&DMA->requests);
 
-    dma_order_handler_ctx* handler = self->handlers;
-    while (handler) {
-        dma_order_handler_ctx* next = handler->next;
-        free(handler);
-        handler = next;
+    if (DMA->algo_engine) c_dma_algo_engine_clear(DMA->algo_engine);
+
+    return DMA_OK;
+}
+
+/**
+ * @brief Tear down a caller-allocated access, leaving it zeroed.
+ *
+ * The trading records are removed first (see `c_dma_clear`); the embedded
+ * inventory, the request ring and every owned position are released next. The
+ * borrowed market data, risk and algo engine blocks stay with their owners;
+ * the algo engine must outlive the access because the sweep and the position
+ * teardown read it.
+ *
+ * @param DMA The access (NULL-safe).
+ */
+static inline void c_dma_dealloc(dma* DMA) {
+    if (!DMA) return;
+
+    c_dma_clear(DMA);
+
+    c_dma_inventory_dealloc(&DMA->inventory);
+    c_dma_order_queue_dealloc(&DMA->requests);
+
+    if (DMA->positions) {
+        while (c_bytemap_ex_len(DMA->positions)) {
+            bytemap_entry* entry    = DMA->positions->first;
+            dma_position*  position = *(dma_position**) entry->value;
+            uuid_t         position_id;
+
+            memcpy(position_id, entry->key, sizeof(uuid_t));
+            c_bytemap_ex_pop(DMA->positions, (const char*) position_id, sizeof(uuid_t), 0, NULL, NULL);
+
+            if (position) c_dma_position_free(position);
+        }
+
+        c_bytemap_ex_free(DMA->positions);
+        DMA->positions = NULL;
     }
 
-    memset(self, 0, sizeof(dma));
+    memset(DMA, 0, sizeof(dma));
 }
 
 /**
  * @brief Free an access allocated by `c_dma_new`.
- * @param self The access (NULL-safe).
+ *
+ * The sweep and the subordinate release run first, then the access block is
+ * freed.
+ *
+ * @param DMA The access (NULL-safe).
  */
-static inline void c_dma_free(dma* self) {
-    if (!self) return;
+static inline void c_dma_free(dma* DMA) {
+    if (!DMA) return;
 
-    c_dma_dealloc(self);
-    c_ap_free(self);
-}
-
-/**
- * @brief Drop every buffered request and reset the access state.
- * @param self The access (NULL-safe).
- * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
- */
-static inline int c_dma_clear(dma* self) {
-    if (!self) return DMA_ERR_INVALID_INPUT;
-
-    c_dma_clear_requests(self);
-    self->enabled = false;
-    return DMA_OK;
-}
-
-/**
- * @brief Bind the position this access trades through.
- * @param self The access (NULL-safe).
- * @param position The borrowed position (may be NULL to clear).
- */
-static inline void c_dma_set_position(dma* self, dma_position* position) {
-    if (!self) return;
-
-    self->position = position;
-}
-
-/**
- * @brief Read the position bound to this access.
- * @param self The access (NULL-safe).
- * @return The borrowed position, or NULL.
- */
-static inline dma_position* c_dma_get_position(const dma* self) {
-    return self ? self->position : NULL;
+    c_dma_dealloc(DMA);
+    c_ap_free(DMA);
 }
 
 // ========== Public APIs (Algo Engine) ==========
@@ -311,9 +407,7 @@ static inline double c_dma_calculate_limit(dma* DMA, const char* ticker, md_side
     double market_price = c_mds_get_market_price(DMA->mds, ticker);
     if (isnan(market_price)) return NAN;
 
-    double calculated = NAN;
-
-    calculated = c_dma_algo_compare_limit(side, limit_price, calculated, mode);
+    double calculated = c_dma_algo_compare_limit(side, limit_price, NAN, mode);
 
     if (!isnan(limit_adjust_factor)) {
         double adjusted = market_price * (1. + limit_adjust_factor * c_md_side_sign(side));
@@ -325,262 +419,464 @@ static inline double c_dma_calculate_limit(dma* DMA, const char* ticker, md_side
 }
 
 /**
- * @brief Register one order handler set.
- * @param self The access (NULL-safe).
+ * @brief Attach the access's single order handler set, replacing any attached.
+ *
+ * A handler performs the order actions (an exchange connection in production,
+ * a simulated matcher in backtest); the access dispatches to exactly one set.
+ *
+ * @param DMA The access (NULL-safe).
  * @param order_launch_fn The launch handler (NULL is refused).
  * @param order_cancel_fn The cancel handler (NULL is refused).
  * @param order_reject_fn The reject handler (NULL is refused).
  * @param order_filled_fn The filled handler (NULL is refused).
  * @param user_data Opaque value handed to every handler.
- * @param seq_id The id handed to the launch handler for self-suppression.
- * @param out_id Optional: receives the id used to unregister.
- * @return DMA_OK, DMA_ERR_INVALID_INPUT, or DMA_ERR_OOM.
+ * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_register_order_handler(dma* self, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_order_reject_func order_reject_fn, dma_order_filled_callback order_filled_fn, void* user_data, uint32_t seq_id, uintptr_t* out_id) {
-    if (out_id) *out_id = 0;
-    if (!self || !order_launch_fn || !order_cancel_fn || !order_reject_fn || !order_filled_fn) return DMA_ERR_INVALID_INPUT;
+static inline int c_dma_attach_order_handler(dma* DMA, dma_order_launch_func order_launch_fn, dma_order_cancel_func order_cancel_fn, dma_order_reject_func order_reject_fn, dma_order_filled_func order_filled_fn, void* user_data) {
+    if (!DMA || !order_launch_fn || !order_cancel_fn || !order_reject_fn || !order_filled_fn) return DMA_ERR_INVALID_INPUT;
 
-    dma_order_handler_ctx* node = (dma_order_handler_ctx*) calloc(1, sizeof(dma_order_handler_ctx));
-    if (!node) return DMA_ERR_OOM;
-
-    node->order_launch_fn = order_launch_fn;
-    node->order_cancel_fn = order_cancel_fn;
-    node->order_reject_fn = order_reject_fn;
-    node->order_filled_fn = order_filled_fn;
-    node->user_data       = user_data;
-    node->seq_id          = seq_id;
-    node->reg_id          = (uintptr_t) node;
-
-    if (!self->handlers) {
-        self->handlers = node;
-    }
-    else {
-        dma_order_handler_ctx* tail = self->handlers;
-        while (tail->next) tail = tail->next;
-        tail->next = node;
-    }
-
-    if (out_id) *out_id = node->reg_id;
+    DMA->handlers.order_launch_fn = order_launch_fn;
+    DMA->handlers.order_cancel_fn = order_cancel_fn;
+    DMA->handlers.order_reject_fn = order_reject_fn;
+    DMA->handlers.order_filled_fn = order_filled_fn;
+    DMA->handlers.user_data       = user_data;
     return DMA_OK;
 }
 
 /**
- * @brief Unregister an order handler set by the id registration returned.
- * @param self The access (NULL-safe).
- * @param handler_id The id from registration (0 is refused).
- * @return DMA_OK, DMA_ERR_INVALID_INPUT, or DMA_ERR_NOT_FOUND.
+ * @brief Detach the access's order handler set; idempotent.
+ * @param DMA The access (NULL-safe).
+ * @return DMA_OK, or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_unregister_order_handler(dma* self, uintptr_t handler_id) {
-    if (!self || !handler_id) return DMA_ERR_INVALID_INPUT;
+static inline int c_dma_detach_order_handler(dma* DMA) {
+    if (!DMA) return DMA_ERR_INVALID_INPUT;
 
-    dma_order_handler_ctx* previous = NULL;
-    dma_order_handler_ctx* current  = self->handlers;
-
-    while (current) {
-        if (current->reg_id == handler_id) {
-            if (previous) previous->next = current->next;
-            else self->handlers = current->next;
-            free(current);
-            return DMA_OK;
-        }
-
-        previous = current;
-        current  = current->next;
-    }
-
-    return DMA_ERR_NOT_FOUND;
+    memset(&DMA->handlers, 0, sizeof(DMA->handlers));
+    return DMA_OK;
 }
 
 /**
- * @brief Hand a launch to every registered order handler.
+ * @brief Refuse a forbidden order transition: report it, and stop under vigil.
  *
- * The walk snapshots `next` before each call, so a handler may unregister
- * itself without corrupting the traversal. Each handler receives the seq id it
- * registered with.
+ * The order is left unchanged. The default prints the cause to stderr; with
+ * DMA_VIGILANT set the access prints the order's telemetry and aborts.
  *
- * @param self The access (NULL-safe).
- * @param order The launched order (NULL-safe).
+ * @param DMA The access (may be NULL).
+ * @param order The order (may be NULL).
+ * @param op The operation name.
  */
-static inline void c_dma_invoke_launch_order(dma* self, md_trade_instruction* order) {
-    if (!self || !order) return;
+static inline void c_dma_refuse(const dma* DMA, const md_trade_instruction* order, const char* op) {
+    const char* ticker = (order && order->meta_info.ticker) ? order->meta_info.ticker : "<unknown>";
+    const char* state  = order ? c_md_state_name(order->order_state) : "<null>";
 
-    dma_order_handler_ctx* handler = self->handlers;
-    while (handler) {
-        dma_order_handler_ctx* next = handler->next;
-        if (handler->order_launch_fn) handler->order_launch_fn(order, handler->seq_id, handler->user_data);
-        handler = next;
-    }
+    fprintf(stderr, "[DMA] ERROR: %s refused; order <%s> state <%s> is banned\n", op, ticker, state);
+
+#if DMA_VIGILANT
+    fprintf(
+        stderr,
+        "[DMA] VIGILANT: %s refused; ticker <%s> state <%s> side <%d> volume <%.6f> filled <%.6f> notional <%.6f> fee <%.6f> seq <%u> order <%p>\n",
+        op,
+        ticker,
+        state,
+        order ? (int) order->side : -1,
+        order ? order->volume : 0.,
+        order ? order->filled_volume : 0.,
+        order ? order->filled_notional : 0.,
+        order ? order->fee : 0.,
+        DMA ? DMA->seq_id : 0U,
+        (const void*) order
+    );
+    abort();
+#else
+    (void) DMA;
+#endif
 }
 
 /**
- * @brief Hand a cancel to every registered order handler.
- * @param self The access (NULL-safe).
- * @param order The cancelled order (NULL-safe).
- */
-static inline void c_dma_invoke_cancel_order(dma* self, const md_trade_instruction* order) {
-    if (!self || !order) return;
-
-    dma_order_handler_ctx* handler = self->handlers;
-    while (handler) {
-        dma_order_handler_ctx* next = handler->next;
-        if (handler->order_cancel_fn) handler->order_cancel_fn(order, handler->user_data);
-        handler = next;
-    }
-}
-
-/**
- * @brief Hand a reject to every registered order handler.
- * @param self The access (NULL-safe).
- * @param order The rejected order (NULL-safe).
- */
-static inline void c_dma_invoke_reject_order(dma* self, const md_trade_instruction* order) {
-    if (!self || !order) return;
-
-    dma_order_handler_ctx* handler = self->handlers;
-    while (handler) {
-        dma_order_handler_ctx* next = handler->next;
-        if (handler->order_reject_fn) handler->order_reject_fn(order, handler->user_data);
-        handler = next;
-    }
-}
-
-/**
- * @brief Hand a fill to every registered order handler.
- * @param self The access (NULL-safe).
- * @param order The filled order (NULL-safe).
- * @param report The fill report (NULL-safe).
- */
-static inline void c_dma_invoke_filled_order(dma* self, const md_trade_instruction* order, md_trade_report* report) {
-    if (!self || !order || !report) return;
-
-    dma_order_handler_ctx* handler = self->handlers;
-    while (handler) {
-        dma_order_handler_ctx* next = handler->next;
-        if (handler->order_filled_fn) handler->order_filled_fn(order, report, handler->user_data);
-        handler = next;
-    }
-}
-
-/**
- * @brief Set the access's enabled flag.
- * @param self The access (NULL-safe).
- * @param enabled The new flag.
- */
-static inline void c_dma_set_enabled(dma* self, bool enabled) {
-    if (!self) return;
-
-    self->enabled = enabled;
-}
-
-/**
- * @brief Read the access's enabled flag.
- * @param self The access (NULL-safe).
- * @return The flag, or false.
- */
-static inline bool c_dma_is_enabled(const dma* self) {
-    return self ? self->enabled : false;
-}
-
-/**
- * @brief Decide whether an order may leave the access.
+ * @brief Dry-run the validity and risk checks for an order.
  *
- * A disabled access, a missing risk profile and any risk violation all refuse
- * the order; there is no path that sends an order without a passing risk
- * check. The violation carries the reason for the refusal.
+ * A missing risk profile and any risk violation refuse the order. The check
+ * does not dispatch and does not change the order.
  *
- * @param self The access (NULL-safe).
- * @param query The order and portfolio state (NULL-safe).
+ * @param DMA The access (NULL-safe).
+ * @param order The order (NULL-safe).
  * @param out_violation Optional: receives the risk violation on refusal.
- * @return DMA_OK when the order may be sent, DMA_ERR_DISABLED,
- *         DMA_ERR_NO_RISK, DMA_ERR_RISK, or DMA_ERR_INVALID_INPUT.
+ * @return DMA_OK when the order may be sent, DMA_ERR_NO_RISK, DMA_ERR_RISK,
+ *         or DMA_ERR_INVALID_INPUT.
  */
-static inline int c_dma_check_order(const dma* self, const dma_risk_query* query, dma_risk_violation* out_violation) {
+static inline int c_dma_check_order(const dma* DMA, const md_trade_instruction* order, dma_risk_violation* out_violation) {
     if (out_violation) {
         out_violation->type   = DMA_RISK_PASS;
         out_violation->code   = 0;
         out_violation->msg[0] = '\0';
     }
 
-    if (!self || !query) return DMA_ERR_INVALID_INPUT;
-    if (!self->enabled) return DMA_ERR_DISABLED;
-    if (!self->risk) return DMA_ERR_NO_RISK;
+    if (!DMA || !order) return DMA_ERR_INVALID_INPUT;
+    if (!DMA->risk_profile) return DMA_ERR_NO_RISK;
 
-    if (c_dma_risk_check(self->risk, query, out_violation) != DMA_RISK_PASS) return DMA_ERR_RISK;
+    dma_risk_violation violation = c_dma_risk_profile_check_order(DMA, DMA->risk_profile, order);
+
+    if (out_violation) *out_violation = violation;
+
+    if (violation.type != DMA_RISK_PASS) return DMA_ERR_RISK;
 
     return DMA_OK;
 }
 
+// ========== Public APIs (Request Queue) ==========
+
 /**
- * @brief Append one buffered request to the access queue.
- *
- * The node is a child of the access block, so a failed access teardown frees
- * any request still queued. The order is borrowed.
- *
- * @param self The access (NULL-safe).
- * @param action The action to buffer.
- * @param order The order to route (NULL-safe).
+ * @brief Initialize the request ring with its initial contiguous buffer.
+ * @param queue The zeroed queue.
+ * @param allocator Allocator for the buffer.
  * @return DMA_OK, DMA_ERR_INVALID_INPUT, or DMA_ERR_OOM.
  */
-static inline int c_dma_request_order(dma* self, dma_order_action action, md_trade_instruction* order) {
-    if (!self || !order) return DMA_ERR_INVALID_INPUT;
+static inline int c_dma_order_queue_init(dma_order_queue* queue, allocator_protocol* allocator) {
+    if (!queue) return DMA_ERR_INVALID_INPUT;
 
-    allocator_protocol* allocator = c_ap_protocol_from_ptr(self);
+    queue->entries = (dma_order_request*) c_ap_alloc(sizeof(dma_order_request) * DMA_ORDER_QUEUE_INITIAL_CAPACITY, allocator);
+    if (!queue->entries) return DMA_ERR_OOM;
 
-    dma_order_request*  node = (dma_order_request*) c_ap_alloc_child(sizeof(dma_order_request), allocator, self);
-    if (!node) return DMA_ERR_OOM;
-
-    node->action = action;
-    node->order  = order;
-    node->next   = NULL;
-
-    if (self->tail) self->tail->next = node;
-    else self->head = node;
-    self->tail = node;
-    self->n_requests++;
-
+    queue->capacity = DMA_ORDER_QUEUE_INITIAL_CAPACITY;
+    queue->head     = 0;
+    queue->size     = 0;
     return DMA_OK;
 }
 
 /**
- * @brief Pop the oldest buffered request.
- * @param self The access (NULL-safe).
+ * @brief Release the request ring's buffer, leaving the queue zeroed.
+ * @param queue The queue (NULL-safe).
+ */
+static inline void c_dma_order_queue_dealloc(dma_order_queue* queue) {
+    if (!queue) return;
+
+    if (queue->entries) c_ap_free(queue->entries);
+
+    memset(queue, 0, sizeof(dma_order_queue));
+}
+
+/**
+ * @brief Double the ring's contiguous buffer, linearizing the live entries.
+ *
+ * The buffer is one allocator block; growth allocates a larger block, copies
+ * the live entries in FIFO order, then frees the old block. The allocator is
+ * derived from the current buffer.
+ *
+ * @param queue The queue (NULL-safe; initialized).
+ * @return DMA_OK, DMA_ERR_INVALID_INPUT, DMA_ERR_FULL, or DMA_ERR_OOM.
+ */
+static inline int c_dma_order_queue_grow(dma_order_queue* queue) {
+    if (!queue || !queue->entries) return DMA_ERR_INVALID_INPUT;
+    if (queue->capacity >= DMA_ORDER_QUEUE_MAX_CAPACITY) return DMA_ERR_FULL;
+
+    size_t              next_capacity = queue->capacity < (size_t) DMA_ORDER_QUEUE_MAX_CAPACITY / 2
+                                            ? queue->capacity * 2
+                                            : (size_t) DMA_ORDER_QUEUE_MAX_CAPACITY;
+
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(queue->entries);
+    dma_order_request*  entries   = (dma_order_request*) c_ap_alloc(sizeof(dma_order_request) * next_capacity, allocator);
+    if (!entries) return DMA_ERR_OOM;
+
+    for (size_t index = 0; index < queue->size; index++) {
+        entries[index] = queue->entries[(queue->head + index) % queue->capacity];
+    }
+
+    c_ap_free(queue->entries);
+    queue->entries  = entries;
+    queue->capacity = next_capacity;
+    queue->head     = 0;
+    return DMA_OK;
+}
+
+/**
+ * @brief Append one request, doubling the ring when full.
+ * @param queue The queue (NULL-safe; initialized).
+ * @param action The action to buffer.
+ * @param order The order to route (NULL-safe).
+ * @return DMA_OK, DMA_ERR_INVALID_INPUT, DMA_ERR_FULL, or DMA_ERR_OOM.
+ */
+static inline int c_dma_order_queue_push(dma_order_queue* queue, dma_order_action action, md_trade_instruction* order) {
+    if (!queue || !order) return DMA_ERR_INVALID_INPUT;
+
+    if (queue->size == queue->capacity) {
+        int ret_code = c_dma_order_queue_grow(queue);
+        if (ret_code != DMA_OK) return ret_code;
+    }
+
+    size_t tail = (queue->head + queue->size) % queue->capacity;
+
+    queue->entries[tail].order  = order;
+    queue->entries[tail].action = action;
+    queue->size++;
+    return DMA_OK;
+}
+
+/**
+ * @brief Pop the oldest request.
+ * @param queue The queue (NULL-safe).
  * @param out_action Optional: receives the action.
  * @param out_order Optional: receives the order (still borrowed).
  * @return DMA_OK, DMA_ERR_INVALID_INPUT, or DMA_ERR_EMPTY.
  */
-static inline int c_dma_pop_request(dma* self, dma_order_action* out_action, md_trade_instruction** out_order) {
-    if (!self) return DMA_ERR_INVALID_INPUT;
-    if (!self->head) return DMA_ERR_EMPTY;
+static inline int c_dma_order_queue_pop(dma_order_queue* queue, dma_order_action* out_action, md_trade_instruction** out_order) {
+    if (!queue) return DMA_ERR_INVALID_INPUT;
+    if (!queue->size) return DMA_ERR_EMPTY;
 
-    dma_order_request* node = self->head;
-    self->head              = node->next;
-    if (!self->head) self->tail = NULL;
-    self->n_requests--;
+    dma_order_request* entry = &queue->entries[queue->head];
 
-    if (out_action) *out_action = node->action;
-    if (out_order) *out_order = node->order;
+    if (out_action) *out_action = entry->action;
+    if (out_order) *out_order = entry->order;
 
-    c_ap_free(node);
+    queue->head = (queue->head + 1) % queue->capacity;
+    queue->size--;
     return DMA_OK;
 }
 
 /**
- * @brief Drop every buffered request.
- * @param self The access (NULL-safe).
+ * @brief Drop every buffered request without releasing the buffer.
+ * @param queue The queue (NULL-safe).
  */
-static inline void c_dma_clear_requests(dma* self) {
-    if (!self) return;
+static inline void c_dma_order_queue_clear(dma_order_queue* queue) {
+    if (!queue) return;
 
-    dma_order_request* node = self->head;
-    while (node) {
-        dma_order_request* next = node->next;
-        c_ap_free(node);
-        node = next;
+    queue->head = 0;
+    queue->size = 0;
+}
+
+// ========== Public APIs (Order Entry) ==========
+
+// Order-state contract:
+//   creation (c_dma_algo_engine_new_order)  -> STATE_IDLE
+//   launch, direct or processed             -> STATE_SENT, or STATE_REJECTED on a failed check
+//   launch, queued                          -> STATE_PENDING until c_dma_process_queue
+//   cancel, IDLE or PENDING                 -> STATE_CANCELED locally
+//   cancel, SENT / PLACED / PARTFILLED      -> STATE_CANCELING
+//   cancel, queued                          -> STATE_CANCELING at enqueue
+// A launch accepts STATE_IDLE and tolerates STATE_PENDING in queue mode; a
+// cancel accepts IDLE/PENDING and the cancellable states and tolerates
+// CANCELING. Every other pre-state is banned: no operation, an error code and
+// stderr; DMA_VIGILANT stops with telemetry.
+// Every order these entries receive is created by c_dma_algo_engine_new_order:
+// the instruction starts its dma_order_ctx, so the instruction address is the
+// context address.
+
+/**
+ * @brief Advance and return the access's per-send sequence.
+ * @param DMA The access (non-NULL).
+ * @return The next sequence; 0 is skipped.
+ */
+static inline uint32_t c_dma_next_seq_id(dma* DMA) {
+    DMA->seq_id++;
+    if (!DMA->seq_id) DMA->seq_id = 1;
+
+    return DMA->seq_id;
+}
+
+/**
+ * @brief Launch an order: direct dispatch in no-queue mode, otherwise enqueue.
+ *
+ * STATE_IDLE is the explicit start. A queued launch moves to STATE_PENDING
+ * until c_dma_process_queue checks and sends it. In queue mode a repeated
+ * launch on STATE_PENDING is tolerated: it prints a warning and returns
+ * DMA_OK_NOOP. Every other pre-state is banned. Build with
+ * DMA_NO_QUEUE_MODE=0 for the queueing variant.
+ *
+ * @param DMA The access (NULL-safe).
+ * @param order The order (NULL-safe; must be STATE_IDLE; an engine order).
+ * @return DMA_OK when sent, DMA_OK_BUFFERED when queued, DMA_OK_NOOP for a
+ *         tolerated repeat, DMA_ERR_INVALID_INPUT for a banned state, or a
+ *         check error code.
+ */
+static inline int c_dma_launch_order(dma* DMA, md_trade_instruction* order) {
+    if (!DMA || !order) return DMA_ERR_INVALID_INPUT;
+
+    md_order_state state = order->order_state;
+
+    if (state == STATE_IDLE) {
+#if DMA_NO_QUEUE_MODE
+        dma_risk_violation violation;
+        int                ret_code = c_dma_check_order(DMA, order, &violation);
+
+        if (ret_code != DMA_OK) {
+            order->order_state = STATE_REJECTED;
+            c_dma_algo_engine_on_order_rejected_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+            if (DMA->handlers.order_reject_fn) DMA->handlers.order_reject_fn(order, DMA->handlers.user_data);
+            return ret_code;
+        }
+        else {
+            uint32_t seq_id    = c_dma_next_seq_id(DMA);
+            order->order_state = STATE_SENT;
+            c_dma_algo_engine_on_order_launched_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+            if (DMA->handlers.order_launch_fn) DMA->handlers.order_launch_fn(order, seq_id, DMA->handlers.user_data);
+            return DMA_OK;
+        }
+#else
+        order->order_state = STATE_PENDING;
+        int ret_code       = c_dma_order_queue_push(&DMA->requests, DMA_ACTION_LAUNCH, order);
+        if (ret_code != DMA_OK) {
+            order->order_state = STATE_IDLE;
+            return ret_code;
+        }
+        c_dma_algo_engine_on_order_pending_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+        return DMA_OK_BUFFERED;
+#endif
     }
 
-    self->head       = NULL;
-    self->tail       = NULL;
-    self->n_requests = 0;
+#if !DMA_NO_QUEUE_MODE
+    if (state == STATE_PENDING) {
+        const char* ticker = order->meta_info.ticker ? order->meta_info.ticker : "<unknown>";
+        fprintf(stderr, "[DMA] WARNING: launch ignored; order <%s> is already queued\n", ticker);
+        return DMA_OK_NOOP;
+    }
+#endif
+
+    c_dma_refuse(DMA, order, "launch");
+    return DMA_ERR_INVALID_INPUT;
+}
+
+/**
+ * @brief Cancel an order: local for an unsubmitted order, otherwise dispatch.
+ *
+ * STATE_IDLE and STATE_PENDING have not left the access: they are marked
+ * STATE_CANCELED locally with no payload and no handler. STATE_SENT, STATE_PLACED
+ * and STATE_PARTFILLED dispatch a cancel; a queued cancel records
+ * STATE_CANCELING at enqueue. STATE_CANCELING is tolerated and returns
+ * DMA_OK_NOOP. Every other pre-state is banned.
+ *
+ * @param DMA The access (NULL-safe).
+ * @param order The order (NULL-safe; an engine order).
+ * @return DMA_OK when canceled locally or sent, DMA_OK_BUFFERED when queued,
+ *         DMA_OK_NOOP for an already-canceling order, or
+ *         DMA_ERR_INVALID_INPUT for a banned state.
+ */
+static inline int c_dma_cancel_order(dma* DMA, md_trade_instruction* order) {
+    if (!DMA || !order) return DMA_ERR_INVALID_INPUT;
+
+    md_order_state state = order->order_state;
+
+    if (state == STATE_IDLE || state == STATE_PENDING) {
+        order->order_state = STATE_CANCELED;
+        c_dma_algo_engine_on_order_canceled_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+        return DMA_OK;
+    }
+
+    if (c_md_state_cancellable(state)) {
+#if DMA_NO_QUEUE_MODE
+        uint32_t seq_id    = c_dma_next_seq_id(DMA);
+        order->order_state = STATE_CANCELING;
+        c_dma_algo_engine_on_order_canceling_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+        if (DMA->handlers.order_cancel_fn) DMA->handlers.order_cancel_fn(order, seq_id, DMA->handlers.user_data);
+        return DMA_OK;
+#else
+        order->order_state = STATE_CANCELING;
+        int ret_code       = c_dma_order_queue_push(&DMA->requests, DMA_ACTION_CANCEL, order);
+        if (ret_code != DMA_OK) {
+            order->order_state = state;
+            return ret_code;
+        }
+        c_dma_algo_engine_on_order_canceling_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+        return DMA_OK_BUFFERED;
+#endif
+    }
+
+    if (state == STATE_CANCELING) return DMA_OK_NOOP;
+
+    c_dma_refuse(DMA, order, "cancel");
+    return DMA_ERR_INVALID_INPUT;
+}
+
+/**
+ * @brief Launch an order without the validity or risk check.
+ *
+ * STATE_IDLE is the only accepted pre-state; it moves to STATE_SENT and
+ * reaches the launch handler. A warning is printed to stderr because no risk
+ * gate ran. Every other state is banned: the unchecked path bypasses the
+ * queue, so a queued order must not be sent twice.
+ *
+ * @param DMA The access (NULL-safe).
+ * @param order The order (NULL-safe; must be STATE_IDLE; an engine order).
+ * @return DMA_OK or DMA_ERR_INVALID_INPUT.
+ */
+static inline int c_dma_launch_order_unchecked(dma* DMA, md_trade_instruction* order) {
+    if (!DMA || !order) return DMA_ERR_INVALID_INPUT;
+
+    if (order->order_state != STATE_IDLE) {
+        c_dma_refuse(DMA, order, "unchecked launch");
+        return DMA_ERR_INVALID_INPUT;
+    }
+
+    const char* ticker = order->meta_info.ticker ? order->meta_info.ticker : "<unknown>";
+    fprintf(stderr, "[DMA] WARNING: unchecked launch of <%s>; no validity or risk check ran\n", ticker);
+    uint32_t seq_id    = c_dma_next_seq_id(DMA);
+    order->order_state = STATE_SENT;
+    c_dma_algo_engine_on_order_launched_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+    if (DMA->handlers.order_launch_fn) DMA->handlers.order_launch_fn(order, seq_id, DMA->handlers.user_data);
+    return DMA_OK;
+}
+
+/**
+ * @brief Process every queued request in FIFO order.
+ *
+ * A queued launch is checked at this point: STATE_PENDING reaches the launch
+ * handler when it passes and the reject handler otherwise; STATE_CANCELED and
+ * STATE_PLACED are stale entries and are dropped. A queued cancel sends for
+ * STATE_CANCELING; STATE_FILLED and STATE_CANCELED are resolved and dropped.
+ * Any other state is banned and stops the drain with an error. The handler
+ * itself owns any pacing or cool-down.
+ *
+ * @param DMA The access (NULL-safe).
+ * @return The number of queued requests processed, or DMA_ERR_INVALID_INPUT
+ *         when a banned state stops the drain.
+ */
+static inline int c_dma_process_queue(dma* DMA) {
+    if (!DMA) return DMA_ERR_INVALID_INPUT;
+
+    int                   processed = 0;
+    dma_order_action      action;
+    md_trade_instruction* order = NULL;
+
+    while (c_dma_order_queue_pop(&DMA->requests, &action, &order) == DMA_OK) {
+        md_order_state state = order->order_state;
+
+        if (action == DMA_ACTION_LAUNCH) {
+            if (state == STATE_PENDING) {
+                dma_risk_violation violation;
+                int                ret_code = c_dma_check_order(DMA, order, &violation);
+
+                if (ret_code != DMA_OK) {
+                    order->order_state = STATE_REJECTED;
+                    c_dma_algo_engine_on_order_rejected_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+                    if (DMA->handlers.order_reject_fn) DMA->handlers.order_reject_fn(order, DMA->handlers.user_data);
+                }
+                else {
+                    uint32_t seq_id    = c_dma_next_seq_id(DMA);
+                    order->order_state = STATE_SENT;
+                    c_dma_algo_engine_on_order_launched_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+                    if (DMA->handlers.order_launch_fn) DMA->handlers.order_launch_fn(order, seq_id, DMA->handlers.user_data);
+                }
+            }
+            else if (state != STATE_CANCELED && state != STATE_PLACED) {
+                c_dma_refuse(DMA, order, "queue launch");
+                return DMA_ERR_INVALID_INPUT;
+            }
+        }
+        else if (action == DMA_ACTION_CANCEL) {
+            if (state == STATE_CANCELING) {
+                uint32_t seq_id    = c_dma_next_seq_id(DMA);
+                order->order_state = STATE_CANCELING;
+                c_dma_algo_engine_on_order_canceling_inplace(DMA->algo_engine, (dma_order_ctx*) order);
+                if (DMA->handlers.order_cancel_fn) DMA->handlers.order_cancel_fn(order, seq_id, DMA->handlers.user_data);
+            }
+            else if (state != STATE_FILLED && state != STATE_CANCELED) {
+                c_dma_refuse(DMA, order, "queue cancel");
+                return DMA_ERR_INVALID_INPUT;
+            }
+        }
+
+        processed++;
+    }
+
+    return processed;
 }
 
 #endif /* C_DMA_H */
