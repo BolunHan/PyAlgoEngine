@@ -127,10 +127,6 @@ typedef struct dma_position {
     dma_position_callback_ctx* callbacks;      // OWNED - calloc'ed strategy callback nodes.
 } dma_position;
 
-static inline dma_algo* c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator);
-
-#include "algo_engine/engine/c_dma_algo.h"
-
 // ========== Forward Declarations ==========
 
 // Lifecycle
@@ -142,9 +138,6 @@ static inline int           c_dma_position_clear(dma_position* position);
 
 // Identity
 static inline void          c_dma_position_gen_uid(dma_position* position);
-
-// Status
-static inline bool          c_dma_position_status_is_active(dma_algo_status status);
 
 // Algo registry
 static inline int           c_dma_position_add_algo(dma_position* position, dma_algo* algo);
@@ -168,12 +161,15 @@ static inline int           c_dma_position_add_exposure(dma_position* position, 
 static inline int           c_dma_position_register_callback(dma_position* position, dma_callback_event event, void* callback, void* user_data, uintptr_t* out_id);
 static inline int           c_dma_position_unregister_callback(dma_position* position, uintptr_t callback_id);
 
-// Trading
+// Trading (c_dma_new_algo is defined in c_dma.h)
+static inline dma_algo*     c_dma_new_algo(dma* DMA, uint32_t algo_reg_id, const char* ticker, md_side side, double target_volume, const void* params, allocator_protocol* allocator);
 static inline int           c_dma_position_fully_stop(dma_position* position);
 static inline int           c_dma_position_fully_unwind(dma_position* position);
 
 // Hot path - runs once per routed event
 static inline int           c_dma_position_invoke_callbacks(dma_position* position, dma_callback_event event, const dma_algo* algo, const md_trade_instruction* order, const md_trade_report* trade);
+
+#include "algo_engine/engine/c_dma_algo.h"
 
 // ========== Public APIs (Lifecycle) ==========
 
@@ -387,18 +383,6 @@ static inline void c_dma_position_gen_uid(dma_position* position) {
 // ========== Public APIs (Algo Registry) ==========
 
 /**
- * @brief Whether a status belongs to the position's active set.
- *
- * A completed, closed, rejected, or errored record is not stopped again.
- *
- * @param status The algo status.
- * @return true when the record may still act.
- */
-static inline bool c_dma_position_status_is_active(dma_algo_status status) {
-    return status != DMA_ALGO_STATUS_DONE && status != DMA_ALGO_STATUS_CLOSED && status != DMA_ALGO_STATUS_REJECTED && status != DMA_ALGO_STATUS_ERROR;
-}
-
-/**
  * @brief Host an engine-owned algo and route its events to this position.
  *
  * An algo is hosted by one position; an unknown record, a duplicate, or a
@@ -460,7 +444,7 @@ static inline int c_dma_position_add_algo(dma_position* position, dma_algo* algo
     if (sign > 0) ticker->working_long += algo->working_volume;
     else if (sign < 0) ticker->working_short += algo->working_volume;
 
-    if (c_dma_position_status_is_active(algo->status) && c_bytemap_ex_set(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), (const char*) &algo, sizeof(dma_algo*), 0, NULL) != BYTEMAP_OK) {
+    if (c_dma_algo_status_is_active(algo->status) && c_bytemap_ex_set(position->working_algos, (const char*) algo->algo_id, sizeof(uuid_t), (const char*) &algo, sizeof(dma_algo*), 0, NULL) != BYTEMAP_OK) {
         if (position->algo_engine && position->algo_engine->position) c_bytemap_ex_pop(position->algo_engine->position, (const char*) algo->algo_id, sizeof(uuid_t), 0, NULL, NULL);
         c_bytemap_ex_pop(position->algos, (const char*) algo->algo_id, sizeof(uuid_t), 0, NULL, NULL);
         return POSITION_ERR_OOM;

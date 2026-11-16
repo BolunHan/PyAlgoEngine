@@ -1,6 +1,5 @@
 from cpython.object cimport PyObject
 from libc.stdint cimport uintptr_t
-from libcpp cimport bool as c_bool
 
 from cbase.allocator_protocol cimport CCPType, allocator_protocol
 from cbase.bytemap cimport bytemap
@@ -72,9 +71,6 @@ cdef extern from "algo_engine/engine/c_position.h":
 
     # Identity
     void c_dma_position_gen_uid(dma_position* position) noexcept nogil
-
-    # Status
-    c_bool c_dma_position_status_is_active(dma_algo_status status) noexcept nogil
 
     # Algo registry
     int c_dma_position_add_algo(dma_position* position, dma_algo* algo) noexcept nogil
