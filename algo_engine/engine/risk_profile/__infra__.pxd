@@ -28,6 +28,8 @@ from .c_risk_profile cimport (
     c_dma_risk_profile_blacklist_add,
     c_dma_risk_profile_blacklist_remove,
     c_dma_risk_profile_is_ticker_allowed,
+    c_dma_risk_profile_set_margin_rate,
+    c_dma_risk_profile_get_margin_rate,
     c_dma_risk_profile_set_limit,
     c_dma_risk_profile_get_limit,
     c_dma_risk_profile_get_limits,
