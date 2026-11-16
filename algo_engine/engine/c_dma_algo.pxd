@@ -81,9 +81,19 @@ cdef extern from "algo_engine/engine/c_dma_algo.h":
     md_trade_instruction* c_dma_algo_engine_new_order(dma_algo_engine* engine, dma_algo* algo, double limit_price, double volume) noexcept nogil
     void c_dma_algo_engine_free_orders(dma_algo_engine* engine, dma_algo* algo) noexcept nogil
     int c_dma_algo_engine_on_order(dma_algo_engine* engine, const md_trade_instruction* order) noexcept nogil
-    int c_dma_algo_engine_on_order_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
     int c_dma_algo_engine_on_trade(dma_algo_engine* engine, const md_trade_report* trade) noexcept nogil
     void c_dma_algo_engine_on_md(dma_algo_engine* engine, const md_variant* market_data) noexcept nogil
+
+    int c_dma_algo_engine_on_order_pending_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_launched_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_placed_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_partially_filled_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_filled_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_canceling_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_canceled_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_rejected_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_invalid_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
+    int c_dma_algo_engine_on_order_inplace(dma_algo_engine* engine, dma_order_ctx* ctx) noexcept nogil
 
     double c_dma_algo_compare_limit(md_side side, double limit_price, double original_limit, dma_algo_limit_mode mode) noexcept nogil
 
