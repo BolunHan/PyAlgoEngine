@@ -1,5 +1,7 @@
 import enum
 
+from libc.math cimport NAN
+
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 
 
@@ -72,7 +74,7 @@ cdef class Balance(CCPType):
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         c_balance_clear(self.header)
 
-    cpdef bint check(self, md_side side, double volume, double price, double multiplier=1., double margin_rate=1.):
+    cpdef bint check(self, md_side side, double volume, double price, double multiplier=1., double margin_rate=NAN):
         if not self.header:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         return c_balance_check(self.header, side, volume, price, multiplier, margin_rate)

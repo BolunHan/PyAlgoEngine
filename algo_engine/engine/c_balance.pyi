@@ -37,9 +37,9 @@ class Balance:
     """
     The account balance a host supplies to the access.
 
-    Setting a field marks it supplied; the access's gate only constrains the
-    cash fields it was given. A balance the host never fills (or never supplies
-    at all) leaves the gate passing.
+    Setting a field marks it supplied; the access's gate checks only the
+    available field the trade selects, cash or margin. A balance the host never
+    fills (or never supplies at all) leaves the gate passing.
     """
 
     flags: BalanceFlag
@@ -77,18 +77,21 @@ class Balance:
     def clear(self) -> None:
         """Drop every supplied field."""
 
-    def check(self, side: TransactionSide, volume: float, price: float, multiplier: float = 1., margin_rate: float = 1.) -> bool:
+    def check(self, side: TransactionSide, volume: float, price: float, multiplier: float = 1., margin_rate: float = float('nan')) -> bool:
         """
-        Tell whether a buy is affordable at the supplied available cash.
+        Tell whether an order is affordable at the supplied balance.
 
         Args:
-            side: The trade side; a sell raises no cash requirement.
+            side: The trade side; a cash sale raises no requirement.
             volume: The order volume.
             price: The per-unit price.
             multiplier: The contract multiplier.
-            margin_rate: The fraction of the notional the trade requires.
+            margin_rate: The designated margin rate; NaN checks the buy's
+                notional against available cash, any finite value checks the
+                notional times the rate against available margin in either
+                direction.
 
         Returns:
-            False only when a priced buy exceeds the available cash; an
-            unsupplied cash field, an unvalued trade or a neutral side passes.
+            False only when the order exceeds the selected available field; an
+            unsupplied field or a cash sale passes.
         """

@@ -186,33 +186,34 @@ static inline int c_balance_clear(dma_balance* balance) {
 }
 
 /**
- * @brief Tell whether a buy is affordable; a missing or unpriced balance passes.
+ * @brief Tell whether an order is affordable; an absent or unsupplied balance passes.
  *
- * Only the buy side is constrained: a sell raises no cash requirement. The
- * required cash is the notional times the margin rate, checked against
- * `available_cash`. The check reads that one field, with no fallback: it
- * passes when the host did not mark the field supplied.
+ * A cash trade (NaN margin rate) constrains the buy side only: a sale releases
+ * cash. A margin trade (any finite rate) consumes margin in either direction.
+ * The selected field must be flagged, so an unsupplied balance passes with no
+ * fallback.
  *
  * @param balance The balance (NULL-safe; NULL passes).
  * @param side The trade side.
  * @param volume The order volume.
  * @param price The per-unit price.
  * @param multiplier The contract multiplier.
- * @param margin_rate The fraction of the notional the trade requires.
- * @return false only when a priced buy exceeds the supplied available cash.
+ * @param margin_rate The designated margin rate; NaN means the trade is not on margin.
+ * @return false only when the order exceeds the selected available field.
  */
 static inline bool c_balance_check(const dma_balance* balance, md_side side, double volume, double price, double multiplier, double margin_rate) {
     if (!balance) return true;
 
-    if (c_md_side_sign(side) <= 0) return true;
-    if (!(balance->flags & DMA_BALANCE_F_AVAILABLE_CASH)) return true;
+    double notional = fabs(volume * price * multiplier);
 
-    if (!isfinite(volume) || volume <= 0.) return true;
-    if (!isfinite(price) || price <= 0.) return true;
-    if (!isfinite(multiplier) || multiplier <= 0.) return true;
-    if (!isfinite(margin_rate) || margin_rate <= 0.) return true;
+    if (isnan(margin_rate)) {
+        if (c_md_side_sign(side) <= 0) return true;
+        if (!(balance->flags & DMA_BALANCE_F_AVAILABLE_CASH)) return true;
+        return notional <= balance->available_cash;
+    }
 
-    return fabs(volume * price * multiplier) * margin_rate <= balance->available_cash;
+    if (!(balance->flags & DMA_BALANCE_F_AVAILABLE_MARGIN)) return true;
+    return notional * margin_rate <= balance->available_margin;
 }
 
 #endif /* C_BALANCE_H */
