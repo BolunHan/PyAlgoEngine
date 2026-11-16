@@ -173,22 +173,22 @@ static inline bool                 c_mds_monitor_manager_is_enabled(const mds_mo
 
 // Market data service
 static inline mds*                 c_mds_new(allocator_protocol* allocator);
-static inline int                  c_mds_init(mds* service, allocator_protocol* allocator);
-static inline void                 c_mds_dealloc(mds* service);
-static inline void                 c_mds_free(mds* service);
-static inline int                  c_mds_clear(mds* service);
-static inline int                  c_mds_set_manager(mds* service, mds_monitor_manager* manager);
-static inline mds_monitor_manager* c_mds_get_manager(const mds* service);
-static inline int                  c_mds_register_monitor(mds* service, mds_monitor* monitor);
-static inline int                  c_mds_unregister_monitor(mds* service, mds_monitor* monitor);
-static inline mds_monitor*         c_mds_get_monitor(const mds* service, const mds_monitor_id monitor_id);
-static inline size_t               c_mds_n_monitors(const mds* service);
-static inline int                  c_mds_update_subscription(mds* service, const md_variant* market_data);
+static inline int                  c_mds_init(mds* MDS, allocator_protocol* allocator);
+static inline void                 c_mds_dealloc(mds* MDS);
+static inline void                 c_mds_free(mds* MDS);
+static inline int                  c_mds_clear(mds* MDS);
+static inline int                  c_mds_set_manager(mds* MDS, mds_monitor_manager* manager);
+static inline mds_monitor_manager* c_mds_get_manager(const mds* MDS);
+static inline int                  c_mds_register_monitor(mds* MDS, mds_monitor* monitor);
+static inline int                  c_mds_unregister_monitor(mds* MDS, mds_monitor* monitor);
+static inline mds_monitor*         c_mds_get_monitor(const mds* MDS, const mds_monitor_id monitor_id);
+static inline size_t               c_mds_n_monitors(const mds* MDS);
+static inline int                  c_mds_update_subscription(mds* MDS, const md_variant* market_data);
 
 // Hot path
-static inline int                  c_mds_on_market_data(mds* service, const md_variant* market_data);
-static inline int                  c_mds_on_internal_data(mds* service, const md_internal* internal_data);
-static inline double               c_mds_get_market_price(const mds* service, const char* ticker);
+static inline int                  c_mds_on_market_data(mds* MDS, const md_variant* market_data);
+static inline int                  c_mds_on_internal_data(mds* MDS, const md_internal* internal_data);
+static inline double               c_mds_get_market_price(const mds* MDS, const char* ticker);
 
 // ========== Public APIs (Monitor Base) ==========
 
@@ -238,10 +238,10 @@ static inline int c_mds_monitor_init(mds_monitor* monitor, const char* name, int
         c_ap_acquire_ownership((const void*) monitor->name, (const void*) monitor);
     }
 
-    monitor->priority = priority;
+    monitor->priority  = priority;
     monitor->md_filter = md_filter;
-    monitor->enabled = true;
-    monitor->is_ready = true;
+    monitor->enabled   = true;
+    monitor->is_ready  = true;
     return MDS_OK;
 }
 
@@ -420,9 +420,9 @@ static inline int c_mds_monitor_manager_register_callback(mds_monitor_manager* m
     mds_monitor_manager_callback_ctx* node = (mds_monitor_manager_callback_ctx*) calloc(1, sizeof(mds_monitor_manager_callback_ctx));
     if (!node) return MDS_ERR_OOM;
 
-    node->fn = callback;
+    node->fn        = callback;
     node->user_data = user_data;
-    node->id = (uintptr_t) node;
+    node->id        = (uintptr_t) node;
 
     if (!manager->callbacks) {
         manager->callbacks = node;
@@ -447,7 +447,7 @@ static inline int c_mds_monitor_manager_unregister_callback(mds_monitor_manager*
     if (!manager || !callback_id) return MDS_ERR_INVALID_INPUT;
 
     mds_monitor_manager_callback_ctx* previous = NULL;
-    mds_monitor_manager_callback_ctx* current = manager->callbacks;
+    mds_monitor_manager_callback_ctx* current  = manager->callbacks;
 
     while (current) {
         if (current->id == callback_id) {
@@ -458,7 +458,7 @@ static inline int c_mds_monitor_manager_unregister_callback(mds_monitor_manager*
         }
 
         previous = current;
-        current = current->next;
+        current  = current->next;
     }
 
     return MDS_ERR_NOT_FOUND;
@@ -597,39 +597,39 @@ static inline bool c_mds_monitor_manager_is_enabled(const mds_monitor_manager* m
  * @return The new service, or NULL on allocation failure.
  */
 static inline mds* c_mds_new(allocator_protocol* allocator) {
-    mds* service = (mds*) c_ap_alloc(sizeof(mds), allocator);
-    if (!service) return NULL;
+    mds* MDS = (mds*) c_ap_alloc(sizeof(mds), allocator);
+    if (!MDS) return NULL;
 
-    int ret_code = c_mds_init(service, allocator);
+    int ret_code = c_mds_init(MDS, allocator);
     if (ret_code != MDS_OK) {
-        c_ap_free(service);
+        c_ap_free(MDS);
         return NULL;
     }
 
-    return service;
+    return MDS;
 }
 
 /**
  * @brief Initialize a caller-allocated, zeroed mds state.
- * @param service The zeroed service to initialize.
- * @param allocator Allocator for the children; derived from service when NULL.
+ * @param MDS The zeroed service to initialize.
+ * @param allocator Allocator for the children; derived from MDS when NULL.
  * @return MDS_OK, MDS_ERR_INVALID_INPUT, or MDS_ERR_OOM.
  */
-static inline int c_mds_init(mds* service, allocator_protocol* allocator) {
-    if (!service) return MDS_ERR_INVALID_INPUT;
-    if (!allocator) allocator = c_ap_protocol_from_ptr(service);
+static inline int c_mds_init(mds* MDS, allocator_protocol* allocator) {
+    if (!MDS) return MDS_ERR_INVALID_INPUT;
+    if (!allocator) allocator = c_ap_protocol_from_ptr(MDS);
 
-    service->subscriptions = c_bytemap_ex_new(0, sizeof(mds_subscription), allocator);
-    if (!service->subscriptions) return MDS_ERR_OOM;
+    MDS->subscriptions = c_bytemap_ex_new(0, sizeof(mds_subscription), allocator);
+    if (!MDS->subscriptions) return MDS_ERR_OOM;
 
-    service->monitors = c_bytemap_ex_new(0, sizeof(mds_monitor*), allocator);
-    if (!service->monitors) {
-        c_bytemap_ex_free(service->subscriptions);
-        service->subscriptions = NULL;
+    MDS->monitors = c_bytemap_ex_new(0, sizeof(mds_monitor*), allocator);
+    if (!MDS->monitors) {
+        c_bytemap_ex_free(MDS->subscriptions);
+        MDS->subscriptions = NULL;
         return MDS_ERR_OOM;
     }
 
-    memset(&service->ts, 0, sizeof(session_datetime_t));
+    memset(&MDS->ts, 0, sizeof(session_datetime_t));
     return MDS_OK;
 }
 
@@ -639,35 +639,35 @@ static inline int c_mds_init(mds* service, allocator_protocol* allocator) {
  * Both registries are released; the borrowed monitor manager and the monitors
  * are not freed here.
  *
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  */
-static inline void c_mds_dealloc(mds* service) {
-    if (!service) return;
+static inline void c_mds_dealloc(mds* MDS) {
+    if (!MDS) return;
 
-    c_mds_clear(service);
+    c_mds_clear(MDS);
 
-    if (service->subscriptions) {
-        c_bytemap_ex_free(service->subscriptions);
-        service->subscriptions = NULL;
+    if (MDS->subscriptions) {
+        c_bytemap_ex_free(MDS->subscriptions);
+        MDS->subscriptions = NULL;
     }
 
-    if (service->monitors) {
-        c_bytemap_ex_free(service->monitors);
-        service->monitors = NULL;
+    if (MDS->monitors) {
+        c_bytemap_ex_free(MDS->monitors);
+        MDS->monitors = NULL;
     }
 
-    memset(service, 0, sizeof(mds));
+    memset(MDS, 0, sizeof(mds));
 }
 
 /**
  * @brief Free an mds state allocated by `c_mds_new`.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  */
-static inline void c_mds_free(mds* service) {
-    if (!service) return;
+static inline void c_mds_free(mds* MDS) {
+    if (!MDS) return;
 
-    c_mds_dealloc(service);
-    c_ap_free(service);
+    c_mds_dealloc(MDS);
+    c_ap_free(MDS);
 }
 
 /**
@@ -676,49 +676,49 @@ static inline void c_mds_free(mds* service) {
  * Both registries are cleared and the session datetime returns to zero. The
  * maps keep their capacity, and the borrowed monitor manager is left in place.
  *
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @return MDS_OK, or MDS_ERR_INVALID_INPUT.
  */
-static inline int c_mds_clear(mds* service) {
-    if (!service) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_clear(mds* MDS) {
+    if (!MDS) return MDS_ERR_INVALID_INPUT;
 
-    if (service->subscriptions) c_bytemap_ex_clear(service->subscriptions);
-    if (service->monitors) c_bytemap_ex_clear(service->monitors);
+    if (MDS->subscriptions) c_bytemap_ex_clear(MDS->subscriptions);
+    if (MDS->monitors) c_bytemap_ex_clear(MDS->monitors);
 
-    memset(&service->ts, 0, sizeof(session_datetime_t));
+    memset(&MDS->ts, 0, sizeof(session_datetime_t));
     return MDS_OK;
 }
 
 /**
  * @brief Replace the borrowed monitor manager.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param manager The new manager base (NULL disables dispatch).
  * @return MDS_OK, or MDS_ERR_INVALID_INPUT.
  */
-static inline int c_mds_set_manager(mds* service, mds_monitor_manager* manager) {
-    if (!service) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_set_manager(mds* MDS, mds_monitor_manager* manager) {
+    if (!MDS) return MDS_ERR_INVALID_INPUT;
 
-    service->monitor_manager = manager;
+    MDS->monitor_manager = manager;
     return MDS_OK;
 }
 
 /**
  * @brief Read the borrowed monitor manager.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @return The current manager base, or NULL.
  */
-static inline mds_monitor_manager* c_mds_get_manager(const mds* service) {
-    return service ? service->monitor_manager : NULL;
+static inline mds_monitor_manager* c_mds_get_manager(const mds* MDS) {
+    return MDS ? MDS->monitor_manager : NULL;
 }
 
 /**
  * @brief Register a monitor in the service registry (borrowed pointer).
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param monitor The monitor (NULL-safe).
  * @return MDS_OK, MDS_ERR_INVALID_INPUT, or MDS_ERR_OOM.
  */
-static inline int c_mds_register_monitor(mds* service, mds_monitor* monitor) {
-    if (!service || !monitor || !service->monitors) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_register_monitor(mds* MDS, mds_monitor* monitor) {
+    if (!MDS || !monitor || !MDS->monitors) return MDS_ERR_INVALID_INPUT;
 
     static const mds_monitor_id zero_id = {0};
     if (memcmp(monitor->monitor_id, zero_id, sizeof(mds_monitor_id)) == 0) {
@@ -726,7 +726,7 @@ static inline int c_mds_register_monitor(mds* service, mds_monitor* monitor) {
     }
 
     int ret_code = c_bytemap_ex_set(
-        service->monitors,
+        MDS->monitors,
         (const char*) monitor->monitor_id,
         sizeof(mds_monitor_id),
         (const char*) &monitor,
@@ -741,15 +741,15 @@ static inline int c_mds_register_monitor(mds* service, mds_monitor* monitor) {
 
 /**
  * @brief Remove a monitor from the service registry.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param monitor The monitor (NULL-safe).
  * @return MDS_OK, MDS_ERR_INVALID_INPUT, or MDS_ERR_NOT_FOUND.
  */
-static inline int c_mds_unregister_monitor(mds* service, mds_monitor* monitor) {
-    if (!service || !monitor || !service->monitors) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_unregister_monitor(mds* MDS, mds_monitor* monitor) {
+    if (!MDS || !monitor || !MDS->monitors) return MDS_ERR_INVALID_INPUT;
 
     int ret_code = c_bytemap_ex_pop(
-        service->monitors,
+        MDS->monitors,
         (const char*) monitor->monitor_id,
         sizeof(mds_monitor_id),
         0,
@@ -764,16 +764,16 @@ static inline int c_mds_unregister_monitor(mds* service, mds_monitor* monitor) {
 
 /**
  * @brief Look up a registered monitor by id.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param monitor_id The 16-byte monitor id.
  * @return The borrowed monitor, or NULL.
  */
-static inline mds_monitor* c_mds_get_monitor(const mds* service, const mds_monitor_id monitor_id) {
-    if (!service || !service->monitors) return NULL;
+static inline mds_monitor* c_mds_get_monitor(const mds* MDS, const mds_monitor_id monitor_id) {
+    if (!MDS || !MDS->monitors) return NULL;
 
     char* stored = NULL;
 
-    int   ret_code = c_bytemap_ex_get_ptr(service->monitors, (const char*) monitor_id, sizeof(mds_monitor_id), &stored, NULL);
+    int   ret_code = c_bytemap_ex_get_ptr(MDS->monitors, (const char*) monitor_id, sizeof(mds_monitor_id), &stored, NULL);
     if (ret_code != BYTEMAP_OK) return NULL;
 
     return *(mds_monitor**) stored;
@@ -781,11 +781,11 @@ static inline mds_monitor* c_mds_get_monitor(const mds* service, const mds_monit
 
 /**
  * @brief Number of monitors in the service registry.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @return The count, or 0.
  */
-static inline size_t c_mds_n_monitors(const mds* service) {
-    return service && service->monitors ? c_bytemap_ex_len(service->monitors) : 0;
+static inline size_t c_mds_n_monitors(const mds* MDS) {
+    return MDS && MDS->monitors ? c_bytemap_ex_len(MDS->monitors) : 0;
 }
 
 /**
@@ -795,14 +795,14 @@ static inline size_t c_mds_n_monitors(const mds* service) {
  * first sight from its return code. A hit is updated in place; a miss inserts
  * the zeroed default with `c_bytemap_ex_set_default` and fills the same slot.
  *
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param market_data The observation (NULL-safe).
  * @return MDS_OK, MDS_OK_SUBSCRIBED, MDS_ERR_INVALID_INPUT, MDS_ERR_UNKNOWN_DTYPE or MDS_ERR_OOM.
  */
-static inline int c_mds_update_subscription(mds* service, const md_variant* market_data) {
-    if (!service || !market_data || !service->subscriptions) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_update_subscription(mds* MDS, const md_variant* market_data) {
+    if (!MDS || !market_data || !MDS->subscriptions) return MDS_ERR_INVALID_INPUT;
 
-    const md_meta* meta = &market_data->meta_info;
+    const md_meta* meta   = &market_data->meta_info;
     const char*    ticker = meta->ticker;
     if (!ticker) return MDS_ERR_INVALID_INPUT;
 
@@ -819,9 +819,9 @@ static inline int c_mds_update_subscription(mds* service, const md_variant* mark
     }
 
     size_t ticker_len = strlen(ticker);
-    char*  stored = NULL;
+    char*  stored     = NULL;
 
-    int    ret_code = c_bytemap_ex_get_ptr(service->subscriptions, ticker, ticker_len, &stored, NULL);
+    int    ret_code = c_bytemap_ex_get_ptr(MDS->subscriptions, ticker, ticker_len, &stored, NULL);
     if (ret_code != BYTEMAP_OK && ret_code != BYTEMAP_ERR_NOT_FOUND) return MDS_ERR_INVALID_INPUT;
 
     bool is_new = ret_code == BYTEMAP_ERR_NOT_FOUND;
@@ -831,7 +831,7 @@ static inline int c_mds_update_subscription(mds* service, const md_variant* mark
         memset(&default_subscription, 0, sizeof(mds_subscription));
 
         ret_code = c_bytemap_ex_set_default(
-            service->subscriptions,
+            MDS->subscriptions,
             ticker,
             ticker_len,
             (const char*) &default_subscription,
@@ -849,7 +849,7 @@ static inline int c_mds_update_subscription(mds* service, const md_variant* mark
     mds_subscription* subscription = (mds_subscription*) stored;
 
     subscription->last_update = meta->dt;
-    subscription->last_price = c_md_get_price(market_data);
+    subscription->last_price  = c_md_get_price(market_data);
     subscription->n_feeds += 1;
 
     switch (dtype) {
@@ -882,19 +882,19 @@ static inline int c_mds_update_subscription(mds* service, const md_variant* mark
  * lookup deciding subscribed vs first sight; the session datetime is copied
  * from the observation, and the borrowed manager's callbacks run.
  *
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param market_data The observation (NULL-safe).
  * @return MDS_OK, MDS_OK_SUBSCRIBED, MDS_ERR_INVALID_INPUT, MDS_ERR_INTERNAL_DATA, MDS_ERR_UNKNOWN_DTYPE or MDS_ERR_OOM.
  */
-static inline int c_mds_on_market_data(mds* service, const md_variant* market_data) {
-    if (!service || !market_data) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_on_market_data(mds* MDS, const md_variant* market_data) {
+    if (!MDS || !market_data) return MDS_ERR_INVALID_INPUT;
 
-    const md_meta* meta = &market_data->meta_info;
-    md_data_type   dtype = meta->dtype;
+    const md_meta* meta   = &market_data->meta_info;
+    md_data_type   dtype  = meta->dtype;
     const char*    ticker = meta->ticker;
 
     if (dtype == DTYPE_INTERNAL) return MDS_ERR_INTERNAL_DATA;
-    if (!ticker || !service->subscriptions) return MDS_ERR_INVALID_INPUT;
+    if (!ticker || !MDS->subscriptions) return MDS_ERR_INVALID_INPUT;
 
     switch (dtype) {
         case DTYPE_TRANSACTION:
@@ -909,9 +909,9 @@ static inline int c_mds_on_market_data(mds* service, const md_variant* market_da
 
     // Step 1: Inlined subscription update.
     size_t ticker_len = strlen(ticker);
-    char*  stored = NULL;
+    char*  stored     = NULL;
 
-    int    ret_code = c_bytemap_ex_get_ptr(service->subscriptions, ticker, ticker_len, &stored, NULL);
+    int    ret_code = c_bytemap_ex_get_ptr(MDS->subscriptions, ticker, ticker_len, &stored, NULL);
     if (ret_code != BYTEMAP_OK && ret_code != BYTEMAP_ERR_NOT_FOUND) return MDS_ERR_INVALID_INPUT;
 
     bool is_new = ret_code == BYTEMAP_ERR_NOT_FOUND;
@@ -921,7 +921,7 @@ static inline int c_mds_on_market_data(mds* service, const md_variant* market_da
         memset(&default_subscription, 0, sizeof(mds_subscription));
 
         ret_code = c_bytemap_ex_set_default(
-            service->subscriptions,
+            MDS->subscriptions,
             ticker,
             ticker_len,
             (const char*) &default_subscription,
@@ -939,7 +939,7 @@ static inline int c_mds_on_market_data(mds* service, const md_variant* market_da
     mds_subscription* subscription = (mds_subscription*) stored;
 
     subscription->last_update = meta->dt;
-    subscription->last_price = c_md_get_price(market_data);
+    subscription->last_price  = c_md_get_price(market_data);
     subscription->n_feeds += 1;
 
     switch (dtype) {
@@ -963,8 +963,8 @@ static inline int c_mds_on_market_data(mds* service, const md_variant* market_da
     }
 
     // Step 2: Stamp the session datetime and dispatch.
-    service->ts = meta->dt;
-    c_mds_monitor_manager_feed(service->monitor_manager, market_data);
+    MDS->ts = meta->dt;
+    c_mds_monitor_manager_feed(MDS->monitor_manager, market_data);
 
     return is_new ? MDS_OK_SUBSCRIBED : MDS_OK;
 }
@@ -976,29 +976,29 @@ static inline int c_mds_on_market_data(mds* service, const md_variant* market_da
  * monitor manager exactly like market data, preserving the service's original
  * contract.
  *
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param internal_data The internal observation (NULL-safe).
  * @return MDS_OK, or MDS_ERR_INVALID_INPUT.
  */
-static inline int c_mds_on_internal_data(mds* service, const md_internal* internal_data) {
-    if (!service || !internal_data) return MDS_ERR_INVALID_INPUT;
+static inline int c_mds_on_internal_data(mds* MDS, const md_internal* internal_data) {
+    if (!MDS || !internal_data) return MDS_ERR_INVALID_INPUT;
 
-    c_mds_monitor_manager_feed(service->monitor_manager, (const md_variant*) internal_data);
+    c_mds_monitor_manager_feed(MDS->monitor_manager, (const md_variant*) internal_data);
     return MDS_OK;
 }
 
 /**
  * @brief Read the latest price of a ticker.
- * @param service The service (NULL-safe).
+ * @param MDS The service (NULL-safe).
  * @param ticker The ticker symbol (NULL-safe).
  * @return The latest price, or NaN when the ticker is unknown or unfed.
  */
-static inline double c_mds_get_market_price(const mds* service, const char* ticker) {
-    if (!service || !ticker || !service->subscriptions) return NAN;
+static inline double c_mds_get_market_price(const mds* MDS, const char* ticker) {
+    if (!MDS || !ticker || !MDS->subscriptions) return NAN;
 
     char* stored = NULL;
 
-    int   ret_code = c_bytemap_ex_get_ptr(service->subscriptions, ticker, strlen(ticker), &stored, NULL);
+    int   ret_code = c_bytemap_ex_get_ptr(MDS->subscriptions, ticker, strlen(ticker), &stored, NULL);
     if (ret_code != BYTEMAP_OK) return NAN;
 
     const mds_subscription* subscription = (const mds_subscription*) stored;
