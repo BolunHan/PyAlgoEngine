@@ -69,10 +69,10 @@ static inline dma_algo* c_dma_algo_passive_new(dma* DMA, const char* ticker, md_
 static inline int c_dma_algo_passive_launch(dma* DMA, dma_algo* base, void* user_data) {
     (void) user_data;
 
-    if (!base || !DMA || !DMA->algo_engine) return DMA_ALGO_ERR_INVALID_INPUT;
+    if (!base || !DMA || !DMA->ALGO_ENGINE) return DMA_ALGO_ERR_INVALID_INPUT;
 
     dma_algo_passive* algo   = (dma_algo_passive*) base;
-    dma_algo_engine*  engine = DMA->algo_engine;
+    dma_algo_engine*  engine = DMA->ALGO_ENGINE;
 
     if (base->status == DMA_ALGO_STATUS_STOPPING || base->status == DMA_ALGO_STATUS_CLOSED || base->status == DMA_ALGO_STATUS_DONE) return DMA_ALGO_OK;
     if (c_bytemap_ex_len(base->working_orders)) return DMA_ALGO_OK;

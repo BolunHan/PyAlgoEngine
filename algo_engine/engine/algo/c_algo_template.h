@@ -196,7 +196,7 @@ static inline int c_dma_algo_init(dma_algo* algo, dma* DMA, const char* ticker, 
 
     c_dma_algo_gen_uid(algo);
 
-    dma_algo_engine* engine = DMA ? DMA->algo_engine : NULL;
+    dma_algo_engine* engine = DMA ? DMA->ALGO_ENGINE : NULL;
 
     if (engine && engine->algo) {
         int ret_code = c_bytemap_ex_set(engine->algo, (const char*) algo->algo_id, sizeof(uuid_t), (const char*) &algo, sizeof(dma_algo*), 0, NULL);
@@ -262,7 +262,7 @@ static inline void c_dma_algo_gen_uid(dma_algo* algo) {
         algo->algo_id[6] = (algo->algo_id[6] & 0x0F) | 0x40;
         algo->algo_id[8] = (algo->algo_id[8] & 0x3F) | 0x80;
 
-        dma_algo_engine* engine = algo->DMA ? algo->DMA->algo_engine : NULL;
+        dma_algo_engine* engine = algo->DMA ? algo->DMA->ALGO_ENGINE : NULL;
 
         if (!engine || !engine->algo) return;
 
@@ -293,7 +293,7 @@ static inline void c_dma_algo_gen_uid(dma_algo* algo) {
 static inline int c_dma_algo_set_status(dma_algo* algo, dma_algo_status status) {
     dma_algo_status prev_status = algo->status;
     algo->status                = status;
-    dma_algo_engine* engine     = algo->DMA->algo_engine;
+    dma_algo_engine* engine     = algo->DMA->ALGO_ENGINE;
 
     switch (status) {
         case DMA_ALGO_STATUS_WORKING: {
@@ -403,7 +403,7 @@ static inline int c_dma_algo_set_status(dma_algo* algo, dma_algo_status status) 
 static inline void c_dma_algo_dealloc(dma_algo* algo) {
     if (!algo) return;
 
-    dma_algo_engine* engine = algo->DMA ? algo->DMA->algo_engine : NULL;
+    dma_algo_engine* engine = algo->DMA ? algo->DMA->ALGO_ENGINE : NULL;
 
     // Teardown detaches unconditionally: a freed block must not stay in the list.
     if (engine && engine->working_algo && algo->ticker) {
