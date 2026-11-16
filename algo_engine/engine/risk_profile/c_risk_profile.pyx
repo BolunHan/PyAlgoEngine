@@ -99,7 +99,7 @@ cdef class RiskViolation(Exception):
             return
 
         if self.header:
-            c_ap_free(self.header)
+            c_ap_free(<void*> self.header)
 
     cdef inline void ccp_attach(self):
         CCPType.ccp_attach(<PyObject*> self, <const void**> &self.header, &self.ccp_ctx, <void*> NULL)
