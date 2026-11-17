@@ -139,9 +139,18 @@ class TestDailyBar(unittest.TestCase):
     def test_market_date_encoding(self):
         market_date = date(2025, 1, 2)
         bar = self._make_daily_bar(market_date=market_date)
-        self.assertEqual(bar.timestamp, 20250102)
+        self.assertEqual(bar.timestamp, 0.0)
         self.assertEqual(bar.market_date, market_date)
         self.assertEqual(bar.market_time, market_date)
+
+    def test_date_only_session_datetime(self):
+        """A DailyBar stores its date in dt.date and zeroes every other dt field."""
+        market_date = date(2025, 1, 2)
+        bar = self._make_daily_bar(market_date=market_date)
+        self.assertEqual(bar.session_date.to_pydate(), market_date)
+        self.assertEqual(bar.session_datetime.timestamp, 0.0)
+        self.assertEqual(bar.session_datetime.ts, 0.0)
+        self.assertEqual(bar.session_datetime.ordinal, 0)
 
     def test_repr_variants(self):
         single = self._make_daily_bar(bar_span=1)

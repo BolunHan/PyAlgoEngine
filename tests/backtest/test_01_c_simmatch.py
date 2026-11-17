@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 from event_engine.capi import EventEngineEx
 
-from algo_engine.backtest import SimMatchEx
+from algo_engine.backtest import SimMatch
 from algo_engine.base import (
     BarData,
     OrderData,
@@ -29,7 +29,7 @@ class Xorshift64Star:
     """Independent oracle of the C-layer PRNG (xorshift64*).
 
     Mirrors c_smm_rng_seed / c_smm_rng_next_raw / c_smm_rng_next in
-    c_simmatch_ex.h: state is initialized to the seed verbatim (nonzero) and
+    c_simmatch.h: state is initialized to the seed verbatim (nonzero) and
     each draw advances x ^= x<<13; x ^= x>>7; x ^= x<<17 before multiplying
     by 0x2545F4914F6CDD1D; the double is (raw >> 11) / 2**53.
     """
@@ -51,8 +51,8 @@ class Xorshift64Star:
         return (self.next_raw() >> 11) * (1.0 / 9007199254740992.0)
 
 
-class TestSimMatchEx(unittest.TestCase):
-    """Contract: SimMatchEx is the C-layer simulation matcher.
+class TestSimMatch(unittest.TestCase):
+    """Contract: SimMatch is the C-layer simulation matcher.
 
     Expected behavior (oracle: the legacy pure-Python SimMatch semantics,
     with the documented differences that filled orders leave ``working``
@@ -75,7 +75,7 @@ class TestSimMatchEx(unittest.TestCase):
     def setUp(self) -> None:
         self.event_engine = Mock()
         self.topic_set = Mock()
-        self.sim = SimMatchEx(
+        self.sim = SimMatch(
             ticker='TEST',
             event_engine=self.event_engine,
             topic_set=self.topic_set,
@@ -393,7 +393,7 @@ class TestSimMatchEx(unittest.TestCase):
     def test_22_order_data_fill_incremental(self) -> None:
         """With incremental_order_volume, a buy order fills against an
         OrderData print at price <= limit."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST',
             event_engine=self.event_engine,
             topic_set=self.topic_set,
@@ -415,7 +415,7 @@ class TestSimMatchEx(unittest.TestCase):
     # === instant fill ===
 
     def _instant_fill_sim(self):
-        return SimMatchEx(
+        return SimMatch(
             ticker='TEST',
             event_engine=self.event_engine,
             topic_set=self.topic_set,
@@ -457,7 +457,7 @@ class TestSimMatchEx(unittest.TestCase):
 
     def test_26_lag_ts(self) -> None:
         """Time lag delays the fill until the elapsed time reaches lag_ts."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
             lag_ts=5., hit_prob=1.,
         )
@@ -475,7 +475,7 @@ class TestSimMatchEx(unittest.TestCase):
 
     def test_27_lag_n_transaction(self) -> None:
         """Transaction lag delays the fill until enough transactions pass."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
             lag_n_transaction=2, hit_prob=1.,
         )
@@ -498,7 +498,7 @@ class TestSimMatchEx(unittest.TestCase):
 
     def test_28_hit_probability_zero(self) -> None:
         """hit_prob=0 never fills."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
             hit_prob=0., seed=1,
         )
@@ -510,7 +510,7 @@ class TestSimMatchEx(unittest.TestCase):
 
     def test_29_hit_probability_seeded_pattern(self) -> None:
         """With a fixed seed the fill pattern matches the xorshift64* oracle."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
             hit_prob=0.5, seed=42,
         )
@@ -544,7 +544,7 @@ class TestSimMatchEx(unittest.TestCase):
 
     def test_30_slippage_and_fee(self) -> None:
         """Slippage is applied per side and fee accumulates on the order."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
             fee_rate=0.001, slippery_rate=0.0001, hit_prob=1.,
         )
@@ -564,7 +564,7 @@ class TestSimMatchEx(unittest.TestCase):
 
     def test_31_limit_clamp(self) -> None:
         """Match price never exceeds the limit after slippage."""
-        sim = SimMatchEx(
+        sim = SimMatch(
             ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
             slippery_rate=0.1, hit_prob=1.,
         )
@@ -607,19 +607,19 @@ class TestSimMatchEx(unittest.TestCase):
     def test_34_best_worst_price(self) -> None:
         """best/worst price follow the side sign and skip invalid values."""
         self.assertEqual(
-            SimMatchEx.best_price(1., 2., 3., side=TransactionSide.SIDE_BID), 1.)
+            SimMatch.best_price(1., 2., 3., side=TransactionSide.SIDE_BID), 1.)
         self.assertEqual(
-            SimMatchEx.worst_price(1., 2., 3., side=TransactionSide.SIDE_BID), 3.)
+            SimMatch.worst_price(1., 2., 3., side=TransactionSide.SIDE_BID), 3.)
         self.assertEqual(
-            SimMatchEx.best_price(1., 2., 3., side=TransactionSide.SIDE_ASK), 3.)
+            SimMatch.best_price(1., 2., 3., side=TransactionSide.SIDE_ASK), 3.)
         self.assertEqual(
-            SimMatchEx.worst_price(1., 2., 3., side=TransactionSide.SIDE_ASK), 1.)
+            SimMatch.worst_price(1., 2., 3., side=TransactionSide.SIDE_ASK), 1.)
         self.assertEqual(
-            SimMatchEx.best_price(None, float('nan'), 2., side=TransactionSide.SIDE_BID), 2.)
+            SimMatch.best_price(None, float('nan'), 2., side=TransactionSide.SIDE_BID), 2.)
         with self.assertRaises(ValueError):
-            SimMatchEx.best_price(side=TransactionSide.SIDE_BID)
+            SimMatch.best_price(side=TransactionSide.SIDE_BID)
         with self.assertRaises(ValueError):
-            SimMatchEx.best_price(1., 2., side=TransactionSide.SIDE_UNKNOWN)
+            SimMatch.best_price(1., 2., side=TransactionSide.SIDE_UNKNOWN)
 
     # === market_time ===
 
@@ -631,11 +631,12 @@ class TestSimMatchEx(unittest.TestCase):
     # === event engine C-API binding ===
 
     def test_36_register_unregister_capi(self) -> None:
-        """register binds handlers through the event engine C API."""
+        """register binds order handlers plus a DMAProtocol realtime callback."""
         engine = EventEngineEx()
-        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET)
+        sim = SimMatch(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET)
         sim.register()
         self.addCleanup(engine.stop)
+        self.assertIsNotNone(sim.protocol)
 
         order = self.create_order()
         engine.start()
@@ -645,7 +646,7 @@ class TestSimMatchEx(unittest.TestCase):
                             'launch_order handler did not fire')
             self.assertEqual(order.order_state, OrderState.STATE_PLACED)
 
-            engine.put(topic=TOPIC_SET.cancel_order(ticker='TEST'), order=order)
+            engine.put(topic=TOPIC_SET.cancel_order(ticker='TEST'), order_id=order.order_id)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.history),
                             'cancel_order handler did not fire')
             self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
@@ -653,20 +654,31 @@ class TestSimMatchEx(unittest.TestCase):
             engine.stop()
 
         sim.unregister()
-        # after unregister, a launch is no longer processed
+        self.assertIsNone(sim.protocol)
+
+        # after unregister neither Python order handlers nor the realtime
+        # transport callback fire any more
+        from algo_engine.engine import DMAProtocol
+
         order2 = self.create_order()
         engine.start()
         try:
             engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order2)
             self.assertFalse(self._wait_until(lambda: order2.order_id in sim.working, timeout=1.),
-                             'handler still fired after unregister')
+                             'launch handler still fired after unregister')
+
+            sim.launch_order(order2)
+            sender = DMAProtocol(engine, TOPIC_SET)
+            sender.send(self.create_tick(ask_price_1=49.9, ask_volume_1=100))
+            time.sleep(0.2)
+            self.assertEqual(order2.order_state, OrderState.STATE_PLACED)
         finally:
             engine.stop()
 
     def test_37_realtime_dispatch_capi(self) -> None:
         """Market data routed through the realtime topic fills working orders."""
         engine = EventEngineEx()
-        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET)
+        sim = SimMatch(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET)
         sim.register()
         self.addCleanup(sim.unregister)
         self.addCleanup(engine.stop)
@@ -677,9 +689,9 @@ class TestSimMatchEx(unittest.TestCase):
             engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working))
             tick = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
-            engine.put(topic=TOPIC_SET.realtime(ticker='TEST', dtype='TickData'), market_data=tick)
+            sim.protocol.send(tick)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.history),
-                            'realtime handler did not fill the order')
+                            'realtime callback did not fill the order')
             self.assertEqual(order.order_state, OrderState.STATE_FILLED)
         finally:
             engine.stop()
@@ -687,11 +699,11 @@ class TestSimMatchEx(unittest.TestCase):
     def test_38_multi_listener_capi(self) -> None:
         """A second native listener receives match and cancel events and can
         be deregistered by id."""
-        from tests.backtest import c_simmatch_ex_toolkit
+        from tests.backtest import c_simmatch_toolkit
 
         events = []
-        sim = SimMatchEx(ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set, hit_prob=1.)
-        listener_id = c_simmatch_ex_toolkit.register_listener(
+        sim = SimMatch(ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set, hit_prob=1.)
+        listener_id = c_simmatch_toolkit.register_listener(
             sim, lambda event, order_id, report: events.append((event, order_id, report)))
 
         order = self.create_order()
@@ -723,7 +735,7 @@ class TestSimMatchEx(unittest.TestCase):
         self.assertAlmostEqual(report.price, 49.9 * (1 + 0.0001))
 
         # deregister by id stops delivery
-        c_simmatch_ex_toolkit.deregister_listener(sim, listener_id)
+        c_simmatch_toolkit.deregister_listener(sim, listener_id)
         order3 = self.create_order()
         sim.launch_order(order=order3)
         sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
@@ -742,41 +754,118 @@ class TestSimMatchEx(unittest.TestCase):
         self.assertEqual(self.event_engine.put.call_count, 3)
 
     def test_40_native_publish_capi(self) -> None:
-        """Registered on a real engine, fills publish natively to on_report /
-        on_order without Python wrapper involvement."""
+        """Registered on a real engine, fills publish to on_report / on_order
+        from the matcher's listener."""
         engine = EventEngineEx()
         reports = []
         orders = []
         engine.register_handler(topic=TOPIC_SET.on_report, handler=lambda **kw: reports.append(kw['report']))
         engine.register_handler(topic=TOPIC_SET.on_order, handler=lambda **kw: orders.append(kw['order']))
 
-        sim = SimMatchEx(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET, hit_prob=1.)
+        sim = SimMatch(ticker='TEST', event_engine=engine, topic_set=TOPIC_SET, hit_prob=1.)
         sim.register()
         self.addCleanup(engine.stop)
 
+        protocol = sim.protocol
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
         engine.start()
         try:
             engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working))
-            # placed on_order published natively
+            # placed on_order published
             self.assertTrue(self._wait_until(lambda: len(orders) >= 1),
-                            'placed on_order not published natively')
+                            'placed on_order not published')
 
             tick = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
-            engine.put(topic=TOPIC_SET.realtime(ticker='TEST', dtype='TickData'), market_data=tick)
+            protocol.send(tick)
             self.assertTrue(self._wait_until(lambda: len(reports) >= 1),
-                            'on_report not published natively')
+                            'on_report not published')
             self.assertEqual(len(orders), 2)  # placed + filled
 
             report = reports[0]
             self.assertIsInstance(report, TradeReport)
             self.assertEqual(report.volume, 100)
             self.assertAlmostEqual(report.price, 49.9 * (1 + 0.0001))
-            # the published order object is the same Python object
+            # the published order is the same Python object as the launched one
             self.assertIs(orders[1], order)
         finally:
             engine.stop()
+
+    # === order ring registry ===
+
+    def test_41_registry_grows_past_initial_capacity(self) -> None:
+        """The contiguous registry grows when it fills up and keeps every order."""
+        sim = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            hit_prob=1.,
+        )
+        orders = [self.create_order(volume=10) for _ in range(80)]
+        for order in orders:
+            sim.launch_order(order)
+        self.assertEqual(len(sim.working), len(orders))
+
+        sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        self.assertEqual(sim.working, {})
+        self.assertEqual(len(sim.history), len(orders))
+        for order in orders:
+            self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+
+    def test_42_cancel_middle_slot_keeps_other_orders(self) -> None:
+        """Canceling non-adjacent slots leaves the other orders matchable."""
+        sim = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            hit_prob=1.,
+        )
+        orders = [self.create_order(volume=10) for _ in range(48)]
+        for order in orders:
+            sim.launch_order(order)
+
+        cancelled = [order for index, order in enumerate(orders) if index % 2 == 0]
+        kept = [order for index, order in enumerate(orders) if index % 2 == 1]
+        for order in cancelled:
+            sim.cancel_order(order=order)
+
+        self.assertEqual(len(sim.working), len(kept))
+        sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        self.assertEqual(sim.working, {})
+        self.assertEqual(len(sim.history), len(orders))
+        for order in kept:
+            self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+        for order in cancelled:
+            self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
+
+    def test_43_clear_reuses_the_expanded_registry(self) -> None:
+        """clear keeps the expanded ring capacity and the matcher keeps working."""
+        sim = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            hit_prob=1.,
+        )
+        for _ in range(80):
+            sim.launch_order(self.create_order(volume=10))
+        sim.clear()
+        self.assertEqual(sim.working, {})
+
+        order = self.create_order(volume=10)
+        sim.launch_order(order)
+        sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(sim.history[order.order_id], order)
+
+    def test_44_ccp_binding_survives_repeated_alloc_and_release(self) -> None:
+        """The CCP binding husks cleanly over repeated construct/destroy cycles."""
+        import gc
+
+        sim = SimMatch(ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set)
+        self.assertNotEqual(sim.address, 'NULL')
+        del sim
+        gc.collect()
+
+        for _ in range(50):
+            sim = SimMatch(ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set)
+            sim.launch_order(self.create_order(volume=10))
+            sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+            del sim
+        gc.collect()
 
     @staticmethod
     def _wait_until(condition, timeout=5.0) -> bool:

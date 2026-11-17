@@ -9,11 +9,11 @@ from algo_engine.base.c_market_data.c_market_data cimport (
 )
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeReport, report_from_header
 
-from algo_engine.backtest.c_simmatch_ex cimport (
+from algo_engine.backtest.c_simmatch cimport (
     SMM_EVENT_CANCEL,
     SMM_EVENT_MATCH,
     SMM_OK,
-    SimMatchEx,
+    SimMatch,
     c_smm_match_deregister_listener,
     c_smm_match_register_listener,
     smm_match_ctx,
@@ -46,7 +46,7 @@ cdef void c_listener(smm_match_ctx* ctx, smm_match_event event,
         PyErr_Clear()
 
 
-def register_listener(SimMatchEx sim, callback):
+def register_listener(SimMatch sim, callback):
     cdef uintptr_t callback_id
     cdef int ret_code = c_smm_match_register_listener(
         sim.ctx, c_listener, <void*> <PyObject*> callback, &callback_id)
@@ -56,7 +56,7 @@ def register_listener(SimMatchEx sim, callback):
     return callback_id
 
 
-def deregister_listener(SimMatchEx sim, callback_id):
+def deregister_listener(SimMatch sim, callback_id):
     _listeners.pop(callback_id, None)
     cdef int ret_code = c_smm_match_deregister_listener(sim.ctx, callback_id)
     if ret_code != SMM_OK:

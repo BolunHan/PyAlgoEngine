@@ -1,7 +1,9 @@
 import random
 import unittest
 from collections import Counter
+from datetime import date
 
+from algo_engine.base.c_market_data.c_candlestick import DailyBar
 from algo_engine.base.c_market_data.c_market_data_buffer import MarketDataBuffer
 from md_gen import random_market_data
 
@@ -102,6 +104,34 @@ class MarketDataBufferCacheTests(unittest.TestCase):
             Counter(self._signature(md) for md in got),
             Counter(self._signature(md) for md in samples),
         )
+
+    def test_daily_bar_sorting_uses_date(self):
+        """Date-only records sort by dt.date, not by their zero unix_ts."""
+        buffer = MarketDataBuffer(2, 256)
+        market_dates = [
+            date(2024, 3, 15),
+            date(2023, 12, 31),
+            date(2024, 1, 2),
+        ]
+        bars = [
+            DailyBar(
+                ticker='DAY',
+                market_date=market_date,
+                high_price=1.0,
+                low_price=1.0,
+                open_price=1.0,
+                close_price=1.0,
+            )
+            for market_date in market_dates
+        ]
+
+        with buffer.cache() as cache:
+            for bar in bars:
+                cache.put(bar)
+
+        got = list(buffer)
+        self.assertEqual([bar.market_date for bar in got], sorted(market_dates))
+        self.assertEqual([bar.timestamp for bar in got], [0.0] * len(market_dates))
 
     def test_serialize_and_deserialize_roundtrip(self):
         buffer = MarketDataBuffer(8, 1024)

@@ -183,7 +183,7 @@ class TestMarketDataPickleRoundtrip(unittest.TestCase):
             ('TradeData', self._make_trade_data, TransactionData),
             ('TickDataLite', self._make_tick_data_lite, TickDataLite),
             ('TickData', self._make_tick_data, TickData),
-            ('BarData', self._make_bar_data, DailyBar),
+            ('BarData', self._make_bar_data, BarData),
             ('TradeReport', self._make_trade_report, TradeReport),
             ('TradeInstruction', self._make_trade_instruction, TradeInstruction),
         ):
