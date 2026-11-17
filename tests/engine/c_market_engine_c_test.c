@@ -105,10 +105,9 @@ static session_datetime_t make_dt(double timestamp) {
 static md_variant make_transaction(const char* ticker, double price, double timestamp) {
     md_variant market_data;
     memset(&market_data, 0, sizeof(market_data));
-    market_data.meta_info.dtype     = DTYPE_TRANSACTION;
-    market_data.meta_info.ticker    = ticker;
-    market_data.meta_info.timestamp = timestamp;
-    market_data.meta_info.dt        = make_dt(timestamp);
+    market_data.meta_info.dtype  = DTYPE_TRANSACTION;
+    market_data.meta_info.ticker = ticker;
+    market_data.meta_info.dt     = make_dt(timestamp);
     market_data.transaction_data.price = price;
     return market_data;
 }
@@ -116,10 +115,9 @@ static md_variant make_transaction(const char* ticker, double price, double time
 static md_variant make_tick_lite(const char* ticker, double price, double timestamp) {
     md_variant market_data;
     memset(&market_data, 0, sizeof(market_data));
-    market_data.meta_info.dtype     = DTYPE_TICK_LITE;
-    market_data.meta_info.ticker    = ticker;
-    market_data.meta_info.timestamp = timestamp;
-    market_data.meta_info.dt        = make_dt(timestamp);
+    market_data.meta_info.dtype  = DTYPE_TICK_LITE;
+    market_data.meta_info.ticker = ticker;
+    market_data.meta_info.dt     = make_dt(timestamp);
     market_data.tick_data_lite.last_price = price;
     return market_data;
 }

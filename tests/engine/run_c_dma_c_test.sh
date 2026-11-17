@@ -5,8 +5,10 @@
 #
 # The test links nothing but libc/libm: every C function under test is static
 # inline in the headers. It exercises the risk rule storage and checks, the
-# direct-market-access gating and interface dispatch, the buffered request
-# queue, the inventory, the position registries and the balance registry.
+# direct-market-access gating, the order-state contract, the interface
+# dispatch, the request queue, the inventory, the position registries and the
+# balance registry. It runs twice: the default direct dispatch and the
+# DMA_NO_QUEUE_MODE=0 queueing variant.
 #
 # Override PY_CYBASE if the sibling repository lives elsewhere; override CC to
 # pick another compiler.
@@ -29,15 +31,23 @@ fi
 
 mkdir -p "$BUILD_DIR"
 
-bin="$BUILD_DIR/c_dma_c_test"
+run_mode() {
+    local no_queue="$1"
+    local suffix="$2"
+    local bin="$BUILD_DIR/c_dma_c_test${suffix}"
 
-echo "[build] $bin"
-"$CC" -O3 -march=native -std=c11 -pthread -Wall -Wextra \
-    -I"$REPO_ROOT" \
-    -I"$PY_CYBASE" \
-    "$SCRIPT_DIR/c_dma_c_test.c" \
-    -o "$bin" \
-    -lm
+    echo "[build] $bin (DMA_NO_QUEUE_MODE=$no_queue)"
+    "$CC" -O3 -march=native -std=c11 -pthread -Wall -Wextra \
+        -DDMA_NO_QUEUE_MODE="$no_queue" \
+        -I"$REPO_ROOT" \
+        -I"$PY_CYBASE" \
+        "$SCRIPT_DIR/c_dma_c_test.c" \
+        -o "$bin" \
+        -lm
 
-echo "[run] $bin"
-"$bin"
+    echo "[run] $bin"
+    "$bin"
+}
+
+run_mode 1 ""
+run_mode 0 "_queue"
