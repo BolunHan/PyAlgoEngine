@@ -14,13 +14,14 @@ AlignAfterOpenBracket: BlockIndent
 AlignConsecutiveDeclarations:
   Enabled: true
   AcrossEmptyLines: true
-  AcrossComments: false
+  AcrossComments: true
   AcrossAccessSpecifiers: false
+  # AlignFunctionPointers: true
 
 AlignConsecutiveAssignments:
-  Enabled: false
+  Enabled: true
   AcrossEmptyLines: false
-  AcrossComments: false
+  AcrossComments: true
 
 BraceWrapping:
   AfterFunction: false
@@ -29,6 +30,6 @@ BraceWrapping:
 
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: true
-AllowShortBlocksOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
 
 ColumnLimit: 0
