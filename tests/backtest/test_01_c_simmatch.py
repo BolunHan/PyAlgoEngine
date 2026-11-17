@@ -2,7 +2,6 @@ import logging
 import time
 import unittest
 from datetime import datetime
-from unittest.mock import Mock
 
 from event_engine.capi import EventEngineEx
 
@@ -23,6 +22,40 @@ from algo_engine.engine import TOPIC_SET
 from algo_engine.exchange_profile import PROFILE
 
 LOGGER = logging.getLogger(__name__)
+
+
+class RecordingEngine(EventEngineEx):
+    """EventEngineEx test double: records publications and bindings."""
+
+    def __init__(self):
+        self.published = []
+        self.bound = []
+        self.unbound = []
+
+    def put(self, topic, *args, **kwargs):
+        self.published.append((topic, kwargs))
+
+    def register_handler(self, topic, handler, deduplicate=False):
+        self.bound.append((topic, handler))
+
+    def unregister_handler(self, topic, handler):
+        self.unbound.append((topic, handler))
+        self.bound = [(bound_topic, bound_handler) for bound_topic, bound_handler in self.bound
+                      if not (bound_topic == topic and bound_handler == handler)]
+
+
+class FailingEngine(RecordingEngine):
+    """RecordingEngine whose second handler registration fails."""
+
+    def __init__(self):
+        super().__init__()
+        self.register_attempts = 0
+
+    def register_handler(self, topic, handler, deduplicate=False):
+        self.register_attempts += 1
+        if self.register_attempts == 2:
+            raise RuntimeError('bind failed')
+        super().register_handler(topic, handler, deduplicate)
 
 
 class Xorshift64Star:
@@ -55,11 +88,13 @@ class TestSimMatch(unittest.TestCase):
     """Contract: SimMatch is the C-layer simulation matcher.
 
     Expected behavior (oracle: the legacy pure-Python SimMatch semantics,
-    with the documented differences that filled orders leave ``working``
-    immediately and each placement / cancel / fill publishes one event):
+    with the documented differences that the matcher owns a copy of every
+    launched order, filled orders leave ``working`` immediately, and each
+    placement / cancel / fill publishes one event):
 
-        - launch_order registers the order as PLACED and fills it immediately
-          when instant_fill is configured and no lag is set.
+        - launch_order copies the order into the registry; the launched object
+          is never modified. ``working`` and ``history`` are read-only views
+          over the native registries, not Python-side mirrors.
         - bar data matches buy orders at high/limit/vwap and sell orders at
           low/limit/vwap.
         - tick data accumulates order-book volume up to the working volume.
@@ -73,8 +108,8 @@ class TestSimMatch(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.event_engine = Mock()
-        self.topic_set = Mock()
+        self.event_engine = RecordingEngine()
+        self.topic_set = TOPIC_SET
         self.sim = SimMatch(
             ticker='TEST',
             event_engine=self.event_engine,
@@ -88,6 +123,13 @@ class TestSimMatch(unittest.TestCase):
             'multiplier': 1.0,
             'order_type': OrderType.ORDER_LIMIT,
         }
+
+    def matcher_order(self, order, sim=None):
+        sim = self.sim if sim is None else sim
+        working = sim.working.get(order.order_id)
+        if working is not None:
+            return working
+        return sim.history[order.order_id]
 
     def create_order(self, side=TransactionSide.SIDE_BID, limit_price=50.0, timestamp=None, volume=100):
         return TradeInstruction(
@@ -125,6 +167,7 @@ class TestSimMatch(unittest.TestCase):
         self.assertIsNone(self.sim.last_price)
         self.assertEqual(self.sim.last_transaction_count, 0)
         self.assertIsInstance(self.sim.market_time, datetime)
+        self.assertIsInstance(self.sim.seed, int)
         config = self.sim.matching_config
         self.assertEqual(config['fee_rate'], 0.001)
         self.assertFalse(config['instant_fill'])
@@ -132,15 +175,19 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(config['hit'], {'prob': 1.0, 'slippery': 0.0001})
 
     def test_01_launch_order_placed(self) -> None:
-        """Launching an order marks it PLACED and adds it to working."""
+        """Launching an order copies it, marks the copy PLACED and works it."""
         order = self.create_order()
         self.sim.launch_order(order=order)
         self.assertIn(order.order_id, self.sim.working)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
-        self.assertEqual(order.placed_ts, self.sim.timestamp)
-        self.assertEqual(order.working_volume, 100)
-        self.assertEqual(order.transaction_count_at_placement, 0)
-        self.assertEqual(self.event_engine.put.call_count, 1)
+
+        working = self.matcher_order(order)
+        self.assertIsNot(working, order)
+        self.assertIs(working, self.sim.working[order.order_id])
+        self.assertEqual(working.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(working.placed_ts, self.sim.timestamp)
+        self.assertEqual(working.working_volume, 100)
+        self.assertEqual(len(self.event_engine.published), 1)
+        self.assertEqual(order.order_state, OrderState.STATE_IDLE)
 
     def test_02_duplicate_launch_raises(self) -> None:
         """Launching the same order twice raises ValueError."""
@@ -157,8 +204,9 @@ class TestSimMatch(unittest.TestCase):
         self.sim.cancel_order(order=order)
         self.assertNotIn(order.order_id, self.sim.working)
         self.assertIn(order.order_id, self.sim.history)
-        self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
-        self.assertEqual(order.canceled_ts, self.sim.timestamp)
+        canceled = self.matcher_order(order)
+        self.assertEqual(canceled.order_state, OrderState.STATE_CANCELED)
+        self.assertEqual(canceled.canceled_ts, self.sim.timestamp)
 
     def test_04_cancel_by_order_id(self) -> None:
         """Cancel accepts an order_id alone."""
@@ -166,7 +214,7 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         self.sim.cancel_order(order_id=order.order_id)
         self.assertIn(order.order_id, self.sim.history)
-        self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_CANCELED)
 
     def test_05_cancel_unknown_order(self) -> None:
         """Canceling an unknown order is a silent no-op."""
@@ -188,21 +236,22 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         bar = self.create_bar()
         self.sim(market_data=bar)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertEqual(order.filled_volume, 100)
+
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(filled.filled_volume, 100)
         expected_price = 49.5 * (1 + 0.0001)
-        self.assertAlmostEqual(order.average_price, expected_price)
-        self.assertEqual(len(order.trades), 1)
-        report = next(iter(order.trades.values()))
+        self.assertAlmostEqual(filled.average_price, expected_price)
+        self.assertEqual(len(filled.trades), 1)
+        report = next(iter(filled.trades.values()))
         self.assertEqual(report.volume, 100)
         self.assertAlmostEqual(report.price, expected_price)
         self.assertAlmostEqual(report.notional, 100 * expected_price)
         self.assertAlmostEqual(report.fee, 0.001 * 100 * expected_price)
-        self.assertAlmostEqual(order.fee, report.fee)
+        self.assertAlmostEqual(filled.fee, report.fee)
         self.assertNotIn(order.order_id, self.sim.working)
         self.assertIn(order.order_id, self.sim.history)
-        # on_report and on_order are published
-        self.assertEqual(self.event_engine.put.call_count, 3)
+        self.assertEqual(len(self.event_engine.published), 3)
 
     def test_08_bar_fill_sell(self) -> None:
         """Sell order fills at the bar low when low > limit."""
@@ -210,9 +259,10 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         bar = self.create_bar(high=50.8, low=50.5, close=50.7, notional=50700)
         self.sim(market_data=bar)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
         expected_price = 50.5 * (1 - 0.0001)
-        self.assertAlmostEqual(order.average_price, expected_price)
+        self.assertAlmostEqual(filled.average_price, expected_price)
 
     def test_09_bar_no_fill(self) -> None:
         """Buy order does not fill when the bar stays above the limit."""
@@ -220,7 +270,7 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         bar = self.create_bar(high=50.5, low=50.2, close=50.4, notional=50400)
         self.sim(market_data=bar)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_PLACED)
         self.assertIn(order.order_id, self.sim.working)
 
     def test_10_bar_market_order_vwap(self) -> None:
@@ -229,9 +279,10 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         bar = self.create_bar(high=50.5, low=49.5, close=50.2, notional=50000)
         self.sim(market_data=bar)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
         expected_price = 50.0 * (1 + 0.0001)
-        self.assertAlmostEqual(order.average_price, expected_price)
+        self.assertAlmostEqual(filled.average_price, expected_price)
 
     # === tick matching ===
 
@@ -241,9 +292,10 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         tick = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
         self.sim(market_data=tick)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertEqual(order.filled_volume, 100)
-        self.assertAlmostEqual(order.average_price, 49.9 * (1 + 0.0001))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(filled.filled_volume, 100)
+        self.assertAlmostEqual(filled.average_price, 49.9 * (1 + 0.0001))
 
     def test_12_tick_partial_fill(self) -> None:
         """Order partially fills and keeps the remainder working."""
@@ -251,15 +303,17 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         tick = self.create_tick(ask_price_1=49.9, ask_volume_1=60)
         self.sim(market_data=tick)
-        self.assertEqual(order.order_state, OrderState.STATE_PARTFILLED)
-        self.assertEqual(order.filled_volume, 60)
-        self.assertEqual(order.working_volume, 40)
+        partial = self.matcher_order(order)
+        self.assertEqual(partial.order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(partial.filled_volume, 60)
+        self.assertEqual(partial.working_volume, 40)
         self.assertIn(order.order_id, self.sim.working)
-        # remainder fills on the next tick
+
         tick2 = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
         self.sim(market_data=tick2)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertEqual(order.filled_volume, 100)
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(filled.filled_volume, 100)
         self.assertNotIn(order.order_id, self.sim.working)
 
     def test_13_tick_multi_level_accumulate(self) -> None:
@@ -271,10 +325,11 @@ class TestSimMatch(unittest.TestCase):
             ask_price_2=50.0, ask_volume_2=100,
         )
         self.sim(market_data=tick)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertEqual(order.filled_volume, 150)
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(filled.filled_volume, 150)
         avg = (100 * 49.9 + 50 * 50.0) / 150
-        self.assertAlmostEqual(order.average_price, avg * (1 + 0.0001))
+        self.assertAlmostEqual(filled.average_price, avg * (1 + 0.0001))
 
     def test_14_tick_market_order(self) -> None:
         """Market buy order fills from the ask book."""
@@ -282,8 +337,9 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         tick = self.create_tick(ask_price_1=49.9, ask_volume_1=100)
         self.sim(market_data=tick)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertAlmostEqual(order.average_price, 49.9 * (1 + 0.0001))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 49.9 * (1 + 0.0001))
 
     def test_15_tick_no_fill_price(self) -> None:
         """No fill when the best ask is above the limit."""
@@ -291,8 +347,9 @@ class TestSimMatch(unittest.TestCase):
         self.sim.launch_order(order=order)
         tick = self.create_tick(ask_price_1=50.5, ask_volume_1=100)
         self.sim(market_data=tick)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
-        self.assertEqual(order.filled_volume, 0)
+        working = self.matcher_order(order)
+        self.assertEqual(working.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(working.filled_volume, 0)
 
     # === tick-lite matching ===
 
@@ -305,8 +362,9 @@ class TestSimMatch(unittest.TestCase):
             bid_price=49.0, bid_volume=100, ask_price=49.9, ask_volume=100,
         )
         self.sim(market_data=lite)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertAlmostEqual(order.average_price, 49.9 * (1 + 0.0001))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 49.9 * (1 + 0.0001))
 
     def test_17_tick_lite_sell_fill(self) -> None:
         """Sell order fills at the lite bid price when bid >= limit."""
@@ -317,8 +375,9 @@ class TestSimMatch(unittest.TestCase):
             bid_price=50.5, bid_volume=100, ask_price=50.6, ask_volume=100,
         )
         self.sim(market_data=lite)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertAlmostEqual(order.average_price, 50.5 * (1 - 0.0001))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 50.5 * (1 - 0.0001))
 
     def test_18_tick_lite_no_fill(self) -> None:
         """No fill when the lite ask is above the limit."""
@@ -329,7 +388,7 @@ class TestSimMatch(unittest.TestCase):
             bid_price=50.4, bid_volume=100, ask_price=50.6, ask_volume=100,
         )
         self.sim(market_data=lite)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_PLACED)
 
     # === transaction matching ===
 
@@ -342,9 +401,10 @@ class TestSimMatch(unittest.TestCase):
             price=49.5, volume=30, side=TransactionSide.SIDE_LONG,
         )
         self.sim(market_data=txn)
-        self.assertEqual(order.order_state, OrderState.STATE_PARTFILLED)
-        self.assertEqual(order.filled_volume, 30)
-        report = next(iter(order.trades.values()))
+        partial = self.matcher_order(order)
+        self.assertEqual(partial.order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(partial.filled_volume, 30)
+        report = next(iter(partial.trades.values()))
         self.assertAlmostEqual(report.price, 49.5 * (1 + 0.0001))
         self.assertEqual(self.sim.last_transaction_count, 1)
 
@@ -357,8 +417,8 @@ class TestSimMatch(unittest.TestCase):
             price=49.5, volume=30, side=TransactionSide.SIDE_LONG,
         )
         self.sim(market_data=txn_long)
-        self.assertEqual(buy_order.order_state, OrderState.STATE_PARTFILLED)
-        self.assertEqual(buy_order.filled_volume, 30)
+        self.assertEqual(self.matcher_order(buy_order).order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(self.matcher_order(buy_order).filled_volume, 30)
 
         sell_order = self.create_order(side=TransactionSide.SIDE_ASK, limit_price=float('nan'))
         self.sim.launch_order(order=sell_order)
@@ -367,8 +427,8 @@ class TestSimMatch(unittest.TestCase):
             price=50.5, volume=40, side=TransactionSide.SIDE_SHORT,
         )
         self.sim(market_data=txn_short)
-        self.assertEqual(sell_order.order_state, OrderState.STATE_PARTFILLED)
-        self.assertEqual(sell_order.filled_volume, 40)
+        self.assertEqual(self.matcher_order(sell_order).order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(self.matcher_order(sell_order).filled_volume, 40)
 
     # === order data matching ===
 
@@ -385,8 +445,9 @@ class TestSimMatch(unittest.TestCase):
             price=49.9, volume=50, side=TransactionSide.SIDE_ASK,
         )
         self.sim(market_data=od)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
-        self.assertEqual(order.filled_volume, 0)
+        working = self.matcher_order(order)
+        self.assertEqual(working.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(working.filled_volume, 0)
         self.assertIn(order.order_id, self.sim.working)
         self.assertFalse(self.sim.matching_config['incremental_order_volume'])
 
@@ -407,9 +468,10 @@ class TestSimMatch(unittest.TestCase):
             price=49.9, volume=50, side=TransactionSide.SIDE_ASK,
         )
         sim(market_data=od)
-        self.assertEqual(order.order_state, OrderState.STATE_PARTFILLED)
-        self.assertEqual(order.filled_volume, 50)
-        report = next(iter(order.trades.values()))
+        partial = self.matcher_order(order, sim)
+        self.assertEqual(partial.order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(partial.filled_volume, 50)
+        report = next(iter(partial.trades.values()))
         self.assertAlmostEqual(report.price, 49.9 * (1 + 0.0001))
 
     # === instant fill ===
@@ -426,14 +488,14 @@ class TestSimMatch(unittest.TestCase):
     def test_23_instant_fill_buy(self) -> None:
         """With instant_fill, a buy order fills at the worst of limit/last."""
         sim = self._instant_fill_sim()
-        # prime the last price
         sim(market_data=self.create_tick(ask_price_1=49.0, ask_volume_1=1))
-        self.assertEqual(sim.last_price, 49.5)  # tick last_price
+        self.assertEqual(sim.last_price, 49.5)
+
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
         sim.launch_order(order=order)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        # worst of (50, 49.5) for a buy is 50; slippage clamps back to 50
-        self.assertAlmostEqual(order.average_price, 50.0)
+        filled = self.matcher_order(order, sim)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 50.0)
         self.assertNotIn(order.order_id, sim.working)
 
     def test_24_instant_fill_market_order(self) -> None:
@@ -442,15 +504,16 @@ class TestSimMatch(unittest.TestCase):
         sim(market_data=self.create_tick(ask_price_1=49.0, ask_volume_1=1))
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('nan'))
         sim.launch_order(order=order)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertAlmostEqual(order.average_price, 49.5 * (1 + 0.0001))
+        filled = self.matcher_order(order, sim)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 49.5 * (1 + 0.0001))
 
     def test_25_instant_fill_requires_last_price(self) -> None:
         """Without a last price, an instant-fill market order stays working."""
         sim = self._instant_fill_sim()
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('nan'))
         sim.launch_order(order=order)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED)
         self.assertIn(order.order_id, sim.working)
 
     # === lag ===
@@ -463,15 +526,14 @@ class TestSimMatch(unittest.TestCase):
         )
         order = self.create_order(timestamp=100.)
         sim.launch_order(order=order)
-        bar_early = self.create_bar(timestamp=103.)
-        sim(market_data=bar_early)
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
-        self.assertEqual(order.filled_volume, 0)
+        sim(market_data=self.create_bar(timestamp=103.))
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED)
+        self.assertEqual(self.matcher_order(order, sim).filled_volume, 0)
 
-        bar_late = self.create_bar(timestamp=105.)
-        sim(market_data=bar_late)
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertEqual(order.filled_volume, 100)
+        sim(market_data=self.create_bar(timestamp=105.))
+        filled = self.matcher_order(order, sim)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(filled.filled_volume, 100)
 
     def test_27_lag_n_transaction(self) -> None:
         """Transaction lag delays the fill until enough transactions pass."""
@@ -481,18 +543,18 @@ class TestSimMatch(unittest.TestCase):
         )
         order = self.create_order()
         sim.launch_order(order=order)
-        # fill is allowed once transactions_since_placement >= lag_n_transaction
         sim(market_data=TransactionData(
             ticker='TEST', timestamp=time.time(),
             price=49.5, volume=10, side=TransactionSide.SIDE_LONG,
         ))
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED)
         sim(market_data=TransactionData(
             ticker='TEST', timestamp=time.time(),
             price=49.5, volume=10, side=TransactionSide.SIDE_LONG,
         ))
-        self.assertEqual(order.order_state, OrderState.STATE_PARTFILLED)
-        self.assertEqual(order.filled_volume, 10)
+        partial = self.matcher_order(order, sim)
+        self.assertEqual(partial.order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(partial.filled_volume, 10)
 
     # === hit probability ===
 
@@ -505,8 +567,9 @@ class TestSimMatch(unittest.TestCase):
         order = self.create_order()
         sim.launch_order(order=order)
         sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
-        self.assertEqual(order.order_state, OrderState.STATE_PLACED)
-        self.assertEqual(order.filled_volume, 0)
+        working = self.matcher_order(order, sim)
+        self.assertEqual(working.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(working.filled_volume, 0)
 
     def test_29_hit_probability_seeded_pattern(self) -> None:
         """With a fixed seed the fill pattern matches the xorshift64* oracle."""
@@ -518,9 +581,6 @@ class TestSimMatch(unittest.TestCase):
         for order in orders:
             sim.launch_order(order=order)
 
-        # one bar matches every working order; each attempt draws once in
-        # registry order (last launched first, C push_front), and every
-        # successful fill consumes two further draws for its UUIDv4
         oracle = Xorshift64Star(42)
         expected = []
         for _ in range(10):
@@ -534,10 +594,10 @@ class TestSimMatch(unittest.TestCase):
 
         for order, draw_hit in zip(reversed(orders), expected):
             if draw_hit:
-                self.assertEqual(order.order_state, OrderState.STATE_FILLED,
+                self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_FILLED,
                                  f'order {order.order_id} should have been filled')
             else:
-                self.assertEqual(order.order_state, OrderState.STATE_PLACED,
+                self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED,
                                  f'order {order.order_id} should not have been filled')
 
     # === slippage / fee / clamp ===
@@ -551,16 +611,17 @@ class TestSimMatch(unittest.TestCase):
         buy = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0, volume=50)
         sim.launch_order(order=buy)
         sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=50))
-        self.assertAlmostEqual(buy.average_price, 49.9 * 1.0001)
+        self.assertAlmostEqual(self.matcher_order(buy, sim).average_price, 49.9 * 1.0001)
 
         sell = self.create_order(side=TransactionSide.SIDE_ASK, limit_price=50.0, volume=50)
         sim.launch_order(order=sell)
         sim(market_data=self.create_tick(bid_price_1=50.5, bid_volume_1=50, last_price=50.4))
-        self.assertAlmostEqual(sell.average_price, 50.5 * 0.9999)
+        self.assertAlmostEqual(self.matcher_order(sell, sim).average_price, 50.5 * 0.9999)
 
-        report = next(iter(buy.trades.values()))
+        filled_buy = self.matcher_order(buy, sim)
+        report = next(iter(filled_buy.trades.values()))
         self.assertAlmostEqual(report.fee, 0.001 * report.notional)
-        self.assertAlmostEqual(buy.fee, report.fee)
+        self.assertAlmostEqual(filled_buy.fee, report.fee)
 
     def test_31_limit_clamp(self) -> None:
         """Match price never exceeds the limit after slippage."""
@@ -570,10 +631,10 @@ class TestSimMatch(unittest.TestCase):
         )
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
         sim.launch_order(order=order)
-        # 49.9 * 1.1 = 54.89 > 50 -> clamped to 50
         sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertAlmostEqual(order.average_price, 50.0)
+        filled = self.matcher_order(order, sim)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 50.0)
 
     # === lifecycle ===
 
@@ -586,7 +647,7 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(self.sim.working, {})
         for order in orders:
             self.assertIn(order.order_id, self.sim.history)
-            self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
+            self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_CANCELED)
 
     def test_33_clear_resets(self) -> None:
         """clear resets state but keeps the matching config."""
@@ -625,7 +686,7 @@ class TestSimMatch(unittest.TestCase):
 
     def test_35_market_time(self) -> None:
         """market_time mirrors the profile conversion of the timestamp."""
-        self.sim.timestamp = 1735689600.  # 2025-01-01 00:00:00 UTC
+        self.sim.timestamp = 1735689600.
         self.assertEqual(self.sim.market_time, PROFILE.timestamp_to_datetime(1735689600.))
 
     # === event engine C-API binding ===
@@ -644,20 +705,18 @@ class TestSimMatch(unittest.TestCase):
             engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working),
                             'launch_order handler did not fire')
-            self.assertEqual(order.order_state, OrderState.STATE_PLACED)
+            self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED)
 
             engine.put(topic=TOPIC_SET.cancel_order(ticker='TEST'), order_id=order.order_id)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.history),
                             'cancel_order handler did not fire')
-            self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
+            self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_CANCELED)
         finally:
             engine.stop()
 
         sim.unregister()
         self.assertIsNone(sim.protocol)
 
-        # after unregister neither Python order handlers nor the realtime
-        # transport callback fire any more
         from algo_engine.engine import DMAProtocol
 
         order2 = self.create_order()
@@ -671,7 +730,7 @@ class TestSimMatch(unittest.TestCase):
             sender = DMAProtocol(engine, TOPIC_SET)
             sender.send(self.create_tick(ask_price_1=49.9, ask_volume_1=100))
             time.sleep(0.2)
-            self.assertEqual(order2.order_state, OrderState.STATE_PLACED)
+            self.assertEqual(self.matcher_order(order2, sim).order_state, OrderState.STATE_PLACED)
         finally:
             engine.stop()
 
@@ -692,7 +751,7 @@ class TestSimMatch(unittest.TestCase):
             sim.protocol.send(tick)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.history),
                             'realtime callback did not fill the order')
-            self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+            self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_FILLED)
         finally:
             engine.stop()
 
@@ -708,14 +767,12 @@ class TestSimMatch(unittest.TestCase):
 
         order = self.create_order()
         sim.launch_order(order=order)
-        # launch fires SMM_EVENT_PLACED
         self.assertEqual(len(events), 1)
         event, order_id, report = events[0]
         self.assertEqual(event, 2)  # SMM_EVENT_PLACED
         self.assertEqual(order_id, order.order_id)
         self.assertIsNone(report)
 
-        # cancel path fires SMM_EVENT_CANCEL
         sim.cancel_order(order=order)
         self.assertEqual(len(events), 2)
         event, order_id, report = events[1]
@@ -723,7 +780,6 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(order_id, order.order_id)
         self.assertIsNone(report)
 
-        # match path fires SMM_EVENT_MATCH with a copied report
         order2 = self.create_order()
         sim.launch_order(order=order2)
         sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
@@ -734,7 +790,6 @@ class TestSimMatch(unittest.TestCase):
         self.assertIsInstance(report, TradeReport)
         self.assertAlmostEqual(report.price, 49.9 * (1 + 0.0001))
 
-        # deregister by id stops delivery
         c_simmatch_toolkit.deregister_listener(sim, listener_id)
         order3 = self.create_order()
         sim.launch_order(order=order3)
@@ -747,11 +802,10 @@ class TestSimMatch(unittest.TestCase):
         order = self.create_order()
         self.sim.launch_order(order=order)
         self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_FILLED)
         self.assertNotIn(order.order_id, self.sim.working)
         self.assertIn(order.order_id, self.sim.history)
-        # on_order (launch) + on_report + on_order (fill)
-        self.assertEqual(self.event_engine.put.call_count, 3)
+        self.assertEqual(len(self.event_engine.published), 3)
 
     def test_40_native_publish_capi(self) -> None:
         """Registered on a real engine, fills publish to on_report / on_order
@@ -772,7 +826,6 @@ class TestSimMatch(unittest.TestCase):
         try:
             engine.put(topic=TOPIC_SET.launch_order(ticker='TEST'), order=order)
             self.assertTrue(self._wait_until(lambda: order.order_id in sim.working))
-            # placed on_order published
             self.assertTrue(self._wait_until(lambda: len(orders) >= 1),
                             'placed on_order not published')
 
@@ -780,14 +833,18 @@ class TestSimMatch(unittest.TestCase):
             protocol.send(tick)
             self.assertTrue(self._wait_until(lambda: len(reports) >= 1),
                             'on_report not published')
-            self.assertEqual(len(orders), 2)  # placed + filled
+            self.assertEqual(len(orders), 2)
 
             report = reports[0]
             self.assertIsInstance(report, TradeReport)
             self.assertEqual(report.volume, 100)
             self.assertAlmostEqual(report.price, 49.9 * (1 + 0.0001))
-            # the published order is the same Python object as the launched one
-            self.assertIs(orders[1], order)
+            # Both events carry a view over the registry record; the fill moves
+            # the order to history, which replaces the cached view object.
+            self.assertEqual(orders[0].order_id, order.order_id)
+            self.assertEqual(orders[1].order_id, order.order_id)
+            self.assertIs(orders[1], sim.history[order.order_id])
+            self.assertIsNot(orders[1], order)
         finally:
             engine.stop()
 
@@ -808,7 +865,7 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(sim.working, {})
         self.assertEqual(len(sim.history), len(orders))
         for order in orders:
-            self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+            self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_FILLED)
 
     def test_42_cancel_middle_slot_keeps_other_orders(self) -> None:
         """Canceling non-adjacent slots leaves the other orders matchable."""
@@ -830,9 +887,9 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(sim.working, {})
         self.assertEqual(len(sim.history), len(orders))
         for order in kept:
-            self.assertEqual(order.order_state, OrderState.STATE_FILLED)
+            self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_FILLED)
         for order in cancelled:
-            self.assertEqual(order.order_state, OrderState.STATE_CANCELED)
+            self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_CANCELED)
 
     def test_43_clear_reuses_the_expanded_registry(self) -> None:
         """clear keeps the expanded ring capacity and the matcher keeps working."""
@@ -848,8 +905,8 @@ class TestSimMatch(unittest.TestCase):
         order = self.create_order(volume=10)
         sim.launch_order(order)
         sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
-        self.assertEqual(order.order_state, OrderState.STATE_FILLED)
-        self.assertEqual(sim.history[order.order_id], order)
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_FILLED)
+        self.assertEqual(sim.history[order.order_id].order_id, order.order_id)
 
     def test_44_ccp_binding_survives_repeated_alloc_and_release(self) -> None:
         """The CCP binding husks cleanly over repeated construct/destroy cycles."""
@@ -866,6 +923,219 @@ class TestSimMatch(unittest.TestCase):
             sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
             del sim
         gc.collect()
+
+    # === refactor contracts ===
+
+    def test_45_price_helpers_reject_empty_input(self) -> None:
+        """best/worst_price raise ValueError before allocating an empty array."""
+        with self.assertRaises(ValueError):
+            SimMatch.best_price(side=TransactionSide.SIDE_BID)
+        with self.assertRaises(ValueError):
+            SimMatch.worst_price(side=TransactionSide.SIDE_ASK)
+        self.assertEqual(
+            SimMatch.best_price(None, float('inf'), 2., side=TransactionSide.SIDE_BID), 2.)
+
+    def test_46_infinite_limit_is_market_like_on_bar(self) -> None:
+        """An infinite limit price constrains no price: the order fills at VWAP."""
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('inf'))
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self.create_bar(high=50.5, low=49.5, close=50.2, notional=50000))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 50.0 * (1 + 0.0001))
+
+    def test_47_infinite_limit_is_market_like_on_tick(self) -> None:
+        """An infinite limit price fills from the book like a market order."""
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('inf'))
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 49.9 * (1 + 0.0001))
+
+    def test_48_zero_volume_bar_does_not_fill_at_nan(self) -> None:
+        """A market order stays working on a zero-volume bar (no NaN report)."""
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('nan'))
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self.create_bar(volume=0, notional=0))
+        working = self.matcher_order(order)
+        self.assertEqual(working.order_state, OrderState.STATE_PLACED)
+        self.assertEqual(working.filled_volume, 0)
+        self.assertEqual(working.trades, {})
+        self.assertIn(order.order_id, self.sim.working)
+
+    def test_49_repr_names_the_ticker(self) -> None:
+        """repr identifies the instance and its ticker."""
+        text = repr(self.sim)
+        self.assertIn('SimMatch', text)
+        self.assertIn('TEST', text)
+
+    def test_50_registry_tracks_working_and_history(self) -> None:
+        """The C registries back the Python views and scan newest-first."""
+        from tests.backtest import c_simmatch_toolkit
+
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (0, 0))
+
+        orders = [self.create_order(volume=10) for _ in range(10)]
+        for order in orders:
+            self.sim.launch_order(order)
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (10, 0))
+        self.assertEqual(len(self.sim.working), 10)
+        self.assertEqual(c_simmatch_toolkit.working_order_ids(self.sim),
+                         [order.order_id for order in reversed(orders)])
+
+        canceled = orders[::2]
+        for order in canceled:
+            self.sim.cancel_order(order=order)
+        kept = orders[1::2]
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (5, 5))
+        self.assertEqual(c_simmatch_toolkit.working_order_ids(self.sim),
+                         [order.order_id for order in reversed(kept)])
+
+        self.sim.clear()
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (0, 0))
+        self.assertEqual(self.sim.working, {})
+        self.assertEqual(self.sim.history, {})
+
+    def test_51_registry_grows_past_any_fixed_capacity(self) -> None:
+        """The registry holds more orders than any fixed initial capacity."""
+        from tests.backtest import c_simmatch_toolkit
+
+        orders = [self.create_order(volume=10) for _ in range(200)]
+        for order in orders:
+            self.sim.launch_order(order)
+
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (200, 0))
+        self.assertEqual(len(self.sim.working), 200)
+
+        for order in orders[::2]:
+            self.sim.cancel_order(order=order)
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (100, 100))
+
+        self.sim.clear()
+        self.assertEqual(c_simmatch_toolkit.registry_state(self.sim), (0, 0))
+
+        # The cleared registries keep working after growth.
+        replacement = self.create_order(volume=10)
+        self.sim.launch_order(replacement)
+        self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        self.assertIn(replacement.order_id, self.sim.history)
+
+    def test_52_adopted_wrapper_shares_the_context(self) -> None:
+        """c_from_header rebuilds a non-owning wrapper over the same context."""
+        from tests.backtest import c_simmatch_toolkit
+
+        order = self.create_order(volume=10)
+        self.sim.launch_order(order)
+        adopted = c_simmatch_toolkit.adopt(self.sim)
+
+        self.assertEqual(adopted.ticker, self.sim.ticker)
+        self.assertEqual(adopted.seed, self.sim.seed)
+        self.assertEqual(set(adopted.working), set(self.sim.working))
+
+        self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        self.assertIn(order.order_id, self.sim.history)
+        self.assertIn(order.order_id, adopted.history)
+
+        del adopted
+        # The adopted wrapper never owned the context; the owner still works.
+        self.sim.launch_order(self.create_order(volume=10))
+        self.assertEqual(len(self.sim.working), 1)
+
+    def test_53_seed_is_read_only_and_reproducible(self) -> None:
+        """The seed is read-only and a same-seed construction repeats the pattern."""
+        first = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            hit_prob=0.5, seed=123,
+        )
+        second = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            hit_prob=0.5, seed=123,
+        )
+
+        def run(sim):
+            orders = [self.create_order(volume=10) for _ in range(8)]
+            for order in orders:
+                sim.launch_order(order)
+            sim(market_data=self.create_bar())
+            return [self.matcher_order(order, sim).order_state for order in orders]
+
+        first_pattern = run(first)
+        second_pattern = run(second)
+        self.assertEqual(first_pattern, second_pattern)
+        self.assertIn(OrderState.STATE_FILLED, first_pattern)
+        self.assertEqual(first.seed, 123)
+
+        with self.assertRaises(AttributeError):
+            first.seed = 5
+
+    def test_54_relaunch_of_a_filled_order_raises(self) -> None:
+        """A filled order id stays in history and cannot be relaunched."""
+        order = self.create_order(volume=10)
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_FILLED)
+        with self.assertRaises(ValueError):
+            self.sim.launch_order(order=order)
+
+    def test_55_lag_count_underflow_does_not_fill(self) -> None:
+        """A transaction count moving backwards must not satisfy the lag."""
+        sim = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            lag_n_transaction=2, hit_prob=1.,
+        )
+        sim.last_transaction_count = 10
+        order = self.create_order()
+        sim.launch_order(order=order)
+
+        sim.last_transaction_count = 0
+        sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED)
+
+        sim.last_transaction_count = 12
+        sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=100))
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_FILLED)
+
+    def test_56_register_rolls_back_partial_binding(self) -> None:
+        """A failed registration undoes the handlers bound before it."""
+        engine = FailingEngine()
+        sim = SimMatch(ticker='TEST', event_engine=engine, topic_set=self.topic_set)
+
+        with self.assertRaises(RuntimeError):
+            sim.register()
+
+        self.assertIsNone(sim.protocol)
+        self.assertEqual(engine.register_attempts, 2)
+        self.assertEqual(len(engine.unbound), 1)
+        self.assertEqual(engine.unbound[0][1], sim.launch_order)
+
+        sim.unregister()
+        self.assertEqual(len(engine.unbound), 1)
+
+    def test_57_launch_copies_the_order(self) -> None:
+        """The matcher owns its order state; the launched object is untouched."""
+        order = self.create_order(volume=10)
+        self.sim.launch_order(order=order)
+        self.assertIsNot(self.sim.working[order.order_id], order)
+
+        self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=10))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertEqual(filled.filled_volume, 10)
+        self.assertEqual(len(filled.trades), 1)
+
+        self.assertEqual(order.order_state, OrderState.STATE_IDLE)
+        self.assertEqual(order.filled_volume, 0)
+        self.assertEqual(order.trades, {})
+
+    def test_58_constructor_type_enforcement(self) -> None:
+        """The engine and topic set are typed at the Cython boundary."""
+        with self.assertRaises(TypeError):
+            SimMatch(ticker='TEST', event_engine=object())
+        with self.assertRaises(TypeError):
+            SimMatch(ticker='TEST', topic_set=object())
+        with self.assertRaises(OverflowError):
+            SimMatch(ticker='TEST', seed=-1)
 
     @staticmethod
     def _wait_until(condition, timeout=5.0) -> bool:
