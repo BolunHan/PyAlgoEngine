@@ -19,6 +19,18 @@ from ..base import (
 from ..engine import DMAProtocol, TopicSetEx
 
 
+class OrderMapView(dict[str, TradeInstruction]):
+    """Read-only view over a native order registry.
+
+    The values are views over the matcher's own order records: an attribute
+    (including ``trades``) reads the native state live, and the mapping itself
+    is populated from the native registry, so it cannot be assigned or popped
+    from Python. A value is valid while the matcher keeps its order record,
+    that is until ``clear()`` or the matcher's destruction.
+    """
+    ...
+
+
 class SimMatch:
     """C-layer simulation matcher for backtesting.
 
@@ -26,7 +38,7 @@ class SimMatch:
     report construction run in the native layer. The matcher copies every
     launched order and owns that copy; the object passed to ``launch_order`` is
     never modified. Fills and state transitions update the matcher's copy,
-    which is what ``working``, ``history`` and the published events carry.
+    which is what ``working`` and ``history`` expose.
 
     Attributes:
         ticker: The ticker this matcher serves.
@@ -36,9 +48,11 @@ class SimMatch:
             publishing.
         protocol: The ``DMAProtocol`` bound for realtime market data after
             ``register()``, or None while unbound.
-        working: Mapping of order_id to the matcher's working order copies.
-        history: Mapping of order_id to the matcher's done (filled / canceled)
-            order copies.
+        working: Live working orders, a view over the native registry. A
+            completed order leaves this mapping when it enters ``history``.
+        history: Completed (filled / canceled) orders, a view over the native
+            registry. Each value keeps the order's full report history in
+            ``trades``.
         random: Python random instance kept for interface parity; the native
             matching layer uses its own seeded PRNG.
         timestamp: Latest market data timestamp (seconds since epoch).
@@ -56,8 +70,8 @@ class SimMatch:
     event_engine: EventEngineEx
     topic_set: TopicSetEx
     protocol: DMAProtocol | None
-    working: dict[str, TradeInstruction]
-    history: dict[str, TradeInstruction]
+    working: OrderMapView
+    history: OrderMapView
     random: random.Random
     seed: int
 
@@ -96,7 +110,7 @@ class SimMatch:
                     incremental fills.
 
         Raises:
-            MemoryError: The native context or the working registry could not
+            MemoryError: The native context or the order registries could not
                 be allocated.
             TypeError: The engine or topic set is not an ``EventEngineEx`` /
                 ``TopicSetEx``.
@@ -186,9 +200,9 @@ class SimMatch:
     def launch_order(self, order: TradeInstruction, **kwargs: object) -> None:
         """Launch a copy of an order into the working registry.
 
-        The matcher snapshots the transaction counter, marks its copy PLACED
-        and applies the instant-fill short circuit when configured. The passed
-        instruction is not modified.
+        The matcher copies the instruction into a native entry, snapshots the
+        transaction counter, marks the copy PLACED and applies the instant-fill
+        short circuit when configured. The passed instruction is not modified.
 
         Args:
             order: Order to copy into the registry.
@@ -226,7 +240,7 @@ class SimMatch:
         ...
 
     def clear(self) -> None:
-        """Reset all state: registry, market state, PRNG (keeps config)."""
+        """Reset all state: registries, market state, PRNG (keeps config)."""
         ...
 
     def on_order(self, order: TradeInstruction, **kwargs: object) -> None:

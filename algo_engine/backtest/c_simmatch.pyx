@@ -3,12 +3,13 @@ import random as py_random
 from cpython.exc cimport PyErr_Clear
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
 from cpython.object cimport PyObject
-from event_engine.capi cimport EventEngineEx
 from libc.math cimport NAN, isfinite, isnan
-from libc.string cimport memcpy
+
+from cbase.bytemap cimport BoundByteMap, bytemap, bytemap_entry, c_bytemap_gen_seq_id
+from event_engine.capi cimport EventEngineEx
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
-from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long_id, md_order_state, md_order_type, md_trade_instruction
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, c_get_long_id, c_set_long_id, long_md_id, md_order_type, md_trade_report, md_variant
 from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction, TradeReport, instruction_from_header, report_from_header
 from algo_engine.engine.c_event_engine cimport EVENT_ENGINE, TOPIC_SET, TopicSetEx
 from algo_engine.engine.c_dma_protocol cimport DMAProtocol, dma_protocol_ret_code
@@ -17,8 +18,54 @@ from algo_engine.exchange_profile.c_exchange_profile cimport PROFILE
 from . import LOGGER
 
 
+cdef class OrderMapView(BoundByteMap):
+    @staticmethod
+    cdef OrderMapView c_from_header(bytemap* header, bint owner=False):
+        if owner:
+            raise PermissionError('Must not assign the order registry ownership to <OrderMapView>')
+
+        cdef OrderMapView instance = OrderMapView.__new__(OrderMapView)
+        instance.owner = False
+        instance.seq_id = c_bytemap_gen_seq_id(<void*> instance)
+        instance.c_bind(header)
+        return instance
+
+    cdef const char* c_serialize_key(self, object obj, size_t* key_len):
+        raise PermissionError(f'Must not assign an order to <{self.__class__.__name__}>')
+
+    cdef object c_deserialize_key(self, const char* key, size_t key_len):
+        return c_get_long_id(<const long_md_id*> key)
+
+    cdef const char* c_serialize_value(self, object obj, size_t* value_len):
+        raise PermissionError(f'Must not assign an order to <{self.__class__.__name__}>')
+
+    @staticmethod
+    cdef inline TradeInstruction c_compose(const smm_order_entry* entry):
+        cdef TradeInstruction order = <TradeInstruction> instruction_from_header(<const md_variant*> entry, False)
+        if not entry.reports:
+            return order
+
+        # Mirror the native report copies into the order's trades record.
+        cdef bytemap_entry* node = entry.reports.first
+        cdef md_trade_report* report
+        cdef TradeReport py_report
+        while node:
+            report = (<md_trade_report**> node.value)[0]
+            if report:
+                py_report = <TradeReport> report_from_header(<const md_variant*> report, False)
+                order.trades[py_report.trade_id] = py_report
+            node = node.next
+        return order
+
+    cdef object c_deserialize_value(self, const char* value, size_t value_len):
+        cdef smm_order_entry* entry = (<smm_order_entry**> value)[0]
+        if not entry:
+            return None
+        return OrderMapView.c_compose(entry)
+
+
 cdef class SimMatch(CCPType):
-    def __cinit__(self, str ticker, EventEngineEx event_engine=None, TopicSetEx topic_set=None, uint64_t seed=0, **kwargs):
+    def __init__(self, str ticker, EventEngineEx event_engine=None, TopicSetEx topic_set=None, uint64_t seed=0, **kwargs):
         cdef double fee_rate = float(kwargs.get('fee_rate', 0.))
         cdef bint instant_fill = bool(kwargs.get('instant_fill', False))
         cdef double lag_ts = float(kwargs.get('lag_ts', 0.))
@@ -32,101 +79,89 @@ cdef class SimMatch(CCPType):
         if topic_set is None:
             topic_set = TOPIC_SET
 
-        self.header = c_smm_match_new(fee_rate, instant_fill, lag_ts, lag_n_transaction,
-                                      hit_prob, slippery_rate, incremental_order_volume,
-                                      MD_DEFAULT_ALLOCATOR)
+        self.header = c_smm_match_new(fee_rate, instant_fill, lag_ts, lag_n_transaction, hit_prob, slippery_rate, incremental_order_volume, MD_DEFAULT_ALLOCATOR)
         if not self.header:
             raise MemoryError(f'Failed to allocate {self.__class__.__name__} context')
 
         self.owner = True
-        try:
-            self.ccp_bind(&self.header)
-        except BaseException:
-            c_smm_match_free(self.header)
-            self.header = NULL
-            raise
+        self.ccp_bind(&self.header)
 
-        cdef uintptr_t callback_id
-        cdef int ret_code = c_smm_match_register_listener(
-            self.header, SimMatch.c_simmatch_callback, <void*> <PyObject*> self, &callback_id)
+        cdef int ret_code = c_smm_match_register_listener(self.header, SimMatch.c_simmatch_callback, <void*> <PyObject*> self, &self.callback_id)
         if ret_code != smm_ret_code.SMM_OK:
             c_smm_match_free(self.header)
             self.header = NULL
             raise RuntimeError(f'Failed to register callback for {self.__class__.__name__}, error code {ret_code}')
-        self.callback_id = callback_id
 
         self.ticker = ticker
         self.event_engine = event_engine
         self.topic_set = topic_set
-        self.working = {}
-        self.history = {}
+        self.working = OrderMapView.c_from_header(self.header.working, False)
+        self.history = OrderMapView.c_from_header(self.header.history, False)
 
-        cdef uint64_t py_seed = seed
-        if py_seed == 0:
-            py_seed = <uint64_t> py_random.getrandbits(64)
-        self.seed = py_seed
-        cdef int seed_code = c_smm_match_set_seed(self.header, py_seed)
+        if seed == 0:
+            seed = <uint64_t> py_random.getrandbits(64)
+        self.seed = seed
+        cdef int seed_code = c_smm_match_set_seed(self.header, seed)
         if seed_code != smm_ret_code.SMM_OK:
             raise RuntimeError(f'Failed to seed <{self.__class__.__name__}>, code {seed_code}')
         self.random = py_random.Random(self.seed)
 
+    @staticmethod
+    cdef SimMatch c_from_header(smm_match_ctx* header, str ticker, bint owner=False):
+        if not header:
+            raise ValueError('SimMatch requires a matcher context')
+
+        cdef SimMatch instance = SimMatch.__new__(SimMatch)
+        instance.header = header
+        instance.owner = owner
+        instance.ccp_bind(&instance.header)
+        instance.ticker = ticker
+        instance.event_engine = EVENT_ENGINE
+        instance.topic_set = TOPIC_SET
+        instance.seed = header.seed
+        instance.random = py_random.Random(header.seed)
+        instance.working = OrderMapView.c_from_header(header.working, False)
+        instance.history = OrderMapView.c_from_header(header.history, False)
+
+        cdef int ret_code = c_smm_match_register_listener(header, SimMatch.c_simmatch_callback, <void*> <PyObject*> instance, &instance.callback_id)
+        if ret_code != smm_ret_code.SMM_OK:
+            raise RuntimeError(f'Failed to register callback for <{SimMatch.__name__}>, error code {ret_code}')
+        return instance
+
     def __dealloc__(self):
-        cdef DMAProtocol protocol = self.protocol
-        self.protocol = None
-        if protocol is not None:
-            try:
-                self.c_unregister_protocol(protocol)
-            except BaseException:
-                PyErr_Clear()
+        if self.protocol is not None:
+            self.c_unregister_protocol(self.protocol)
 
         if self.header and self.callback_id:
             c_smm_match_deregister_listener(self.header, self.callback_id)
-            self.callback_id = 0
 
         if not self.owner:
             return
 
         if self.header:
             c_smm_match_free(self.header)
-            self.header = NULL
 
     @staticmethod
     cdef inline void c_simmatch_callback(smm_match_ctx* ctx, smm_match_event event, const smm_order_entry* entry, const md_trade_report* report, void* user_data) noexcept:
-        cdef SimMatch sim = <SimMatch> user_data
+        cdef SimMatch sim = <SimMatch> <object> <PyObject*> user_data
         cdef object key
-        cdef TradeInstruction order_obj
-        cdef TradeInstruction borrowed
         cdef TradeInstruction order
         cdef TradeReport py_report
         try:
-            if not entry or not entry.order:
+            if not entry:
                 return
 
-            key = c_get_long_id(&entry.order_id)
-            order_obj = sim.working.get(key)
-            if order_obj is None:
-                borrowed = instruction_from_header(<const md_variant*> entry.order, False)
-                order = <TradeInstruction> borrowed.__copy__()
-            else:
-                order = order_obj
-                memcpy(<void*> (<md_variant*> order.header), <const void*> entry.order, sizeof(md_trade_instruction))
+            key = c_get_long_id(&entry.order.order_id)
+            order = sim.working.get(key)
+            if order is None:
+                order = sim.history.get(key)
+            if order is None:
+                order = OrderMapView.c_compose(entry)
 
-            if event == smm_match_event.SMM_EVENT_PLACED:
-                sim.working[key] = order
-                sim.on_order(order=order)
-            elif event == smm_match_event.SMM_EVENT_MATCH:
+            if event == smm_match_event.SMM_EVENT_MATCH:
                 py_report = <TradeReport> report_from_header(<const md_variant*> report, False)
-                py_report = <TradeReport> py_report.__copy__()
-                order.trades[py_report.trade_id] = py_report
-                if order.order_state_int == md_order_state.STATE_FILLED:
-                    sim.working.pop(key, None)
-                    sim.history[key] = order
                 sim.on_report(report=py_report)
-                sim.on_order(order=order)
-            else:
-                sim.working.pop(key, None)
-                sim.history[key] = order
-                sim.on_order(order=order)
+            sim.on_order(order=order)
         except:
             PyErr_Clear()
 
@@ -207,7 +242,7 @@ cdef class SimMatch(CCPType):
         if market_data is not None:
             self.c_process(market_data.header)
 
-    def _on_realtime(self, MarketData market_data):
+    cpdef void _on_realtime(self, MarketData market_data):
         if not self.header or not market_data.header:
             return
         self.c_process(market_data.header)
@@ -220,7 +255,7 @@ cdef class SimMatch(CCPType):
     def worst_price(*price, side):
         return SimMatch.c_price_extreme(price, <int8_t> side.sign, False, side)
 
-    def register(self, TopicSetEx topic_set=None, EventEngineEx event_engine=None):
+    cpdef void register(self, TopicSetEx topic_set=None, EventEngineEx event_engine=None):
         if not self.header:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
 
@@ -273,7 +308,7 @@ cdef class SimMatch(CCPType):
             self.registered = False
             raise
 
-    def unregister(self):
+    cpdef void unregister(self):
         cdef DMAProtocol protocol = self.protocol
         cdef TopicSetEx ts = self.topic_set
 
@@ -295,28 +330,18 @@ cdef class SimMatch(CCPType):
         if not self.header:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
 
-        cdef object order_id = order.order_id
-        if order_id in self.working or order_id in self.history:
-            raise ValueError(f'Invalid instruction {order}, OrderId already in working or history')
-
         if not order.header:
             raise ValueError(f'Invalid instruction {order}, order buffer is not bound')
 
         if order.order_type_int == md_order_type.ORDER_LIMIT and not isfinite(order.limit_price):
             LOGGER.warning(f'order {order} does not have a valid limit price!')
 
-        cdef TradeInstruction working_order = order.__copy__()
-        working_order.trades = {}
-        working_order.transaction_count_at_placement = self.header.last_transaction_count
-        self.working[order_id] = working_order
-
         cdef int ret_code = c_smm_match_launch(self.header, &order.header.trade_instruction)
         if ret_code == smm_ret_code.SMM_OK:
             return
 
-        self.working.pop(order_id, None)
         if ret_code == smm_ret_code.SMM_ERR_DUPLICATE:
-            raise ValueError(f'Invalid instruction {order}, OrderId already in the working registry')
+            raise ValueError(f'Invalid instruction {order}, OrderId already in working or history')
         if ret_code == smm_ret_code.SMM_ERR_INVALID_ARG:
             raise ValueError(f'Invalid instruction {order}, launch rejected the argument')
         if ret_code == smm_ret_code.SMM_ERR_OOM:
@@ -330,37 +355,32 @@ cdef class SimMatch(CCPType):
         if order is None and order_id is None:
             raise ValueError('Must assign a order or order_id to cancel order')
 
-        if order_id is None:
+        cdef long_md_id key
+        if order is not None:
             order_id = order.order_id
+            key = order.header.trade_instruction.order_id
+        else:
+            c_set_long_id(&key, order_id)
 
-        cdef TradeInstruction working_order = self.working.get(order_id)
-        if working_order is None:
-            LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] failed to cancel {order_id} order!')
+        cdef int ret_code = c_smm_match_cancel(self.header, &key)
+        if ret_code == smm_ret_code.SMM_OK:
+            LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] Sim-canceled {self.ticker} order {order_id}!')
             return
-
-        cdef int ret_code = c_smm_match_cancel(
-            self.header, &working_order.header.trade_instruction.order_id)
         if ret_code == smm_ret_code.SMM_ERR_NOT_FOUND:
             LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] failed to cancel {order_id} order!')
             return
-        if ret_code != smm_ret_code.SMM_OK:
-            raise RuntimeError(f'Failed to cancel {order_id}, code {ret_code}')
+        raise RuntimeError(f'Failed to cancel {order_id}, code {ret_code}')
 
-        LOGGER.info(f'[{self.market_time:%Y-%m-%d %H:%M:%S}] Sim-canceled '
-                    f'{working_order.side.name} {working_order.ticker} order!')
-
-    def eod(self):
+    cpdef void eod(self):
         if not self.header:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
         c_smm_match_eod(self.header)
 
-    def clear(self):
+    cpdef void clear(self):
         if not self.header:
             raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
 
         c_smm_match_clear(self.header)
-        self.working.clear()
-        self.history.clear()
         self.random = py_random.Random(self.seed)
 
     def on_order(self, TradeInstruction order, **kwargs):

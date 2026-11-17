@@ -2,10 +2,11 @@ from libc.stdint cimport int8_t, uint64_t, uintptr_t
 from libcpp cimport bool as c_bool
 
 from cbase.allocator_protocol cimport CCPType, allocator_protocol
-from cbase.bytemap cimport bytemap
+from cbase.bytemap cimport BoundByteMap, bytemap
 from event_engine.capi cimport EventEngineEx
 
-from algo_engine.base.c_market_data.c_market_data cimport long_md_id, md_candlestick, md_order_data, md_tick_data, md_tick_data_lite, md_trade_instruction, md_trade_report, md_transaction_data, md_variant
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, long_md_id, md_candlestick, md_order_data, md_tick_data, md_tick_data_lite, md_trade_instruction, md_trade_report, md_transaction_data, md_variant
+from algo_engine.base.c_market_data.c_trade_utils cimport TradeInstruction
 from algo_engine.engine.c_dma_protocol cimport DMAProtocol
 from algo_engine.engine.c_event_engine cimport TopicSetEx
 
@@ -26,33 +27,17 @@ cdef extern from "algo_engine/backtest/c_simmatch.h":
         SMM_ERR_OOM
 
     ctypedef struct smm_order_entry
-    ctypedef struct smm_order_ring
-    ctypedef struct smm_order_ring_cursor
     ctypedef struct smm_match_ctx
     ctypedef struct smm_listener
 
     ctypedef void (*smm_match_callback)(smm_match_ctx* ctx, smm_match_event event, const smm_order_entry* entry, const md_trade_report* report, void* user_data) noexcept
 
     ctypedef struct smm_order_entry:
-        md_trade_instruction* order
-        uint64_t              transaction_count_at_placement
-        long_md_id            order_id
-        c_bool                occupied
-
-    ctypedef struct smm_order_ring:
-        smm_order_entry* slots
-        bytemap*         index
-        size_t           capacity
-        size_t           head
-        size_t           span
-        size_t           n_working
-        uint64_t         generation
-
-    ctypedef struct smm_order_ring_cursor:
-        smm_order_ring* ring
-        size_t          slot
-        size_t          remaining
-        uint64_t        generation
+        md_trade_instruction order
+        uint64_t             transaction_count_at_launch
+        bytemap*             reports
+        smm_order_entry*     newer
+        smm_order_entry*     older
 
     ctypedef struct smm_listener:
         smm_match_callback callback
@@ -61,21 +46,24 @@ cdef extern from "algo_engine/backtest/c_simmatch.h":
         smm_listener*      next
 
     ctypedef struct smm_match_ctx:
-        double         timestamp
-        double         last_price
-        uint64_t       last_transaction_count
-        smm_order_ring orders
-        double         fee_rate
-        double         lag_ts
-        uint64_t       lag_n_transaction
-        double         hit_prob
-        double         slippery_rate
-        uint64_t       seed
-        uint64_t       rng_state
-        smm_listener*  listeners
-        md_variant*    ws_report
-        c_bool         instant_fill
-        c_bool         incremental_order_volume
+        double           timestamp
+        double           last_price
+        uint64_t         last_transaction_count
+        bytemap*         working
+        bytemap*         history
+        smm_order_entry* newest
+        smm_order_entry* oldest
+        double           fee_rate
+        double           lag_ts
+        uint64_t         lag_n_transaction
+        double           hit_prob
+        double           slippery_rate
+        uint64_t         seed
+        uint64_t         rng_state
+        smm_listener*    listeners
+        c_bool           instant_fill
+        c_bool           incremental_order_volume
+
 
     # --- Lifecycle ---
     smm_match_ctx* c_smm_match_new(double fee_rate, c_bool instant_fill, double lag_ts, uint64_t lag_n_transaction, double hit_prob, double slippery_rate, c_bool incremental_order_volume, allocator_protocol* allocator) noexcept nogil
@@ -104,19 +92,20 @@ cdef extern from "algo_engine/backtest/c_simmatch.h":
     # --- Hot path ---
     int            c_smm_match_process(smm_match_ctx* ctx, const md_variant* market_data) noexcept nogil
 
-    # --- Ring ---
-    void                  c_smm_id_key(const long_md_id* id, char* out) noexcept nogil
-    size_t                c_smm_ring_mask(const smm_order_ring* ring) noexcept nogil
-    int                   c_smm_ring_init(smm_order_ring* ring, allocator_protocol* allocator) noexcept nogil
-    void                  c_smm_ring_dealloc(smm_order_ring* ring) noexcept nogil
-    int                   c_smm_ring_rebuild(smm_order_ring* ring, allocator_protocol* allocator, size_t new_capacity) noexcept nogil
-    void                  c_smm_ring_clear(smm_order_ring* ring) noexcept nogil
-    smm_order_entry*      c_smm_ring_find(smm_order_ring* ring, const long_md_id* order_id) noexcept nogil
-    smm_order_entry*      c_smm_ring_push(smm_order_ring* ring, const md_trade_instruction* order) noexcept nogil
-    void                  c_smm_ring_remove(smm_order_ring* ring, smm_order_entry* entry) noexcept nogil
-    smm_order_ring_cursor c_smm_ring_cursor_newest(smm_order_ring* ring) noexcept nogil
-    smm_order_entry*      c_smm_ring_next_newest(smm_order_ring_cursor* cursor) noexcept nogil
-    smm_order_entry*      c_smm_ring_newest(smm_order_ring* ring) noexcept nogil
+    # --- Registry ---
+    void             c_smm_id_key(const long_md_id* id, char* out) noexcept nogil
+    smm_order_entry* c_smm_entry_new(allocator_protocol* allocator, const md_trade_instruction* order) noexcept nogil
+    void             c_smm_entry_dealloc(smm_order_entry* entry) noexcept nogil
+    int              c_smm_entry_report_add(smm_order_entry* entry, md_trade_report* report) noexcept nogil
+    void             c_smm_entries_clear(bytemap* registry) noexcept nogil
+    smm_order_entry* c_smm_working_find(const smm_match_ctx* ctx, const long_md_id* order_id) noexcept nogil
+    smm_order_entry* c_smm_working_push(smm_match_ctx* ctx, const md_trade_instruction* order) noexcept nogil
+    void             c_smm_working_remove(smm_match_ctx* ctx, smm_order_entry* entry) noexcept nogil
+    void             c_smm_working_touch(smm_match_ctx* ctx, smm_order_entry* entry) noexcept nogil
+    void             c_smm_working_clear(smm_match_ctx* ctx) noexcept nogil
+    smm_order_entry* c_smm_history_find(const smm_match_ctx* ctx, const long_md_id* order_id) noexcept nogil
+    int              c_smm_history_insert(smm_match_ctx* ctx, smm_order_entry* entry) noexcept nogil
+    void             c_smm_history_clear(smm_match_ctx* ctx) noexcept nogil
 
     # --- Matching internals ---
     void c_smm_check_bar(smm_match_ctx* ctx, const md_candlestick* bar) noexcept nogil
@@ -124,6 +113,14 @@ cdef extern from "algo_engine/backtest/c_simmatch.h":
     void c_smm_check_tick_lite(smm_match_ctx* ctx, const md_tick_data_lite* lite) noexcept nogil
     void c_smm_check_order(smm_match_ctx* ctx, const md_order_data* order_data) noexcept nogil
     void c_smm_check_trade(smm_match_ctx* ctx, const md_transaction_data* transaction) noexcept nogil
+
+
+cdef class OrderMapView(BoundByteMap):
+    @staticmethod
+    cdef OrderMapView c_from_header(bytemap* header, bint owner=?)
+
+    @staticmethod
+    cdef inline TradeInstruction c_compose(const smm_order_entry* entry)
 
 
 cdef class SimMatch(CCPType):
@@ -137,10 +134,13 @@ cdef class SimMatch(CCPType):
     cdef readonly EventEngineEx event_engine
     cdef readonly TopicSetEx topic_set
     cdef readonly DMAProtocol protocol
-    cdef readonly dict working
-    cdef readonly dict history
+    cdef readonly OrderMapView working
+    cdef readonly OrderMapView history
     cdef readonly object random
     cdef readonly uint64_t seed
+
+    @staticmethod
+    cdef SimMatch c_from_header(smm_match_ctx* header, str ticker, bint owner=?)
 
     @staticmethod
     cdef inline void c_simmatch_callback(smm_match_ctx* ctx, smm_match_event event, const smm_order_entry* entry, const md_trade_report* report, void* user_data) noexcept
@@ -151,3 +151,13 @@ cdef class SimMatch(CCPType):
     cdef inline int c_process(self, const md_variant* market_data) except -1
 
     cdef void c_unregister_protocol(self, DMAProtocol protocol) except *
+
+    cpdef void _on_realtime(self, MarketData market_data)
+
+    cpdef void register(self, TopicSetEx topic_set=?, EventEngineEx event_engine=?)
+
+    cpdef void unregister(self)
+
+    cpdef void eod(self)
+
+    cpdef void clear(self)
