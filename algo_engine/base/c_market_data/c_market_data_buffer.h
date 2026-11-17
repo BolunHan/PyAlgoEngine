@@ -28,6 +28,19 @@
 #define MD_BUF_DATA_DEFAULT_CAP 1024
 #endif
 
+// ========== Serialized Block-Buffer Format ==========
+//
+// Every serialized blob starts with a fixed 16-byte header:
+//   [uint32 magic][uint32 format_version][uint32 struct_size][uint32 reserved]
+// then the raw md_block_buffer header, the offset array and the data array.
+//
+// The version is bumped whenever the md wire format or md_block_buffer layout
+// changes. A blob written by an older engine is rejected instead of being
+// parsed with the new offsets (an old blob used to hang the deserializer).
+#define MD_BLOCK_BUFFER_MAGIC               0x514B4D44u  // "QKMD", little-endian
+#define MD_BLOCK_BUFFER_FORMAT_VERSION      2u
+#define MD_BLOCK_BUFFER_FORMAT_HEADER_SIZE  16u
+
 // ========== MarketData Buffer Structs ==========
 
 typedef struct md_ptr_array {
@@ -457,7 +470,8 @@ static inline int c_md_block_buffer_clear(md_block_buffer* buffer) {
 
 static inline size_t c_md_block_buffer_serialized_size(md_block_buffer* buffer) {
     if (!buffer) return 0;
-    size_t ttl_size = sizeof(md_block_buffer);
+    size_t ttl_size = MD_BLOCK_BUFFER_FORMAT_HEADER_SIZE;
+    ttl_size += sizeof(md_block_buffer);
     ttl_size += buffer->ptr_array.idx_tail * sizeof(size_t);
     ttl_size += buffer->data_array.occupied;
     return ttl_size;
@@ -466,7 +480,21 @@ static inline size_t c_md_block_buffer_serialized_size(md_block_buffer* buffer) 
 static inline int c_md_block_buffer_serialize(md_block_buffer* buffer, char* out) {
     if (!buffer || !out) return 0;
 
+    uint32_t magic       = MD_BLOCK_BUFFER_MAGIC;
+    uint32_t version     = MD_BLOCK_BUFFER_FORMAT_VERSION;
+    uint32_t struct_size = (uint32_t) sizeof(md_block_buffer);
+    uint32_t reserved    = 0;
+
     char* ptr = out;
+    memcpy(ptr, &magic, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+    memcpy(ptr, &version, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+    memcpy(ptr, &struct_size, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+    memcpy(ptr, &reserved, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+
     memcpy(ptr, buffer, sizeof(md_block_buffer));
     ptr += sizeof(md_block_buffer);
 
@@ -476,7 +504,7 @@ static inline int c_md_block_buffer_serialize(md_block_buffer* buffer, char* out
     memcpy(ptr, buffer->data_array.buf, buffer->data_array.occupied);
     ptr += buffer->data_array.occupied;
 
-    md_block_buffer* out_buf     = (md_block_buffer*) out;
+    md_block_buffer* out_buf     = (md_block_buffer*) (out + MD_BLOCK_BUFFER_FORMAT_HEADER_SIZE);
     out_buf->ptr_array.offsets   = NULL;
     out_buf->ptr_array.capacity  = buffer->ptr_array.idx_tail;
     out_buf->data_array.buf      = NULL;
@@ -488,7 +516,21 @@ static inline int c_md_block_buffer_serialize(md_block_buffer* buffer, char* out
 static inline md_block_buffer* c_md_block_buffer_deserialize(const char* blob, allocator_protocol* allocator) {
     if (!blob) return NULL;
 
-    md_block_buffer* in_buf = (md_block_buffer*) blob;
+    uint32_t magic;
+    uint32_t version;
+    uint32_t struct_size;
+
+    memcpy(&magic, blob, sizeof(uint32_t));
+    if (magic != MD_BLOCK_BUFFER_MAGIC) return NULL;
+
+    memcpy(&version, blob + sizeof(uint32_t), sizeof(uint32_t));
+    if (version != MD_BLOCK_BUFFER_FORMAT_VERSION) return NULL;
+
+    memcpy(&struct_size, blob + 2 * sizeof(uint32_t), sizeof(uint32_t));
+    if (struct_size != (uint32_t) sizeof(md_block_buffer)) return NULL;
+
+    const char* header = blob + MD_BLOCK_BUFFER_FORMAT_HEADER_SIZE;
+    md_block_buffer* in_buf = (md_block_buffer*) header;
     md_block_buffer* buffer = c_md_block_buffer_new(
         in_buf->ptr_array.idx_tail,
         in_buf->data_array.occupied,
@@ -500,7 +542,7 @@ static inline md_block_buffer* c_md_block_buffer_deserialize(const char* blob, a
     buffer->data_array.occupied = in_buf->data_array.occupied;
     buffer->current_timestamp   = in_buf->current_timestamp;
     buffer->sorted              = in_buf->sorted;
-    const char* ptr             = blob + sizeof(md_block_buffer);
+    const char* ptr             = header + sizeof(md_block_buffer);
 
     memcpy(buffer->ptr_array.offsets, ptr, in_buf->ptr_array.idx_tail * sizeof(size_t));
     ptr += in_buf->ptr_array.idx_tail * sizeof(size_t);

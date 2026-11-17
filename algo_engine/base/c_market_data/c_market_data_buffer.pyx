@@ -264,6 +264,11 @@ cdef class MarketDataBuffer:
     @classmethod
     def from_bytes(cls, bytes data):
         cdef md_block_buffer* header = c_md_block_buffer_deserialize(<const char*> data, MD_DEFAULT_ALLOCATOR)
+        if header == NULL:
+            raise ValueError(
+                f'Failed to deserialize <{cls.__name__}>: incompatible or corrupted blob, '
+                f'expected block-buffer format v{MD_BLOCK_BUFFER_FORMAT_VERSION}.'
+            )
         cdef MarketDataBuffer instance = MarketDataBuffer.__new__(MarketDataBuffer, 0, 0)
         instance.header = header
         instance.owner = True

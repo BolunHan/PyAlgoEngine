@@ -23,6 +23,10 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data_buffer.h":
         size_t occupied
         char* buf
 
+    const unsigned int MD_BLOCK_BUFFER_MAGIC
+    const unsigned int MD_BLOCK_BUFFER_FORMAT_VERSION
+    const unsigned int MD_BLOCK_BUFFER_FORMAT_HEADER_SIZE
+
     ctypedef struct md_block_buffer:
         md_ptr_array ptr_array
         md_data_array data_array

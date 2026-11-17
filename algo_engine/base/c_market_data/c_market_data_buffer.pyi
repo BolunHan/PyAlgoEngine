@@ -140,12 +140,23 @@ class MarketDataBuffer(Generic[MD]):
         ...
 
     def to_bytes(self) -> bytes:
-        """Serialize the buffer into a bytes object that can be copied or persisted."""
+        """Serialize the buffer into a bytes object that can be copied or persisted.
+
+        The blob starts with a 16-byte magic/version header; the version is
+        bumped whenever the market-data wire format or the block-buffer layout
+        changes.
+        """
         ...
 
     @classmethod
     def from_bytes(cls, data: bytes) -> MarketDataBuffer:
-        """Create a new `MarketDataBuffer` by copying the serialized state contained in `data`."""
+        """Create a new `MarketDataBuffer` by copying the serialized state contained in `data`.
+
+        Raises:
+            ValueError: If `data` is not a block-buffer blob of the current
+                format version. Blobs written by an older engine are rejected
+                rather than parsed with the new layout.
+        """
         ...
 
     @property
