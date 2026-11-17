@@ -160,12 +160,12 @@ class StrategyTester(Tester):
 
     def register(self):
         self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.strategy.mds.on_market_data)
-        self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.strategy.position_tracker.on_market_data)
+        self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.strategy.position_tracker.algo_engine.on_market_data)
         self.event_engine.register_handler(topic=self.topic_set.realtime, handler=self.on_market_data)
 
-        self.event_engine.register_handler(topic=self.topic_set.on_order, handler=self.strategy.balance.on_order)
+        self.event_engine.register_handler(topic=self.topic_set.on_order, handler=self.strategy.position_tracker.algo_engine.on_order)
         self.event_engine.register_handler(topic=self.topic_set.on_order, handler=self.on_order)
-        self.event_engine.register_handler(topic=self.topic_set.on_report, handler=self.strategy.balance.on_report)
+        self.event_engine.register_handler(topic=self.topic_set.on_report, handler=self.strategy.position_tracker.algo_engine.on_trade)
         self.event_engine.register_handler(topic=self.topic_set.on_report, handler=self.on_report)
 
     def initialize_position_management(self):

@@ -3,27 +3,42 @@ import traceback
 from cpython.mem cimport PyMem_Free, PyMem_Malloc
 from cpython.ref cimport Py_XDECREF, Py_XINCREF
 from libc.stdint cimport uintptr_t
+from libc.string cimport memcmp
 
 from cbase.allocator_protocol cimport ap_ret_code, c_ap_protocol_from_ptr, c_ap_register_callback
-from event_engine.capi cimport DEFAULT_MQ_SPIN_LIMIT
+from event_engine.capi cimport DEFAULT_MQ_SPIN_LIMIT, EventEngineEx, evt_topic
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR, MD_SHM_ALLOCATOR
 from algo_engine.base.c_intern_string cimport C_POOL
 from algo_engine.base.c_market_data.c_market_data_buffer cimport c_md_copy_to_shm
 
 from . import LOGGER
-from .c_event_engine cimport EVENT_ENGINE, TOPIC_SET
+from .c_event_engine cimport EVENT_ENGINE, TOPIC_SET, TopicSetEx
+
+
+cdef inline bint c_topic_key_equal(const evt_topic* left, const evt_topic* right) noexcept:
+    """Compare two topic headers by key (a re-resolved topic is a new wrapper)."""
+    if not left or not right:
+        return False
+    if left.key_len != right.key_len:
+        return False
+    if left.key_len == 0:
+        return left.key == right.key
+    return memcmp(left.key, right.key, left.key_len) == 0
 
 
 cdef class DMAProtocol:
-    def __init__(self):
-        self.header = c_dma_protocol_new(EVENT_ENGINE.header, TOPIC_SET.header, MD_SHM_ALLOCATOR, C_POOL, MD_DEFAULT_ALLOCATOR)
+    def __init__(self, event_engine=None, topic_set=None):
+        cdef EventEngineEx engine = EVENT_ENGINE if event_engine is None else event_engine
+        cdef TopicSetEx topics = TOPIC_SET if topic_set is None else topic_set
+
+        self.header = c_dma_protocol_new(engine.header, topics.header, MD_SHM_ALLOCATOR, C_POOL, MD_DEFAULT_ALLOCATOR)
         if not self.header:
             raise MemoryError(f'Failed to allocate memory for <{self.__class__.__name__}>.')
 
         self.owner = True
-        self.event_engine = EVENT_ENGINE
-        self.topic_set = TOPIC_SET
+        self.event_engine = engine
+        self.topic_set = topics
 
     def __dealloc__(self):
         if not self.header:
@@ -101,7 +116,7 @@ cdef class DMAProtocol:
 
         cdef dma_protocol_pycallback_ctx* node = self.callbacks
         while node:
-            if node.topic == topic_ptr and (<object> node.py_callback_fn) == callback:
+            if c_topic_key_equal(node.topic, topic_ptr) and (<object> node.py_callback_fn) == callback:
                 return dma_protocol_ret_code.DMA_PROTOCOL_DUPLICATED
             node = node.next
 
@@ -135,18 +150,18 @@ cdef class DMAProtocol:
 
         return 0
 
-    cpdef void unregister_callback(self, object callback, Topic topic):
+    cpdef int unregister_callback(self, object callback, Topic topic):
         cdef evt_topic* topic_ptr = (<Topic> topic).header
         cdef dma_protocol_pycallback_ctx* ctx = self.callbacks
         cdef int ret_code
 
         while ctx:
-            if ctx.topic == topic_ptr and (<object> ctx.py_callback_fn) == callback:
+            if c_topic_key_equal(ctx.topic, topic_ptr) and (<object> ctx.py_callback_fn) == callback:
                 break
             ctx = ctx.next
 
         if not ctx:
-            return
+            return dma_protocol_ret_code.DMA_PROTOCOL_ERR_NOT_FOUND
 
         ret_code = c_dma_protocol_unregister_callback(self.header, ctx.topic, DMAProtocol.c_callback_adaptor, <void*> ctx)
 
@@ -160,6 +175,7 @@ cdef class DMAProtocol:
 
             Py_XDECREF(ctx.py_callback_fn)
             PyMem_Free(ctx)
+            return dma_protocol_ret_code.DMA_PROTOCOL_OK
         elif ret_code == dma_protocol_ret_code.DMA_PROTOCOL_ERR_INVALID_INPUT:
             raise ValueError('The protocol, the topic, or the callback is not initialized.')
         else:

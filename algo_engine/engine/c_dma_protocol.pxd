@@ -83,6 +83,6 @@ cdef class DMAProtocol:
 
     cpdef int register_callback(self, object callback, Topic topic)
 
-    cpdef void unregister_callback(self, object callback, Topic topic)
+    cpdef int unregister_callback(self, object callback, Topic topic)
 
     cpdef void config(self, bint block, size_t max_spin=?, double timeout=?)

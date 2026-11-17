@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from event_engine.capi import Topic
+from event_engine.capi import EventEngineEx, Topic
 
 from ..base.c_market_data.c_market_data import MarketData
 
@@ -30,14 +30,30 @@ class DMAProtocol:
     source wrapper itself.
 
     The protocol binds the process :data:`EVENT_ENGINE`, :data:`TOPIC_SET`,
-    ``MD_SHM_ALLOCATOR`` and ``C_POOL``; all four must outlive it. Unregister
-    every callback and drain the event engine before releasing the protocol.
+    ``MD_SHM_ALLOCATOR`` and ``C_POOL`` by default; all four must outlive it.
+    A caller may bind another process engine and topic set (for example a test
+    engine) as long as their shared-memory pool is the process pool.
+    Unregister every callback and drain the event engine before releasing the
+    protocol.
 
     Raises:
         MemoryError: If the protocol block cannot be allocated.
     """
 
-    def __init__(self) -> None: ...
+    def __init__(
+        self,
+        event_engine: EventEngineEx | None = None,
+        topic_set: object | None = None,
+    ) -> None:
+        """Create a protocol over the process engine/topic set (or the given ones).
+
+        Args:
+            event_engine: Engine to publish on and register callbacks with;
+                defaults to the process ``EVENT_ENGINE``.
+            topic_set: Topic registry used to resolve payload topics; defaults
+                to the process ``TOPIC_SET``.
+        """
+        ...
 
     def send(self, market_data: MarketData) -> int:
         """Publish market data on its dtype's topic.
@@ -89,15 +105,19 @@ class DMAProtocol:
         """
         ...
 
-    def unregister_callback(self, callback: Callable[[MarketData], None], topic: Topic) -> None:
+    def unregister_callback(self, callback: Callable[[MarketData], None], topic: Topic) -> int:
         """Remove a callback registration.
 
         The registration is removed from the protocol and its engine handler
-        with it. An absent registration is a no-op.
+        with it.
 
         Args:
             callback: The callback to remove.
             topic: The topic it was registered on.
+
+        Returns:
+            ``0`` when the registration was removed, or ``-7`` when no such
+            registration exists.
 
         Raises:
             ValueError: If the protocol is uninitialized.
