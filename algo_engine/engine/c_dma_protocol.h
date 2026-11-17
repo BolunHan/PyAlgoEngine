@@ -49,6 +49,7 @@ typedef enum dma_protocol_ret_code {
     DMA_PROTOCOL_ERR_ENGINE        = -6,
     DMA_PROTOCOL_ERR_NOT_FOUND     = -7,
     DMA_PROTOCOL_ERR_BUSY          = -8,
+    DMA_PROTOCOL_DUPLICATED        = -9,
 } dma_protocol_ret_code;
 
 // clang-format on
@@ -114,6 +115,7 @@ static inline evt_topic*        c_dma_protocol_handler_topic(dma_protocol_ctx* p
 
 static inline int               c_dma_protocol_config(dma_protocol_ctx* protocol, bool block, size_t max_spin, double timeout);
 static inline int               c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* market_data);
+static inline int               c_dma_protocol_send_nocopy(dma_protocol_ctx* protocol, md_variant* market_data);
 static inline int               c_dma_protocol_register_callback(dma_protocol_ctx* protocol, evt_topic* topic, dma_protocol_callback_func fn, void* user_data);
 static inline int               c_dma_protocol_unregister_callback(dma_protocol_ctx* protocol, evt_topic* topic, dma_protocol_callback_func fn, void* user_data);
 static inline void              c_dma_protocol_launch_order(md_trade_instruction* order, uint32_t seq_id, void* user_data);
@@ -282,7 +284,7 @@ static inline int c_dma_protocol_config(dma_protocol_ctx* protocol, bool block, 
 }
 
 /**
- * @brief Publish market data on its dtype's topic.
+ * @brief Publish market data on its dtype's topic, copying it into shared memory.
  *
  * A trade instruction publishes on `on_order`, an exchange report on
  * `on_report`, and every other dtype (including order data) on
@@ -301,19 +303,43 @@ static inline int c_dma_protocol_config(dma_protocol_ctx* protocol, bool block, 
  *         DMA_PROTOCOL_ERR_NO_SHM, or DMA_PROTOCOL_ERR_PUBLISH.
  */
 static inline int c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* market_data) {
-    if (!protocol || !market_data || !protocol->ENGINE || !protocol->ENGINE->mq || !protocol->TOPICS || !protocol->SHM_ALLOCATOR || !protocol->SHM_POOL) {
-        return DMA_PROTOCOL_ERR_INVALID_INPUT;
-    }
-
-    if (_PAYLOAD.args) return DMA_PROTOCOL_ERR_BUSY;
-
-    evt_topic* target = c_dma_protocol_callback_topic(protocol, market_data);
-    if (!target || !target->is_exact) return DMA_PROTOCOL_ERR_NO_TOPIC;
+    if (!protocol || !market_data || !protocol->SHM_ALLOCATOR || !protocol->SHM_POOL) return DMA_PROTOCOL_ERR_INVALID_INPUT;
 
     const md_variant* payload_market_data = c_md_copy_to_shm(market_data, protocol->SHM_ALLOCATOR, protocol->SHM_POOL);
     if (!payload_market_data) return DMA_PROTOCOL_ERR_NO_SHM;
 
-    _PAYLOAD.args       = (void*) payload_market_data;
+    return c_dma_protocol_send_nocopy(protocol, (md_variant*) payload_market_data);
+}
+
+/**
+ * @brief Publish shared-memory market data the transport takes ownership of.
+ *
+ * The caller must have already placed the market data in the protocol's
+ * shared-memory region; it is never copied again. The transport owns the
+ * payload on every outcome: it is released after dispatch, and also when the
+ * topic cannot be resolved or the static payload is busy.
+ *
+ * @param protocol The protocol (NULL-safe).
+ * @param market_data The shared-memory market data (NULL-safe).
+ * @return DMA_PROTOCOL_OK, DMA_PROTOCOL_ERR_INVALID_INPUT,
+ *         DMA_PROTOCOL_ERR_BUSY, DMA_PROTOCOL_ERR_NO_TOPIC, or
+ *         DMA_PROTOCOL_ERR_PUBLISH.
+ */
+static inline int c_dma_protocol_send_nocopy(dma_protocol_ctx* protocol, md_variant* market_data) {
+    if (!protocol || !market_data) return DMA_PROTOCOL_ERR_INVALID_INPUT;
+
+    if (_PAYLOAD.args) {
+        c_ap_free(market_data);
+        return DMA_PROTOCOL_ERR_BUSY;
+    }
+
+    evt_topic* target = c_dma_protocol_callback_topic(protocol, market_data);
+    if (!target || !target->is_exact) {
+        c_ap_free(market_data);
+        return DMA_PROTOCOL_ERR_NO_TOPIC;
+    }
+
+    _PAYLOAD.args       = (void*) market_data;
     _PAYLOAD.topic      = target;
     _PAYLOAD.seq_id     = 0;
     _PAYLOAD.fn_dealloc = c_dma_protocol_cleanup;
