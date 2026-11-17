@@ -30,6 +30,9 @@ from .c_event_engine cimport (
     c_topic_set_register,
     c_md_topic_push,
     c_md_topic_parse,
+    c_md_topic_dma_launch,
+    c_md_topic_dma_cancel,
+    c_md_topic_dma_parse,
 
     # === Cython classes and globals ===
     TopicSet, TopicSetEx,
@@ -350,4 +353,29 @@ from .c_dma cimport (
 
     # === Cython classes ===
     DirectMarketAccess,
+)
+
+from .c_dma_protocol cimport (
+    # === Enums and typedefs ===
+    dma_protocol_ret_code,
+    dma_protocol_callback_func,
+
+    # === Structs ===
+    dma_protocol_ctx,
+
+    # === Public APIs (c-layer) ===
+    c_dma_protocol_new,
+    c_dma_protocol_init,
+    c_dma_protocol_dealloc,
+    c_dma_protocol_free,
+    c_dma_protocol_cleanup,
+    c_dma_protocol_config,
+    c_dma_protocol_send,
+    c_dma_protocol_register_callback,
+    c_dma_protocol_unregister_callback,
+    c_dma_protocol_launch_order,
+    c_dma_protocol_cancel_order,
+
+    # === Cython classes ===
+    DMAProtocol,
 )

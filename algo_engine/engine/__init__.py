@@ -12,6 +12,7 @@ def set_logger(logger: logging.Logger):
     LOGGER = logger
 
     c_event_engine.EVENT_ENGINE.logger = logger.getChild('EventEngine')
+    c_dma_protocol.LOGGER = logger.getChild('DMAProtocol')
     c_market_engine.LOGGER = logger.getChild('MarketEngine')
     c_dma.LOGGER = logger.getChild('DMA')
     c_inventory.LOGGER = logger.getChild('Inventory')
@@ -29,6 +30,7 @@ class Singleton(type):
 
 
 from .c_event_engine import EVENT_ENGINE, TOPIC_SET, TopicSet, TopicSetEx
+from .c_dma_protocol import DMAProtocol
 from .c_market_engine import MDS, MarketDataMonitor, MarketDataMonitorMap, MarketDataMonitorProtocol, MarketDataService, MonitorManager
 from .algo import Aggressive, AggressiveTimeout, AlgoTemplate, AlgoStatus, Passive, PassiveTimeout
 from .risk_profile import RefusalWindowAfterRule, RefusalWindowBeforeRule, RefusalWindowBetweenRule, RefusalWindowRule, RiskLimits, RiskLimitsMapView, RiskProfile, RiskRule, RiskRuleTemplate, RiskType, RiskViolation
@@ -41,6 +43,7 @@ from .c_position import PositionCallbackEvent, PositionManagementService, Positi
 __all__ = [
     'LOGGER',
     'EVENT_ENGINE', 'TOPIC_SET', 'TopicSet', 'TopicSetEx',
+    'DMAProtocol',
     'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
     'MDS', 'MarketDataService', 'MarketDataMonitor', 'MarketDataMonitorProtocol', 'MonitorManager', 'Singleton',
     'Balance', 'BalanceFlag', 'DirectMarketAccess', 'DirectMarketAccessProtocol', 'PositionManagementService', 'PositionCallbackEvent', 'PositionOrderCallbackProtocol', 'PositionTradeCallbackProtocol', 'INVENTORY', 'Inventory', 'RefusalWindowAfterRule', 'RefusalWindowBeforeRule', 'RefusalWindowBetweenRule', 'RefusalWindowRule', 'RiskLimits', 'RiskLimitsMapView', 'RiskProfile', 'RiskRule', 'RiskRuleTemplate', 'RiskType', 'RiskViolation',
