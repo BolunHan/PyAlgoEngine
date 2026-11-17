@@ -1,7 +1,7 @@
 import random
 from datetime import datetime
 
-from event_engine import EventEngine
+from event_engine import EventEngineEx
 
 from ..base import (
     BarData,
@@ -16,64 +16,69 @@ from ..base import (
     TransactionDirection,
     TransactionSide,
 )
-from ..engine import TopicSet
+from ..engine import DMAProtocol, TopicSetEx
 
 
 class SimMatch:
     """C-layer simulation matcher for backtesting.
 
-    Full C implementation of the matching engine: the working order registry,
-    lag / hit-probability / slippage logic and report construction all run in
-    the native layer. The wrapper owns the Python-side ``TradeInstruction``
-    objects, applies fills to their headers and publishes events.
+    The working-order registry, lag / hit-probability / slippage logic and
+    report construction run in the native layer. The matcher copies every
+    launched order and owns that copy; the object passed to ``launch_order`` is
+    never modified. Fills and state transitions update the matcher's copy,
+    which is what ``working``, ``history`` and the published events carry.
 
     Attributes:
         ticker: The ticker this matcher serves.
-        event_engine: Event engine used for registration and event publishing.
-        topic_set: Topic set used for registration and event publishing.
-        working: Mapping of order_id to currently working orders.
-        history: Mapping of order_id to done (filled / canceled) orders.
+        event_engine: Native ``EventEngineEx`` used for registration and event
+            publishing.
+        topic_set: Native ``TopicSetEx`` used for registration and event
+            publishing.
+        protocol: The ``DMAProtocol`` bound for realtime market data after
+            ``register()``, or None while unbound.
+        working: Mapping of order_id to the matcher's working order copies.
+        history: Mapping of order_id to the matcher's done (filled / canceled)
+            order copies.
         random: Python random instance kept for interface parity; the native
             matching layer uses its own seeded PRNG.
         timestamp: Latest market data timestamp (seconds since epoch).
         last_price: Latest market price, or None before any market data.
         last_transaction_count: Number of transactions seen so far.
-        seed: Seed of the native PRNG (0-derived values are materialized).
+        seed: Seed of the native PRNG (read-only).
         matching_config: Read-only mirror of the native matching config
             (``fee_rate``, ``instant_fill``, ``lag``, ``hit``,
             ``incremental_order_volume``). Configure via constructor kwargs.
         market_time: Session-converted datetime of ``timestamp``.
 
-    Note:
-        Compared to the legacy pure-Python ``SimMatch``: filled orders are
-        removed from ``working`` immediately (including instant fills), and
-        each placement / cancel / fill publishes exactly one ``on_order``
-        event plus one ``on_report`` per fill.
+    The attributes above are read-only after construction.
     """
     ticker: str
-    event_engine: EventEngine
-    topic_set: TopicSet
+    event_engine: EventEngineEx
+    topic_set: TopicSetEx
+    protocol: DMAProtocol | None
     working: dict[str, TradeInstruction]
     history: dict[str, TradeInstruction]
     random: random.Random
+    seed: int
 
     def __init__(
         self,
         ticker: str,
-        event_engine: EventEngine | None = None,
-        topic_set: TopicSet | None = None,
-        seed: int | None = None,
+        event_engine: EventEngineEx | None = None,
+        topic_set: TopicSetEx | None = None,
+        seed: int = 0,
         **kwargs: object,
     ) -> None:
         """Initialize the matcher.
 
         Args:
             ticker: Ticker to match.
-            event_engine: Event engine; defaults to the global
+            event_engine: Engine instance; defaults to the global
                 ``EVENT_ENGINE``.
-            topic_set: Topic set; defaults to the global ``TOPIC_SET``.
-            seed: Seed for the native PRNG (hit probability); random when
-                None.
+            topic_set: Topic-set instance; defaults to the global
+                ``TOPIC_SET``.
+            seed: Seed for the native PRNG (hit probability and trade ids);
+                0 derives a random seed.
             **kwargs: Matching configuration:
                 fee_rate: Fee as fraction of notional (default 0).
                 instant_fill: Fill immediately at launch when no lag is set
@@ -89,6 +94,12 @@ class SimMatch:
                     it; when False (default) order data is not matched —
                     SZ-style depth reports carry resting volume, not
                     incremental fills.
+
+        Raises:
+            MemoryError: The native context or the working registry could not
+                be allocated.
+            TypeError: The engine or topic set is not an ``EventEngineEx`` /
+                ``TopicSetEx``.
         """
         ...
 
@@ -101,6 +112,10 @@ class SimMatch:
                     (ORDER_CANCEL). Other order types raise ValueError.
                 market_data: Bar / Tick / TickLite / Order / Transaction data
                     to match against.
+
+        Raises:
+            ValueError: Invalid order type or market data.
+            RuntimeError: The matcher is unbound or the native layer failed.
         """
         ...
 
@@ -138,43 +153,51 @@ class SimMatch:
 
     def register(
         self,
-        topic_set: TopicSet | None = None,
-        event_engine: EventEngine | None = None,
+        topic_set: TopicSetEx | None = None,
+        event_engine: EventEngineEx | None = None,
     ) -> None:
-        """Bind the matcher natively on the event engine.
+        """Bind the matcher on the event engine.
 
-        When the engine is the native ``EventEngine``, the C layer stores
-        the engine interface (message queue and hook maps), registers its C
-        dispatch handler directly on the launch / cancel / realtime hooks
-        (``c_evt_hook_register_callback``) and publishes ``on_order`` /
-        ``on_report`` payloads through the engine queue — everything runs in
-        C after registration. Falls back to Python ``register_handler`` for
-        non-native engines.
+        Launch and cancel orders are in-process Python payloads (the DMA and
+        strategy layers publish them with ``engine.put``), so they bind as
+        Python handlers. Market data is a transport payload: the matcher
+        creates a :class:`~algo_engine.engine.c_dma_protocol.DMAProtocol` over
+        the engine and topic set and registers one realtime callback, so the C
+        matcher receives the typed ``md_variant`` directly. The protocol is
+        configured non-blocking so a full queue never deadlocks the engine
+        loop.
 
         Args:
-            topic_set: Topic set to bind with; keeps the current one when
-                None.
+            topic_set: Topic set to bind with; keeps the current one when None.
             event_engine: Engine to bind on; keeps the current one when None.
+
+        Raises:
+            RuntimeError: The matcher is unbound or a realtime callback could
+                not be unregistered from the previous binding.
+            TypeError: The engine or topic set is not one of the accepted
+                types.
         """
         ...
 
     def unregister(self) -> None:
-        """Remove the native dispatch handlers and hooks from the engine."""
+        """Remove the dispatch handlers and the realtime callback."""
         ...
 
     def launch_order(self, order: TradeInstruction, **kwargs: object) -> None:
-        """Launch an order into the working registry.
+        """Launch a copy of an order into the working registry.
 
-        Marks the order PLACED at the current timestamp, snapshots the
-        transaction counter for lag computation, then applies the
-        instant-fill short circuit when configured.
+        The matcher snapshots the transaction counter, marks its copy PLACED
+        and applies the instant-fill short circuit when configured. The passed
+        instruction is not modified.
 
         Args:
-            order: Order to launch.
+            order: Order to copy into the registry.
             **kwargs: Ignored (interface parity).
 
         Raises:
-            ValueError: The order_id already exists in working or history.
+            ValueError: The order_id already exists in working or history, or
+                the native registry rejected the order.
+            MemoryError: The working registry could not grow.
         """
         ...
 
@@ -194,6 +217,7 @@ class SimMatch:
 
         Raises:
             ValueError: Neither order nor order_id is provided.
+            RuntimeError: The matcher is unbound or the native cancel failed.
         """
         ...
 
@@ -236,14 +260,6 @@ class SimMatch:
 
     @last_transaction_count.setter
     def last_transaction_count(self, value: int) -> None: ...
-
-    @property
-    def seed(self) -> int:
-        """Seed of the native PRNG."""
-        ...
-
-    @seed.setter
-    def seed(self, value: int | None) -> None: ...
 
     @property
     def matching_config(self) -> dict[str, object]:
