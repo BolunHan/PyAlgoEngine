@@ -101,8 +101,9 @@ typedef enum topic_set_ret_code {
  * fields alias the registry pointers. A merged set (owns_topics = false) shares the
  * topics of its sources, never frees them, and its sources must outlive it.
  *
- * rt_tick, rt_trade (DTYPE_TRANSACTION) and rt_order map a bare ticker to a
- * topic for the three hot dtypes; other dtypes resolve through the registry.
+ * rt_tick, rt_trade (DTYPE_TRANSACTION), rt_order, evt_launch and evt_cancel
+ * map a bare ticker to a topic for the hot dtypes and the DMA topics; other
+ * dtypes resolve through the registry.
  */
 typedef struct evt_topic_set {
     evt_topic* on_order;   // TOPIC_SET_ON_ORDER
@@ -117,9 +118,11 @@ typedef struct evt_topic_set {
 
     evt_topic* realtime;  // TOPIC_SET_REALTIME_PATTERN
 
-    bytemap*   rt_tick;   // OWNED - DTYPE_TICK: ticker -> topic.
-    bytemap*   rt_trade;  // OWNED - DTYPE_TRANSACTION: ticker -> topic.
-    bytemap*   rt_order;  // OWNED - DTYPE_ORDER: ticker -> topic.
+    bytemap*   rt_tick;     // OWNED - DTYPE_TICK: ticker -> topic.
+    bytemap*   rt_trade;    // OWNED - DTYPE_TRANSACTION: ticker -> topic.
+    bytemap*   rt_order;    // OWNED - DTYPE_ORDER: ticker -> topic.
+    bytemap*   evt_launch;  // OWNED - launch_order.<ticker> exact topic.
+    bytemap*   evt_cancel;  // OWNED - cancel_order.<ticker> exact topic.
 
     bytemap*   registry;     // OWNED - full topic key -> evt_topic*.
     bool       owns_topics;  // true: dealloc frees the registered topics.
@@ -143,13 +146,16 @@ static inline evt_topic*     c_topic_set_register(evt_topic_set* topic_set, evt_
 
 static inline evt_topic*     c_md_topic_push(evt_topic_set* topic_set, const md_variant* market_data);
 static inline int            c_md_topic_parse(const evt_topic_set* topic_set, const evt_topic* topic, const char** out_ticker, md_data_type* out_dtype);
+static inline evt_topic*     c_md_topic_dma_launch(evt_topic_set* topic_set, const md_trade_instruction* order);
+static inline evt_topic*     c_md_topic_dma_cancel(evt_topic_set* topic_set, const md_trade_instruction* order);
+static inline int            c_md_topic_dma_parse(const evt_topic_set* topic_set, const evt_topic* topic, const char** out_ticker, md_side* out_side);
 
 // ========== Utility Functions ==========
 
 /**
  * @brief Suffix of a topic variant ("c" / "py"), or NULL when invalid.
  */
-static inline const char* c_topic_set_variant_suffix(evt_topic_variant variant) {
+static inline const char*    c_topic_set_variant_suffix(evt_topic_variant variant) {
     switch (variant) {
         case EVT_TOPIC_VARIANT_C:
             return "c";
@@ -242,14 +248,16 @@ static inline int c_topic_set_init(evt_topic_set* topic_set, allocator_protocol*
     memset(topic_set, 0, sizeof(evt_topic_set));
 
     topic_set->owns_topics = true;
-    topic_set->registry = c_bytemap_new(0, allocator);
+    topic_set->registry    = c_bytemap_new(0, allocator);
     if (!topic_set->registry) return TOPIC_SET_ERR_OOM;
 
-    topic_set->rt_tick = c_bytemap_new(0, allocator);
-    topic_set->rt_trade = c_bytemap_new(0, allocator);
-    topic_set->rt_order = c_bytemap_new(0, allocator);
+    topic_set->rt_tick    = c_bytemap_new(0, allocator);
+    topic_set->rt_trade   = c_bytemap_new(0, allocator);
+    topic_set->rt_order   = c_bytemap_new(0, allocator);
+    topic_set->evt_launch = c_bytemap_new(0, allocator);
+    topic_set->evt_cancel = c_bytemap_new(0, allocator);
 
-    if (!topic_set->rt_tick || !topic_set->rt_trade || !topic_set->rt_order) {
+    if (!topic_set->rt_tick || !topic_set->rt_trade || !topic_set->rt_order || !topic_set->evt_launch || !topic_set->evt_cancel) {
         c_topic_set_dealloc(topic_set);
         return TOPIC_SET_ERR_OOM;
     }
@@ -313,6 +321,8 @@ static inline void c_topic_set_dealloc(evt_topic_set* topic_set) {
     if (topic_set->rt_tick) c_bytemap_free(topic_set->rt_tick);
     if (topic_set->rt_trade) c_bytemap_free(topic_set->rt_trade);
     if (topic_set->rt_order) c_bytemap_free(topic_set->rt_order);
+    if (topic_set->evt_launch) c_bytemap_free(topic_set->evt_launch);
+    if (topic_set->evt_cancel) c_bytemap_free(topic_set->evt_cancel);
 
     memset(topic_set, 0, sizeof(evt_topic_set));
 }
@@ -355,15 +365,27 @@ static inline evt_topic_set* c_topic_set_union(const evt_topic_set* left, const 
 
     memset(merged, 0, sizeof(evt_topic_set));
 
-    merged->registry = c_bytemap_new(0, allocator);
-    merged->rt_tick = c_bytemap_new(0, allocator);
-    merged->rt_trade = c_bytemap_new(0, allocator);
-    merged->rt_order = c_bytemap_new(0, allocator);
+    merged->registry   = c_bytemap_new(0, allocator);
+    merged->rt_tick    = c_bytemap_new(0, allocator);
+    merged->rt_trade   = c_bytemap_new(0, allocator);
+    merged->rt_order   = c_bytemap_new(0, allocator);
+    merged->evt_launch = c_bytemap_new(0, allocator);
+    merged->evt_cancel = c_bytemap_new(0, allocator);
 
-    if (!merged->registry || !merged->rt_tick || !merged->rt_trade || !merged->rt_order) {
+    if (!merged->registry || !merged->rt_tick || !merged->rt_trade || !merged->rt_order || !merged->evt_launch || !merged->evt_cancel) {
         c_topic_set_free(merged);
         return NULL;
     }
+
+    merged->on_order     = left->on_order ? left->on_order : right->on_order;
+    merged->on_report    = left->on_report ? left->on_report : right->on_report;
+    merged->eod          = left->eod ? left->eod : right->eod;
+    merged->eod_done     = left->eod_done ? left->eod_done : right->eod_done;
+    merged->bod          = left->bod ? left->bod : right->bod;
+    merged->bod_done     = left->bod_done ? left->bod_done : right->bod_done;
+    merged->launch_order = left->launch_order ? left->launch_order : right->launch_order;
+    merged->cancel_order = left->cancel_order ? left->cancel_order : right->cancel_order;
+    merged->realtime     = left->realtime ? left->realtime : right->realtime;
 
     const evt_topic_set* sources[] = {left, right};
     for (size_t i = 0; i < sizeof(sources) / sizeof(sources[0]); i++) {
@@ -450,41 +472,55 @@ static inline evt_topic* c_topic_set_register(evt_topic_set* topic_set, evt_topi
     if (stored) memcpy(&registered, stored, sizeof(registered));
     if (!registered) return NULL;
 
-    if (!registered->is_exact || registered->n != 3) return registered;
+    if (!registered->is_exact) return registered;
 
     const evt_topic_part_variant* part_0 = registered->parts;
     const evt_topic_part_variant* part_1 = part_0 ? part_0->header.next : NULL;
     const evt_topic_part_variant* part_2 = part_1 ? part_1->header.next : NULL;
 
-    if (!part_2 || part_2->header.next) return registered;
-    if (part_0->header.ttype != TOPIC_PART_EXACT ||
-        part_1->header.ttype != TOPIC_PART_EXACT ||
-        part_2->header.ttype != TOPIC_PART_EXACT) {
-        return registered;
-    }
-    if (part_0->exact.part_len != sizeof(TOPIC_SET_REALTIME) - 1 ||
-        memcmp(part_0->exact.part, TOPIC_SET_REALTIME, sizeof(TOPIC_SET_REALTIME) - 1) != 0) {
-        return registered;
-    }
-    if (part_1->exact.part_len == 0) return registered;
+    switch (registered->n) {
+        case 2: {
+            if (part_0->header.ttype != TOPIC_PART_EXACT || part_1->header.ttype != TOPIC_PART_EXACT) return registered;
+            if (part_1->exact.part_len == 0) return registered;
 
-    bytemap* map = NULL;
-    switch (c_topic_set_dtype_from_name(part_2->exact.part, part_2->exact.part_len)) {
-        case DTYPE_TICK:
-            map = topic_set->rt_tick;
-            break;
-        case DTYPE_TRANSACTION:
-            map = topic_set->rt_trade;
-            break;
-        case DTYPE_ORDER:
-            map = topic_set->rt_order;
-            break;
+            const evt_topic_part_variant* launch_stem = topic_set->launch_order->parts;
+            if (part_0->exact.part_len == launch_stem->exact.part_len && memcmp(part_0->exact.part, launch_stem->exact.part, part_0->exact.part_len) == 0) {
+                c_bytemap_set(topic_set->evt_launch, part_1->exact.part, part_1->exact.part_len, (void*) registered, NULL);
+                return registered;
+            }
+
+            const evt_topic_part_variant* cancel_stem = topic_set->cancel_order->parts;
+            if (part_0->exact.part_len == cancel_stem->exact.part_len && memcmp(part_0->exact.part, cancel_stem->exact.part, part_0->exact.part_len) == 0) {
+                c_bytemap_set(topic_set->evt_cancel, part_1->exact.part, part_1->exact.part_len, (void*) registered, NULL);
+            }
+            return registered;
+        }
+        case 3: {
+            if (part_0->header.ttype != TOPIC_PART_EXACT || part_1->header.ttype != TOPIC_PART_EXACT || part_2->header.ttype != TOPIC_PART_EXACT) return registered;
+            if (part_0->exact.part_len != sizeof(TOPIC_SET_REALTIME) - 1 || memcmp(part_0->exact.part, TOPIC_SET_REALTIME, sizeof(TOPIC_SET_REALTIME) - 1) != 0) return registered;
+            if (part_1->exact.part_len == 0) return registered;
+
+            bytemap* map = NULL;
+            switch (c_topic_set_dtype_from_name(part_2->exact.part, part_2->exact.part_len)) {
+                case DTYPE_TICK:
+                    map = topic_set->rt_tick;
+                    break;
+                case DTYPE_TRANSACTION:
+                    map = topic_set->rt_trade;
+                    break;
+                case DTYPE_ORDER:
+                    map = topic_set->rt_order;
+                    break;
+                default:
+                    break;
+            }
+
+            if (map) c_bytemap_set(map, part_1->exact.part, part_1->exact.part_len, (void*) registered, NULL);
+            return registered;
+        }
         default:
-            break;
+            return registered;
     }
-
-    if (map) c_bytemap_set(map, part_1->exact.part, part_1->exact.part_len, (void*) registered, NULL);
-    return registered;
 }
 
 /**
@@ -539,11 +575,11 @@ static inline evt_topic* c_md_topic_push(evt_topic_set* topic_set, const md_vari
     // has to be composed.
     if (!map) {
         const size_t prefix_len = sizeof(TOPIC_SET_REALTIME_PREFIX) - 1;
-        size_t       dtype_len = strlen(dtype_name);
-        size_t       key_len = prefix_len + ticker_len + 1 + dtype_len;
+        size_t       dtype_len  = strlen(dtype_name);
+        size_t       key_len    = prefix_len + ticker_len + 1 + dtype_len;
 
         char         stack_key[256];  // key scratch: stack up to 256 bytes, malloc beyond.
-        char*        key = stack_key;
+        char*        key      = stack_key;
         char*        heap_key = NULL;
 
         if (key_len + 1 > sizeof(stack_key)) {
@@ -563,7 +599,7 @@ static inline evt_topic* c_md_topic_push(evt_topic_set* topic_set, const md_vari
         key[pos] = '\0';
 
         evt_topic* cached = NULL;
-        int        hit = c_bytemap_get(topic_set->registry, key, key_len, (void**) &cached);
+        int        hit    = c_bytemap_get(topic_set->registry, key, key_len, (void**) &cached);
 
         if (heap_key) free(heap_key);
         if (hit == BYTEMAP_OK) return cached;
@@ -602,14 +638,11 @@ static inline int c_md_topic_parse(const evt_topic_set* topic_set, const evt_top
     const evt_topic_part_variant* part_2 = part_1 ? part_1->header.next : NULL;
 
     if (!part_2 || part_2->header.next) return TOPIC_SET_ERR_INVALID_TOPIC;
-    if (part_0->header.ttype != TOPIC_PART_EXACT ||
-        part_1->header.ttype != TOPIC_PART_EXACT ||
-        part_2->header.ttype != TOPIC_PART_EXACT) {
+    if (part_0->header.ttype != TOPIC_PART_EXACT || part_1->header.ttype != TOPIC_PART_EXACT || part_2->header.ttype != TOPIC_PART_EXACT) {
         return TOPIC_SET_ERR_INVALID_TOPIC;
     }
 
-    if (part_0->exact.part_len != sizeof(TOPIC_SET_REALTIME) - 1 ||
-        memcmp(part_0->exact.part, TOPIC_SET_REALTIME, sizeof(TOPIC_SET_REALTIME) - 1) != 0) {
+    if (part_0->exact.part_len != sizeof(TOPIC_SET_REALTIME) - 1 || memcmp(part_0->exact.part, TOPIC_SET_REALTIME, sizeof(TOPIC_SET_REALTIME) - 1) != 0) {
         return TOPIC_SET_ERR_INVALID_TOPIC;
     }
 
@@ -621,6 +654,141 @@ static inline int c_md_topic_parse(const evt_topic_set* topic_set, const evt_top
     if (out_ticker) *out_ticker = part_1->exact.part;
     if (out_dtype) *out_dtype = dtype;
     return TOPIC_SET_OK;
+}
+
+/**
+ * @brief Resolve the outgoing launch topic for an order.
+ *
+ * Builds launch_order.<ticker> from the set's launch_order pattern and caches
+ * it in evt_launch. The pattern is the two-part launch_order.{ticker}; its
+ * exact stem is copied and the wildcard is replaced by the order's ticker.
+ *
+ * @param topic_set The topic set (NULL-safe).
+ * @param order The order (NULL-safe; its ticker is read).
+ * @return The registered exact topic, or NULL.
+ */
+static inline evt_topic* c_md_topic_dma_launch(evt_topic_set* topic_set, const md_trade_instruction* order) {
+    if (!topic_set || !topic_set->registry || !topic_set->evt_launch || !topic_set->launch_order || !order) return NULL;
+
+    const char* ticker = order->meta_info.ticker;
+    if (!ticker) return NULL;
+
+    size_t ticker_len = strlen(ticker);
+    if (ticker_len == 0) return NULL;
+
+    evt_topic* cached = NULL;
+    if (c_bytemap_get(topic_set->evt_launch, ticker, ticker_len, (void**) &cached) == BYTEMAP_OK) return cached;
+
+    const evt_topic_part_variant* stem     = topic_set->launch_order->parts;
+    const evt_topic_part_variant* wildcard = stem ? stem->header.next : NULL;
+    if (!stem || stem->header.ttype != TOPIC_PART_EXACT || !wildcard || wildcard->header.ttype != TOPIC_PART_ANY || wildcard->header.next) return NULL;
+
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(topic_set->registry);
+
+    evt_topic*          topic = c_topic_new(NULL, 0, allocator);
+    if (!topic) return NULL;
+
+    if (c_topic_append(topic, stem->exact.part, stem->exact.part_len, TOPIC_PART_EXACT) != EVT_RET_OK || c_topic_append(topic, ticker, ticker_len, TOPIC_PART_EXACT) != EVT_RET_OK || c_topic_update_literal(topic) != EVT_RET_OK) {
+        c_topic_free(topic);
+        return NULL;
+    }
+
+    evt_topic* registered = c_topic_set_register(topic_set, topic);
+    if (!registered) {
+        c_topic_free(topic);
+        return NULL;
+    }
+    if (registered != topic) c_topic_free(topic);
+    return registered;
+}
+
+/**
+ * @brief Resolve the outgoing cancel topic for an order.
+ *
+ * Builds cancel_order.<ticker> from the set's cancel_order pattern and caches
+ * it in evt_cancel. The pattern is the two-part cancel_order.{ticker}; its
+ * exact stem is copied and the wildcard is replaced by the order's ticker.
+ *
+ * @param topic_set The topic set (NULL-safe).
+ * @param order The order (NULL-safe; its ticker is read).
+ * @return The registered exact topic, or NULL.
+ */
+static inline evt_topic* c_md_topic_dma_cancel(evt_topic_set* topic_set, const md_trade_instruction* order) {
+    if (!topic_set || !topic_set->registry || !topic_set->evt_cancel || !topic_set->cancel_order || !order) return NULL;
+
+    const char* ticker = order->meta_info.ticker;
+    if (!ticker) return NULL;
+
+    size_t ticker_len = strlen(ticker);
+    if (ticker_len == 0) return NULL;
+
+    evt_topic* cached = NULL;
+    if (c_bytemap_get(topic_set->evt_cancel, ticker, ticker_len, (void**) &cached) == BYTEMAP_OK) return cached;
+
+    const evt_topic_part_variant* stem     = topic_set->cancel_order->parts;
+    const evt_topic_part_variant* wildcard = stem ? stem->header.next : NULL;
+    if (!stem || stem->header.ttype != TOPIC_PART_EXACT || !wildcard || wildcard->header.ttype != TOPIC_PART_ANY || wildcard->header.next) return NULL;
+
+    allocator_protocol* allocator = c_ap_protocol_from_ptr(topic_set->registry);
+
+    evt_topic*          topic = c_topic_new(NULL, 0, allocator);
+    if (!topic) return NULL;
+
+    if (c_topic_append(topic, stem->exact.part, stem->exact.part_len, TOPIC_PART_EXACT) != EVT_RET_OK || c_topic_append(topic, ticker, ticker_len, TOPIC_PART_EXACT) != EVT_RET_OK || c_topic_update_literal(topic) != EVT_RET_OK) {
+        c_topic_free(topic);
+        return NULL;
+    }
+
+    evt_topic* registered = c_topic_set_register(topic_set, topic);
+    if (!registered) {
+        c_topic_free(topic);
+        return NULL;
+    }
+    if (registered != topic) c_topic_free(topic);
+    return registered;
+}
+
+/**
+ * @brief Parse a launch/cancel topic into (ticker, offset).
+ *
+ * The offset marks the topic kind: OFFSET_ORDER for launch_order and
+ * OFFSET_CANCEL for cancel_order; the order's direction is carried by the
+ * payload. out_ticker is a borrowed pointer into the topic; it lives as long
+ * as the owning set.
+ *
+ * @param topic_set The topic set (NULL-safe).
+ * @param topic The exact topic (NULL-safe).
+ * @param out_ticker Optional: receives the ticker (borrowed).
+ * @param out_side Optional: receives OFFSET_ORDER or OFFSET_CANCEL.
+ * @return TOPIC_SET_OK, TOPIC_SET_ERR_INVALID_INPUT, or
+ *         TOPIC_SET_ERR_INVALID_TOPIC.
+ */
+static inline int c_md_topic_dma_parse(const evt_topic_set* topic_set, const evt_topic* topic, const char** out_ticker, md_side* out_side) {
+    if (!topic_set || !topic) return TOPIC_SET_ERR_INVALID_INPUT;
+    if (!topic->is_exact || topic->n != 2) return TOPIC_SET_ERR_INVALID_TOPIC;
+
+    const evt_topic_part_variant* part_0 = topic->parts;
+    const evt_topic_part_variant* part_1 = part_0 ? part_0->header.next : NULL;
+
+    if (!part_1 || part_1->header.next) return TOPIC_SET_ERR_INVALID_TOPIC;
+    if (part_0->header.ttype != TOPIC_PART_EXACT || part_1->header.ttype != TOPIC_PART_EXACT) return TOPIC_SET_ERR_INVALID_TOPIC;
+    if (part_1->exact.part_len == 0) return TOPIC_SET_ERR_INVALID_TOPIC;
+
+    const evt_topic_part_variant* launch_stem = topic_set->launch_order ? topic_set->launch_order->parts : NULL;
+    if (launch_stem && launch_stem->header.ttype == TOPIC_PART_EXACT && part_0->exact.part_len == launch_stem->exact.part_len && memcmp(part_0->exact.part, launch_stem->exact.part, part_0->exact.part_len) == 0) {
+        if (out_ticker) *out_ticker = part_1->exact.part;
+        if (out_side) *out_side = (md_side) OFFSET_ORDER;
+        return TOPIC_SET_OK;
+    }
+
+    const evt_topic_part_variant* cancel_stem = topic_set->cancel_order ? topic_set->cancel_order->parts : NULL;
+    if (cancel_stem && cancel_stem->header.ttype == TOPIC_PART_EXACT && part_0->exact.part_len == cancel_stem->exact.part_len && memcmp(part_0->exact.part, cancel_stem->exact.part, part_0->exact.part_len) == 0) {
+        if (out_ticker) *out_ticker = part_1->exact.part;
+        if (out_side) *out_side = (md_side) OFFSET_CANCEL;
+        return TOPIC_SET_OK;
+    }
+
+    return TOPIC_SET_ERR_INVALID_TOPIC;
 }
 
 #endif  // C_EVENT_ENGINE_H

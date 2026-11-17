@@ -3,7 +3,7 @@ from libcpp cimport bool as c_bool
 from cbase.allocator_protocol.c_allocator_protocol cimport allocator_protocol
 from event_engine.capi cimport evt_topic, Topic, EventEngineEx
 
-from algo_engine.base.c_market_data.c_market_data cimport md_data_type, md_variant, MarketData
+from algo_engine.base.c_market_data.c_market_data cimport MarketData, md_data_type, md_side, md_trade_instruction, md_variant
 
 
 cdef extern from "algo_engine/engine/c_event_engine.h":
@@ -50,6 +50,9 @@ cdef extern from "algo_engine/engine/c_event_engine.h":
 
     evt_topic*     c_md_topic_push(evt_topic_set* topic_set, const md_variant* market_data) noexcept nogil
     int            c_md_topic_parse(const evt_topic_set* topic_set, const evt_topic* topic, const char** out_ticker, md_data_type* out_dtype) noexcept nogil
+    evt_topic*     c_md_topic_dma_launch(evt_topic_set* topic_set, const md_trade_instruction* order) noexcept nogil
+    evt_topic*     c_md_topic_dma_cancel(evt_topic_set* topic_set, const md_trade_instruction* order) noexcept nogil
+    int            c_md_topic_dma_parse(const evt_topic_set* topic_set, const evt_topic* topic, const char** out_ticker, md_side* out_side) noexcept nogil
 
 
 cdef class TopicSet:
