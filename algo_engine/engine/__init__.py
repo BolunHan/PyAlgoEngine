@@ -34,6 +34,7 @@ from .c_dma_protocol import DMAProtocol, DMA_PROTOCOL
 from .c_market_engine import MDS, MarketDataMonitor, MarketDataMonitorMap, MarketDataMonitorProtocol, MarketDataService, MonitorManager
 from .algo import Aggressive, AggressiveTimeout, AlgoTemplate, AlgoStatus, Passive, PassiveTimeout
 from .risk_profile import RefusalWindowAfterRule, RefusalWindowBeforeRule, RefusalWindowBetweenRule, RefusalWindowRule, RiskLimits, RiskLimitsMapView, RiskProfile, RiskRule, RiskRuleTemplate, RiskType, RiskViolation
+from .risk_profile import c_risk_profile
 from .c_inventory import INVENTORY, Inventory
 from .c_dma_algo import ALGO_ENGINE, ALGO_REGISTRY, AlgoEngine, AlgoLimitMode, AlgoRegistry
 from .c_balance import Balance, BalanceFlag
