@@ -20,10 +20,10 @@ acceleration for latency-critical paths.
 |-------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | **Market Data**         | `TickData`, `TickDataLite`, `BarData`, `DailyBar`, `OrderBook`, `TransactionData`, `OrderData`, `TradeData` — all C-backed via Cython |
 | **Buffers**             | `MarketDataBuffer`, `MarketDataRingBuffer`, `MarketDataConcurrentBuffer`, `MarketDataBufferCache`                                     |
-| **Engines**             | `EVENT_ENGINE` (pub/sub), `MDS` (Market Data Service), `ALGO_ENGINE` (algo lifecycle), C-backed DMA, positions, inventory and risk    |
+| **Engines**             | `EVENT_ENGINE` (pub/sub), `MDS` (Market Data Service), `ALGO_ENGINE` (algo lifecycle), C-backed DMA, positions, inventory, balance and risk    |
 | **Exchange Profiles**   | CN (A-share) and default global calendars, session phases, holidays via `PROFILE`, `PROFILE_CN`, `PROFILE_DEFAULT`                    |
 | **Backtesting**         | `SimpleReplay`, `ProgressReplay`, `SimMatch` (simulated matching), `TradeMetrics`                                                     |
-| **Strategy Framework**  | `StrategyEngine`, `AlgoTemplate`, global singletons (`BALANCE`, `DMA`, `STRATEGY_ENGINE`)                                             |
+| **Strategy Framework**  | `StrategyEngine`, `AlgoTemplate`, global singletons (`DMA`, `STRATEGY_ENGINE`)                                                        |
 | **Web Apps**            | Flask + Bokeh dashboards, candlestick charts, strategy tester UI                                                                      |
 | **Compile-Time Config** | `BOOK_SIZE`, `ID_SIZE`, `LONG_ID_SIZE`, `MD_BUF_PTR_DEFAULT_CAP`, `MD_BUF_DATA_DEFAULT_CAP` via env vars                              |
 
