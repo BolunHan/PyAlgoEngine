@@ -7,7 +7,7 @@ from functools import cached_property
 from . import LOGGER
 from ..backtest import SimMatch, ProgressReplay
 from ..base import MarketData, TradeReport, TradeInstruction, TransactionSide, TransactionDirection as Direction, TransactionOffset as Offset
-from ..engine import PositionManagementService, TOPIC_SET, EVENT_ENGINE
+from ..engine import INVENTORY, PositionManagementService, TOPIC_SET, EVENT_ENGINE
 
 LOGGER = LOGGER.getChild('Strategy')
 
@@ -42,12 +42,8 @@ class StrategyEngineTemplate(object, metaclass=abc.ABCMeta):
         return self.position_tracker.dma.risk_profile
 
     @property
-    def balance(self):
-        return self.position_tracker.dma.risk_profile.balance
-
-    @property
     def inventory(self):
-        return self.position_tracker.dma.risk_profile.balance.inventory
+        return INVENTORY
 
     @cached_property
     def lock(self):
@@ -209,9 +205,9 @@ class StrategyEngine(StrategyEngineTemplate):
 
         if auto_register:
             event_engine.register_handler(topic=topic_set.realtime, handler=self.mds)
-            event_engine.register_handler(topic=topic_set.realtime, handler=self.position_tracker.on_market_data)
-            event_engine.register_handler(topic=topic_set.on_order, handler=self.balance.on_order)
-            event_engine.register_handler(topic=topic_set.on_report, handler=self.balance.on_report)
+            event_engine.register_handler(topic=topic_set.realtime, handler=self.position_tracker.algo_engine.on_market_data)
+            event_engine.register_handler(topic=topic_set.on_order, handler=self.position_tracker.algo_engine.on_order)
+            event_engine.register_handler(topic=topic_set.on_report, handler=self.position_tracker.algo_engine.on_trade)
 
         event_engine.register_handler(topic=topic_set.realtime, handler=self.__call__)
         event_engine.register_handler(topic=topic_set.on_order, handler=self.on_order)
@@ -226,9 +222,9 @@ class StrategyEngine(StrategyEngineTemplate):
 
         if auto_unregister:
             event_engine.unregister_handler(topic=topic_set.realtime, handler=self.mds)
-            event_engine.unregister_handler(topic=topic_set.realtime, handler=self.position_tracker.on_market_data)
-            event_engine.unregister_handler(topic=topic_set.on_order, handler=self.balance.on_order)
-            event_engine.unregister_handler(topic=topic_set.on_report, handler=self.balance.on_report)
+            event_engine.unregister_handler(topic=topic_set.realtime, handler=self.position_tracker.algo_engine.on_market_data)
+            event_engine.unregister_handler(topic=topic_set.on_order, handler=self.position_tracker.algo_engine.on_order)
+            event_engine.unregister_handler(topic=topic_set.on_report, handler=self.position_tracker.algo_engine.on_trade)
 
         event_engine.unregister_handler(topic=topic_set.realtime, handler=self.__call__)
         event_engine.unregister_handler(topic=topic_set.on_order, handler=self.on_order)
@@ -419,7 +415,7 @@ class StrategyEngine(StrategyEngineTemplate):
                 self.event_engine.put(topic=self.topic_set.push(market_data=_market_data), market_data=_market_data)
             else:
                 self.mds.on_market_data(market_data=_market_data)
-                self.position_tracker.on_market_data(market_data=_market_data)
+                self.position_tracker.algo_engine.on_market_data(market_data=_market_data)
                 self.__call__(market_data=_market_data)
                 sim_match[_ticker](market_data=_market_data)
 
