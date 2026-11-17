@@ -114,7 +114,6 @@ static inline evt_topic*        c_dma_protocol_handler_topic(dma_protocol_ctx* p
 
 static inline int               c_dma_protocol_config(dma_protocol_ctx* protocol, bool block, size_t max_spin, double timeout);
 static inline int               c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* market_data);
-static inline int               c_dma_protocol_send_ex(dma_protocol_ctx* protocol, md_variant* market_data, evt_topic* topic);
 static inline int               c_dma_protocol_register_callback(dma_protocol_ctx* protocol, evt_topic* topic, dma_protocol_callback_func fn, void* user_data);
 static inline int               c_dma_protocol_unregister_callback(dma_protocol_ctx* protocol, evt_topic* topic, dma_protocol_callback_func fn, void* user_data);
 static inline void              c_dma_protocol_launch_order(md_trade_instruction* order, uint32_t seq_id, void* user_data);
@@ -294,35 +293,23 @@ static inline int c_dma_protocol_config(dma_protocol_ctx* protocol, bool block, 
  * source outside the region is copied and the copy is released. The caller
  * must not release an in-region source after this call.
  *
- * @param protocol The protocol (NULL-safe).
- * @param market_data The market data to publish.
- * @return DMA_PROTOCOL_OK, or a `dma_protocol_ret_code` error.
- */
-static inline int c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* market_data) {
-    return c_dma_protocol_send_ex(protocol, market_data, NULL);
-}
-
-/**
- * @brief Publish market data on an explicit exact topic.
- *
  * The transport reuses one static payload: a second send before the previous
  * message is dispatched is refused as `DMA_PROTOCOL_ERR_BUSY`.
  *
  * @param protocol The protocol (NULL-safe).
  * @param market_data The market data to publish.
- * @param topic Optional exact topic; NULL resolves from the market data.
  * @return DMA_PROTOCOL_OK, DMA_PROTOCOL_ERR_INVALID_INPUT,
  *         DMA_PROTOCOL_ERR_BUSY, DMA_PROTOCOL_ERR_NO_TOPIC,
  *         DMA_PROTOCOL_ERR_NO_SHM, or DMA_PROTOCOL_ERR_PUBLISH.
  */
-static inline int c_dma_protocol_send_ex(dma_protocol_ctx* protocol, md_variant* market_data, evt_topic* topic) {
+static inline int c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* market_data) {
     if (!protocol || !market_data || !protocol->ENGINE || !protocol->ENGINE->mq || !protocol->TOPICS || !protocol->SHM_ALLOCATOR || !protocol->SHM_POOL) {
         return DMA_PROTOCOL_ERR_INVALID_INPUT;
     }
 
     if (_PAYLOAD.args) return DMA_PROTOCOL_ERR_BUSY;
 
-    evt_topic* target = topic ? topic : c_dma_protocol_callback_topic(protocol, market_data);
+    evt_topic* target = c_dma_protocol_callback_topic(protocol, market_data);
     if (!target || !target->is_exact) return DMA_PROTOCOL_ERR_NO_TOPIC;
 
     const md_variant* payload_market_data = c_md_send_to_shm(market_data, protocol->SHM_ALLOCATOR, protocol->SHM_POOL);
