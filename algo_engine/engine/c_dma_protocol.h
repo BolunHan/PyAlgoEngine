@@ -58,17 +58,17 @@ typedef enum dma_protocol_ret_code {
 typedef struct dma_protocol_ctx dma_protocol_ctx;
 
 /**
- * @brief Listener invoked with the shared-memory market data.
+ * @brief Listener invoked with the shared-memory market data and its topic.
  *
  * The market data is const: the transport does not copy it per listener, so
  * the listener must not modify it. It is valid only for the duration of the
  * call; a listener that keeps it past the call must copy it.
  *
- * The callback is registered directly with the event engine as a
- * `EVT_CALLBACK_WITH_ARGS_USERDATA` handler, so the listened topic must carry
- * only transport payloads.
+ * The callback is registered directly with the event engine as an
+ * `EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA` handler (args, topic, user_data), so
+ * the listened topic must carry only transport payloads.
  */
-typedef void (*dma_protocol_callback_func)(const md_variant* market_data, void* user_data);
+typedef void (*dma_protocol_callback_func)(const md_variant* market_data, const evt_topic* topic, void* user_data);
 
 /**
  * @struct dma_protocol_ctx
@@ -288,10 +288,8 @@ static inline int c_dma_protocol_config(dma_protocol_ctx* protocol, bool block, 
  * `on_report`, and every other dtype (including order data) on
  * `realtime.<ticker>.<dtype>`.
  *
- * The transport owns the payload's market data: a source already in its
- * shared-memory region is transferred and released after dispatch, while a
- * source outside the region is copied and the copy is released. The caller
- * must not release an in-region source after this call.
+ * The transport publishes a fresh shared-memory copy and owns it until after
+ * dispatch; the source is never adopted and stays with the caller.
  *
  * The transport reuses one static payload: a second send before the previous
  * message is dispatched is refused as `DMA_PROTOCOL_ERR_BUSY`.
@@ -312,7 +310,7 @@ static inline int c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* ma
     evt_topic* target = c_dma_protocol_callback_topic(protocol, market_data);
     if (!target || !target->is_exact) return DMA_PROTOCOL_ERR_NO_TOPIC;
 
-    const md_variant* payload_market_data = c_md_send_to_shm(market_data, protocol->SHM_ALLOCATOR, protocol->SHM_POOL);
+    const md_variant* payload_market_data = c_md_copy_to_shm(market_data, protocol->SHM_ALLOCATOR, protocol->SHM_POOL);
     if (!payload_market_data) return DMA_PROTOCOL_ERR_NO_SHM;
 
     _PAYLOAD.args       = (void*) payload_market_data;
@@ -334,9 +332,10 @@ static inline int c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* ma
 /**
  * @brief Register a callback directly with the event engine.
  *
- * The engine stores the function as an `EVT_CALLBACK_WITH_ARGS_USERDATA`
- * handler and passes `payload->args` as the `const md_variant*`. The listened
- * topic must therefore carry transport payloads only.
+ * The engine stores the function as an `EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA`
+ * handler and passes `payload->args` as the `const md_variant*` together with
+ * the payload's topic. The listened topic must therefore carry transport
+ * payloads only.
  *
  * @param protocol The protocol (NULL-safe).
  * @param topic The exact or generic topic to listen on.
@@ -348,7 +347,7 @@ static inline int c_dma_protocol_send(dma_protocol_ctx* protocol, md_variant* ma
 static inline int c_dma_protocol_register_callback(dma_protocol_ctx* protocol, evt_topic* topic, dma_protocol_callback_func fn, void* user_data) {
     if (!protocol || !protocol->ENGINE || !topic || !fn) return DMA_PROTOCOL_ERR_INVALID_INPUT;
 
-    int ret_code = c_evt_engine_register_handler(protocol->ENGINE, topic, (const void*) fn, EVT_CALLBACK_WITH_ARGS_USERDATA, user_data, true);
+    int ret_code = c_evt_engine_register_handler(protocol->ENGINE, topic, (const void*) fn, EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA, user_data, true);
 
     if (ret_code == EVT_RET_OK || ret_code == EVT_RET_ERR_DUPLICATE) return DMA_PROTOCOL_OK;
     if (ret_code == EVT_RET_ERR_OOM) return DMA_PROTOCOL_ERR_OOM;
@@ -379,7 +378,7 @@ static inline int c_dma_protocol_unregister_callback(dma_protocol_ctx* protocol,
 
     for (size_t i = 0; i < hook->n_callbacks; i++) {
         evt_callback* callback = &hook->callbacks[i];
-        if (callback->type != EVT_CALLBACK_WITH_ARGS_USERDATA) continue;
+        if (callback->type != EVT_CALLBACK_WITH_ARGS_TOPIC_USERDATA) continue;
         if ((const void*) callback->fn.bare != (const void*) fn) continue;
         if (callback->user_data != user_data) continue;
 
