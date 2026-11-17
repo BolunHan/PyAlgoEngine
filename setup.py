@@ -65,6 +65,8 @@ class BuildExtWithConfig(build_ext):
         "algo_engine.base.c_market_data",
         "algo_engine.exchange_profile",
         "algo_engine.engine",
+        "algo_engine.engine.algo",
+        "algo_engine.engine.risk_profile",
         "algo_engine.backtest"
     ]
 
@@ -434,8 +436,14 @@ cython_extension.extend([
     ),
     # === DMA Cython Extensions ===
     Extension(
-        name="algo_engine.engine.c_risk_profile",
-        sources=["algo_engine/engine/c_risk_profile.pyx"],
+        name="algo_engine.engine.risk_profile.c_risk_profile",
+        sources=["algo_engine/engine/risk_profile/c_risk_profile.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.risk_profile.c_refusal_window",
+        sources=["algo_engine/engine/risk_profile/c_refusal_window.pyx"],
         include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
@@ -446,8 +454,51 @@ cython_extension.extend([
         extra_compile_args=[*COMPILE_FLAGS]
     ),
     Extension(
+        name="algo_engine.engine.c_dma_algo",
+        sources=["algo_engine/engine/c_dma_algo.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    # === Algo Cython Extensions ===
+    Extension(
+        name="algo_engine.engine.algo.c_algo_template",
+        sources=["algo_engine/engine/algo/c_algo_template.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.algo.c_passive",
+        sources=["algo_engine/engine/algo/c_passive.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.algo.c_passive_timeout",
+        sources=["algo_engine/engine/algo/c_passive_timeout.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.algo.c_aggressive",
+        sources=["algo_engine/engine/algo/c_aggressive.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.algo.c_aggressive_timeout",
+        sources=["algo_engine/engine/algo/c_aggressive_timeout.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
         name="algo_engine.engine.c_position",
         sources=["algo_engine/engine/c_position.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
+    Extension(
+        name="algo_engine.engine.c_balance",
+        sources=["algo_engine/engine/c_balance.pyx"],
         include_dirs=[REPO_ROOT, *cbase.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
@@ -464,10 +515,16 @@ cython_extension.extend([
         include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     ),
+    Extension(
+        name="algo_engine.engine.c_dma_protocol",
+        sources=["algo_engine/engine/c_dma_protocol.pyx"],
+        include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
+        extra_compile_args=[*COMPILE_FLAGS]
+    ),
     # === BackTest Cython Extensions ===
     Extension(
-        name="algo_engine.backtest.c_simmatch_ex",
-        sources=["algo_engine/backtest/c_simmatch_ex.pyx"],
+        name="algo_engine.backtest.c_simmatch",
+        sources=["algo_engine/backtest/c_simmatch.pyx"],
         include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
         extra_compile_args=[*COMPILE_FLAGS]
     )
@@ -490,8 +547,8 @@ if WITH_TESTS:
         # second native listener backed by a Python callable to verify that
         # any number of wrappers (simulators, viewers) can register.
         Extension(
-            name="tests.backtest.c_simmatch_ex_toolkit",
-            sources=['tests/backtest/c_simmatch_ex_toolkit.pyx'],
+            name="tests.backtest.c_simmatch_toolkit",
+            sources=['tests/backtest/c_simmatch_toolkit.pyx'],
             include_dirs=[REPO_ROOT, *cbase.get_include(), *event_engine.get_include()],
             extra_compile_args=[*COMPILE_FLAGS],
         ),
