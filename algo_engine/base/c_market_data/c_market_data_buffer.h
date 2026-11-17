@@ -1,6 +1,7 @@
 #ifndef C_MARKET_DATA_BUFFER_H
 #define C_MARKET_DATA_BUFFER_H
 
+#include <math.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -8,11 +9,11 @@
 #include <string.h>
 #include <time.h>
 
-#include <algo_engine/base/c_market_data/c_market_data.h>
 #include <cbase/allocator_protocol/c_allocator_protocol.h>
 #include <cbase/intern_string/c_intern_string.h>
 
-#include <math.h>
+#include <algo_engine/base/c_market_data/c_market_data.h>
+
 #ifdef _WIN32
 #include <cbase/nt/time_sched_nt_compat.h>
 #else
@@ -72,6 +73,7 @@ typedef struct md_concurrent_buffer {
 static inline int                   c_md_compare_serialized(const void* a, const void* b);
 static inline size_t                c_md_total_buffer_size(const md_variant** md_array, size_t n_md);
 static inline const md_variant*     c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool);
+static inline const md_variant*     c_md_copy_to_shm(const md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool);
 
 static inline md_block_buffer*      c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator);
 static inline void                  c_md_block_buffer_free(md_block_buffer* buffer);
@@ -111,8 +113,8 @@ static inline int c_md_compare_serialized(const void* a, const void* b) {
     session_datetime_t dt_b;
     memcpy(&dt_a, md_serialized_a + sizeof(uint8_t), sizeof(dt_a));
     memcpy(&dt_b, md_serialized_b + sizeof(uint8_t), sizeof(dt_b));
-    double             key_a = c_md_dt_sort_key(&dt_a);
-    double             key_b = c_md_dt_sort_key(&dt_b);
+    double key_a = c_md_dt_sort_key(&dt_a);
+    double key_b = c_md_dt_sort_key(&dt_b);
 
     if (key_a < key_b) return -1;
     if (key_a > key_b) return 1;
@@ -156,9 +158,9 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
     }
 
     // Step 3: Initialize new market_data in SHM
-    md_data_type dtype = market_data->meta_info.dtype;
+    md_data_type dtype   = market_data->meta_info.dtype;
     md_variant*  payload = c_md_new(dtype, shm_allocator);
-    size_t       size = c_md_get_size(dtype);
+    size_t       size    = c_md_get_size(dtype);
     if (!payload) return NULL;
 
     memcpy((void*) payload, (void*) market_data, size);
@@ -172,8 +174,8 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
         // Bid order book
         if (src_tick->bid) {
             size_t        ob_capacity = src_tick->bid->capacity;
-            size_t        ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
-            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator);
+            size_t        ob_size     = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
+            md_orderbook* ob_shm      = c_md_orderbook_new(ob_capacity, shm_allocator);
             if (!ob_shm) {
                 c_ap_free(payload);
                 return NULL;
@@ -188,8 +190,91 @@ static inline const md_variant* c_md_send_to_shm(md_variant* market_data, alloca
         // Ask order book
         if (src_tick->ask) {
             size_t        ob_capacity = src_tick->ask->capacity;
-            size_t        ob_size = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
-            md_orderbook* ob_shm = c_md_orderbook_new(ob_capacity, shm_allocator);
+            size_t        ob_size     = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
+            md_orderbook* ob_shm      = c_md_orderbook_new(ob_capacity, shm_allocator);
+            if (!ob_shm) {
+                if (dst_tick->bid) {
+                    c_ap_free(dst_tick->bid);
+                }
+                c_ap_free(payload);
+                return NULL;
+            }
+            memcpy((void*) ob_shm, (void*) src_tick->ask, ob_size);
+            dst_tick->ask = ob_shm;
+        }
+        else {
+            dst_tick->ask = NULL;
+        }
+    }
+
+    return payload;
+}
+
+/**
+ * @brief Copy market data into a fresh shared-memory block.
+ *
+ * Unlike `c_md_send_to_shm`, the source is never adopted: the result is always
+ * a newly allocated copy in the shared-memory region, even when the source
+ * already lives there, and the caller keeps ownership of the source.
+ *
+ * @param market_data The source (borrowed; never modified).
+ * @param shm_allocator The shared-memory allocator.
+ * @param shm_pool The shared-memory intern pool.
+ * @return The new copy, or NULL on invalid input or allocation failure.
+ */
+static inline const md_variant* c_md_copy_to_shm(const md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) {
+    if (!market_data || !shm_allocator || !shm_pool) return NULL;
+
+    // Step 1: Intern ticker string
+    const char* interned_ticker;
+    if (market_data->meta_info.ticker) {
+        if (shm_allocator->with_lock) {
+            interned_ticker = c_istr_synced(shm_pool, market_data->meta_info.ticker, 0, NULL);
+        }
+        else {
+            interned_ticker = c_istr(shm_pool, market_data->meta_info.ticker, 0, NULL);
+        }
+        if (!interned_ticker) return NULL;
+    }
+    else {
+        interned_ticker = NULL;
+    }
+
+    // Step 2: Initialize the copy in SHM
+    md_data_type dtype   = market_data->meta_info.dtype;
+    md_variant*  payload = c_md_new(dtype, shm_allocator);
+    size_t       size    = c_md_get_size(dtype);
+    if (!payload) return NULL;
+
+    memcpy((void*) payload, (const void*) market_data, size);
+    payload->meta_info.ticker = interned_ticker;
+
+    // Step 3: Handle order book pointers if md_tick_data
+    if (dtype == DTYPE_TICK) {
+        const md_tick_data* src_tick = &market_data->tick_data_full;
+        md_tick_data*       dst_tick = &payload->tick_data_full;
+
+        // Bid order book
+        if (src_tick->bid) {
+            size_t        ob_capacity = src_tick->bid->capacity;
+            size_t        ob_size     = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
+            md_orderbook* ob_shm      = c_md_orderbook_new(ob_capacity, shm_allocator);
+            if (!ob_shm) {
+                c_ap_free(payload);
+                return NULL;
+            }
+            memcpy((void*) ob_shm, (void*) src_tick->bid, ob_size);
+            dst_tick->bid = ob_shm;
+        }
+        else {
+            dst_tick->bid = NULL;
+        }
+
+        // Ask order book
+        if (src_tick->ask) {
+            size_t        ob_capacity = src_tick->ask->capacity;
+            size_t        ob_size     = sizeof(md_orderbook) + (ob_capacity * sizeof(md_orderbook_entry));
+            md_orderbook* ob_shm      = c_md_orderbook_new(ob_capacity, shm_allocator);
             if (!ob_shm) {
                 if (dst_tick->bid) {
                     c_ap_free(dst_tick->bid);
@@ -216,17 +301,17 @@ static inline md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t
 
     if (ptr_capacity) {
         buffer->ptr_array.capacity = ptr_capacity;
-        buffer->ptr_array.offsets = (size_t*) c_ap_alloc(ptr_capacity * sizeof(size_t), allocator);
+        buffer->ptr_array.offsets  = (size_t*) c_ap_alloc(ptr_capacity * sizeof(size_t), allocator);
         if (!buffer->ptr_array.offsets) goto oom;
     }
 
     if (data_capacity) {
         buffer->data_array.capacity = data_capacity;
-        buffer->data_array.buf = (char*) c_ap_alloc(data_capacity, allocator);
+        buffer->data_array.buf      = (char*) c_ap_alloc(data_capacity, allocator);
         if (!buffer->data_array.buf) goto oom;
     }
 
-    buffer->sorted = 1;
+    buffer->sorted            = 1;
     buffer->current_timestamp = NAN;
     return buffer;
 
@@ -254,7 +339,7 @@ static inline int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_p
             memcpy(new_offsets, buffer->ptr_array.offsets, buffer->ptr_array.capacity * sizeof(size_t));
             c_ap_free(buffer->ptr_array.offsets);
         }
-        buffer->ptr_array.offsets = new_offsets;
+        buffer->ptr_array.offsets  = new_offsets;
         buffer->ptr_array.capacity = new_ptr_capacity;
     }
 
@@ -265,7 +350,7 @@ static inline int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_p
             memcpy(new_data_buf, buffer->data_array.buf, buffer->data_array.capacity);
             c_ap_free(buffer->data_array.buf);
         }
-        buffer->data_array.buf = new_data_buf;
+        buffer->data_array.buf      = new_data_buf;
         buffer->data_array.capacity = new_data_capacity;
     }
 
@@ -275,7 +360,7 @@ static inline int c_md_block_buffer_extend(md_block_buffer* buffer, size_t new_p
 static inline int c_md_block_buffer_put(md_block_buffer* buffer, const md_variant* market_data) {
     if (!buffer || !market_data) return MD_ERR_INVALID_INPUT;
 
-    size_t idx_tail = buffer->ptr_array.idx_tail;
+    size_t idx_tail     = buffer->ptr_array.idx_tail;
     size_t ptr_capacity = buffer->ptr_array.capacity;
     if (idx_tail >= ptr_capacity) {
         int ret_code = c_md_block_buffer_extend(
@@ -287,8 +372,8 @@ static inline int c_md_block_buffer_put(md_block_buffer* buffer, const md_varian
     }
 
     size_t serialized_size = c_md_serialized_size(market_data);
-    size_t data_tail = buffer->data_array.occupied;
-    size_t data_capacity = buffer->data_array.capacity;
+    size_t data_tail       = buffer->data_array.occupied;
+    size_t data_capacity   = buffer->data_array.capacity;
     if (data_tail + serialized_size > data_capacity) {
         int ret_code = c_md_block_buffer_extend(
             buffer,
@@ -311,7 +396,7 @@ static inline int c_md_block_buffer_put(md_block_buffer* buffer, const md_varian
         else buffer->current_timestamp = ts;
     }
     else {
-        buffer->sorted = 1;
+        buffer->sorted            = 1;
         buffer->current_timestamp = ts;
     }
 
@@ -339,8 +424,8 @@ static inline int c_md_block_buffer_sort(md_block_buffer* buffer) {
     }
 
     size_t*            offset_array = buffer->ptr_array.offsets;
-    char*              data_array = buffer->data_array.buf;
-    const md_variant** ptr_array = (const md_variant**) malloc(ptr_tail * sizeof(md_variant*));
+    char*              data_array   = buffer->data_array.buf;
+    const md_variant** ptr_array    = (const md_variant**) malloc(ptr_tail * sizeof(md_variant*));
     if (!ptr_array) return MD_ERR_OOM;
 
     for (size_t i = 0; i < ptr_tail; i++) {
@@ -366,7 +451,7 @@ static inline int c_md_block_buffer_clear(md_block_buffer* buffer) {
     buffer->data_array.occupied = 0;
     if (buffer->data_array.buf) memset(buffer->data_array.buf, 0, buffer->data_array.capacity);
     buffer->current_timestamp = NAN;
-    buffer->sorted = 1;
+    buffer->sorted            = 1;
     return MD_OK;
 }
 
@@ -391,10 +476,10 @@ static inline int c_md_block_buffer_serialize(md_block_buffer* buffer, char* out
     memcpy(ptr, buffer->data_array.buf, buffer->data_array.occupied);
     ptr += buffer->data_array.occupied;
 
-    md_block_buffer* out_buf = (md_block_buffer*) out;
-    out_buf->ptr_array.offsets = NULL;
-    out_buf->ptr_array.capacity = buffer->ptr_array.idx_tail;
-    out_buf->data_array.buf = NULL;
+    md_block_buffer* out_buf     = (md_block_buffer*) out;
+    out_buf->ptr_array.offsets   = NULL;
+    out_buf->ptr_array.capacity  = buffer->ptr_array.idx_tail;
+    out_buf->data_array.buf      = NULL;
     out_buf->data_array.capacity = buffer->data_array.occupied;
 
     return MD_OK;
@@ -411,11 +496,11 @@ static inline md_block_buffer* c_md_block_buffer_deserialize(const char* blob, a
     );
     if (!buffer) return NULL;
 
-    buffer->ptr_array.idx_tail = in_buf->ptr_array.idx_tail;
+    buffer->ptr_array.idx_tail  = in_buf->ptr_array.idx_tail;
     buffer->data_array.occupied = in_buf->data_array.occupied;
-    buffer->current_timestamp = in_buf->current_timestamp;
-    buffer->sorted = in_buf->sorted;
-    const char* ptr = blob + sizeof(md_block_buffer);
+    buffer->current_timestamp   = in_buf->current_timestamp;
+    buffer->sorted              = in_buf->sorted;
+    const char* ptr             = blob + sizeof(md_block_buffer);
 
     memcpy(buffer->ptr_array.offsets, ptr, in_buf->ptr_array.idx_tail * sizeof(size_t));
     ptr += in_buf->ptr_array.idx_tail * sizeof(size_t);
@@ -461,21 +546,21 @@ static inline void c_md_ring_buffer_free(md_ring_buffer* buffer) {
 static inline int c_md_ring_buffer_is_full(md_ring_buffer* buffer, const md_variant* market_data) {
     if (!buffer) return MD_ERR_INVALID_INPUT;
 
-    size_t ptr_head = buffer->ptr_array.idx_head;
-    size_t ptr_tail = buffer->ptr_array.idx_tail;
+    size_t ptr_head     = buffer->ptr_array.idx_head;
+    size_t ptr_tail     = buffer->ptr_array.idx_tail;
     size_t ptr_capacity = buffer->ptr_array.capacity;
-    size_t ptr_next = (ptr_tail + 1) % ptr_capacity;
+    size_t ptr_next     = (ptr_tail + 1) % ptr_capacity;
 
     if (ptr_head == ptr_next) return 1;
 
     if (ptr_head == ptr_tail) return 0;
 
     size_t payload_size = c_md_serialized_size(market_data);
-    size_t data_head = buffer->ptr_array.offsets[ptr_head];
-    size_t data_tail = buffer->data_array.occupied;
+    size_t data_head    = buffer->ptr_array.offsets[ptr_head];
+    size_t data_tail    = buffer->data_array.occupied;
 
     if (data_tail >= data_head) {
-        size_t space_end = buffer->data_array.capacity - data_tail;
+        size_t space_end   = buffer->data_array.capacity - data_tail;
         size_t space_start = data_head;
         if (payload_size <= space_end) {
             return 0;
@@ -528,11 +613,11 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant*
     if (!buffer || !market_data) return MD_ERR_INVALID_INPUT;
 
     const uint32_t spin_per_check = 1000;
-    time_t         start_time = 0;
+    time_t         start_time     = 0;
     time_t         current_time;
-    double         elapsed = 0.0;
-    uint32_t       spin_count = 0;
-    uint32_t       sleep_us = 0;
+    double         elapsed     = 0.0;
+    uint32_t       spin_count  = 0;
+    uint32_t       sleep_us    = 0;
     const int      use_timeout = timeout > 0.0;
 
     size_t         serialized_size = c_md_serialized_size(market_data);
@@ -541,9 +626,9 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant*
 
     for (;;) {
         size_t* offset_array = buffer->ptr_array.offsets;
-        size_t  ptr_head = buffer->ptr_array.idx_head;
-        size_t  ptr_tail = buffer->ptr_array.idx_tail;
-        size_t  ptr_next = (ptr_tail + 1) % buffer->ptr_array.capacity;
+        size_t  ptr_head     = buffer->ptr_array.idx_head;
+        size_t  ptr_tail     = buffer->ptr_array.idx_tail;
+        size_t  ptr_next     = (ptr_tail + 1) % buffer->ptr_array.capacity;
 
         /* Check pointer slot availability */
         if (ptr_head == ptr_next) {
@@ -551,8 +636,8 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant*
         }
         else {
             /* Check data space availability and compute write_offset */
-            size_t data_head = offset_array[ptr_head];
-            size_t data_tail = buffer->data_array.occupied;
+            size_t data_head    = offset_array[ptr_head];
+            size_t data_tail    = buffer->data_array.occupied;
             size_t write_offset = 0;
 
             if (data_tail >= data_head) {
@@ -564,7 +649,7 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant*
                 else {
                     /* Wrap around */
                     if (serialized_size <= data_head) {
-                        write_offset = 0;
+                        write_offset                = 0;
                         buffer->data_array.occupied = serialized_size;
                     }
                     else {
@@ -588,7 +673,7 @@ static inline int c_md_ring_buffer_put(md_ring_buffer* buffer, const md_variant*
                 /* Commit write */
                 char* data_ptr = buffer->data_array.buf + write_offset;
                 c_md_serialize(market_data, data_ptr);
-                offset_array[ptr_tail] = write_offset;
+                offset_array[ptr_tail]     = write_offset;
                 buffer->ptr_array.idx_tail = ptr_next;
                 return MD_OK;
             }
@@ -639,12 +724,12 @@ static inline int c_md_ring_buffer_get(md_ring_buffer* buffer, size_t index, con
     size_t size = c_md_ring_buffer_size(buffer);
     if (index >= size) return MD_ERR_OOR;
 
-    size_t  ptr_head = buffer->ptr_array.idx_head;
+    size_t  ptr_head     = buffer->ptr_array.idx_head;
     size_t  ptr_capacity = buffer->ptr_array.capacity;
-    size_t  ptr_idx = (ptr_head + index) % ptr_capacity;
+    size_t  ptr_idx      = (ptr_head + index) % ptr_capacity;
 
     size_t* offset_array = buffer->ptr_array.offsets;
-    size_t  data_offset = offset_array[ptr_idx];
+    size_t  data_offset  = offset_array[ptr_idx];
 
     if (data_offset >= buffer->data_array.capacity) return MD_ERR_BUF_CORRUPTED;
     if (out) *out = buffer->data_array.buf + data_offset;
@@ -655,13 +740,13 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, do
     if (!buffer || !out) return MD_ERR_INVALID_INPUT;
 
     const uint32_t spin_per_check = 1000;
-    time_t         start_time = 0;
+    time_t         start_time     = 0;
     time_t         current_time;
-    double         elapsed = 0.0;
-    uint32_t       spin_count = 0;
-    uint32_t       sleep_us = 0;
+    double         elapsed     = 0.0;
+    uint32_t       spin_count  = 0;
+    uint32_t       sleep_us    = 0;
     const int      use_timeout = timeout > 0.0;
-    size_t         idx = buffer->ptr_array.idx_head;
+    size_t         idx         = buffer->ptr_array.idx_head;
 
     if (!block && idx == buffer->ptr_array.idx_tail) {
         return MD_ERR_BUF_EMPTY; /* empty and non-blocking */
@@ -672,9 +757,9 @@ static inline int c_md_ring_buffer_listen(md_ring_buffer* buffer, bool block, do
     for (;;) {
         if (idx != buffer->ptr_array.idx_tail) {
             size_t* offset_array = buffer->ptr_array.offsets;
-            size_t  data_offset = offset_array[idx];
+            size_t  data_offset  = offset_array[idx];
             if (data_offset >= buffer->data_array.capacity) return MD_ERR_BUF_CORRUPTED; /* corrupt offset */
-            const char* data_ptr = buffer->data_array.buf + data_offset;
+            const char* data_ptr       = buffer->data_array.buf + data_offset;
             buffer->ptr_array.idx_head = (idx + 1) % buffer->ptr_array.capacity;
             if (out) *out = data_ptr;
             return MD_OK;
@@ -729,14 +814,14 @@ static inline md_concurrent_buffer* c_md_concurrent_buffer_new(size_t n_workers,
     md_concurrent_buffer* buffer = (md_concurrent_buffer*) c_ap_alloc(size, shm_allocator);
     if (!buffer) return NULL;
     buffer->n_workers = n_workers;
-    buffer->workers = (md_concurrent_buffer_worker_ctx*) (buffer + 1);
+    buffer->workers   = (md_concurrent_buffer_worker_ctx*) (buffer + 1);
 
     for (size_t i = 0; i < n_workers; i++) {
         atomic_init(&buffer->workers[i].enabled, true);
         atomic_init(&buffer->workers[i].ptr_head, 0);
     }
 
-    buffer->buffer = (const md_variant**) (buffer->workers + n_workers);
+    buffer->buffer   = (const md_variant**) (buffer->workers + n_workers);
     buffer->capacity = capacity;
     atomic_init(&buffer->tail, 0);
     return buffer;
@@ -799,14 +884,14 @@ static inline int c_md_concurrent_buffer_put(md_concurrent_buffer* buffer, const
     if (!market_data_allocator->with_shm) return MD_ERR_INVALID_ALLOCATOR;
 
     const uint32_t spin_per_check = 1000;
-    time_t         start_time = 0;
+    time_t         start_time     = 0;
     time_t         current_time;
-    double         elapsed = 0.0;
-    uint32_t       spin_count = 0;
-    uint32_t       sleep_us = 0;
+    double         elapsed     = 0.0;
+    uint32_t       spin_count  = 0;
+    uint32_t       sleep_us    = 0;
     const int      use_timeout = timeout > 0.0;
 
-    size_t         tail_val = atomic_load_explicit(&buffer->tail, memory_order_relaxed);
+    size_t         tail_val  = atomic_load_explicit(&buffer->tail, memory_order_relaxed);
     size_t         next_tail = (tail_val + 1) % buffer->capacity;
 
     // Fast check: if full and non-blocking, exit
@@ -883,13 +968,13 @@ static inline int c_md_concurrent_buffer_listen(md_concurrent_buffer* buffer, si
     if (!atomic_load_explicit(&worker->enabled, memory_order_acquire)) return MD_ERR_DISABLED; /* worker disabled */
 
     const uint32_t spin_per_check = 1000;
-    time_t         start_time = 0;
+    time_t         start_time     = 0;
     time_t         current_time;
-    double         elapsed = 0.0;
-    uint32_t       spin_count = 0;
-    uint32_t       sleep_us = 0;
+    double         elapsed     = 0.0;
+    uint32_t       spin_count  = 0;
+    uint32_t       sleep_us    = 0;
     const int      use_timeout = timeout > 0.0;
-    size_t         idx = atomic_load_explicit(&worker->ptr_head, memory_order_relaxed);
+    size_t         idx         = atomic_load_explicit(&worker->ptr_head, memory_order_relaxed);
 
     if (!block && idx == atomic_load_explicit(&buffer->tail, memory_order_acquire)) {
         return MD_ERR_BUF_EMPTY; /* empty and non-blocking */

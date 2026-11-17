@@ -167,6 +167,7 @@ from .c_market_data_buffer cimport (
     c_md_compare_serialized,
     c_md_total_buffer_size,
     c_md_send_to_shm,
+    c_md_copy_to_shm,
     c_md_block_buffer_new,
     c_md_block_buffer_free,
     c_md_block_buffer_extend,

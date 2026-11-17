@@ -47,6 +47,7 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data_buffer.h":
     int c_md_compare_serialized(const void* a, const void* b) noexcept nogil
     size_t c_md_total_buffer_size(const md_variant** md_array, size_t n_md) noexcept nogil
     const md_variant* c_md_send_to_shm(md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) noexcept nogil
+    const md_variant* c_md_copy_to_shm(const md_variant* market_data, allocator_protocol* shm_allocator, istr_map* shm_pool) noexcept nogil
 
     md_block_buffer* c_md_block_buffer_new(size_t ptr_capacity, size_t data_capacity, allocator_protocol* allocator) noexcept nogil
     void c_md_block_buffer_free(md_block_buffer* buffer) noexcept nogil
