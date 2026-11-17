@@ -77,6 +77,9 @@ cdef class DMAProtocol:
     @staticmethod
     cdef void c_detach_md(ap_callback_event event, void* buf, void* user_data) noexcept with gil
 
+    @staticmethod
+    cdef inline bint c_topic_key_equal(const evt_topic* left, const evt_topic* right) noexcept nogil
+
     cdef MarketData c_construct_md(self, const md_variant* market_data)
 
     cpdef int send(self, MarketData market_data)
@@ -86,3 +89,6 @@ cdef class DMAProtocol:
     cpdef int unregister_callback(self, object callback, Topic topic)
 
     cpdef void config(self, bint block, size_t max_spin=?, double timeout=?)
+
+
+cdef DMAProtocol DMA_PROTOCOL

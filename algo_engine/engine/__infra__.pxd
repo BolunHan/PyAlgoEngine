@@ -377,5 +377,5 @@ from .c_dma_protocol cimport (
     c_dma_protocol_cancel_order,
 
     # === Cython classes ===
-    DMAProtocol,
+    DMAProtocol, DMA_PROTOCOL
 )

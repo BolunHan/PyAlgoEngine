@@ -16,17 +16,6 @@ from . import LOGGER
 from .c_event_engine cimport EVENT_ENGINE, TOPIC_SET, TopicSetEx
 
 
-cdef inline bint c_topic_key_equal(const evt_topic* left, const evt_topic* right) noexcept:
-    """Compare two topic headers by key (a re-resolved topic is a new wrapper)."""
-    if not left or not right:
-        return False
-    if left.key_len != right.key_len:
-        return False
-    if left.key_len == 0:
-        return left.key == right.key
-    return memcmp(left.key, right.key, left.key_len) == 0
-
-
 cdef class DMAProtocol:
     def __init__(self, event_engine=None, topic_set=None):
         cdef EventEngineEx engine = EVENT_ENGINE if event_engine is None else event_engine
@@ -79,6 +68,16 @@ cdef class DMAProtocol:
         instance.header = NULL
         instance.data_addr = 0
 
+    @staticmethod
+    cdef inline bint c_topic_key_equal(const evt_topic* left, const evt_topic* right) noexcept nogil:
+        if not left or not right:
+            return False
+        if left.key_len != right.key_len:
+            return False
+        if left.key_len == 0:
+            return left.key == right.key
+        return memcmp(left.key, right.key, left.key_len) == 0
+
     cdef MarketData c_construct_md(self, const md_variant* market_data):
         if <void*> market_data == <void*> self.ws_md:
             return self.ws_instance
@@ -116,7 +115,7 @@ cdef class DMAProtocol:
 
         cdef dma_protocol_pycallback_ctx* node = self.callbacks
         while node:
-            if c_topic_key_equal(node.topic, topic_ptr) and (<object> node.py_callback_fn) == callback:
+            if DMAProtocol.c_topic_key_equal(node.topic, topic_ptr) and (<object> node.py_callback_fn) == callback:
                 return dma_protocol_ret_code.DMA_PROTOCOL_DUPLICATED
             node = node.next
 
@@ -156,7 +155,7 @@ cdef class DMAProtocol:
         cdef int ret_code
 
         while ctx:
-            if c_topic_key_equal(ctx.topic, topic_ptr) and (<object> ctx.py_callback_fn) == callback:
+            if DMAProtocol.c_topic_key_equal(ctx.topic, topic_ptr) and (<object> ctx.py_callback_fn) == callback:
                 break
             ctx = ctx.next
 
@@ -198,3 +197,7 @@ cdef class DMAProtocol:
             if not self.header:
                 raise RuntimeError(f'<{self.__class__.__name__}> not initialized!')
             return <uintptr_t> self.header
+
+
+cdef DMAProtocol DMA_PROTOCOL = DMAProtocol()
+globals()['DMA_PROTOCOL'] = DMA_PROTOCOL

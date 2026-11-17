@@ -30,7 +30,7 @@ class Singleton(type):
 
 
 from .c_event_engine import EVENT_ENGINE, TOPIC_SET, TopicSet, TopicSetEx
-from .c_dma_protocol import DMAProtocol
+from .c_dma_protocol import DMAProtocol, DMA_PROTOCOL
 from .c_market_engine import MDS, MarketDataMonitor, MarketDataMonitorMap, MarketDataMonitorProtocol, MarketDataService, MonitorManager
 from .algo import Aggressive, AggressiveTimeout, AlgoTemplate, AlgoStatus, Passive, PassiveTimeout
 from .risk_profile import RefusalWindowAfterRule, RefusalWindowBeforeRule, RefusalWindowBetweenRule, RefusalWindowRule, RiskLimits, RiskLimitsMapView, RiskProfile, RiskRule, RiskRuleTemplate, RiskType, RiskViolation
@@ -43,7 +43,7 @@ from .c_position import PositionCallbackEvent, PositionManagementService, Positi
 __all__ = [
     'LOGGER',
     'EVENT_ENGINE', 'TOPIC_SET', 'TopicSet', 'TopicSetEx',
-    'DMAProtocol',
+    'DMAProtocol', 'DMA_PROTOCOL',
     'AlgoTemplate', 'ALGO_ENGINE', 'ALGO_REGISTRY',
     'MDS', 'MarketDataService', 'MarketDataMonitor', 'MarketDataMonitorProtocol', 'MonitorManager', 'Singleton',
     'Balance', 'BalanceFlag', 'DirectMarketAccess', 'DirectMarketAccessProtocol', 'PositionManagementService', 'PositionCallbackEvent', 'PositionOrderCallbackProtocol', 'PositionTradeCallbackProtocol', 'INVENTORY', 'Inventory', 'RefusalWindowAfterRule', 'RefusalWindowBeforeRule', 'RefusalWindowBetweenRule', 'RefusalWindowRule', 'RiskLimits', 'RiskLimitsMapView', 'RiskProfile', 'RiskRule', 'RiskRuleTemplate', 'RiskType', 'RiskViolation',
