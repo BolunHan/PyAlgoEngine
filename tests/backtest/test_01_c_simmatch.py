@@ -165,6 +165,8 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(self.sim.history, {})
         self.assertEqual(self.sim.timestamp, 0.)
         self.assertIsNone(self.sim.last_price)
+        self.assertIsNone(self.sim.last_bid_price)
+        self.assertIsNone(self.sim.last_ask_price)
         self.assertEqual(self.sim.last_transaction_count, 0)
         self.assertIsInstance(self.sim.market_time, datetime)
         self.assertIsInstance(self.sim.seed, int)
@@ -499,14 +501,14 @@ class TestSimMatch(unittest.TestCase):
         self.assertNotIn(order.order_id, sim.working)
 
     def test_24_instant_fill_market_order(self) -> None:
-        """With instant_fill, a market order fills at the last price."""
+        """With instant_fill, a market buy fills at the ask."""
         sim = self._instant_fill_sim()
         sim(market_data=self.create_tick(ask_price_1=49.0, ask_volume_1=1))
         order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('nan'))
         sim.launch_order(order=order)
         filled = self.matcher_order(order, sim)
         self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
-        self.assertAlmostEqual(filled.average_price, 49.5 * (1 + 0.0001))
+        self.assertAlmostEqual(filled.average_price, 49.0 * (1 + 0.0001))
 
     def test_25_instant_fill_requires_last_price(self) -> None:
         """Without a last price, an instant-fill market order stays working."""
@@ -660,6 +662,8 @@ class TestSimMatch(unittest.TestCase):
         self.assertEqual(self.sim.history, {})
         self.assertEqual(self.sim.timestamp, 0.)
         self.assertIsNone(self.sim.last_price)
+        self.assertIsNone(self.sim.last_bid_price)
+        self.assertIsNone(self.sim.last_ask_price)
         self.assertEqual(self.sim.last_transaction_count, 0)
         self.assertEqual(self.sim.matching_config['fee_rate'], 0.001)
 
@@ -1136,6 +1140,176 @@ class TestSimMatch(unittest.TestCase):
             SimMatch(ticker='TEST', topic_set=object())
         with self.assertRaises(OverflowError):
             SimMatch(ticker='TEST', seed=-1)
+
+    # === last-price provenance ===
+
+    def test_59_order_data_does_not_set_last_price(self) -> None:
+        """Order data carries its own limit price, not a market print."""
+        self.sim(market_data=self._order_data(120.0, TransactionSide.SIDE_ASK))
+        self.assertIsNone(self.sim.last_price)
+
+    def test_60_order_data_does_not_overwrite_last_price(self) -> None:
+        """A resting order never replaces an established traded price."""
+        self.sim(market_data=self.create_tick(ask_price_1=49.9, ask_volume_1=1))
+        self.assertEqual(self.sim.last_price, 49.5)
+        self.sim(market_data=self._order_data(120.0, TransactionSide.SIDE_ASK))
+        self.assertEqual(self.sim.last_price, 49.5)
+
+    def test_61_tick_nan_last_uses_mid_price(self) -> None:
+        """A tick without a last price supplies the bid/ask mid-point."""
+        tick = TickData(
+            ticker='TEST', timestamp=time.time(), last_price=float('nan'),
+            bid_price_1=100.0, bid_volume_1=1.0,
+            ask_price_1=102.0, ask_volume_1=1.0,
+        )
+        self.sim(market_data=tick)
+        self.assertEqual(self.sim.last_price, 101.0)
+
+    def test_62_tick_nan_last_uses_present_side(self) -> None:
+        """One-sided ticks use the present side (the price-limit case)."""
+        bid_only = TickData(
+            ticker='TEST', timestamp=time.time(), last_price=float('nan'),
+            bid_price_1=99.0, bid_volume_1=1.0,
+            ask_price_1=float('nan'), ask_volume_1=0.0,
+        )
+        self.sim(market_data=bid_only)
+        self.assertEqual(self.sim.last_price, 99.0)
+
+        ask_only = TickData(
+            ticker='TEST', timestamp=time.time(), last_price=float('nan'),
+            bid_price_1=float('nan'), bid_volume_1=0.0,
+            ask_price_1=101.0, ask_volume_1=1.0,
+        )
+        self.sim(market_data=ask_only)
+        self.assertEqual(self.sim.last_price, 101.0)
+
+    def test_63_bar_close_sets_last_price(self) -> None:
+        """A bar close is a traded price."""
+        self.sim(market_data=self.create_bar(close=88.5))
+        self.assertEqual(self.sim.last_price, 88.5)
+
+    def test_64_cancel_transaction_does_not_set_last_price(self) -> None:
+        """A cancel report is not a trade."""
+        cancel = TransactionData(
+            ticker='TEST', timestamp=time.time(),
+            price=120.0, volume=10, side=TransactionSide.SIDE_LONG_CANCEL,
+        )
+        self.sim(market_data=cancel)
+        self.assertIsNone(self.sim.last_price)
+
+    # === book-side price provenance ===
+
+    def _transaction(self, price, side, volume=10):
+        return TransactionData(
+            ticker='TEST', timestamp=time.time(),
+            price=price, volume=volume, side=side,
+        )
+
+    def _order_data(self, price, side, volume=10):
+        return OrderData(
+            ticker='TEST', timestamp=time.time(),
+            price=price, volume=volume, side=side,
+        )
+
+    def test_65_bid_transaction_sets_ask_price(self) -> None:
+        """A bid-side trade prints at the ask."""
+        self.sim(market_data=self._transaction(10.0, TransactionSide.SIDE_LONG))
+        self.assertEqual(self.sim.last_price, 10.0)
+        self.assertEqual(self.sim.last_ask_price, 10.0)
+        self.assertIsNone(self.sim.last_bid_price)
+
+    def test_66_ask_transaction_sets_bid_price(self) -> None:
+        """An ask-side trade prints at the bid."""
+        self.sim(market_data=self._transaction(10.0, TransactionSide.SIDE_LONG))
+        self.sim(market_data=self._transaction(9.0, TransactionSide.SIDE_SHORT))
+        self.assertEqual(self.sim.last_price, 9.0)
+        self.assertEqual(self.sim.last_bid_price, 9.0)
+        self.assertEqual(self.sim.last_ask_price, 10.0)
+
+    def test_67_tick_sets_both_book_sides(self) -> None:
+        """A tick refreshes bid and ask from its book."""
+        self.sim(market_data=self.create_tick(
+            bid_price_1=49.0, bid_volume_1=1.0,
+            ask_price_1=49.9, ask_volume_1=1.0,
+        ))
+        self.assertEqual(self.sim.last_price, 49.5)
+        self.assertEqual(self.sim.last_bid_price, 49.0)
+        self.assertEqual(self.sim.last_ask_price, 49.9)
+
+    def test_68_order_data_sets_its_own_book_side(self) -> None:
+        """A resting order supplies its side, never the last price."""
+        self.sim(market_data=self._order_data(48.0, TransactionSide.SIDE_BID))
+        self.assertEqual(self.sim.last_bid_price, 48.0)
+        self.assertIsNone(self.sim.last_ask_price)
+        self.assertIsNone(self.sim.last_price)
+
+        self.sim(market_data=self._order_data(51.0, TransactionSide.SIDE_ASK))
+        self.assertEqual(self.sim.last_bid_price, 48.0)
+        self.assertEqual(self.sim.last_ask_price, 51.0)
+        self.assertIsNone(self.sim.last_price)
+
+    def test_69_limit_buy_ignores_ask_side_transaction(self) -> None:
+        """A sell-side print proves the bid, not the ask a buy needs."""
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self._transaction(49.0, TransactionSide.SIDE_SHORT))
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_PLACED)
+
+    def test_70_limit_buy_ignores_resting_bid_order(self) -> None:
+        """A resting bid does not prove ask liquidity for a buy."""
+        sim = SimMatch(
+            ticker='TEST', event_engine=self.event_engine, topic_set=self.topic_set,
+            incremental_order_volume=True, hit_prob=1.,
+        )
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
+        sim.launch_order(order=order)
+        sim(market_data=self._order_data(49.0, TransactionSide.SIDE_BID))
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PLACED)
+
+        sim(market_data=self._order_data(49.0, TransactionSide.SIDE_ASK))
+        self.assertEqual(self.matcher_order(order, sim).order_state, OrderState.STATE_PARTFILLED)
+
+    def test_71_limit_buy_fills_at_exact_limit_price(self) -> None:
+        """A bid-side print at the limit price fills the buy."""
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self._transaction(50.0, TransactionSide.SIDE_LONG))
+        filled = self.matcher_order(order)
+        self.assertEqual(filled.order_state, OrderState.STATE_PARTFILLED)
+        self.assertEqual(filled.filled_volume, 10)
+
+    def test_72_instant_fill_market_sell_uses_bid(self) -> None:
+        """With instant_fill, a market sell fills at the bid."""
+        sim = self._instant_fill_sim()
+        sim(market_data=self.create_tick(
+            bid_price_1=49.0, bid_volume_1=1.0,
+            ask_price_1=49.9, ask_volume_1=1.0,
+        ))
+        order = self.create_order(side=TransactionSide.SIDE_ASK, limit_price=float('nan'))
+        sim.launch_order(order=order)
+        filled = self.matcher_order(order, sim)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 49.0 * (1 - 0.0001))
+
+    def test_73_instant_fill_falls_back_to_last_price(self) -> None:
+        """A bookless tick leaves the last price as the market reference."""
+        sim = self._instant_fill_sim()
+        sim(market_data=self.create_tick(last_price=49.5))
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=float('nan'))
+        sim.launch_order(order=order)
+        filled = self.matcher_order(order, sim)
+        self.assertEqual(filled.order_state, OrderState.STATE_FILLED)
+        self.assertAlmostEqual(filled.average_price, 49.5 * (1 + 0.0001))
+
+    def test_74_cancel_transaction_does_not_fill(self) -> None:
+        """A cancel report is not a trade and cannot fill a working order."""
+        order = self.create_order(side=TransactionSide.SIDE_BID, limit_price=50.0)
+        self.sim.launch_order(order=order)
+        self.sim(market_data=self._transaction(
+            49.0, TransactionSide.SIDE_LONG_CANCEL, volume=100,
+        ))
+        self.assertEqual(self.matcher_order(order).order_state, OrderState.STATE_PLACED)
+        self.assertEqual(self.matcher_order(order).filled_volume, 0)
 
     @staticmethod
     def _wait_until(condition, timeout=5.0) -> bool:

@@ -175,10 +175,14 @@ static md_variant make_tick(double ts, double last, size_t n_ask, const double* 
     memset(&tick, 0, sizeof(tick));
     tick.meta_info.dtype                = DTYPE_TICK;
     tick.meta_info.ticker               = "TEST";
-    tick.meta_info.dt.unix_ts           = ts;
-    tick.tick_data_full.lite.last_price = last;
-    tick.tick_data_full.bid             = c_md_orderbook_new(n_ask, NULL);
-    tick.tick_data_full.ask             = c_md_orderbook_new(n_ask, NULL);
+    tick.meta_info.dt.unix_ts              = ts;
+    tick.tick_data_full.lite.last_price     = last;
+    tick.tick_data_full.lite.bid_price      = NAN;
+    tick.tick_data_full.lite.bid_volume     = NAN;
+    tick.tick_data_full.lite.ask_price      = n_ask > 0u ? ask_prices[0] : NAN;
+    tick.tick_data_full.lite.ask_volume     = n_ask > 0u ? ask_volumes[0] : NAN;
+    tick.tick_data_full.bid                 = c_md_orderbook_new(n_ask, NULL);
+    tick.tick_data_full.ask                 = c_md_orderbook_new(n_ask, NULL);
 
     tick.tick_data_full.bid->direction = DIRECTION_LONG;
     tick.tick_data_full.ask->direction = DIRECTION_SHORT;
@@ -226,6 +230,8 @@ static void test_lifecycle(void) {
     CHECK(ctx->hit_prob == 1.0);
     CHECK(ctx->slippery_rate == 0.0001);
     CHECK(isnan(ctx->last_price));
+    CHECK(isnan(ctx->last_bid_price));
+    CHECK(isnan(ctx->last_ask_price));
     CHECK(ctx->working != NULL);
     CHECK(ctx->history != NULL);
     CHECK(ctx->newest == NULL);
@@ -241,6 +247,8 @@ static void test_lifecycle(void) {
     CHECK(manual->working != NULL);
     CHECK(manual->history != NULL);
     CHECK(isnan(manual->last_price));
+    CHECK(isnan(manual->last_bid_price));
+    CHECK(isnan(manual->last_ask_price));
     c_smm_match_dealloc(manual);
 
     bool zeroed = true;
@@ -608,6 +616,8 @@ static void test_seed_and_clear(void) {
     c_smm_match_clear(ctx);
     CHECK(ctx->timestamp == 0.0);
     CHECK(isnan(ctx->last_price));
+    CHECK(isnan(ctx->last_bid_price));
+    CHECK(isnan(ctx->last_ask_price));
     CHECK(ctx->last_transaction_count == 0u);
     CHECK(c_bytemap_len(ctx->working) == 0u);
     CHECK(c_bytemap_len(ctx->history) == 0u);
@@ -627,6 +637,101 @@ static void test_seed_and_clear(void) {
 
 // ========== Main ==========
 
+// ========== Last Price / Book Side ==========
+
+static void test_last_price_book(void) {
+    smm_match_ctx* ctx = c_smm_match_new(0.0, false, 0.0, 0u, 1.0, 0.0, false, NULL);
+
+    // A bid-side trade executes at the ask; an ask-side trade at the bid.
+    md_variant bid_txn = make_txn(100.0, 10.0, 10.0, SIDE_LONG_OPEN);
+    CHECK(c_smm_match_process(ctx, &bid_txn) == SMM_OK);
+    CHECK(ctx->last_price == 10.0);
+    CHECK(ctx->last_ask_price == 10.0);
+    CHECK(isnan(ctx->last_bid_price));
+
+    md_variant ask_txn = make_txn(101.0, 9.0, 10.0, SIDE_SHORT_OPEN);
+    CHECK(c_smm_match_process(ctx, &ask_txn) == SMM_OK);
+    CHECK(ctx->last_price == 9.0);
+    CHECK(ctx->last_bid_price == 9.0);
+    CHECK(ctx->last_ask_price == 10.0);
+
+    // A tick refreshes both sides of the book.
+    md_variant tick = make_tick_lite(102.0, 9.5, 9.2, 10.0, 9.8, 10.0);
+    CHECK(c_smm_match_process(ctx, &tick) == SMM_OK);
+    CHECK(ctx->last_price == 9.5);
+    CHECK(ctx->last_bid_price == 9.2);
+    CHECK(ctx->last_ask_price == 9.8);
+
+    // An order refreshes its own side only; it never moves last_price.
+    md_variant bid_order = make_order_data(103.0, 9.0, 5.0, SIDE_BID);
+    CHECK(c_smm_match_process(ctx, &bid_order) == SMM_OK);
+    CHECK(ctx->last_bid_price == 9.0);
+    CHECK(ctx->last_ask_price == 9.8);
+    CHECK(ctx->last_price == 9.5);
+
+    md_variant ask_order = make_order_data(104.0, 10.0, 5.0, SIDE_ASK);
+    CHECK(c_smm_match_process(ctx, &ask_order) == SMM_OK);
+    CHECK(ctx->last_bid_price == 9.0);
+    CHECK(ctx->last_ask_price == 10.0);
+    CHECK(ctx->last_price == 9.5);
+
+    CHECK(c_smm_reference_price(ctx, 1) == 10.0);
+    CHECK(c_smm_reference_price(ctx, -1) == 9.0);
+
+    c_smm_match_free(ctx);
+}
+
+static void test_side_gated_matching(void) {
+    smm_match_ctx* ctx = c_smm_match_new(0.0, false, 0.0, 0u, 1.0, 0.0, true, NULL);
+
+    // A buy only takes a bid-side print (the ask at that price).
+    md_trade_instruction buy = make_order(SIDE_BID, 50.0, 100.0, 1);
+    CHECK(c_smm_match_launch(ctx, &buy) == SMM_OK);
+
+    md_variant ask_side_txn = make_txn(200.0, 49.0, 10.0, SIDE_SHORT_OPEN);
+    CHECK(c_smm_match_process(ctx, &ask_side_txn) == SMM_OK);
+    md_trade_instruction* copy = working_order(ctx, &buy.order_id);
+    CHECK(copy != NULL);
+    CHECK(copy->order_state == STATE_PLACED);
+    CHECK(copy->filled_volume == 0.0);
+
+    // At the limit price, a bid-side print fills.
+    md_variant bid_side_txn = make_txn(201.0, 50.0, 10.0, SIDE_LONG_OPEN);
+    CHECK(c_smm_match_process(ctx, &bid_side_txn) == SMM_OK);
+    copy = working_order(ctx, &buy.order_id);
+    CHECK(copy != NULL);
+    CHECK(copy->order_state == STATE_PARTFILLED);
+    CHECK(copy->filled_volume == 10.0);
+
+    // A resting bid does not fill a buy; a resting ask does.
+    md_trade_instruction buy2 = make_order(SIDE_BID, 50.0, 100.0, 2);
+    CHECK(c_smm_match_launch(ctx, &buy2) == SMM_OK);
+
+    md_variant bid_order = make_order_data(202.0, 49.0, 10.0, SIDE_BID);
+    CHECK(c_smm_match_process(ctx, &bid_order) == SMM_OK);
+    copy = working_order(ctx, &buy2.order_id);
+    CHECK(copy != NULL);
+    CHECK(copy->filled_volume == 0.0);
+
+    md_variant ask_order = make_order_data(203.0, 49.0, 10.0, SIDE_ASK);
+    CHECK(c_smm_match_process(ctx, &ask_order) == SMM_OK);
+    copy = working_order(ctx, &buy2.order_id);
+    CHECK(copy != NULL);
+    CHECK(copy->order_state == STATE_PARTFILLED);
+    CHECK(copy->filled_volume == 10.0);
+
+    // A cancel report cannot fill a working order.
+    md_trade_instruction buy3 = make_order(SIDE_BID, 50.0, 100.0, 3);
+    CHECK(c_smm_match_launch(ctx, &buy3) == SMM_OK);
+    md_variant cancel_txn = make_txn(204.0, 49.0, 100.0, SIDE_LONG_CANCEL);
+    CHECK(c_smm_match_process(ctx, &cancel_txn) == SMM_OK);
+    copy = working_order(ctx, &buy3.order_id);
+    CHECK(copy != NULL);
+    CHECK(copy->filled_volume == 0.0);
+
+    c_smm_match_free(ctx);
+}
+
 int main(void) {
     test_lifecycle();
     test_price_helpers();
@@ -635,6 +740,8 @@ int main(void) {
     test_tick_matching();
     test_bookless_matching();
     test_lag();
+    test_last_price_book();
+    test_side_gated_matching();
     test_seed_and_clear();
 
     if (g_failures) {

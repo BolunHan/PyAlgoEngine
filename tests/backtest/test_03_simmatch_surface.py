@@ -92,6 +92,8 @@ class TestSimMatchSurface(unittest.TestCase):
         self.assertEqual(pyx_properties, {
             'timestamp',
             'last_price',
+            'last_bid_price',
+            'last_ask_price',
             'last_transaction_count',
             'matching_config',
             'market_time',
