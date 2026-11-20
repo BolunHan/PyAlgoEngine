@@ -95,30 +95,95 @@ static session_datetime_t make_dt(double timestamp) {
     memset(&dt, 0, sizeof(dt));
     dt.unix_ts = timestamp;
     dt.ts      = timestamp;
-    dt.ordinal = (uint32_t) timestamp;
+    dt.time.elapsed_seconds = timestamp;
     dt.date.year  = 2024;
     dt.date.month = 11;
     dt.date.day   = 11;
+    dt.ordinal    = c_ex_profile_date_to_ordinal(&dt.date);
     return dt;
 }
 
-static md_variant make_transaction(const char* ticker, double price, double timestamp) {
+static session_datetime_t make_dt_on(uint16_t year, uint8_t month, uint8_t day, double elapsed) {
+    session_datetime_t dt;
+    memset(&dt, 0, sizeof(dt));
+    dt.unix_ts = elapsed;
+    dt.ts      = elapsed;
+    dt.time.elapsed_seconds = elapsed;
+    dt.date.year  = year;
+    dt.date.month = month;
+    dt.date.day   = day;
+    dt.ordinal    = c_ex_profile_date_to_ordinal(&dt.date);
+    return dt;
+}
+
+static md_variant make_transaction_full(const char* ticker, double price, md_side side, session_datetime_t dt) {
     md_variant market_data;
     memset(&market_data, 0, sizeof(market_data));
     market_data.meta_info.dtype  = DTYPE_TRANSACTION;
     market_data.meta_info.ticker = ticker;
-    market_data.meta_info.dt     = make_dt(timestamp);
+    market_data.meta_info.dt     = dt;
     market_data.transaction_data.price = price;
+    market_data.transaction_data.side  = side;
     return market_data;
 }
 
-static md_variant make_tick_lite(const char* ticker, double price, double timestamp) {
+static md_variant make_transaction_side(const char* ticker, double price, double timestamp, md_side side) {
+    return make_transaction_full(ticker, price, side, make_dt(timestamp));
+}
+
+static md_variant make_transaction(const char* ticker, double price, double timestamp) {
+    return make_transaction_side(ticker, price, timestamp, SIDE_LONG_OPEN);
+}
+
+static md_variant make_order(const char* ticker, double price, double timestamp) {
+    md_variant market_data;
+    memset(&market_data, 0, sizeof(market_data));
+    market_data.meta_info.dtype  = DTYPE_ORDER;
+    market_data.meta_info.ticker = ticker;
+    market_data.meta_info.dt     = make_dt(timestamp);
+    market_data.order_data.price      = price;
+    market_data.order_data.volume     = 1.;
+    market_data.order_data.side       = SIDE_BID;
+    market_data.order_data.order_type = ORDER_LIMIT;
+    return market_data;
+}
+
+static md_variant make_tick_lite_full(const char* ticker, double last, double bid, double ask, session_datetime_t dt) {
     md_variant market_data;
     memset(&market_data, 0, sizeof(market_data));
     market_data.meta_info.dtype  = DTYPE_TICK_LITE;
     market_data.meta_info.ticker = ticker;
+    market_data.meta_info.dt     = dt;
+    market_data.tick_data_lite.last_price = last;
+    market_data.tick_data_lite.bid_price  = bid;
+    market_data.tick_data_lite.ask_price  = ask;
+    return market_data;
+}
+
+static md_variant make_tick_lite(const char* ticker, double price, double timestamp) {
+    return make_tick_lite_full(ticker, price, NAN, NAN, make_dt(timestamp));
+}
+
+static md_variant make_bar(const char* ticker, double close, double timestamp) {
+    md_variant market_data;
+    memset(&market_data, 0, sizeof(market_data));
+    market_data.meta_info.dtype  = DTYPE_BAR;
+    market_data.meta_info.ticker = ticker;
     market_data.meta_info.dt     = make_dt(timestamp);
-    market_data.tick_data_lite.last_price = price;
+    market_data.bar_data.open_price  = close;
+    market_data.bar_data.high_price  = close;
+    market_data.bar_data.low_price   = close;
+    market_data.bar_data.close_price = close;
+    return market_data;
+}
+
+static md_variant make_instruction(const char* ticker, double limit_price, double timestamp) {
+    md_variant market_data;
+    memset(&market_data, 0, sizeof(market_data));
+    market_data.meta_info.dtype  = DTYPE_INSTRUCTION;
+    market_data.meta_info.ticker = ticker;
+    market_data.meta_info.dt     = make_dt(timestamp);
+    market_data.trade_instruction.limit_price = limit_price;
     return market_data;
 }
 
@@ -306,13 +371,27 @@ static void test_subscription_registration(void) {
     CHECK(c_mds_get_market_price(service, "AAA") == 11.5);
     CHECK(subscription_at(service, "AAA")->n_feeds == 2);
 
-    md_variant tick = make_tick_lite("AAA", 12.5, 102.0);
-    CHECK(c_mds_on_market_data(service, &tick) == MDS_OK);
+    // A tick inside the stale window keeps the traded price and its update
+    // time; the observation itself still advances the service timestamp.
+    md_variant early_tick = make_tick_lite("AAA", 12.5, 102.0);
+    CHECK(c_mds_on_market_data(service, &early_tick) == MDS_OK);
+    CHECK(service->ts.unix_ts == 102.0);
     subscription = subscription_at(service, "AAA");
     CHECK(subscription->is_subscribed_td);
     CHECK(subscription->is_subscribed_tk_lite);
     CHECK(subscription->n_feeds == 3);
+    CHECK(subscription->last_price == 11.5);
+    CHECK(subscription->last_update.unix_ts == 101.0);
+    CHECK(subscription->last_trade_update.unix_ts == 101.0);
+
+    // Beyond the window the tick supplies the price.
+    md_variant late_tick = make_tick_lite("AAA", 12.5, 105.0);
+    CHECK(c_mds_on_market_data(service, &late_tick) == MDS_OK);
+    subscription = subscription_at(service, "AAA");
+    CHECK(subscription->n_feeds == 4);
     CHECK(subscription->last_price == 12.5);
+    CHECK(subscription->last_update.unix_ts == 105.0);
+    CHECK(subscription->last_trade_update.unix_ts == 101.0);
 
     md_variant other = make_transaction("BBB", 20.0, 103.0);
     CHECK(c_mds_on_market_data(service, &other) == MDS_OK_SUBSCRIBED);
@@ -471,6 +550,208 @@ static void test_subscription_growth(void) {
     c_mds_free(service);
 }
 
+// ========== 9. Last-Price Helper ==========
+
+static void test_md_get_last_price(void) {
+    double price = -1.;
+
+    md_variant trade       = make_transaction("HLP", 10.25, 1.0);
+    md_variant cancel      = make_transaction_side("HLP", 99.0, 1.0, SIDE_LONG_CANCEL);
+    md_variant order       = make_order("HLP", 120.0, 1.0);
+    md_variant instruction = make_instruction("HLP", 42.0, 1.0);
+    md_variant tick        = make_tick_lite_full("HLP", 11.0, 10.5, 11.5, make_dt(1.0));
+    md_variant tick_mid    = make_tick_lite_full("HLP", NAN, 10.0, 12.0, make_dt(1.0));
+    md_variant tick_bid    = make_tick_lite_full("HLP", NAN, 9.0, NAN, make_dt(1.0));
+    md_variant tick_ask    = make_tick_lite_full("HLP", NAN, NAN, 13.0, make_dt(1.0));
+    md_variant tick_none   = make_tick_lite_full("HLP", NAN, NAN, NAN, make_dt(1.0));
+    md_variant bar         = make_bar("HLP", 20.0, 1.0);
+
+    md_variant full_tick;
+    memset(&full_tick, 0, sizeof(full_tick));
+    full_tick.meta_info.dtype  = DTYPE_TICK;
+    full_tick.meta_info.ticker = "HLP";
+    full_tick.meta_info.dt     = make_dt(1.0);
+    full_tick.tick_data_full.lite.last_price = NAN;
+    full_tick.tick_data_full.lite.bid_price  = 4.0;
+    full_tick.tick_data_full.lite.ask_price  = 6.0;
+
+    CHECK(c_md_get_last_price(NULL, &price) == MD_ERR_INVALID_INPUT);
+    CHECK(c_md_get_last_price(&trade, NULL) == MD_ERR_INVALID_INPUT);
+
+    CHECK(c_md_get_last_price(&order, &price) == MD_ERR_NO_PRICE);
+    CHECK(price == -1.);
+    CHECK(c_md_get_last_price(&instruction, &price) == MD_ERR_NO_PRICE);
+    CHECK(c_md_get_last_price(&cancel, &price) == MD_ERR_NO_PRICE);
+
+    CHECK(c_md_get_last_price(&trade, &price) == MD_OK);
+    CHECK(price == 10.25);
+    CHECK(c_md_get_last_price(&tick, &price) == MD_OK);
+    CHECK(price == 11.0);
+    CHECK(c_md_get_last_price(&tick_mid, &price) == MD_OK);
+    CHECK(price == 11.0);
+    CHECK(c_md_get_last_price(&tick_bid, &price) == MD_OK);
+    CHECK(price == 9.0);
+    CHECK(c_md_get_last_price(&tick_ask, &price) == MD_OK);
+    CHECK(price == 13.0);
+    CHECK(c_md_get_last_price(&tick_none, &price) == MD_ERR_NO_PRICE);
+    CHECK(c_md_get_last_price(&bar, &price) == MD_OK);
+    CHECK(price == 20.0);
+    CHECK(c_md_get_last_price(&full_tick, &price) == MD_OK);
+    CHECK(price == 5.0);
+}
+
+// ========== 10. MDS Last-Price Semantics ==========
+
+static void test_last_price_semantics(void) {
+    // The two price timestamps lead the subscription; downstream readers are
+    // rebuilt against this layout.
+    CHECK(offsetof(mds_subscription, last_update) == 0);
+    CHECK(offsetof(mds_subscription, last_trade_update) == sizeof(session_datetime_t));
+    CHECK(offsetof(mds_subscription, last_price) == 2 * sizeof(session_datetime_t));
+
+    mds* service = c_mds_new(NULL);
+    CHECK(service != NULL);
+
+    // A ticker seen only through orders is subscribed with no price.
+    md_variant order_only = make_order("ORD", 120.0, 100.0);
+    CHECK(c_mds_on_market_data(service, &order_only) == MDS_OK_SUBSCRIBED);
+    const mds_subscription* subscription = subscription_at(service, "ORD");
+    CHECK(subscription != NULL);
+    CHECK(isnan(subscription->last_price));
+    CHECK(subscription->last_update.unix_ts == 0.);
+    CHECK(subscription->n_feeds == 1);
+    CHECK(subscription->is_subscribed_od);
+
+    // A trade seeds the price and both timestamps.
+    md_variant trade = make_transaction("PX", 10.0, 100.0);
+    CHECK(c_mds_on_market_data(service, &trade) == MDS_OK_SUBSCRIBED);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 10.0);
+    CHECK(subscription->last_update.unix_ts == 100.0);
+    CHECK(subscription->last_trade_update.unix_ts == 100.0);
+
+    // Order data moves neither the price nor last_update.
+    md_variant order = make_order("PX", 99.0, 101.0);
+    CHECK(c_mds_on_market_data(service, &order) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 10.0);
+    CHECK(subscription->last_update.unix_ts == 100.0);
+    CHECK(service->ts.unix_ts == 101.0);
+
+    // 2.9 s after the trade: still inside the window.
+    md_variant inside = make_tick_lite_full("PX", 11.0, NAN, NAN, make_dt(102.9));
+    CHECK(c_mds_on_market_data(service, &inside) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 10.0);
+    CHECK(subscription->last_update.unix_ts == 100.0);
+
+    // Exactly at the window boundary: the tick supplies the price.
+    md_variant boundary = make_tick_lite_full("PX", 11.0, NAN, NAN, make_dt(103.0));
+    CHECK(c_mds_on_market_data(service, &boundary) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 11.0);
+    CHECK(subscription->last_update.unix_ts == 103.0);
+    CHECK(subscription->last_trade_update.unix_ts == 100.0);
+
+    // Stale tick with NaN last: mid-point.
+    md_variant mid = make_tick_lite_full("PX", NAN, 12.0, 14.0, make_dt(103.5));
+    CHECK(c_mds_on_market_data(service, &mid) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 13.0);
+    CHECK(subscription->last_update.unix_ts == 103.5);
+
+    // One present side: bid then ask (price-limit cases).
+    md_variant bid_only = make_tick_lite_full("PX", NAN, 15.0, NAN, make_dt(104.0));
+    CHECK(c_mds_on_market_data(service, &bid_only) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 15.0);
+    CHECK(subscription->last_update.unix_ts == 104.0);
+
+    md_variant ask_only = make_tick_lite_full("PX", NAN, NAN, 16.0, make_dt(105.0));
+    CHECK(c_mds_on_market_data(service, &ask_only) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 16.0);
+    CHECK(subscription->last_update.unix_ts == 105.0);
+
+    // No price at all: nothing moves.
+    md_variant none = make_tick_lite_full("PX", NAN, NAN, NAN, make_dt(106.0));
+    CHECK(c_mds_on_market_data(service, &none) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 16.0);
+    CHECK(subscription->last_update.unix_ts == 105.0);
+    CHECK(service->ts.unix_ts == 106.0);
+
+    // Bars and cancels never move the price.
+    md_variant bar = make_bar("PX", 20.0, 107.0);
+    CHECK(c_mds_on_market_data(service, &bar) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 16.0);
+    CHECK(subscription->last_update.unix_ts == 105.0);
+
+    md_variant cancel = make_transaction_side("PX", 99.0, 108.0, SIDE_LONG_CANCEL);
+    CHECK(c_mds_on_market_data(service, &cancel) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 16.0);
+    CHECK(subscription->last_update.unix_ts == 105.0);
+    CHECK(subscription->last_trade_update.unix_ts == 100.0);
+
+    // A new trade resets both timestamps and re-arms the window.
+    md_variant retrade = make_transaction("PX", 17.0, 109.0);
+    CHECK(c_mds_on_market_data(service, &retrade) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 17.0);
+    CHECK(subscription->last_update.unix_ts == 109.0);
+    CHECK(subscription->last_trade_update.unix_ts == 109.0);
+
+    md_variant after_retrade = make_tick_lite_full("PX", 18.0, NAN, NAN, make_dt(110.0));
+    CHECK(c_mds_on_market_data(service, &after_retrade) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 17.0);
+    CHECK(subscription->last_update.unix_ts == 109.0);
+
+    // A new session date re-arms the fallback even at the same clock time.
+    md_variant next_day = make_tick_lite_full("PX", 18.0, NAN, NAN, make_dt_on(2024, 11, 12, 0.0));
+    CHECK(c_mds_on_market_data(service, &next_day) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 18.0);
+    CHECK(subscription->last_update.date.day == 12);
+
+    // The standalone update entry follows the same price rules.
+    md_variant day2_trade = make_transaction_full("PX", 20.0, SIDE_LONG_OPEN, make_dt_on(2024, 11, 12, 0.5));
+    CHECK(c_mds_update_subscription(service, &day2_trade) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 20.0);
+    CHECK(subscription->last_trade_update.time.elapsed_seconds == 0.5);
+
+    md_variant standalone_early = make_tick_lite_full("PX", 19.0, NAN, NAN, make_dt_on(2024, 11, 12, 3.0));
+    CHECK(c_mds_update_subscription(service, &standalone_early) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 20.0);
+    CHECK(subscription->last_update.time.elapsed_seconds == 0.5);
+
+    md_variant standalone_late = make_tick_lite_full("PX", 19.0, NAN, NAN, make_dt_on(2024, 11, 12, 4.0));
+    CHECK(c_mds_update_subscription(service, &standalone_late) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 19.0);
+    CHECK(subscription->last_update.time.elapsed_seconds == 4.0);
+
+    // A full tick takes the same path; its embedded lite carries the book.
+    md_variant full_tick;
+    memset(&full_tick, 0, sizeof(full_tick));
+    full_tick.meta_info.dtype  = DTYPE_TICK;
+    full_tick.meta_info.ticker = "PX";
+    full_tick.meta_info.dt     = make_dt_on(2024, 11, 12, 5.0);
+    full_tick.tick_data_full.lite.last_price = NAN;
+    full_tick.tick_data_full.lite.bid_price  = 20.0;
+    full_tick.tick_data_full.lite.ask_price  = 22.0;
+    CHECK(c_mds_on_market_data(service, &full_tick) == MDS_OK);
+    subscription = subscription_at(service, "PX");
+    CHECK(subscription->last_price == 21.0);
+    CHECK(subscription->last_update.time.elapsed_seconds == 5.0);
+
+    c_mds_free(service);
+}
+
 // ========== Main ==========
 
 int main(void) {
@@ -487,6 +768,8 @@ int main(void) {
     test_manager_dispatch();
     test_clear_and_reuse();
     test_subscription_growth();
+    test_md_get_last_price();
+    test_last_price_semantics();
 
     c_ap_free(root);
 

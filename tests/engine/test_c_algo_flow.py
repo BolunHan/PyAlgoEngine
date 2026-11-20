@@ -31,12 +31,13 @@ def setup_profile_rules(risk_profile: RiskProfile) -> None:
 
 
 def make_transaction(price: float, timestamp: float) -> TransactionData:
+    # A bid-side print is an ask execution: it fills the buy algos under test.
     return TransactionData(
         ticker=TICKER,
         price=price,
         volume=100,
         timestamp=timestamp,
-        side=TransactionSide.SIDE_SHORT_OPEN,
+        side=TransactionSide.SIDE_LONG_OPEN,
     )
 
 
