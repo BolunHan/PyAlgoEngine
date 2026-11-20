@@ -100,6 +100,7 @@ from .c_market_data cimport (
     c_usleep,
     c_md_new,
     c_md_get_price,
+    c_md_get_last_price,
     c_md_side_offset,
     c_md_side_direction,
     c_md_side_opposite,

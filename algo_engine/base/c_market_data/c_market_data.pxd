@@ -297,12 +297,14 @@ cdef extern from "algo_engine/base/c_market_data/c_market_data.h":
         MD_ERR_TIMEOUT
         MD_ERR_OOR
         MD_ERR_OOM
+        MD_ERR_NO_PRICE
 
     const md_filter_flag MD_FILTER_ALL
 
     void c_usleep(unsigned int usec) noexcept nogil
     md_variant* c_md_new(md_data_type dtype, allocator_protocol* allocator) noexcept nogil
     double c_md_get_price(const md_variant* market_data) noexcept nogil
+    int c_md_get_last_price(const md_variant* market_data, double* out_px) noexcept nogil
     md_offset c_md_side_offset(md_side side) noexcept nogil
     md_direction c_md_side_direction(md_side side) noexcept nogil
     md_side c_md_side_opposite(md_side side) noexcept nogil

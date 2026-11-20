@@ -214,17 +214,25 @@ class MarketData(object):
     @property
     def market_price(self) -> float:
         """
-        Get the representative market price.
+        Get the record's representative price.
 
-        For all MarketData except InternalData, this represents either:
-        - last trade price or
-        - mid-price (depending on data type)
+        This is not a market-price guarantee:
+        - TradeData / TransactionData: the trade price (a cancel report is
+          not a trade);
+        - TickData / TickDataLite: the tick's last price, which may be NaN;
+        - BarData: the close price;
+        - OrderData / TradeInstruction: the record's own limit price, NOT a
+          market price;
+        - InternalData and unknown records: 0.0.
+
+        Gate on the concrete type before feeding this into a market-price
+        aggregate. The C level exposes ``c_md_get_last_price`` for that.
         """
         ...
 
     @property
     def price(self) -> float:
-        """alias of market_price"""
+        """Alias of market_price; the same type-dependent caveats apply."""
         ...
 
     @property

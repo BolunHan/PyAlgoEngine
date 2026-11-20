@@ -353,6 +353,7 @@ typedef enum md_ret_code {
     MD_ERR_TIMEOUT           = -7,
     MD_ERR_OOR               = -8,
     MD_ERR_OOM               = -9,
+    MD_ERR_NO_PRICE          = -10,
 } md_ret_code;
 
 // ========== Forward Declarations (Public API) ==========
@@ -372,10 +373,34 @@ static inline md_variant*       c_md_new(md_data_type dtype, allocator_protocol*
 
 /**
  * @brief Get the representative price from a market_data union.
+ *
+ * This is a *representative* price, not a traded market price: an order and
+ * an instruction yield their own limit price, and a cancel report yields the
+ * cancelled order's price. Use `c_md_get_last_price` for market-state updates.
+ *
  * @param market_data The data buffer.
  * @return Extracted price or 0.0 if unavailable.
  */
 static inline double            c_md_get_price(const md_variant* market_data);
+
+/**
+ * @brief Resolve the record's last-price candidate for market-state updates.
+ *
+ * A last price comes only from a transaction fill, a tick's last price (with
+ * a bid/ask fallback), or a bar's close. Orders and instructions carry their
+ * own limit price and are refused; a cancel report — a transaction with a
+ * cancel-offset side — is not a trade and is refused too.
+ *
+ * For a tick, `last_price` is used when present; a NaN last price falls back
+ * to the bid/ask mid-point, or to the one present side when the other is NaN
+ * (the price-limit case). The resolved price must be finite.
+ *
+ * @param market_data The data buffer (NULL-safe).
+ * @param out_px Receives the price when the function returns MD_OK.
+ * @return MD_OK when a last price was resolved, MD_ERR_NO_PRICE when the
+ *         record carries none, or MD_ERR_INVALID_INPUT for NULL arguments.
+ */
+static inline int               c_md_get_last_price(const md_variant* market_data, double* out_px);
 
 /**
  * @brief Extract the offset bits from a composed `md_side`.
@@ -676,6 +701,47 @@ static inline double c_md_get_price(const md_variant* market_data) {
         default:
             return 0.0;
     }
+}
+
+static inline int c_md_get_last_price(const md_variant* market_data, double* out_px) {
+    if (!market_data || !out_px) return MD_ERR_INVALID_INPUT;
+
+    double price = NAN;
+
+    switch (market_data->meta_info.dtype) {
+        case DTYPE_TRANSACTION:
+            if (c_md_side_offset(market_data->transaction_data.side) != OFFSET_CANCEL) {
+                price = market_data->transaction_data.price;
+            }
+            break;
+        case DTYPE_TICK_LITE:
+        case DTYPE_TICK: {
+            const md_tick_data_lite* lite = (md_tick_data_lite*) market_data;
+            price                         = lite->last_price;
+            if (isnan(price)) {
+                if (isnan(lite->bid_price)) price = lite->ask_price;
+                else if (isnan(lite->ask_price)) price = lite->bid_price;
+                else price = (lite->bid_price + lite->ask_price) * 0.5;
+            }
+            break;
+        }
+        case DTYPE_BAR:
+            price = market_data->bar_data.close_price;
+            break;
+        case DTYPE_INTERNAL:
+        case DTYPE_ORDER:
+        case DTYPE_REPORT:
+        case DTYPE_INSTRUCTION:
+        case DTYPE_UNKNOWN:
+        case DTYPE_MARKET_DATA:
+        default:
+            break;
+    }
+
+    if (!isfinite(price)) return MD_ERR_NO_PRICE;
+
+    *out_px = price;
+    return MD_OK;
 }
 
 static inline md_offset c_md_side_offset(md_side side) {
