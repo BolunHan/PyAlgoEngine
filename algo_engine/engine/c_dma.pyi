@@ -110,7 +110,7 @@ class DirectMarketAccess(DirectMarketAccessProtocol):
 
     @property
     def market_price(self) -> dict[str, float]:
-        """The market data service's latest prices."""
+        """The market data service's latest traded prices (NaN when unpriced)."""
 
     @property
     def market_time(self) -> datetime | None:
