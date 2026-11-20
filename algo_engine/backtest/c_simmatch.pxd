@@ -48,6 +48,8 @@ cdef extern from "algo_engine/backtest/c_simmatch.h":
     ctypedef struct smm_match_ctx:
         double           timestamp
         double           last_price
+        double           last_bid_price
+        double           last_ask_price
         uint64_t         last_transaction_count
         bytemap*         working
         bytemap*         history

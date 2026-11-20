@@ -124,7 +124,9 @@ struct smm_listener {
 struct smm_match_ctx {
     // === market state ===
     double           timestamp;               // Last market-data timestamp.
-    double           last_price;              // Last market price, NAN if unset.
+    double           last_price;              // Last traded price, NAN if unset.
+    double           last_bid_price;          // Best bid price, NAN if unset.
+    double           last_ask_price;          // Best ask price, NAN if unset.
     uint64_t         last_transaction_count;  // Transaction counter.
 
     // === registry ===
@@ -371,6 +373,24 @@ static inline double c_smm_apply_slippage(const smm_match_ctx* ctx, double price
 }
 
 /**
+ * @brief Reference price for one side of the book.
+ *
+ * A buy is priced at the ask and a sell at the bid; when that side is unset
+ * (no tick/order has supplied it) the last traded price is the fallback.
+ *
+ * @param ctx  Matcher context (NULL-safe).
+ * @param sign Order side sign (+1 buy, -1 sell).
+ * @return The side price, the last price as fallback, or NAN.
+ */
+static inline double c_smm_reference_price(const smm_match_ctx* ctx, int8_t sign) {
+    if (!ctx || sign == 0) return NAN;
+
+    double price = sign > 0 ? ctx->last_ask_price : ctx->last_bid_price;
+    if (!isfinite(price)) price = ctx->last_price;
+    return price;
+}
+
+/**
  * @brief Check the instant-fill short circuit.
  * @param ctx   Matcher context.
  * @param order Order instruction.
@@ -378,7 +398,7 @@ static inline double c_smm_apply_slippage(const smm_match_ctx* ctx, double price
  */
 static inline bool c_smm_short_circuit(const smm_match_ctx* ctx, const md_trade_instruction* order) {
     if (!ctx || !order) return false;
-    if (!c_smm_has_limit_price(order) && isnan(ctx->last_price)) return false;
+    if (!c_smm_has_limit_price(order) && !isfinite(c_smm_reference_price(ctx, c_md_side_sign(order->side)))) return false;
     return ctx->instant_fill && ctx->lag_ts == 0 && ctx->lag_n_transaction == 0u;
 }
 
@@ -704,9 +724,11 @@ static inline void c_smm_match_fire(smm_match_ctx* ctx, smm_match_event event, c
 static inline int c_smm_match_init(smm_match_ctx* ctx) {
     if (!ctx) return SMM_ERR_INVALID_ARG;
 
-    ctx->last_price    = NAN;
-    ctx->hit_prob      = 1.0;
-    ctx->slippery_rate = 0.0001;
+    ctx->last_price     = NAN;
+    ctx->last_bid_price = NAN;
+    ctx->last_ask_price = NAN;
+    ctx->hit_prob       = 1.0;
+    ctx->slippery_rate  = 0.0001;
     c_smm_rng_seed(ctx, 0u);
 
     allocator_protocol* allocator = c_ap_protocol_from_ptr((const void*) ctx);
@@ -843,6 +865,8 @@ static inline void c_smm_match_clear(smm_match_ctx* ctx) {
 
     ctx->timestamp              = 0.0;
     ctx->last_price             = NAN;
+    ctx->last_bid_price         = NAN;
+    ctx->last_ask_price         = NAN;
     ctx->last_transaction_count = 0u;
     c_smm_rng_seed(ctx, ctx->seed);
 }
@@ -876,14 +900,16 @@ static inline int c_smm_match_launch(smm_match_ctx* ctx, const md_trade_instruct
     entry = c_smm_working_find(ctx, &order->order_id);
     if (!entry) return SMM_OK;
 
+    int8_t sign      = c_md_side_sign(entry->order.side);
+    double reference = c_smm_reference_price(ctx, sign);
+
     double worst;
     if (!c_smm_has_limit_price(&entry->order)) {
-        worst = ctx->last_price;
+        worst = reference;
     }
     else {
-        int8_t sign = c_md_side_sign(entry->order.side);
-        worst       = (sign > 0) ? fmax(entry->order.limit_price, ctx->last_price)
-                                 : fmin(entry->order.limit_price, ctx->last_price);
+        worst = (sign > 0) ? fmax(entry->order.limit_price, reference)
+                           : fmin(entry->order.limit_price, reference);
     }
     c_smm_try_match(ctx, entry, NAN, worst);
     return SMM_OK;
@@ -935,9 +961,14 @@ static inline void c_smm_match_eod(smm_match_ctx* ctx) {
 /**
  * @brief Process one market-data update (hot path: runs once per market-data event).
  *
- * Updates timestamp / last_price / transaction count and runs the matching
- * scan for the data type. Fires SMM_EVENT_MATCH listeners for each fill; a
- * fill is the only branch that allocates.
+ * Updates timestamp / last_price / last_bid_price / last_ask_price /
+ * transaction count and runs the matching scan for the data type.
+ * `last_price` moves only on a traded price: a transaction fill, a tick (last
+ * price or book mid/one side), or a bar close.  A tick refreshes both book
+ * sides; an order refreshes its own side; a bid-side trade prints at the ask
+ * and an ask-side trade at the bid.  Orders and instructions never set
+ * `last_price`.  Fires SMM_EVENT_MATCH listeners for each fill; a fill is the
+ * only branch that allocates.
  * @param ctx         Matcher context.
  * @param market_data Market data header.
  * @return SMM_OK or SMM_ERR_INVALID_ARG.
@@ -945,28 +976,64 @@ static inline void c_smm_match_eod(smm_match_ctx* ctx) {
 static inline int c_smm_match_process(smm_match_ctx* ctx, const md_variant* market_data) {
     if (!ctx || !market_data) return SMM_ERR_INVALID_ARG;
 
-    ctx->timestamp  = market_data->meta_info.dt.unix_ts;
-    ctx->last_price = c_md_get_price(market_data);
+    ctx->timestamp = market_data->meta_info.dt.unix_ts;
 
     switch (market_data->meta_info.dtype) {
-        case DTYPE_TRANSACTION:
+        case DTYPE_TRANSACTION: {
+            const md_transaction_data* transaction = &market_data->transaction_data;
+            double                     price;
+
+            // A trade prints against the resting side: a bid-side trade is an
+            // ask execution, an ask-side trade is a bid execution.
+            if (c_md_get_last_price(market_data, &price) == MD_OK) {
+                ctx->last_price = price;
+
+                int8_t taker = c_md_side_sign(transaction->side);
+                if (taker > 0) ctx->last_ask_price = price;
+                else if (taker < 0) ctx->last_bid_price = price;
+            }
+
             ctx->last_transaction_count += 1u;
-            c_smm_check_trade(ctx, &market_data->transaction_data);
+
+            // A cancel report is not a trade and cannot fill anything.
+            if (c_md_side_offset(transaction->side) != OFFSET_CANCEL) c_smm_check_trade(ctx, transaction);
             break;
-        case DTYPE_BAR:
+        }
+        case DTYPE_BAR: {
+            double price;
+            if (c_md_get_last_price(market_data, &price) == MD_OK) ctx->last_price = price;
             c_smm_check_bar(ctx, &market_data->bar_data);
             break;
+        }
         case DTYPE_TICK:
-            c_smm_check_tick(ctx, &market_data->tick_data_full);
+        case DTYPE_TICK_LITE: {
+            const md_tick_data_lite* lite = (const md_tick_data_lite*) market_data;
+            double                   price;
+
+            if (c_md_get_last_price(market_data, &price) == MD_OK) ctx->last_price = price;
+            ctx->last_bid_price = lite->bid_price;
+            ctx->last_ask_price = lite->ask_price;
+
+            if (market_data->meta_info.dtype == DTYPE_TICK) c_smm_check_tick(ctx, &market_data->tick_data_full);
+            else c_smm_check_tick_lite(ctx, lite);
             break;
-        case DTYPE_TICK_LITE:
-            c_smm_check_tick_lite(ctx, &market_data->tick_data_lite);
-            break;
-        case DTYPE_ORDER:
+        }
+        case DTYPE_ORDER: {
+            const md_order_data* order_data = &market_data->order_data;
+
+            // A resting order supplies its own side of the book; it is not a
+            // last price.
+            int8_t               taker = c_md_side_sign(order_data->side);
+            if (isfinite(order_data->price)) {
+                if (taker > 0) ctx->last_bid_price = order_data->price;
+                else if (taker < 0) ctx->last_ask_price = order_data->price;
+            }
+
             // SZ-style depth reports carry resting volume, not incremental
             // fills - only match when incremental order volume is enabled.
-            if (ctx->incremental_order_volume) c_smm_check_order(ctx, &market_data->order_data);
+            if (ctx->incremental_order_volume) c_smm_check_order(ctx, order_data);
             break;
+        }
         default:
             break;
     }
@@ -1284,14 +1351,16 @@ static inline void c_smm_check_order(smm_match_ctx* ctx, const md_order_data* or
             continue;
         }
 
+        // A resting bid can only fill a sell and a resting ask only a buy;
+        // the reported price is that side's price.
         double vol = 0.0;
         if (!c_smm_has_limit_price(order)) {
             if (sign * taker < 0) vol = order_data->volume;
         }
-        else if (sign > 0 && order_data->price <= order->limit_price) {
+        else if (sign > 0 && taker < 0 && order_data->price <= order->limit_price) {
             vol = order_data->volume;
         }
-        else if (sign < 0 && order_data->price >= order->limit_price) {
+        else if (sign < 0 && taker > 0 && order_data->price >= order->limit_price) {
             vol = order_data->volume;
         }
 
@@ -1323,13 +1392,18 @@ static inline void c_smm_check_trade(smm_match_ctx* ctx, const md_transaction_da
             continue;
         }
 
+        // A bid-side trade proves the ask at its price; an ask-side trade
+        // proves the bid.  A limit order therefore only takes a print on its
+        // own aggressor side.
+        int8_t taker = c_md_side_sign(transaction->side);
+
         if (!c_smm_has_limit_price(order)) {
-            if (sign * c_md_side_sign(transaction->side) > 0) c_smm_try_match(ctx, entry, transaction->volume, transaction->price);
+            if (sign * taker > 0) c_smm_try_match(ctx, entry, transaction->volume, transaction->price);
         }
-        else if (sign > 0 && transaction->price < order->limit_price) {
+        else if (sign > 0 && taker > 0 && transaction->price <= order->limit_price) {
             c_smm_try_match(ctx, entry, transaction->volume, transaction->price);
         }
-        else if (sign < 0 && transaction->price > order->limit_price) {
+        else if (sign < 0 && taker < 0 && transaction->price >= order->limit_price) {
             c_smm_try_match(ctx, entry, transaction->volume, transaction->price);
         }
         entry = next;

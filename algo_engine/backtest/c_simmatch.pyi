@@ -56,7 +56,9 @@ class SimMatch:
         random: Python random instance kept for interface parity; the native
             matching layer uses its own seeded PRNG.
         timestamp: Latest market data timestamp (seconds since epoch).
-        last_price: Latest market price, or None before any market data.
+        last_price: Latest traded price, or None before any market data.
+        last_bid_price: Best bid price, or None while unset.
+        last_ask_price: Best ask price, or None while unset.
         last_transaction_count: Number of transactions seen so far.
         seed: Seed of the native PRNG (read-only).
         matching_config: Read-only mirror of the native matching config
@@ -261,11 +263,27 @@ class SimMatch:
 
     @property
     def last_price(self) -> float | None:
-        """Latest market price, or None before any market data."""
+        """Latest traded price, or None before any market data."""
         ...
 
     @last_price.setter
     def last_price(self, value: float | None) -> None: ...
+
+    @property
+    def last_bid_price(self) -> float | None:
+        """Best bid price, or None while unset."""
+        ...
+
+    @last_bid_price.setter
+    def last_bid_price(self, value: float | None) -> None: ...
+
+    @property
+    def last_ask_price(self) -> float | None:
+        """Best ask price, or None while unset."""
+        ...
+
+    @last_ask_price.setter
+    def last_ask_price(self, value: float | None) -> None: ...
 
     @property
     def last_transaction_count(self) -> int:

@@ -417,6 +417,40 @@ cdef class SimMatch(CCPType):
             else:
                 self.header.last_price = <double> value
 
+    property last_bid_price:
+        def __get__(self):
+            if not self.header:
+                raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
+            cdef double price = self.header.last_bid_price
+            if isnan(price):
+                return None
+            return price
+
+        def __set__(self, object value):
+            if not self.header:
+                raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
+            if value is None:
+                self.header.last_bid_price = NAN
+            else:
+                self.header.last_bid_price = <double> value
+
+    property last_ask_price:
+        def __get__(self):
+            if not self.header:
+                raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
+            cdef double price = self.header.last_ask_price
+            if isnan(price):
+                return None
+            return price
+
+        def __set__(self, object value):
+            if not self.header:
+                raise RuntimeError(f'Uninitialized <{self.__class__.__name__}>')
+            if value is None:
+                self.header.last_ask_price = NAN
+            else:
+                self.header.last_ask_price = <double> value
+
     property last_transaction_count:
         def __get__(self):
             if not self.header:
