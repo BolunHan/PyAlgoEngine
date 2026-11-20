@@ -38,6 +38,7 @@ cdef extern from "algo_engine/engine/c_market_engine.h":
 
     ctypedef struct mds_subscription:
         session_datetime_t last_update
+        session_datetime_t last_trade_update
         double last_price
         size_t n_feeds
         c_bool is_subscribed_td

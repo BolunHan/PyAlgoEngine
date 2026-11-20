@@ -339,13 +339,19 @@ class MarketDataService:
 
     def get_market_price(self, ticker: str) -> float:
         """
-        Retrieve the latest price of a ticker.
+        Retrieve the latest traded price of a ticker.
+
+        A transaction is the primary source. After
+        ``MDS_TICK_PRICE_STALE_SECONDS`` (3 s by default) without a trade, a
+        tick may refresh the price from its last price, the bid/ask mid-point,
+        or the one present side. Order and bar observations never move it.
 
         Args:
             ticker (str): The instrument's symbol.
 
         Returns:
-            float: Latest price or NaN if unavailable.
+            float: Latest traded price, or NaN when the ticker is unknown,
+            unfed, or has no traded/tick price yet.
         """
         ...
 
@@ -388,7 +394,10 @@ class MarketDataService:
     @property
     def market_price(self) -> dict[str, float]:
         """
-        Latest known market prices.
+        Latest known traded prices.
+
+        Tickers without a priced observation map to NaN; order-only tickers
+        are subscribed but carry no market price.
 
         Returns:
             A dictionary mapping tickers to prices.

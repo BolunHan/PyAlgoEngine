@@ -14,6 +14,22 @@
 #include <cbase/bytemap/c_bytemap.h>
 #include <cbase/bytemap/xxh3.h>
 
+// ========== Constants ==========
+
+/**
+ * @brief Seconds without a trade before ticks may refresh the last price.
+ *
+ * Once this much elapsed session time has passed since the last
+ * transaction-driven price update, a tick may supply the last price (its own
+ * last price, the bid/ask mid-point, or the one present side). Within the
+ * window the traded price stands.
+ *
+ * Compile-time override: -DMDS_TICK_PRICE_STALE_SECONDS=...
+ */
+#ifndef MDS_TICK_PRICE_STALE_SECONDS
+#define MDS_TICK_PRICE_STALE_SECONDS 3.0
+#endif
+
 // ========== Enums ==========
 
 // clang-format off
@@ -67,12 +83,15 @@ typedef struct mds_monitor {
  * The ticker is the map key, so the struct carries no name of its own. The
  * whole struct is the map value: capacity and growth are the bytemap's
  * defaults (capacity 0 asks for them), never a second capacity knob here.
- * `last_update` is the market data's own session datetime, never a converted
- * double.
+ * `last_update` and `last_trade_update` carry the market data's own session
+ * datetime, never a converted double. `last_update` advances with every
+ * last-price update; `last_trade_update` advances only when a transaction
+ * supplies the price, and gates the stale-tick fallback.
  */
 typedef struct mds_subscription {
-    session_datetime_t last_update;            // Session datetime of the latest observation.
-    double             last_price;             // Price resolved through c_md_get_price.
+    session_datetime_t last_update;            // Session datetime of the latest last-price update.
+    session_datetime_t last_trade_update;      // Session datetime of the latest transaction-driven price update.
+    double             last_price;             // Last traded price; NAN before the first priced observation.
     size_t             n_feeds;                // Number of observations routed to the ticker.
     bool               is_subscribed_td;       // A transaction (DTYPE_TRANSACTION) was seen.
     bool               is_subscribed_od;       // An order (DTYPE_ORDER) was seen.
@@ -829,6 +848,7 @@ static inline int c_mds_update_subscription(mds* MDS, const md_variant* market_d
     if (is_new) {
         mds_subscription default_subscription;
         memset(&default_subscription, 0, sizeof(mds_subscription));
+        default_subscription.last_price = NAN;
 
         ret_code = c_bytemap_ex_set_default(
             MDS->subscriptions,
@@ -848,8 +868,46 @@ static inline int c_mds_update_subscription(mds* MDS, const md_variant* market_d
 
     mds_subscription* subscription = (mds_subscription*) stored;
 
-    subscription->last_update = meta->dt;
-    subscription->last_price  = c_md_get_price(market_data);
+    // A last price is a TRADED price.  A transaction is the primary source;
+    // after MDS_TICK_PRICE_STALE_SECONDS without a trade, ticks may refresh it
+    // from their own last price, the book's mid-point, or the one present side
+    // when the last price is absent (the price-limit case).  Orders,
+    // instructions, bars and cancel reports never move it.  `last_update`
+    // advances with the price; `last_trade_update` only with a transaction.
+    double            price = NAN;
+
+    if (dtype == DTYPE_TRANSACTION) {
+        const md_side side = market_data->transaction_data.side;
+
+        if (c_md_side_offset(side) != OFFSET_CANCEL) {
+            price = market_data->transaction_data.price;
+            if (isfinite(price)) {
+                subscription->last_price        = price;
+                subscription->last_update       = meta->dt;
+                subscription->last_trade_update = meta->dt;
+            }
+        }
+    }
+    else if (dtype == DTYPE_TICK_LITE || dtype == DTYPE_TICK) {
+        const md_tick_data_lite* lite         = (const md_tick_data_lite*) market_data;
+        bool                     same_session = subscription->last_trade_update.ordinal != 0 && subscription->last_trade_update.ordinal == meta->dt.ordinal;
+        double                   elapsed      = same_session ? meta->dt.time.elapsed_seconds - subscription->last_trade_update.time.elapsed_seconds : MDS_TICK_PRICE_STALE_SECONDS;
+
+        if (elapsed >= MDS_TICK_PRICE_STALE_SECONDS) {
+            price = lite->last_price;
+
+            if (isnan(price)) {
+                if (isnan(lite->bid_price)) price = lite->ask_price;
+                else if (isnan(lite->ask_price)) price = lite->bid_price;
+                else price = (lite->bid_price + lite->ask_price) * 0.5;
+            }
+
+            if (isfinite(price)) {
+                subscription->last_price  = price;
+                subscription->last_update = meta->dt;
+            }
+        }
+    }
     subscription->n_feeds += 1;
 
     switch (dtype) {
@@ -919,6 +977,7 @@ static inline int c_mds_on_market_data(mds* MDS, const md_variant* market_data) 
     if (is_new) {
         mds_subscription default_subscription;
         memset(&default_subscription, 0, sizeof(mds_subscription));
+        default_subscription.last_price = NAN;
 
         ret_code = c_bytemap_ex_set_default(
             MDS->subscriptions,
@@ -938,8 +997,50 @@ static inline int c_mds_on_market_data(mds* MDS, const md_variant* market_data) 
 
     mds_subscription* subscription = (mds_subscription*) stored;
 
-    subscription->last_update = meta->dt;
-    subscription->last_price  = c_md_get_price(market_data);
+    // A last price is a TRADED price.  A transaction is the primary source;
+    // after MDS_TICK_PRICE_STALE_SECONDS without a trade, ticks may refresh it
+    // from their own last price, the book's mid-point, or the one present side
+    // when the last price is absent (the price-limit case).  Orders,
+    // instructions, bars and cancel reports never move it.  `last_update`
+    // advances with the price; `last_trade_update` only with a transaction.
+    double            price = NAN;
+
+    if (dtype == DTYPE_TRANSACTION) {
+        const md_side side = market_data->transaction_data.side;
+
+        if (c_md_side_offset(side) != OFFSET_CANCEL) {
+            price = market_data->transaction_data.price;
+            if (isfinite(price)) {
+                subscription->last_price        = price;
+                subscription->last_update       = meta->dt;
+                subscription->last_trade_update = meta->dt;
+            }
+        }
+    }
+    else if (dtype == DTYPE_TICK_LITE || dtype == DTYPE_TICK) {
+        const md_tick_data_lite* lite = (const md_tick_data_lite*) market_data;
+
+        bool                     same_session = subscription->last_trade_update.ordinal != 0
+                                                && subscription->last_trade_update.ordinal == meta->dt.ordinal;
+        double                   elapsed      = same_session
+                                                    ? meta->dt.time.elapsed_seconds - subscription->last_trade_update.time.elapsed_seconds
+                                                    : MDS_TICK_PRICE_STALE_SECONDS;
+
+        if (elapsed >= MDS_TICK_PRICE_STALE_SECONDS) {
+            price = lite->last_price;
+
+            if (isnan(price)) {
+                if (isnan(lite->bid_price)) price = lite->ask_price;
+                else if (isnan(lite->ask_price)) price = lite->bid_price;
+                else price = (lite->bid_price + lite->ask_price) * 0.5;
+            }
+
+            if (isfinite(price)) {
+                subscription->last_price  = price;
+                subscription->last_update = meta->dt;
+            }
+        }
+    }
     subscription->n_feeds += 1;
 
     switch (dtype) {
