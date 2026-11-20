@@ -6,7 +6,7 @@ from multiprocessing import shared_memory
 from typing import Self
 
 from . import Monitor
-from ..base import TradeData, MarketData, OrderData, TransactionData, TransactionSide, TickData, TickDataLite, BarData
+from ..base import BarData, MarketData, OrderData, TickData, TickDataLite, TradeData, TransactionData, TransactionSide
 
 
 class Entry(Structure):
@@ -196,10 +196,14 @@ class MinuteBarMonitor(Monitor):
         self._last_bar_data: dict[str, BarData] = {}
 
     def __call__(self, market_data: MarketData, **kwargs):
+        if not isinstance(market_data, (TransactionData, TickData, TickDataLite, BarData)):
+            return
         self._update_last_bar(market_data=market_data, interval=self.interval)
         # self._update_active_bar(market_data=market_data, interval=self.interval)
 
     def _update_last_bar(self, market_data: MarketData, interval: float):
+        if not isinstance(market_data, (TransactionData, TickData, TickDataLite, BarData)):
+            return
         ticker = market_data.ticker
         market_price = market_data.market_price
         market_time = market_data.market_time
@@ -236,6 +240,8 @@ class MinuteBarMonitor(Monitor):
         bar_data['low_price'] = min(bar_data.low_price, market_price)
 
     def _update_active_bar(self, market_data: MarketData, interval: float):
+        if not isinstance(market_data, (TransactionData, TickData, TickDataLite, BarData)):
+            return
         ticker = market_data.ticker
         market_price = market_data.market_price
         market_time = market_data.market_time
