@@ -3,14 +3,12 @@
 Stdlib only: the tests read ``c_simmatch.pxd`` / ``.pyx`` / ``.pyi`` and the
 test toolkit, and check the dual-interface conventions — field mirroring, stub
 symmetry, docstring coverage, ret-code mapping and the absence of duplicated
-marshalling. The last test runs the same checks over ``git show HEAD`` to prove
-they have teeth.
+marshalling.
 """
 
 import ast
 import pathlib
 import re
-import subprocess
 import unittest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -22,16 +20,6 @@ TOOLKIT_PATH = REPO_ROOT / 'tests/backtest/c_simmatch_toolkit.pyx'
 
 def read(path: pathlib.Path) -> str:
     return path.read_text(encoding='utf-8')
-
-
-def head_text(path: str) -> str:
-    result = subprocess.run(
-        ['git', '-C', str(REPO_ROOT), 'show', f'HEAD:{path}'],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return result.stdout
 
 
 def method_body(text: str, name: str) -> str:
@@ -223,24 +211,13 @@ class TestSimMatchSurface(unittest.TestCase):
         self.assertIn('def registry_state(', self.toolkit)
         self.assertIn('def working_order_ids(', self.toolkit)
 
-    # === teeth ===
+    # === report map ===
 
     def test_pxd_declares_the_report_map(self) -> None:
         """The pxd mirrors the entry's report map and the view composer."""
         self.assertRegex(self.pxd, r'bytemap\*\s+reports')
         self.assertIn('cdef inline TradeInstruction c_compose(const smm_order_entry* entry)', self.pxd)
         self.assertIn('OrderMapView.c_compose(entry)', self.pyx)
-
-    def test_checks_have_teeth_against_head(self) -> None:
-        """The HEAD surface maintains Python-side registries the views replaced."""
-        head_pyx = head_text('algo_engine/backtest/c_simmatch.pyx')
-        self.assertIn('self.working = {}', head_pyx)
-        self.assertIn('def __cinit__(', head_pyx)
-        self.assertIsNone(re.search(r'(?<![\w.])SMM_OK', head_pyx))
-
-        head_pxd = head_text('algo_engine/backtest/c_simmatch.pxd')
-        self.assertRegex(head_pxd, r'cdef readonly dict working')
-        self.assertNotIn('bytemap*         working', head_pxd)
 
 
 if __name__ == '__main__':

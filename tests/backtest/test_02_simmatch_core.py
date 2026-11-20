@@ -2,13 +2,11 @@
 
 Stdlib only: the tests read ``c_simmatch.h`` / ``c_simmatch.pxd`` and check the
 house style, the header/pxd parity, the lifecycle and registry invariants, and
-the matching guards. The last test runs the same checks over ``git show HEAD``
-to prove they have teeth.
+the matching guards.
 """
 
 import pathlib
 import re
-import subprocess
 import unittest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -18,16 +16,6 @@ PXD_PATH = REPO_ROOT / 'algo_engine/backtest/c_simmatch.pxd'
 
 def read(path: pathlib.Path) -> str:
     return path.read_text(encoding='utf-8')
-
-
-def head_text(path: str) -> str:
-    result = subprocess.run(
-        ['git', '-C', str(REPO_ROOT), 'show', f'HEAD:{path}'],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return result.stdout
 
 
 def function_body(text: str, name: str) -> str:
@@ -346,18 +334,6 @@ class TestSimMatchCore(unittest.TestCase):
             body = function_body(self.header, name)
             self.assertIn('smm_order_entry* next = entry->older;', body, f'{name} does not snapshot the next link')
             self.assertIn('entry = next;', body, f'{name} does not advance through the snapshot')
-
-    # === teeth ===
-
-    def test_checks_have_teeth_against_head(self) -> None:
-        """The HEAD header still carries the removed ring registry."""
-        head_header = head_text('algo_engine/backtest/c_simmatch.h')
-        self.assertIn('struct smm_order_ring {', head_header)
-        self.assertNotIn('_Static_assert(offsetof(smm_order_entry, order) == 0', head_header)
-
-        head_pxd = head_text('algo_engine/backtest/c_simmatch.pxd')
-        self.assertIn('smm_order_ring_cursor', head_pxd)
-        self.assertNotIn('bytemap*         working', head_pxd)
 
 
 if __name__ == '__main__':
