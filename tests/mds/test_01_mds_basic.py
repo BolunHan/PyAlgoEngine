@@ -15,7 +15,8 @@ class TestMDSBasic(unittest.TestCase):
         - on_market_data(td) subscribes the ticker (once per ticker) and updates
           get_market_price, timestamp, market_time and market_date.
         - Timestamps are NOT filtered for monotonicity (no filter implemented):
-          an older transaction still overwrites price/time state.
+          an older fill still overwrites price/time state.
+        - A cancel report advances the timestamp but never the price.
 
     Oracle: expected values are the literal fields of the TransactionData
     objects fed in; market_time/market_date derived from datetime literals.
@@ -52,6 +53,13 @@ class TestMDSBasic(unittest.TestCase):
             price=102.13,
             volume=210,
             timestamp=datetime.datetime(2024, 11, 11, 9, 21).timestamp(),
+            side=TransactionSide.LongFilled,
+        )
+        cls.td_cancel = TransactionData(
+            ticker='600010.SH',
+            price=99.99,
+            volume=210,
+            timestamp=datetime.datetime(2024, 11, 11, 9, 22).timestamp(),
             side=TransactionSide.SIDE_LONG_CANCEL,
         )
 
@@ -87,13 +95,22 @@ class TestMDSBasic(unittest.TestCase):
         self.assertEqual(MDS.n_subscribed, 1)
 
     def test_03_non_monotonic_transaction_still_applies(self) -> None:
-        """An out-of-order (older) transaction overwrites state — no monotonic filter."""
+        """An out-of-order (older) fill overwrites state — no monotonic filter."""
         MDS.on_market_data(self.td_3)
 
         self.assertEqual(MDS.get_market_price('600010.SH'), 102.13)
         self.assertEqual(MDS.timestamp, self.td_3.timestamp)
         self.assertEqual(MDS.market_time.replace(tzinfo=None), datetime.datetime(2024, 11, 11, 9, 21))
         self.assertEqual(MDS.market_date, datetime.date(2024, 11, 11))
+        self.assertEqual(MDS.n_subscribed, 1)
+
+    def test_04_cancel_transaction_does_not_update_price(self) -> None:
+        """A cancel report advances time but is not a traded price."""
+        MDS.on_market_data(self.td_cancel)
+
+        self.assertEqual(MDS.get_market_price('600010.SH'), 102.13)
+        self.assertEqual(MDS.timestamp, self.td_cancel.timestamp)
+        self.assertEqual(MDS.market_time.replace(tzinfo=None), datetime.datetime(2024, 11, 11, 9, 22))
         self.assertEqual(MDS.n_subscribed, 1)
 
 
