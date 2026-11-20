@@ -716,7 +716,7 @@ static inline int c_md_get_last_price(const md_variant* market_data, double* out
             break;
         case DTYPE_TICK_LITE:
         case DTYPE_TICK: {
-            const md_tick_data_lite* lite = (md_tick_data_lite*) market_data;
+            const md_tick_data_lite* lite = (const md_tick_data_lite*) market_data;
             price                         = lite->last_price;
             if (isnan(price)) {
                 if (isnan(lite->bid_price)) price = lite->ask_price;
