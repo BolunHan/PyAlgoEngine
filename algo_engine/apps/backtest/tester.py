@@ -9,7 +9,7 @@ from algo_engine.apps import LOGGER
 from algo_engine.apps.backtest.web_app import WebApp
 from algo_engine.backtest import ProgressReplay, SimMatch
 from algo_engine.backtest.metrics import TradeMetrics
-from algo_engine.base import MarketData, TradeInstruction, TradeReport
+from algo_engine.base import BarData, MarketData, TickData, TickDataLite, TradeInstruction, TradeReport, TransactionData
 
 
 class Tester(object, metaclass=abc.ABCMeta):
@@ -126,7 +126,8 @@ class Tester(object, metaclass=abc.ABCMeta):
             self.web_app.update(market_data=market_data)
 
             self.timestamp = market_data.timestamp
-            self.last_price[market_data.ticker] = market_data.market_price
+            if isinstance(market_data, (TransactionData, TickData, TickDataLite, BarData)):
+                self.last_price[market_data.ticker] = market_data.market_price
 
         LOGGER.info(f'All done! time_cost: {time.time() - _start_ts:,.3}s')
 
@@ -247,6 +248,7 @@ class StrategyTester(Tester):
                     self.web_app.update(market_data=market_data)
 
             self.timestamp = market_data.timestamp
-            self.last_price[market_data.ticker] = market_data.market_price
+            if isinstance(market_data, (TransactionData, TickData, TickDataLite, BarData)):
+                self.last_price[market_data.ticker] = market_data.market_price
 
         LOGGER.info(f'All done! time_cost: {time.time() - _start_ts:,.3}s')
