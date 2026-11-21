@@ -7,6 +7,8 @@ from libc.string cimport memcpy
 
 from algo_engine.base.c_allocator_protocol cimport MD_DEFAULT_ALLOCATOR
 
+from cbase.allocator_protocol cimport c_ap_free
+
 from .c_market_data cimport (
     md_ret_code, md_data_type, md_direction, MD_CFG_BOOK_SIZE,
     md_orderbook_entry, c_md_orderbook_sort,
@@ -470,6 +472,28 @@ cdef class TickData(MarketData):
 
         if kwargs:
             self.parse(kwargs)
+
+    def __dealloc__(self):
+        # A DESERIALIZED tick (a buffer accessor's owned copy) carries
+        # borrowed, non-owning OrderBook wrappers: free its books here. A
+        # CONSTRUCTED TickData's wrappers own their books and free them.
+        cdef md_orderbook* bid
+        cdef md_orderbook* ask
+
+        if not self.owner:
+            return
+
+        if self.header:
+            bid = <md_orderbook*> self.header.tick_data_full.bid
+            ask = <md_orderbook*> self.header.tick_data_full.ask
+            if bid and (self.bid is None or not self.bid.owner):
+                c_md_orderbook_free(bid)
+            if ask and (self.ask is None or not self.ask.owner):
+                c_md_orderbook_free(ask)
+            c_ap_free(<void*> self.header)
+            # The base MarketData.__dealloc__ runs after this one through the
+            # dealloc chain; a non-NULL header would free it twice.
+            self.header = NULL
 
     def __repr__(self):
         if not self.header:
