@@ -189,6 +189,11 @@ cdef class MarketDataBuffer:
             raise RuntimeError(f'Failed to put a MarketData into block buffer, error code: {ret_code}')
 
     cdef const md_variant* c_get(self, ssize_t idx):
+        # The buffer stores serialized records: every access deserializes a
+        # fresh md_variant. The CALLER owns that copy (free it with c_ap_free /
+        # an owning MarketData view) -- never wrap it as a borrowed view, every
+        # leaked copy is one block per access (a whole session's iteration
+        # adds one md per event to the allocator).
         cdef ssize_t total = self.header.ptr_array.idx_tail
         if idx >= total or idx < -total:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
@@ -229,7 +234,7 @@ cdef class MarketDataBuffer:
 
     def __getitem__(self, ssize_t idx):
         cdef const md_variant* md = self.c_get(idx)
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     def __len__(self):
         return self.header.ptr_array.idx_tail
@@ -240,7 +245,7 @@ cdef class MarketDataBuffer:
 
         cdef const md_variant* md = self.c_get(self.iter_idx)
         self.iter_idx += 1
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     def cache(self):
         return MarketDataBufferCache.__new__(MarketDataBufferCache, 4096, self)
@@ -250,7 +255,7 @@ cdef class MarketDataBuffer:
 
     def get(self, ssize_t idx):
         cdef const md_variant* md = self.c_get(idx)
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     def sort(self):
         c_md_block_buffer_sort(self.header)
@@ -336,6 +341,8 @@ cdef class MarketDataRingBuffer:
             raise RuntimeError(f'Failed to put MarketData, error code: {ret_code}')
 
     cdef const md_variant* c_get(self, ssize_t idx):
+        # Same ownership contract as MarketDataBuffer.c_get: the deserialized
+        # copy belongs to the caller.
         cdef ssize_t total = c_md_ring_buffer_size(self.header)
         if idx >= total or idx < -total:
             raise IndexError(f'{self.__class__.__name__} index {idx} out of range {total}')
@@ -380,7 +387,7 @@ cdef class MarketDataRingBuffer:
 
     def __getitem__(self, idx: int):
         cdef const md_variant* md = self.c_get(idx)
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     def __len__(self):
         return c_md_ring_buffer_size(self.header)
@@ -391,18 +398,18 @@ cdef class MarketDataRingBuffer:
             raise StopIteration
         cdef const md_variant* md = self.c_get(self.iter_idx)
         self.iter_idx += 1
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     def put(self, MarketData market_data, bint block=True, double timeout=0.0):
         self.c_put(market_data.header, block, timeout)
 
     def get(self, idx: int):
         cdef const md_variant* md = self.c_get(idx)
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     def listen(self, bint block=True, double timeout=0.0):
         cdef const md_variant* md = self.c_listen(block, timeout)
-        return MarketData.c_from_header(md, False)
+        return MarketData.c_from_header(md, True)
 
     property ptr_capacity:
         def __get__(self):
