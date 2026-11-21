@@ -388,10 +388,18 @@ static inline int c_md_block_buffer_put(md_block_buffer* buffer, const md_varian
     size_t data_tail       = buffer->data_array.occupied;
     size_t data_capacity   = buffer->data_array.capacity;
     if (data_tail + serialized_size > data_capacity) {
+        /* Grow until the record fits: one doubling is not enough when a
+           single record (a tick with its order books) is larger than twice
+           the current capacity -- serializing past the block would corrupt
+           the next allocation's header. */
+        size_t new_data_capacity = data_capacity ? data_capacity * 2 : MD_BUF_DATA_DEFAULT_CAP;
+        while (new_data_capacity < data_tail + serialized_size) {
+            new_data_capacity *= 2;
+        }
         int ret_code = c_md_block_buffer_extend(
             buffer,
             0,
-            data_capacity ? data_capacity * 2 : MD_BUF_DATA_DEFAULT_CAP
+            new_data_capacity
         );
         if (ret_code != MD_OK) return ret_code;
     }
