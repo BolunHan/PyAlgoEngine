@@ -1,9 +1,16 @@
+import os
+import pathlib
 import random
 import time
 import unittest
 
 from algo_engine.base.c_market_data.c_market_data_buffer import BufferEmpty, BufferFull, MarketDataRingBuffer, PipeTimeoutError
 from md_gen import random_market_data
+
+
+def shm_used_bytes():
+    stat = os.statvfs('/dev/shm')
+    return (stat.f_blocks - stat.f_bfree) * stat.f_frsize
 
 
 class MarketDataRingBufferTests(unittest.TestCase):
@@ -118,6 +125,33 @@ class MarketDataRingBufferTests(unittest.TestCase):
         self.assertTrue(buffer.is_empty)
         with self.assertRaises(BufferEmpty):
             buffer.listen(block=False, timeout=0)
+
+    def test_access_does_not_leak_shared_memory(self):
+        """Ring-buffer reads deserialize a copy; the returned view owns it."""
+        if not pathlib.Path('/dev/shm').is_dir():
+            self.skipTest('/dev/shm is not available')
+
+        buffer = MarketDataRingBuffer(64, 1 << 18)
+        samples = self._generate_market_data(16)
+        for market_data in samples:
+            buffer.put(market_data)
+
+        before = shm_used_bytes()
+        count = 0
+        for _ in range(5000):
+            for idx in range(len(buffer)):
+                _ = buffer[idx].ticker
+                count += 1
+            _ = buffer[0].ticker
+            count += 1
+        after = shm_used_bytes()
+
+        self.assertGreater(count, 0)
+        self.assertLess(
+            after - before,
+            4 << 20,
+            f'{count:,} ring-buffer accesses leaked {(after - before) / 2**20:.1f} MiB of /dev/shm',
+        )
 
 
 if __name__ == "__main__":

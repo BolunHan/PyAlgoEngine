@@ -1,3 +1,5 @@
+import os
+import pathlib
 import random
 import unittest
 from collections import Counter
@@ -6,6 +8,11 @@ from datetime import date
 from algo_engine.base.c_market_data.c_candlestick import DailyBar
 from algo_engine.base.c_market_data.c_market_data_buffer import MarketDataBuffer
 from md_gen import random_market_data
+
+
+def shm_used_bytes():
+    stat = os.statvfs('/dev/shm')
+    return (stat.f_blocks - stat.f_bfree) * stat.f_frsize
 
 
 class MarketDataBufferCacheTests(unittest.TestCase):
@@ -148,6 +155,39 @@ class MarketDataBufferCacheTests(unittest.TestCase):
         expected = [self._signature(md) for md in samples]
         got = [self._signature(clone[i]) for i in range(len(clone))]
         self.assertEqual(expected, got)
+
+    def test_access_does_not_leak_shared_memory(self):
+        """Each access deserializes a copy; the returned view must own it.
+
+        A borrowed view (``owner=False``) leaves one allocator block behind
+        per access -- a replayed session (millions of entries) leaked ~1.4 GiB
+        of /dev/shm per day and SIGBUSed the multi-day evaluation once the
+        container's shared-memory cap was reached.
+        """
+        if not pathlib.Path('/dev/shm').is_dir():
+            self.skipTest('/dev/shm is not available')
+
+        buffer = MarketDataBuffer(4, 256)
+        samples = self._generate_market_data(100_000)
+        for md in samples:
+            buffer.put(md)
+
+        before = shm_used_bytes()
+        count = 0
+        for md in buffer:
+            _ = md.ticker
+            count += 1
+        for idx in range(len(buffer)):
+            _ = buffer[idx].ticker
+            count += 1
+        after = shm_used_bytes()
+
+        self.assertEqual(count, 2 * len(samples))
+        self.assertLess(
+            after - before,
+            4 << 20,
+            f'{count:,} buffer accesses leaked {(after - before) / 2**20:.1f} MiB of /dev/shm',
+        )
 
 
 if __name__ == "__main__":
