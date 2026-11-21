@@ -208,10 +208,10 @@ cdef object c_get_id(const md_id* id_ptr):
         return (<int64_t*> id_ptr.data)[0]
     elif id_ptr.id_type == md_id_type.MID_UINT128:
         _uv = c_read_uint128(<const void*> id_ptr.data)
-        return <object> PyLong_FromUInt128(_uv)
+        return PyLong_FromUInt128(_uv)
     elif id_ptr.id_type == md_id_type.MID_INT128:
         _iv = c_read_int128(<const void*> id_ptr.data)
-        return <object> PyLong_FromInt128(_iv)
+        return PyLong_FromInt128(_iv)
     elif id_ptr.id_type == md_id_type.MID_STRING:
         return PyUnicode_FromString(&id_ptr.data[0])
     elif id_ptr.id_type == md_id_type.MID_BYTE:
@@ -309,10 +309,10 @@ cdef inline object c_get_long_id(const long_md_id* id_ptr):
         return (<int64_t*> id_ptr.data)[0]
     elif id_ptr.id_type == md_id_type.MID_UINT128:
         _uv = c_read_uint128(<const void*> id_ptr.data)
-        return <object> PyLong_FromUInt128(_uv)
+        return PyLong_FromUInt128(_uv)
     elif id_ptr.id_type == md_id_type.MID_INT128:
         _iv = c_read_int128(<const void*> id_ptr.data)
-        return <object> PyLong_FromInt128(_iv)
+        return PyLong_FromInt128(_iv)
     elif id_ptr.id_type == md_id_type.MID_STRING:
         return PyUnicode_FromString(&id_ptr.data[0])
     elif id_ptr.id_type == md_id_type.MID_BYTE:
