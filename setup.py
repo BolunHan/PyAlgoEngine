@@ -11,8 +11,8 @@ from pathlib import Path
 import cbase
 import event_engine
 from Cython.Build import cythonize
+from cbase.cython_injection import ensure_wheel_site_hook as _ensure_wheel_site_hook
 from cbase.cython_injection import inject_cython_includes as _inject_cython_includes
-from cbase.cython_injection import record_cython_include as _record_cython_include
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
@@ -46,6 +46,8 @@ REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 N_CORES = os.cpu_count() or 1
 # MSVC + cythonize process pool conflict on Windows (spawn re-imports setup.py) — build sequentially there.
 N_THREADS = 0 if (platform.system() == "Windows" or NO_MARCH_NATIVE) else max(1, N_CORES - 2)
+_EDITABLE_COMMANDS = frozenset({"editable_wheel", "develop"})
+SITE_HOOK_MODULE = "_algo_engine_cython_link"
 __VERSION__ = match.group(1) if (match := re.search(r'^__version__\s*=\s*["\']([^"\']+)["\']', (Path(REPO_ROOT) / PACKAGE_NAME / '__init__.py').read_text(), re.MULTILINE)) else "unknown"
 
 ext_modules = []
@@ -198,10 +200,14 @@ class BuildExtWithConfig(build_ext):
         self.inject_cython_includes()
 
     def inject_cython_includes(self) -> None:
+        editable = bool(getattr(self, "inplace", False))
+        if editable and not _EDITABLE_COMMANDS.intersection(sys.argv[1:]):
+            print(f"[build_py] <{DISPLAY_NAME}> in-place build: Cython include injection skipped")
+            return
         status = _inject_cython_includes(
             PACKAGE_NAME,
             source=Path(REPO_ROOT) / PACKAGE_NAME,
-            editable=bool(getattr(self, "inplace", False)),
+            editable=editable,
         )
         print(f"[build_py] <{DISPLAY_NAME}> Cython include injection: {status}")
 
@@ -317,25 +323,38 @@ class BuildExtWithConfig(build_ext):
                 shutil.copyfile(infra_pxd, src_init_pxd)
 
 
+def _add_wheel_site_hook(wheel_path: Path) -> bool:
+    """Ship the startup hook that injects ``Cython/Includes`` on import."""
+    try:
+        return _ensure_wheel_site_hook(
+            wheel_path,
+            Path(REPO_ROOT) / f"{SITE_HOOK_MODULE}.py",
+            module_name=SITE_HOOK_MODULE,
+        )
+    except Exception as exc:
+        print(f"[build_py] <{DISPLAY_NAME}> Warning: could not add the Cython include startup hook: {exc}")
+        return False
+
+
 class BdistWheelWithCythonLink(_bdist_wheel):
-    """Record the injected Cython/Includes link in the wheel's RECORD."""
+    """Ship the startup hook that injects ``Cython/Includes`` on import."""
 
     def run(self):
         super().run()
         impl_tag, abi_tag, plat_tag = self.get_tag()
         wheel_name = f"{self.wheel_dist_name}-{impl_tag}-{abi_tag}-{plat_tag}.whl"
-        recorded = _record_cython_include(Path(self.dist_dir) / wheel_name, PACKAGE_NAME)
-        print(f"[build_py] <{DISPLAY_NAME}> Cython link recorded: {recorded}")
+        if not _add_wheel_site_hook(Path(self.dist_dir) / wheel_name):
+            print(f"[build_py] <{DISPLAY_NAME}> Warning: Cython include startup hook not added to {wheel_name}")
 
 
 if _editable_wheel is not None:
     class EditableWheelWithCythonLink(_editable_wheel):
-        """Record the injected link in the PEP 660 editable wheel's RECORD."""
+        """Ship the startup hook in the PEP 660 editable wheel."""
 
         def _create_wheel_file(self, bdist_wheel):
             wheel_path = super()._create_wheel_file(bdist_wheel)
-            recorded = _record_cython_include(wheel_path, PACKAGE_NAME)
-            print(f"[build_py] <{DISPLAY_NAME}> Cython link recorded: {recorded}")
+            if not _add_wheel_site_hook(Path(wheel_path)):
+                print(f"[build_py] <{DISPLAY_NAME}> Warning: Cython include startup hook not added to {Path(wheel_path).name}")
             return wheel_path
 
 # =============================
